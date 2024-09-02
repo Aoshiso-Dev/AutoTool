@@ -1,0 +1,187 @@
+﻿<UserControl x:Class="Panels.View.ListPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:Panels.ViewModel"
+             xmlns:converter="clr-namespace:Panels.Converter"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="1200">
+
+    <UserControl.Resources>
+        <converter:BooleanToTextConverter x:Key="BooleanToTextConverter" TrueText=">>" FalseText=""/>
+        <converter:CommandTypeToVisibilityConverter x:Key="CommandTypeToVisibilityConverter"/>
+        <converter:ConditionTypeToVisibilityConverter x:Key="ConditionTypeToVisibilityConverter"/>
+        <converter:KeyToStringConverter x:Key="KeyToStringConverter" />
+    </UserControl.Resources>
+
+    <UserControl.DataContext>
+        <vm:ListPanelViewModel/>
+    </UserControl.DataContext>
+
+    <Grid>
+        <StackPanel>
+            <!-- Buttons -->
+            <StackPanel Orientation="Horizontal">
+                <Button Content="{Binding RunButtonText}" Command="{Binding RunCommand}" Width="100" Margin="2" Foreground="White" Background="{Binding RunButtonColor}"/>
+                <StackPanel>
+                    <Button Content="Save" Command="{Binding SaveCommand}" Width="100" Margin="2"/>
+                    <Button Content="Load" Command="{Binding LoadCommand}" Width="100" Margin="2"/>
+                </StackPanel>
+                <StackPanel>
+                    <Button Content="Add" Command="{Binding AddCommand}" Width="100" Margin="2"/>
+                    <Button Content="Clear" Command="{Binding ClearCommand}" Width="100" Margin="2"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- DataGrid -->
+            <DataGrid ItemsSource="{Binding Items}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True">
+                <DataGrid.Columns>
+                    <!-- IsRunning -->
+                    <DataGridTextColumn Header="" Width="30" Binding="{Binding IsRunning, Converter={StaticResource BooleanToTextConverter}}"/>
+
+                    <!-- LineNumber -->
+                    <DataGridTextColumn Header="" Width="30" Binding="{Binding LineNumber}"/>
+
+                    <!-- Command -->
+                    <DataGridTemplateColumn Header="Command" Width="150">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding CommandTypes}" SelectedItem="{Binding CommandType, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Settings -->
+                    <DataGridTemplateColumn Header="Settings" Width="600">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <!-- WaitImage -->
+                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=WaitImage}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                            <Button Content="Browse" Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                            <Button Content="Capture" Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="TimeOut:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding TimeOut, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
+                                            <TextBlock Text="TimeOutStop:" Margin="2"/>
+                                            <CheckBox IsChecked="{Binding TimeOutStop, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- ClickImage -->
+                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=ClickImage}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                            <Button Content="Browse" Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="TimeOut:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding TimeOut, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
+                                            <TextBlock Text="TimeOutStop:" Margin="2"/>
+                                            <CheckBox IsChecked="{Binding TimeOutStop, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Hotkey -->
+                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=Hotkey}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Ctrl:" Width="60" Margin="2"/>
+                                            <CheckBox IsChecked="{Binding Ctrl, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Shift:" Width="60" Margin="2"/>
+                                            <CheckBox IsChecked="{Binding Shift, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Alt:" Width="60" Margin="2"/>
+                                            <CheckBox IsChecked="{Binding Alt, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Key:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource KeyToStringConverter}}" converter:KeyInputBehavior.Key="{Binding Key, Mode=TwoWay}" Width="50" Margin="2"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Wait -->
+                                    <StackPanel Orientation="Horizontal" Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=Wait}">
+                                        <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
+
+                                    <!-- Loop -->
+                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=LoopStart}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="LoopCount:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding LoopCount, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    
+                                    <!-- If コマンドの設定 -->
+                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=If}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ComboBox ItemsSource="{Binding ConditionTypes}" SelectedItem="{Binding ConditionType}"/>
+                                            <!-- ImageExists -->
+                                            <StackPanel Visibility="{Binding ConditionType, Converter={StaticResource ConditionTypeToVisibilityConverter}, ConverterParameter=ImageExists}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                                    <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                                    <Button Content="Browse" Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="TimeOut:" Width="60" Margin="2"/>
+                                                    <TextBox Text="{Binding TimeOut, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                                    <TextBlock Text="ms" Margin="2"/>
+                                                    <TextBlock Text="TimeOutStop:" Margin="2"/>
+                                                    <CheckBox IsChecked="{Binding TimeOutStop, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
+                                                    <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                                    <TextBlock Text="ms" Margin="2"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    
+                                </StackPanel>
+                                
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Up / Dn -->
+                    <DataGridTemplateColumn Header="" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Up" Command="{Binding DataContext.UpCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                    <Button Content="Dn" Command="{Binding DataContext.DownCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                    <Button Content="Del" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </StackPanel>
+    </Grid>
+</UserControl>
