@@ -10,8 +10,7 @@
 
     <UserControl.Resources>
         <converter:BooleanToTextConverter x:Key="BooleanToTextConverter" TrueText=">>" FalseText=""/>
-        <converter:CommandTypeToVisibilityConverter x:Key="CommandTypeToVisibilityConverter"/>
-        <converter:ConditionTypeToVisibilityConverter x:Key="ConditionTypeToVisibilityConverter"/>
+        <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
         <converter:KeyToStringConverter x:Key="KeyToStringConverter" />
     </UserControl.Resources>
 
@@ -29,25 +28,26 @@
                     <Button Content="Load" Command="{Binding LoadCommand}" Width="100" Margin="2"/>
                 </StackPanel>
                 <StackPanel>
+                    <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" Width="100" Margin="2"/>
                     <Button Content="Add" Command="{Binding AddCommand}" Width="100" Margin="2"/>
-                    <Button Content="Clear" Command="{Binding ClearCommand}" Width="100" Margin="2"/>
                 </StackPanel>
+                <Button Content="Clear" Command="{Binding ClearCommand}" Width="100" Margin="2"/>
             </StackPanel>
 
             <!-- DataGrid -->
-            <DataGrid ItemsSource="{Binding Items}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True">
+            <DataGrid ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True">
                 <DataGrid.Columns>
                     <!-- IsRunning -->
                     <DataGridTextColumn Header="" Width="30" Binding="{Binding IsRunning, Converter={StaticResource BooleanToTextConverter}}"/>
 
                     <!-- LineNumber -->
-                    <DataGridTextColumn Header="" Width="30" Binding="{Binding LineNumber}"/>
+                    <DataGridTextColumn Header="" Width="30" Binding="{Binding LineNumber, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <!-- Command -->
                     <DataGridTemplateColumn Header="Command" Width="150">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ComboBox ItemsSource="{Binding CommandTypes}" SelectedItem="{Binding CommandType, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                                <TextBlock Text="{Binding ItemType, UpdateSourceTrigger=PropertyChanged}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -58,7 +58,38 @@
                             <DataTemplate>
                                 <StackPanel>
                                     <!-- WaitImage -->
-                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=WaitImage}">
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=WaitImage}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                            <Button Content="Browse"
+                                                    Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                    CommandParameter="{Binding LineNumber}"
+                                                    Margin="2"/>
+                                            <Button Content="Capture"
+                                                    Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                    CommandParameter="{Binding LineNumber}"
+                                                    Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Threshold:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="(0.1~1.0)" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Interval:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- ClickImage -->
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=ClickImage}">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="Path:" Width="60" Margin="2"/>
                                             <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
@@ -66,42 +97,30 @@
                                             <Button Content="Capture" Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="TimeOut:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding TimeOut, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                            <TextBlock Text="TimeOutStop:" Margin="2"/>
-                                            <CheckBox IsChecked="{Binding TimeOutStop, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                            <TextBlock Text="Threshold:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="(0.1~1.0)" Margin="2"/>
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
                                             <TextBlock Text="ms" Margin="2"/>
                                         </StackPanel>
-                                    </StackPanel>
-
-                                    <!-- ClickImage -->
-                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=ClickImage}">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
-                                            <Button Content="Browse" Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="TimeOut:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding TimeOut, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                            <TextBlock Text="TimeOutStop:" Margin="2"/>
-                                            <CheckBox IsChecked="{Binding TimeOutStop, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="Interval:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
                                             <TextBlock Text="ms" Margin="2"/>
                                         </StackPanel>
+                                        <!--
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Button:" Width="60" Margin="2"/>
+                                            <ComboBox ItemsSource="{Binding Buttons}" SelectedItem="{Binding Button}" Width="80" Margin="2"/>
+                                        </StackPanel>
+                                        -->
                                     </StackPanel>
 
                                     <!-- Hotkey -->
-                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=Hotkey}">
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Hotkey}">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="Ctrl:" Width="60" Margin="2"/>
                                             <CheckBox IsChecked="{Binding Ctrl, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
@@ -119,16 +138,34 @@
                                             <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource KeyToStringConverter}}" converter:KeyInputBehavior.Key="{Binding Key, Mode=TwoWay}" Width="50" Margin="2"/>
                                         </StackPanel>
                                     </StackPanel>
+                                    
+                                    <!-- Click -->
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Click}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="X:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding X, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Y:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Y, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        </StackPanel>
+                                        <!--
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Button:" Width="60" Margin="2"/>
+                                            <ComboBox ItemsSource="{Binding Buttons}" SelectedItem="{Binding Button}" Width="80" Margin="2"/>
+                                        </StackPanel>
+                                        -->
+                                    </StackPanel>
 
                                     <!-- Wait -->
-                                    <StackPanel Orientation="Horizontal" Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=Wait}">
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Wait}">
                                         <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
-                                        <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBox Text="{Binding Wait, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
                                         <TextBlock Text="ms" Margin="2"/>
                                     </StackPanel>
 
                                     <!-- Loop -->
-                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=LoopStart}">
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=LoopStart}">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="LoopCount:" Width="60" Margin="2"/>
                                             <TextBox Text="{Binding LoopCount, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
@@ -136,22 +173,20 @@
                                     </StackPanel>
                                     
                                     <!-- If コマンドの設定 -->
-                                    <StackPanel Visibility="{Binding CommandType, Converter={StaticResource CommandTypeToVisibilityConverter}, ConverterParameter=If}">
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=If}">
                                         <StackPanel Orientation="Horizontal">
                                             <ComboBox ItemsSource="{Binding ConditionTypes}" SelectedItem="{Binding ConditionType}"/>
                                             <!-- ImageExists -->
-                                            <StackPanel Visibility="{Binding ConditionType, Converter={StaticResource ConditionTypeToVisibilityConverter}, ConverterParameter=ImageExists}">
+                                            <StackPanel Visibility="{Binding ConditionType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=ImageExists}">
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="Path:" Width="60" Margin="2"/>
                                                     <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
                                                     <Button Content="Browse" Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="TimeOut:" Width="60" Margin="2"/>
-                                                    <TextBox Text="{Binding TimeOut, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                                    <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                                                    <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
                                                     <TextBlock Text="ms" Margin="2"/>
-                                                    <TextBlock Text="TimeOutStop:" Margin="2"/>
-                                                    <CheckBox IsChecked="{Binding TimeOutStop, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="WaitTime:" Width="60" Margin="2"/>

@@ -3,14 +3,15 @@ using System.Globalization;
 using System.Windows.Data;
 using Panels;
 using System.Windows.Input;
-using Panels.Define;
 using System.Windows;
 using System.Diagnostics;
 using Panels.View;
 using System.Windows.Controls;
+using Panels.Command.Factory;
 
 namespace Panels.Converter
 {
+    // ブール値を文字列に変換するコンバータ
     public class BooleanToTextConverter : IValueConverter
     {
         public string? TrueText { get; set; }
@@ -31,17 +32,14 @@ namespace Panels.Converter
         }
     }
 
-    // コマンドタイプが一致したらVisibleを返すコンバータ
-    public class CommandTypeToVisibilityConverter : IValueConverter
+    // 文字列が一致したらVisibleを返すコンバータ
+    public class StringToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is CommandType commandType && parameter is string targetTypeString)
+            if (value is string stringValue && parameter is string targetString)
             {
-                if (Enum.TryParse(typeof(CommandType), targetTypeString, out var targetType_))
-                {
-                    return commandType.Equals(targetType_) ? Visibility.Visible : Visibility.Collapsed;
-                }
+                return stringValue == targetString ? Visibility.Visible : Visibility.Collapsed;
             }
             return Visibility.Collapsed;
         }
@@ -52,27 +50,7 @@ namespace Panels.Converter
         }
     }
 
-    // ConditionTypeが一致したらVisibleを返すコンバータ
-    public class ConditionTypeToVisibilityConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is ConditionType conditionType && parameter is string targetTypeString)
-            {
-                if (Enum.TryParse(typeof(ConditionType), targetTypeString, out var targetType_))
-                {
-                    return conditionType.Equals(targetType_) ? Visibility.Visible : Visibility.Collapsed;
-                }
-            }
-            return Visibility.Collapsed;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
+    // Keyを文字列に変換するコンバータ
     public class KeyToStringConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -94,6 +72,7 @@ namespace Panels.Converter
         }
     }
 
+    // Keyを文字列に変換するコンバータ
     public static class KeyInputBehavior
     {
         public static readonly DependencyProperty KeyProperty =

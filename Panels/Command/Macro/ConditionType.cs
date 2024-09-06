@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Panels.Define
+namespace Panels.Command.Factory
 {
     public enum ConditionType
     {
