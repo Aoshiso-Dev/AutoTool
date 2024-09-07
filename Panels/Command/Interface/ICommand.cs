@@ -17,9 +17,9 @@ namespace Panels.Command.Interface
         IEnumerable<ICommand> Children { get; set; }
         int NestLevel { get; set; }
         ICommandSettings Settings { get; }
-        EventHandler<int> OnCommandRunning { get; set; }
+        EventHandler<int>? OnCommandRunning { get; set; }
 
-        bool Execute(CancellationToken cancellationToken);
+        Task<bool> Execute(CancellationToken cancellationToken);
 
         bool CanExecute();
     }

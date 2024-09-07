@@ -120,15 +120,22 @@ namespace Panels.ViewModel
 
             if (item == null) return;
 
-            // 現在時間をファイル名として指定する
-            var capturePath = Path.GetCurrentDirectory() + @"\Capture\" + $"{DateTime.Now:yyyyMMddHHmmss}.png";
-
-            var captureWindow = new CaptureWindow { FileName = capturePath };
-
-            if (captureWindow.ShowDialog() == true)
+            if (item is IImageCommandSettings imageItem)
             {
-                if (item is IImageCommandSettings imageItem)
+                // キャプチャウィンドウを表示
+                var captureWindow = new CaptureWindow();
+
+                if (captureWindow.ShowDialog() == true)
                 {
+                    // 現在時間をファイル名として指定する
+                    var capturePath = Path.GetCurrentDirectory() + @"\Capture\" + $"{DateTime.Now:yyyyMMddHHmmss}.png";
+
+                    // 選択領域をキャプチャ
+                    var capturedMat = ScreenCaptureHelper.CaptureRegion(captureWindow.SelectedRegion);
+
+                    // 指定されたファイル名で保存
+                    ScreenCaptureHelper.SaveCapture(capturedMat, $"{capturePath}");
+
                     imageItem.ImagePath = capturePath;
                 }
             }
@@ -158,48 +165,43 @@ namespace Panels.ViewModel
         }
 
         [RelayCommand]
-        public void Run()
+        public async void Run()
         {
-            try {
-                if (_cts == null)
-                {
-                    _cts = new CancellationTokenSource();
-                    RunButtonText = "Stop";
-                    RunButtonColor = Brushes.Red;
-                    RunAsync(_cts.Token);
-                }
-                else
-                {
-                    _cts.Cancel();
-                    _cts = null;
-                    RunButtonText = "Run";
-                    RunButtonColor = Brushes.Green;
-                }
-            }
-            catch (Exception ex)
+            if (!CommandList.Items.Where(x => x.IsRunning == true).Any())
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                await RunAsync();
+            }
+            else
+            {
+                _cts.Cancel();
             }
         }
 
-        public async Task RunAsync(CancellationToken cancellationToken)
+        public async Task RunAsync()
         {
-            //CommandList.CalcurateNestLevel();
+
             var macro = MacroFactory.CreateMacro(CommandList.Items, UpdateRunning);
 
             try
             {
-                macro.Execute(cancellationToken);
+                _cts = new CancellationTokenSource();
+                RunButtonText = "Stop";
+                RunButtonColor = Brushes.Red;
+
+                await macro.Execute(_cts.Token);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (_cts != null && !_cts.Token.IsCancellationRequested)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
             finally
             {
-                _cts = null;
                 RunButtonText = "Run";
                 RunButtonColor = Brushes.Green;
+                CommandList.Items.Where(x => x.IsRunning).ToList().ForEach(x => x.IsRunning = false);
             }
         }
 

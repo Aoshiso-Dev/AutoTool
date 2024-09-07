@@ -7,13 +7,14 @@ using Panels.Command.Interface;
 
 namespace Panels.Command.Executer
 {
+    /*
     public static class MacroExecuter
     {
         public static void Execute(IRootCommand macro, CancellationToken cancellationToken)
         {
             foreach (var command in macro.Children)
             {
-                if (!command.Execute(cancellationToken))
+                if (!await command.Execute(cancellationToken))
                 {
                     return;
                 }
@@ -26,4 +27,5 @@ namespace Panels.Command.Executer
             }
         }
     }
+    */
 }

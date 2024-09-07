@@ -41,6 +41,12 @@ public class ImageFinder
     /// <returns>画像の中心座標（見つからなかった場合は null）</returns>
     public static async Task<OpenCvSharp.Point?> WaitForImageAsync(string imagePath, double threshold = 0.8, int timeoutMs = 5000, int waitTimeMs = 1000, CancellationToken cancellationToken = default)
     {
+        // ファイル存在確認
+        if (!System.IO.File.Exists(imagePath))
+        {
+            throw new System.IO.FileNotFoundException("Image file not found.", imagePath);
+        }
+
         var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(timeoutMs);
 
@@ -80,25 +86,4 @@ public class ImageFinder
             await Task.Delay(waitTimeMs, cancellationToken); // 非同期で待機
         }
     }
-
-    /*
-    /// <summary>
-    /// BitmapSource を OpenCV の Mat に変換します。
-    /// </summary>
-    /// <param name="bitmapSource">変換する BitmapSource</param>
-    /// <returns>OpenCV の Mat オブジェクト</returns>
-    private static Mat BitmapSourceToMat(BitmapSource bitmapSource)
-    {
-        int width = bitmapSource.PixelWidth;
-        int height = bitmapSource.PixelHeight;
-        int stride = width * ((bitmapSource.Format.BitsPerPixel + 7) / 8);
-        byte[] pixelData = new byte[height * stride];
-        bitmapSource.CopyPixels(pixelData, stride, 0);
-
-        Mat mat = new Mat(height, width, MatType.CV_8UC4);
-        Marshal.Copy(pixelData, 0, mat.Data, pixelData.Length);
-
-        return mat;
-    }
-    */
 }

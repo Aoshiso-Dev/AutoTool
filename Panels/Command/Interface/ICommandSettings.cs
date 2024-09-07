@@ -16,8 +16,8 @@ namespace Panels.Command.Interface
     {
         string ImagePath { get; set; }
         double Threshold { get; set; }
-        double Timeout { get; set; }
-        double Interval { get; set; }
+        int Timeout { get; set; }
+        int Interval { get; set; }
     }
 
     public interface IHotkeyCommandSettings : ICommandSettings
@@ -37,7 +37,7 @@ namespace Panels.Command.Interface
 
     public interface IWaitCommandSettings : ICommandSettings
     {
-        double Wait { get; set; }
+        int Wait { get; set; }
     }
 
     public interface IIfCommandSettings : ICommandSettings

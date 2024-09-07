@@ -24,16 +24,16 @@ namespace Panels.List.Interface
     {
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
-        public double Timeout { get; set; }
-        public double Interval { get; set; }
+        public int Timeout { get; set; }
+        public int Interval { get; set; }
     }
 
     public interface IClickImageItem : ICommandListItem
     {
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
-        public double Timeout { get; set; }
-        public double Interval { get; set; }
+        public int Timeout { get; set; }
+        public int Interval { get; set; }
         public System.Windows.Input.MouseButton Button { get; set; }
     }
 
@@ -54,7 +54,7 @@ namespace Panels.List.Interface
 
     public interface IWaitItem : ICommandListItem
     {
-        public double Wait { get; set; }
+        public int Wait { get; set; }
     }
 
     public interface IIfItem : ICommandListItem
@@ -74,6 +74,5 @@ namespace Panels.List.Interface
 
     public interface IEndLoopItem : ICommandListItem
     {
-        public object? Pair { get; set; }
     }
 }

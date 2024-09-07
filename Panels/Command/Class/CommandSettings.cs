@@ -19,8 +19,8 @@ namespace Panels.Command.Define
     {
         public string ImagePath { get; set; } = string.Empty;
         public double Threshold { get; set; }
-        public double Timeout { get; set; }
-        public double Interval { get; set; }
+        public int Timeout { get; set; }
+        public int Interval { get; set; }
     }
 
     public class HotkeyCommandSettings : ICommandSettings, IHotkeyCommandSettings
@@ -48,7 +48,7 @@ namespace Panels.Command.Define
 
     public class WaitCommandSettings : ICommandSettings, IWaitCommandSettings
     {
-        public double Wait { get; set; }
+        public int Wait { get; set; }
 
         public WaitCommandSettings()
         {

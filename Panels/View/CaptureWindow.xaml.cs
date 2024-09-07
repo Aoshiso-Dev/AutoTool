@@ -13,6 +13,8 @@ namespace Panels.View
 
         // 呼び出し元から設定するためのファイル名プロパティ
         public string FileName { get; set; } = string.Empty;
+        public Rect SelectedRegion { get; set; } = Rect.Empty;
+
 
         public CaptureWindow()
         {
@@ -65,19 +67,20 @@ namespace Panels.View
             if (_selectionRectangle.Visibility == Visibility.Visible)
             {
                 // キャプチャ領域の決定
-                Rect selectedRegion = new Rect(
+                SelectedRegion = new Rect(
                     Canvas.GetLeft(_selectionRectangle),
                     Canvas.GetTop(_selectionRectangle),
                     _selectionRectangle.Width,
                     _selectionRectangle.Height);
 
+
+
                 // 選択領域をキャプチャ
-                var capturedMat = ScreenCaptureHelper.CaptureRegion(selectedRegion);
+                //var capturedMat = ScreenCaptureHelper.CaptureRegion(selectedRegion);
 
                 // 指定されたファイル名で保存
-                ScreenCaptureHelper.SaveCapture(capturedMat, $"{FileName}.png");
+                //ScreenCaptureHelper.SaveCapture(capturedMat, $"{FileName}");
 
-                _selectionRectangle.Visibility = Visibility.Hidden;
                 this.DialogResult = true; // ダイアログ結果を設定してウィンドウを閉じる
                 this.Close();
             }

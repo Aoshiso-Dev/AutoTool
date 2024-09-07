@@ -39,6 +39,13 @@ public class ScreenCaptureHelper
     // キャプチャした画像を保存するメソッド
     public static void SaveCapture(Mat image, string filePath)
     {
+        // フォルダが存在しなければ作成
+        var directory = System.IO.Path.GetDirectoryName(filePath);
+        if (!System.IO.Directory.Exists(directory))
+        {
+            System.IO.Directory.CreateDirectory(directory);
+        }
+
         image.SaveImage(filePath);
     }
 }

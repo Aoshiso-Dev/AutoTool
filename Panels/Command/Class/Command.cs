@@ -18,18 +18,18 @@ namespace Panels.Command.Class
         public ICommandSettings Settings { get; } = new CommandSettings();
 
         public IEnumerable<ICommand> Children { get; set; } = new List<ICommand>();
-        public EventHandler<int> OnCommandRunning { get; set; }
+        public EventHandler<int>? OnCommandRunning { get; set; }
 
         public RootCommand()
         {
             Children = new List<ICommand>();
         }
 
-        public bool Execute(CancellationToken cancellationToken)
+        public async Task<bool> Execute(CancellationToken cancellationToken)
         {
             foreach (var command in Children)
             {
-                if (!command.Execute(cancellationToken))
+                if (!await command.Execute(cancellationToken))
                 {
                     return false;
                 }
@@ -65,7 +65,7 @@ namespace Panels.Command.Class
         public IEnumerable<ICommand> Children { get; set; }
         public int NestLevel { get; set; }
         public ICommandSettings Settings { get; }
-        public EventHandler<int> OnCommandRunning { get; set; }
+        public EventHandler<int>? OnCommandRunning { get; set; } = null;
 
         public BaseCommand(ICommand parent, ICommandSettings settings)
         {
@@ -75,9 +75,10 @@ namespace Panels.Command.Class
             Children = new List<ICommand>();
         }
 
-        public bool Execute(CancellationToken cancellationToken )
+        public async Task<bool> Execute(CancellationToken cancellationToken )
         {
             OnCommandRunning?.Invoke(this, ListNumber);
+            await Task.Delay(0, cancellationToken);
             return true;
         }
         public bool CanExecute()
@@ -92,11 +93,13 @@ namespace Panels.Command.Class
 
         public WaitImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool Execute(CancellationToken cancellationToken)
+        new async public Task<bool> Execute(CancellationToken cancellationToken)
         {
-            base.Execute(cancellationToken);
-            MessageBox.Show("WaitImageCommand executed.");
-            return true;
+            await base.Execute(cancellationToken);
+
+            var point = await ImageFinder.WaitForImageAsync(Settings.ImagePath, Settings.Threshold, Settings.Timeout, Settings.Interval, cancellationToken);
+
+            return point != null;
         }
         new public bool CanExecute()
         {
@@ -110,11 +113,20 @@ namespace Panels.Command.Class
 
         public ClickImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool Execute(CancellationToken cancellationToken)
+        new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            base.Execute(cancellationToken);
-            MessageBox.Show("ClickImageCommand executed.");
-            return true;
+            await base.Execute(cancellationToken);
+
+            var point = await ImageFinder.WaitForImageAsync(Settings.ImagePath, Settings.Threshold, Settings.Timeout, Settings.Interval, cancellationToken);
+                
+            if( point != null)
+            {
+                MouseControlHelper.Click(point.Value.X, point.Value.Y);
+
+                return true;
+            }
+
+            return false;
         }
         new public bool CanExecute()
         {
@@ -128,10 +140,12 @@ namespace Panels.Command.Class
 
         public HotkeyCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool Execute(CancellationToken cancellationToken)
+        new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            base.Execute(cancellationToken);
-            MessageBox.Show("HotkeyCommand executed.");
+            await base.Execute(cancellationToken);
+
+            KeyControlHelper.KeyPress(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift);
+
             return true;
         }
         new public bool CanExecute()
@@ -146,10 +160,25 @@ namespace Panels.Command.Class
 
         public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool Execute(CancellationToken cancellationToken)
+        new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            base.Execute(cancellationToken);
-            MessageBox.Show("ClickCommand executed.");
+            await base.Execute(cancellationToken);
+
+            switch (Settings.Button)
+            {
+                case System.Windows.Input.MouseButton.Left:
+                    MouseControlHelper.Click(Settings.X, Settings.Y);
+                    break;
+                case System.Windows.Input.MouseButton.Right:
+                    MouseControlHelper.RightClick(Settings.X, Settings.Y);
+                    break;
+                case System.Windows.Input.MouseButton.Middle:
+                    MouseControlHelper.MiddleClick(Settings.X, Settings.Y);
+                    break;
+                default:
+                    throw new Exception("Invalid MouseButton.");
+            }
+
             return true;
         }
         new public bool CanExecute()
@@ -164,10 +193,12 @@ namespace Panels.Command.Class
 
         public WaitCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool Execute(CancellationToken cancellationToken)
+        new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            base.Execute(cancellationToken);
-            MessageBox.Show("WaitCommand executed.");
+            await base.Execute(cancellationToken);
+
+            await Task.Delay(Settings.Wait, cancellationToken);
+
             return true;
         }
         new public bool CanExecute()
@@ -184,9 +215,9 @@ namespace Panels.Command.Class
         {
         }
 
-        new public bool Execute(CancellationToken cancellationToken)
+        new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            base.Execute(cancellationToken);
+            await base.Execute(cancellationToken);
             throw new NotImplementedException();
         }
         new public bool CanExecute()
@@ -203,9 +234,9 @@ namespace Panels.Command.Class
         {
         }
 
-        new public bool Execute(CancellationToken cancellationToken)
+        new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            base.Execute(cancellationToken);
+            await base.Execute(cancellationToken);
 
             if ( Children == null)
             {
@@ -217,7 +248,7 @@ namespace Panels.Command.Class
             {
                 foreach (var command in Children)
                 {
-                    if (!command.Execute(cancellationToken))
+                    if (!await command.Execute(cancellationToken))
                     {
                         return false;
                     }

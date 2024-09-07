@@ -50,6 +50,7 @@ namespace Panels.Converter
         }
     }
 
+    /*
     // Keyを文字列に変換するコンバータ
     public class KeyToStringConverter : IValueConverter
     {
@@ -68,6 +69,34 @@ namespace Panels.Converter
             {
                 return result;
             }
+            return Key.None;
+        }
+    }
+    */
+    public class KeyToStringConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            if (value is Key key)
+            {
+                if (key == Key.None)
+                {
+                    return string.Empty;
+                }
+
+                return key.ToString();
+            }
+
+            return string.Empty;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            if (value is string keyString && Enum.TryParse(typeof(Key), keyString, out var key))
+            {
+                return key;
+            }
+
             return Key.None;
         }
     }
@@ -102,6 +131,24 @@ namespace Panels.Converter
                 textBox.Text = e.Key.ToString(); // テキストボックスにキー名を表示
                 e.Handled = true;
             }
+        }
+    }
+
+
+
+    // NestLevelをマージンに変換するコンバータ
+    public class NestLevelToMarginConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            int nestLevel = (int)value;
+            int indentSize = 20; // インデントの幅
+            return new Thickness(nestLevel * indentSize, 0, 0, 0);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
         }
     }
 }

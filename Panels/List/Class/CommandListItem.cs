@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Panels.List;
 
 namespace Panels.List.Class
 {
@@ -25,6 +26,8 @@ namespace Panels.List.Class
 
         [ObservableProperty]
         private bool _isInLoop = false;
+
+        public CommandListItem() { }
 
         public CommandListItem(CommandListItem? item)
         {
@@ -51,9 +54,11 @@ namespace Panels.List.Class
         [ObservableProperty]
         private double _threshold = 0.8;
         [ObservableProperty]
-        private double _timeout = 5000;
+        private int _timeout = 5000;
         [ObservableProperty]
-        private double _interval = 500;
+        private int _interval = 500;
+
+        public WaitImageItem() { }
 
         public WaitImageItem(WaitImageItem? item = null) : base(item)
         {
@@ -79,11 +84,13 @@ namespace Panels.List.Class
         [ObservableProperty]
         private double _threshold = 0.8;
         [ObservableProperty]
-        private double _timeout = 5000;
+        private int _timeout = 5000;
         [ObservableProperty]
-        private double _interval = 500;
+        private int _interval = 500;
         [ObservableProperty]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+
+        public ClickImageItem() { }
 
         public ClickImageItem(ClickImageItem? item = null) : base(item)
         {
@@ -112,7 +119,9 @@ namespace Panels.List.Class
         [ObservableProperty]
         private bool _shift = false;
         [ObservableProperty]
-        private System.Windows.Input.Key _key = System.Windows.Input.Key.None;
+        private System.Windows.Input.Key _key = System.Windows.Input.Key.Escape;
+
+        public HotkeyItem() { }
 
         public HotkeyItem(HotkeyItem? item = null) : base(item)
         {
@@ -140,6 +149,9 @@ namespace Panels.List.Class
         [ObservableProperty]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
 
+
+        public ClickItem() { }
+
         public ClickItem(ClickItem? item = null) : base(item)
         {
             if(item != null)
@@ -159,7 +171,10 @@ namespace Panels.List.Class
     internal partial class WaitItem : CommandListItem, IWaitItem, IWaitCommandSettings
     {
         [ObservableProperty]
-        private double _wait = 5000;
+        private int _wait = 5000;
+
+
+        public WaitItem() { }
 
         public WaitItem(WaitItem? item = null) : base(item)
         {
@@ -182,6 +197,9 @@ namespace Panels.List.Class
         [ObservableProperty]
         private object? _pair = null;
 
+
+        public IfItem() { }
+
         public IfItem(IfItem? item = null) : base(item)
         {
             if(item != null)
@@ -201,15 +219,14 @@ namespace Panels.List.Class
     {
         [ObservableProperty]
         private object? _condition = null;
-        [ObservableProperty]
-        private object? _pair = null;
 
+
+        public EndIfItem() { }
         public EndIfItem(EndIfItem? item = null) : base(item)
         {
             if(item != null)
             {
                 Condition = item.Condition;
-                Pair = item.Pair;
             }
         }
 
@@ -226,7 +243,9 @@ namespace Panels.List.Class
         [ObservableProperty]
         private object? _pair = null;
 
-        public LoopItem(LoopItem? item = null, Command.Define.LoopCommandSettings loopCommandSettings = null) : base(item)
+        public LoopItem() { }
+
+        public LoopItem(LoopItem? item = null) : base(item)
         {
             if(item != null)
             {
@@ -245,15 +264,14 @@ namespace Panels.List.Class
     {
         [ObservableProperty]
         private int _loopCount = 2;
-        [ObservableProperty]
-        private object? _pair = null;
+
+        public EndLoopItem() { }
 
         public EndLoopItem(EndLoopItem? item = null) : base(item)
         {
             if(item != null)
             {
                 LoopCount = item.LoopCount;
-                Pair = item.Pair;
             }
         }
 

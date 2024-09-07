@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Win32;
 using Panels.List.Interface;
 
 namespace Panels.List.Class
@@ -113,23 +114,6 @@ namespace Panels.List.Class
                 }
 
             }
-            /*
-            nestLevel = 0;
-            var startLoopItems = Items.OfType<ILoopItem>().Where(x => x.ItemType == ItemType.Loop).ToList();
-            foreach (var startLoopItem in startLoopItems)
-            {
-                startLoopItem.NestLevel = nestLevel;
-                nestLevel++;
-            }
-
-            nestLevel = 0;
-            var endLoopItems = Items.OfType<IEndLoopItem>().Where(x => x.ItemType == ItemType.EndLoop).Reverse().ToList();
-            foreach (var endLoopItem in endLoopItems)
-            {
-                endLoopItem.NestLevel = nestLevel;
-                nestLevel++;
-            }
-            */
         }
 
         public void PairLoopItems()
@@ -139,24 +123,84 @@ namespace Panels.List.Class
 
             foreach (var loopItem in loopItems)
             {
-                var endLoopItem = endLoopItems.FirstOrDefault(x => x.NestLevel == loopItem.NestLevel && x.Pair == null);
+                var endLoopItem = endLoopItems.FirstOrDefault(x => x.NestLevel == loopItem.NestLevel);
 
                 if (endLoopItem != null)
                 {
                     loopItem.Pair = endLoopItem;
-                    endLoopItem.Pair = loopItem;
                 }
             }
         }
 
         public void Save()
         {
-            // TODO
+            var dialog = new SaveFileDialog();
+            dialog.Filter = "Macro files (*.macro)|*.macro|All files (*.*)|*.*";
+            dialog.FilterIndex = 1;
+            dialog.RestoreDirectory = true;
+            dialog.FileName = "CommandList.macro";
+            dialog.DefaultExt = ".macro";
+            dialog.Title = "Save Macro File";
+            dialog.ShowDialog();
+
+            if (dialog.FileName == "")
+            {
+                return;
+            }
+
+            JsonSerializerHelper.SerializeToFile(Items, dialog.FileName);
         }
 
         public void Load()
         {
-            // TODO
+            var dialog = new OpenFileDialog();
+            dialog.Filter = "Macro files (*.macro)|*.macro|All files (*.*)|*.*";
+            dialog.FilterIndex = 1;
+            dialog.RestoreDirectory = true;
+            dialog.FileName = "CommandList.macro";
+            dialog.DefaultExt = ".macro";
+            dialog.Title = "Load Macro File";
+            dialog.ShowDialog();
+
+            if (dialog.FileName == "")
+            {
+                return;
+            }
+
+            var deserializedItems = JsonSerializerHelper.DeserializeFromFile<ObservableCollection<ICommandListItem>>(dialog.FileName);
+            if (deserializedItems != null)
+            {
+                Items.Clear();
+
+                foreach (var item in deserializedItems)
+                {
+                    switch(item.ItemType)
+                    {
+                        case nameof(ItemType.WaitImage):
+                            Add(new WaitImageItem(item as WaitImageItem));
+                            break;
+                        case nameof(ItemType.ClickImage):
+                            Add(new ClickImageItem(item as ClickImageItem));
+                            break;
+                        case nameof(ItemType.Click):
+                            Add(new ClickItem(item as ClickItem));
+                            break;
+                        case nameof(ItemType.Hotkey):
+                            Add(new HotkeyItem(item as HotkeyItem));
+                            break;
+                        case nameof(ItemType.Wait):
+                            Add(new WaitItem(item as WaitItem));
+                            break;
+                        case nameof(ItemType.Loop):
+                            Add(new LoopItem(item as LoopItem));
+                            break;
+                        case nameof(ItemType.EndLoop):
+                            Add(new EndLoopItem(item as EndLoopItem));
+                            break;
+                    }
+
+                }
+            }
         }
     }
 }
