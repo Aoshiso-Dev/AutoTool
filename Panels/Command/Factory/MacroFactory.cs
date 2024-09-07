@@ -34,14 +34,17 @@ namespace Panels.Command.Factory
         {
             var commands = new List<ICommand>();
 
-            foreach (var item in items)
+            var iterator = items.GetEnumerator();
+
+            while(iterator.MoveNext())
             {
+                var item = iterator.Current;
+
                 var command = CreateCommand(parent, item, items, updateRunning);
 
                 if (command != null)
                 {
                     commands.Add(command);
-                    parent = command;
                 }
             }
 
@@ -75,12 +78,12 @@ namespace Panels.Command.Factory
                 case WaitImageItem waitImageItem:
                     command = CreateWaitImageComand(parent, waitImageItem);
                     break;
-                case IfItem ifItem:
-                    command = CreateIfComand(parent, ifItem);
-                    break;
-                case EndIfItem endIfItem:
-                    // Do nothing
-                    return new BaseCommand(parent, new CommandSettings());
+                //case IfItem ifItem:
+                //    command = CreateIfComand(parent, ifItem);
+                //    break;
+                //case EndIfItem endIfItem:
+                //    // Do nothing
+                //    return new BaseCommand(parent, new CommandSettings());
                 case LoopItem loopItem:
                     command = CreateLoopComand(parent, loopItem, items, updateRunnning);
                     break;
@@ -91,56 +94,9 @@ namespace Panels.Command.Factory
                     throw new ArgumentOutOfRangeException();
             }
 
-
             command.OnCommandRunning += updateRunnning;
 
             return command;
-
-            /*
-
-            if (item is WaitItem waitItem)
-            {
-                return CreateWaitComand(parent, waitItem);
-            }
-            else if (item is ClickItem clickItem)
-            {
-                return CreateClickComand(parent, clickItem);
-            }
-            else if (item is HotkeyItem hotkeyItem)
-            {
-                return CreateHotkeyComand(parent, hotkeyItem);
-            }
-            else if (item is ClickImageItem clickImageItem)
-            {
-                return CreateClickImageComand(parent, clickImageItem);
-            }
-            else if (item is WaitImageItem waitImageItem)
-            {
-                return CreateWaitImageComand(parent, waitImageItem);
-            }
-            else if (item is IfItem ifItem)
-            {
-                return CreateIfComand(parent, ifItem);
-            }
-            else if (item is EndIfItem endIfItem)
-            {
-                // Do nothing
-                return new BaseCommand(parent, new CommandSettings());
-            }
-            else if (item is LoopItem loopItem)
-            {
-                return CreateLoopComand(parent, loopItem, items);
-            }
-            else if (item is EndLoopItem endLoopItem)
-            {
-                // Do nothing
-                return new BaseCommand(parent, new CommandSettings());
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-            */
         }
 
         private static WaitImageCommand CreateWaitImageComand(ICommand parent, IWaitImageItem item)
@@ -199,12 +155,12 @@ namespace Panels.Command.Factory
             { ListNumber = item.LineNumber };
         }
 
-        private static IfCommand? CreateIfComand(ICommand parent, IIfItem item)
-        {
-            // TODO
-
-            return null ?? new IfCommand(parent, new IfCommandSettings() { Condition = null});
-        }
+        //private static IfCommand? CreateIfComand(ICommand parent, IIfItem item)
+        //{
+        //    // TODO
+        //
+        //    return null ?? new IfCommand(parent, new IfCommandSettings() { Condition = null});
+        //}
 
         private static LoopCommand CreateLoopComand(ICommand parent, ILoopItem loopItem, IEnumerable<ICommandListItem> items, EventHandler<int> updateRunning)
         {
@@ -215,7 +171,10 @@ namespace Panels.Command.Factory
                 throw new Exception("loopItem.Pair is null");
             }
 
-            var childrenListItems = items.SkipWhile(x => x != loopItem).TakeWhile(x => x != endLoopItem).Skip(1).ToList();
+            // loopItemとendLoopItemの間のコマンドを取得
+            var startLoopIndex = loopItem.LineNumber - 1;
+            var endLoopIndex = endLoopItem.LineNumber - 1;
+            var childrenListItems = items.Skip(startLoopIndex + 1).Take(endLoopIndex - startLoopIndex - 1).ToList();
 
             if (childrenListItems.Count == 0)
             {
@@ -230,25 +189,13 @@ namespace Panels.Command.Factory
                 ListNumber = loopItem.LineNumber,
             };
 
-            if (childrenListItems.Any())
-            {
-                loopCommand.Children = ListItemToCommand(loopCommand, childrenListItems, updateRunning);
-            }
+            loopCommand.Children = ListItemToCommand(loopCommand, childrenListItems, updateRunning);
+
 
             // IsInLoopをtrueにする
             foreach (var childrenListItem in childrenListItems)
             {
-                childrenListItem.IsInLoop = true;
-            }
-
-            /*
-            foreach (var childrenListItem in childrenListItems)
-            {
-                if(childrenListItem is ILoopItem)
-                {
-                    continue;
-                }
-                else if(childrenListItem is IEndLoopItem)
+                if (childrenListItem is LoopItem)
                 {
                     continue;
                 }
@@ -258,7 +205,6 @@ namespace Panels.Command.Factory
                     childrenListItem.IsInLoop = true;
                 }
             }
-            */
 
             return loopCommand;
         }
