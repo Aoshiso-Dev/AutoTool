@@ -71,6 +71,8 @@ namespace Panels.Command.Class
         public ICommandSettings Settings { get; }
         public EventHandler<int>? OnCommandRunning { get; set; } = null;
 
+        public BaseCommand() { }
+
         public BaseCommand(ICommand parent, ICommandSettings settings)
         {
             Parent = parent;
@@ -82,7 +84,6 @@ namespace Panels.Command.Class
         public async Task<bool> Execute(CancellationToken cancellationToken )
         {
             OnCommandRunning?.Invoke(this, ListNumber);
-            await Task.Delay(0, cancellationToken);
 
             return true;
         }
@@ -312,9 +313,12 @@ namespace Panels.Command.Class
         }
     }
 
-        internal class LoopCommand : BaseCommand, ICommand, ILoopCommand
+    internal class LoopCommand : BaseCommand, ICommand, ILoopCommand
     {
+        private CancellationTokenSource? _cts = null;
         new public ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings;
+
+        public LoopCommand() { }
 
         public LoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
         {
@@ -322,7 +326,7 @@ namespace Panels.Command.Class
 
         new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            Debug.WriteLine($"{ListNumber} : {nameof(LoopCommand)}");
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             await base.Execute(cancellationToken);
 
@@ -331,24 +335,54 @@ namespace Panels.Command.Class
                 throw new Exception("Children is null");
             }
 
-
-            for (int i = 0; i < Settings.LoopCount; i++)
+            try
             {
-                foreach (var command in Children)
+                for (int i = 0; i < Settings.LoopCount; i++)
                 {
-                    if (!await command.Execute(cancellationToken))
+                    foreach (var command in Children)
                     {
-                        return false;
-                    }
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            return false;
+                        }
 
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return false;
+                        if (!await command.Execute(_cts.Token))
+                        {
+                            _cts.Cancel();
+                        }
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Debug.WriteLine("Break!!");
+            }
+            finally
+            {
+                _cts.Dispose();
+                _cts = null;
+            }
 
             return true;
+        }
+
+        new public bool CanExecute()
+        {
+            return true;
+        }
+    }
+
+    internal class BreakCommand : BaseCommand, ICommand, IBreakCommand
+    {
+        public BreakCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+
+        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        {
+            Debug.WriteLine($"{ListNumber} : {nameof(BreakCommand)}");
+
+            await base.Execute(cancellationToken);
+
+            return false;
         }
 
         new public bool CanExecute()

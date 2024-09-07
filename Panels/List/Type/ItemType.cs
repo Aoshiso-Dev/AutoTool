@@ -15,6 +15,7 @@ namespace Panels.List.Type
         public static readonly string Wait = "Wait";
         public static readonly string Loop = "Loop";
         public static readonly string EndLoop = "EndLoop";
+        public static readonly string Break = "Break";
         public static readonly string IfImageExist = "IfImageExist";
         public static readonly string IfImageNotExist = "IfImageNotExist";
         public static readonly string EndIf = "EndIf";

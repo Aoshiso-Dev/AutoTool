@@ -229,6 +229,18 @@ namespace Panels.List.Class
                         case nameof(ItemType.EndLoop):
                             Add(new EndLoopItem(item as EndLoopItem));
                             break;
+                        case nameof(ItemType.Break):
+                            Add(new BreakItem(item as BreakItem));
+                            break;
+                        case nameof(ItemType.IfImageExist):
+                            Add(new IfImageExistItem(item as IfImageExistItem));
+                            break;
+                        case nameof(ItemType.IfImageNotExist):
+                            Add(new IfImageNotExistItem(item as IfImageNotExistItem));
+                            break;
+                        case nameof(ItemType.EndIf):
+                            Add(new EndIfItem(item as EndIfItem));
+                            break;
                     }
 
                 }

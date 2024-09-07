@@ -23,7 +23,8 @@ namespace Panels.Command.Factory
             var cloneItems = (IEnumerable<ICommandListItem>)items.Select(x => x.Clone()).ToList();
 
             // ルートコマンドを作成
-            var root = new RootCommand();
+            var root = new LoopCommand(new RootCommand(), new LoopCommandSettings() { LoopCount = 1 });
+
             root.OnCommandRunning += updateRunning;
 
             // ルートコマンドの子コマンドを作成
@@ -96,6 +97,9 @@ namespace Panels.Command.Factory
                     break;
                 case EndLoopItem endLoopItem:
                     command = null;
+                    break;
+                case BreakItem breakItem:
+                    command = new BreakCommand(parent, new CommandSettings());
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

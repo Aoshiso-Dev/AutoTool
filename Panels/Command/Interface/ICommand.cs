@@ -66,4 +66,8 @@ namespace Panels.Command.Interface
     {
         new ILoopCommandSettings Settings { get; }
     }
+
+    public interface IBreakCommand : ICommand
+    {
+    }
 }

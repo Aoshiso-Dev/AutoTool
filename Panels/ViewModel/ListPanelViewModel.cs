@@ -54,6 +54,7 @@ namespace Panels.ViewModel
             ItemTypes.Add(ItemType.Wait);
             ItemTypes.Add(ItemType.Loop);
             ItemTypes.Add(ItemType.EndLoop);
+            ItemTypes.Add(ItemType.Break);
             ItemTypes.Add(ItemType.IfImageExist);
             ItemTypes.Add(ItemType.IfImageNotExist);
             ItemTypes.Add(ItemType.EndIf);
@@ -91,6 +92,9 @@ namespace Panels.ViewModel
                     break;
                 case nameof(ItemType.EndLoop):
                     CommandList.Add(new EndLoopItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    break;
+                case nameof(ItemType.Break):
+                    CommandList.Add(new BreakItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
                     break;
                 case nameof(ItemType.IfImageExist):
                      CommandList.Add(new IfImageExistItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
@@ -239,11 +243,11 @@ namespace Panels.ViewModel
         }
 
         [RelayCommand]
-        public async Task Run()
+        public void Run()
         {
             if (!CommandList.Items.Where(x => x.IsRunning == true).Any())
             {
-                await RunAsync();
+                _ = RunAsync();
             }
             else
             {
@@ -276,6 +280,9 @@ namespace Panels.ViewModel
                 RunButtonText = "Run";
                 RunButtonColor = Brushes.Green;
                 CommandList.Items.Where(x => x.IsRunning).ToList().ForEach(x => x.IsRunning = false);
+
+                _cts?.Dispose();
+                _cts = null;
             }
         }
 

@@ -304,4 +304,16 @@ namespace Panels.List.Class
             return new EndLoopItem(this);
         }
     }
+
+    internal partial class BreakItem : CommandListItem, IBreakItem
+    {
+        public BreakItem() { }
+
+        public BreakItem(BreakItem? item = null) : base(item) { }
+
+        public new ICommandListItem Clone()
+        {
+            return new BreakItem(this);
+        }
+    }
 }

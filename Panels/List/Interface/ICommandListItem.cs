@@ -92,4 +92,8 @@ namespace Panels.List.Interface
     public interface IEndLoopItem : ICommandListItem
     {
     }
+
+    public interface IBreakItem : ICommandListItem
+    {
+    }
 }
