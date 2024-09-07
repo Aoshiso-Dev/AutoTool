@@ -8,21 +8,22 @@ using Panels.Command.Define;
 
 namespace Panels.Command.Interface
 {
-    public interface IRootCommand
-    {
-        public IEnumerable<ICommand> Children { get; set; }
-    }
 
     public interface ICommand
     {
         bool IsEnabled { get; set; }
         ICommand? Parent { get; set; }
+        IEnumerable<ICommand> Children { get; set; }
         int NestLevel { get; set; }
         ICommandSettings Settings { get; }
 
-        bool TryExecute(out Exception exception);
+        bool Execute(CancellationToken cancellationToken);
 
         bool CanExecute();
+    }
+
+    public interface IRootCommand : ICommand
+    {
     }
 
     public interface IImageCommand : ICommand
@@ -47,13 +48,11 @@ namespace Panels.Command.Interface
 
     public interface IIfCommand : ICommand
     {
-        public IEnumerable<ICommand> Children { get; set; }
         new IIfCommandSettings Settings { get; }
     }
 
     public interface ILoopCommand : ICommand
     {
-        public IEnumerable<ICommand> Children { get; set; }
         new ILoopCommandSettings Settings { get; }
     }
 }

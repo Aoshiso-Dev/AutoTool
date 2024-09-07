@@ -9,7 +9,7 @@ namespace Panels.Command.Interface
 {
     public interface ICondition
     {
-        bool Evaluate(out Exception exception);
+        bool Evaluate(out Exception? exception);
     }
 
     public interface IImageCondition : ICondition

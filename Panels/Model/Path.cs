@@ -18,7 +18,7 @@ namespace Panels.Model
             return System.IO.Path.GetFullPath(path);
         }
 
-        public static string GetApplicationDirectory()
+        public static string? GetApplicationDirectory()
         {
             return System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
         }

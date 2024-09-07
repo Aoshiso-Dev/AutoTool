@@ -4,28 +4,52 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Panels.Command.Define;
 using Panels.Command.Interface;
 
 namespace Panels.Command.Class
 {
     public class RootCommand : IRootCommand
     {
-        public IEnumerable<ICommand> Children { get; set; }
+        public bool IsEnabled { get; set; } = true;
+        public ICommand? Parent { get; set; } = null;
+        public int NestLevel { get; set; } = 0;
+        public ICommandSettings Settings { get; } = new CommandSettings();
 
-        public RootCommand(ICommandSettings settings, IEnumerable<ICommand> children)
+        public IEnumerable<ICommand> Children { get; set; } = new List<ICommand>();
+
+        public RootCommand()
         {
-            Children = children;
+            Children = new List<ICommand>();
         }
 
-        public bool TryExecute(out Exception exception)
+        public bool Execute(CancellationToken cancellationToken)
         {
-            // TODO マクロ実行
-            exception = null;
+            foreach (var command in Children)
+            {
+                if (!command.Execute(cancellationToken))
+                {
+                    return false;
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
+
         public bool CanExecute()
         {
             return true;
+        }
+
+        public RootCommand(ICommandSettings settings)
+        {
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            Children = new List<ICommand>();
         }
     }
 
@@ -33,19 +57,21 @@ namespace Panels.Command.Class
     {
         public bool IsEnabled { get; set; }
         public ICommand? Parent { get; set; }
+        public IEnumerable<ICommand> Children { get; set; }
         public int NestLevel { get; set; }
         public ICommandSettings Settings { get; }
 
         public BaseCommand(ICommand parent, ICommandSettings settings)
         {
             Parent = parent;
-            NestLevel = parent.NestLevel + 1;
-            Settings = settings;
+            NestLevel = parent == null ? 0 : parent.NestLevel + 1;
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            Children = new List<ICommand>();
         }
 
-        public bool TryExecute(out Exception exception)
+        public bool Execute(CancellationToken cancellationToken )
         {
-            throw new NotImplementedException();
+            return true;
         }
         public bool CanExecute()
         {
@@ -55,14 +81,13 @@ namespace Panels.Command.Class
 
     public class WaitImageCommand : BaseCommand, ICommand, IImageCommand
     {
-        new public IImageCommandSettings Settings => base.Settings as IImageCommandSettings;
+        new public IImageCommandSettings Settings => (IImageCommandSettings)base.Settings;
 
         public WaitImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool TryExecute(out Exception exception)
+        new public bool Execute(CancellationToken cancellationToken)
         {
             MessageBox.Show("WaitImageCommand executed.");
-            exception = null;
             return true;
         }
         new public bool CanExecute()
@@ -73,14 +98,13 @@ namespace Panels.Command.Class
 
     public class ClickImageCommand : BaseCommand, ICommand, IImageCommand
     {
-        new public IImageCommandSettings Settings => base.Settings as IImageCommandSettings;
+        new public IImageCommandSettings Settings => (IImageCommandSettings)base.Settings;
 
         public ClickImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool TryExecute(out Exception exception)
+        new public bool Execute(CancellationToken cancellationToken)
         {
             MessageBox.Show("ClickImageCommand executed.");
-            exception = null;
             return true;
         }
         new public bool CanExecute()
@@ -91,14 +115,13 @@ namespace Panels.Command.Class
 
     public class HotkeyCommand : BaseCommand, ICommand, IHotkeyCommand
     {
-        new public IHotkeyCommandSettings Settings => base.Settings as IHotkeyCommandSettings;
+        new public IHotkeyCommandSettings Settings => (IHotkeyCommandSettings)base.Settings;
 
         public HotkeyCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool TryExecute(out Exception exception)
+        new public bool Execute(CancellationToken cancellationToken)
         {
             MessageBox.Show("HotkeyCommand executed.");
-            exception = null;
             return true;
         }
         new public bool CanExecute()
@@ -109,14 +132,13 @@ namespace Panels.Command.Class
 
     public class ClickCommand : BaseCommand, ICommand, IClickCommand
     {
-        new public IClickCommandSettings Settings => base.Settings as IClickCommandSettings;
+        new public IClickCommandSettings Settings => (IClickCommandSettings)base.Settings;
 
         public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool TryExecute(out Exception exception)
+        new public bool Execute(CancellationToken cancellationToken)
         {
             MessageBox.Show("ClickCommand executed.");
-            exception = null;
             return true;
         }
         new public bool CanExecute()
@@ -127,14 +149,13 @@ namespace Panels.Command.Class
 
     public class WaitCommand : BaseCommand, ICommand, IWaitCommand
     {
-        new public IWaitCommandSettings Settings => base.Settings as IWaitCommandSettings;
+        new public IWaitCommandSettings Settings => (IWaitCommandSettings)base.Settings;
 
         public WaitCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public bool TryExecute(out Exception exception)
+        new public bool Execute(CancellationToken cancellationToken)
         {
             MessageBox.Show("WaitCommand executed.");
-            exception = null;
             return true;
         }
         new public bool CanExecute()
@@ -145,15 +166,13 @@ namespace Panels.Command.Class
 
     internal class IfCommand : BaseCommand, ICommand, IIfCommand
     {
-        public IEnumerable<ICommand> Children { get; set; }
-        new public IIfCommandSettings Settings => base.Settings as IIfCommandSettings;
+        new public IIfCommandSettings Settings => (IIfCommandSettings)base.Settings;
 
-        public IfCommand(ICommand parent, ICommandSettings settings, IEnumerable<ICommand> children) : base(parent, settings)
+        public IfCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
         {
-            Children = children;
         }
 
-        new public bool TryExecute(out Exception exception)
+        new public bool Execute(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
@@ -163,61 +182,40 @@ namespace Panels.Command.Class
         }
     }
 
-    internal class EndIfCommand : BaseCommand, ICommand, IIfCommand
+    internal class LoopCommand : BaseCommand, ICommand, ILoopCommand
     {
-        public IEnumerable<ICommand> Children { get; set; }
-        new public IIfCommandSettings Settings => base.Settings as IIfCommandSettings;
+        new public ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings;
 
-        public EndIfCommand(ICommand parent, ICommandSettings settings, IEnumerable<ICommand> children) : base(parent, settings)
+        public LoopCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings)
         {
-            Children = children;
         }
 
-        new public bool TryExecute(out Exception exception)
+        new public bool Execute(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
-        }
-        new public bool CanExecute()
-        {
+
+            if ( Children == null)
+            {
+                throw new Exception("Children is null");
+            }
+
+
+            for (int i = 0; i < Settings.LoopCount; i++)
+            {
+                foreach (var command in Children)
+                {
+                    if (!command.Execute(cancellationToken))
+                    {
+                        return false;
+                    }
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+                }
+            }
+
             return true;
-        }
-    }
-
-    internal class LoopStartCommand : BaseCommand, ICommand, ILoopCommand
-    {
-        public int LoopCount { get; set; }
-        public IEnumerable<ICommand> Children { get; set; }
-        new public ILoopCommandSettings Settings => base.Settings as ILoopCommandSettings;
-
-        public LoopStartCommand(ICommand parent, ICommandSettings settings, IEnumerable<ICommand> children) : base(parent, settings)
-        {
-            LoopCount = 0;
-            Children = children;
-        }
-
-        new public bool TryExecute(out Exception exception)
-        {
-            throw new NotImplementedException();
-        }
-        new public bool CanExecute()
-        {
-            return true;
-        }
-    }
-
-    internal class LoopEndCommand : BaseCommand, ICommand, ILoopCommand
-    {
-        public IEnumerable<ICommand> Children { get; set; }
-        new public ILoopCommandSettings Settings => base.Settings as ILoopCommandSettings;
-
-        public LoopEndCommand(ICommand parent, ICommandSettings settings, IEnumerable<ICommand> children) : base(parent, settings)
-        {
-            Children = children;
-        }
-
-        new public bool TryExecute(out Exception exception)
-        {
-            throw new NotImplementedException();
         }
 
         new public bool CanExecute()

@@ -43,6 +43,9 @@
                     <!-- LineNumber -->
                     <DataGridTextColumn Header="" Width="30" Binding="{Binding LineNumber, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
 
+                    <!-- NestLevel -->
+                    <DataGridTextColumn Header="" Width="30" Binding="{Binding NestLevel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
+                    
                     <!-- Command -->
                     <DataGridTemplateColumn Header="Command" Width="150">
                         <DataGridTemplateColumn.CellTemplate>
@@ -165,10 +168,10 @@
                                     </StackPanel>
 
                                     <!-- Loop -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=LoopStart}">
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Loop}">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="LoopCount:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding LoopCount, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBox Text="{Binding LoopCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
                                         </StackPanel>
                                     </StackPanel>
                                     

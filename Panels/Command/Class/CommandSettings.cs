@@ -1,25 +1,29 @@
 ﻿using Panels.Command.Interface;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Panels.Command.Define
 {
-    public class ImageCommandSettings : IImageCommandSettings
+    public class CommandSettings : ICommandSettings
     {
-        public string ImagePath { get; set; }
-        public double Threshold { get; set; }
-        public double Timeout { get; set; }
-        public double Interval { get; set; }
-
-        public ImageCommandSettings()
+        public CommandSettings()
         {
         }
     }
 
-    public class HotkeyCommandSettings : IHotkeyCommandSettings
+    public class ImageCommandSettings : ICommandSettings, IImageCommandSettings
+    {
+        public string ImagePath { get; set; } = string.Empty;
+        public double Threshold { get; set; }
+        public double Timeout { get; set; }
+        public double Interval { get; set; }
+    }
+
+    public class HotkeyCommandSettings : ICommandSettings, IHotkeyCommandSettings
     {
         public bool Ctrl { get; set; }
         public bool Alt { get; set; }
@@ -31,7 +35,7 @@ namespace Panels.Command.Define
         }
     }
 
-    public class ClickCommandSettings : IClickCommandSettings
+    public class ClickCommandSettings : ICommandSettings, IClickCommandSettings
     {
         public System.Windows.Input.MouseButton Button { get; set; }
         public int X { get; set; }
@@ -42,31 +46,23 @@ namespace Panels.Command.Define
         }
     }
 
-    public class WaitCommandSettings : IWaitCommandSettings
+    public class WaitCommandSettings : ICommandSettings, IWaitCommandSettings
     {
-        public double Timeout { get; set; }
+        public double Wait { get; set; }
 
         public WaitCommandSettings()
         {
         }
     }
 
-    public class IfCommandSettings : IIfCommandSettings
+    public class IfCommandSettings : ICommandSettings, IIfCommandSettings
     {
-        public ICondition Condition { get; set; }
-        public ICommand Start { get; set; }
-        public ICommand End { get; set; }
-
-        public IfCommandSettings()
-        {
-        }
+        public object? Condition { get; set; } = new object();
     }
 
-    public class LoopCommandSettings : ILoopCommandSettings
+    public class LoopCommandSettings : ICommandSettings, ILoopCommandSettings
     {
         public int LoopCount { get; set; }
-        public ICommand Start { get; set; }
-        public ICommand End { get; set; }
 
         public LoopCommandSettings()
         {

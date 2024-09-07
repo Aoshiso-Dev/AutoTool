@@ -11,7 +11,7 @@ namespace Panels.Command.Class
 {
     internal class Condition : ICondition
     {
-        public bool Evaluate(out Exception exception)
+        public bool Evaluate(out Exception? exception)
         {
             throw new NotImplementedException();
         }
@@ -19,7 +19,7 @@ namespace Panels.Command.Class
 
     internal class  TrueCondition : Condition
     {
-        public new bool Evaluate(out Exception exception)
+        public new bool Evaluate(out Exception? exception)
         {
             exception = null;
             return true;
@@ -28,7 +28,7 @@ namespace Panels.Command.Class
 
     internal class FalseCondition : Condition
     {
-        public new bool Evaluate(out Exception exception)
+        public new bool Evaluate(out Exception? exception)
         {
             exception = null;
             return false;
@@ -44,7 +44,7 @@ namespace Panels.Command.Class
             Settings = settings;
         }
 
-        public new bool Evaluate(out Exception exception)
+        public new bool Evaluate(out Exception? exception)
         {
             // TODO
             exception = null;
@@ -61,7 +61,7 @@ namespace Panels.Command.Class
             Settings = settings;
         }
 
-        public new bool Evaluate(out Exception exception)
+        public new bool Evaluate(out Exception? exception)
         {
             // TODO
             exception = null;

@@ -79,9 +79,6 @@ public class ImageFinder
             // 画像が見つからない場合、指定した時間待機して再試行
             await Task.Delay(waitTimeMs, cancellationToken); // 非同期で待機
         }
-
-        // タイムアウトまでに画像が見つからなければ null を返す
-        return null;
     }
 
     /*

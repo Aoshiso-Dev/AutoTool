@@ -37,20 +37,16 @@ namespace Panels.Command.Interface
 
     public interface IWaitCommandSettings : ICommandSettings
     {
-        double Timeout { get; set; }
+        double Wait { get; set; }
     }
 
     public interface IIfCommandSettings : ICommandSettings
     {
-        ICommand Start { get; set; }
-        ICommand End { get; set; }
-        ICondition Condition { get; set; }
+        object? Condition { get; set; }
     }
 
     public interface ILoopCommandSettings : ICommandSettings
     {
         int LoopCount { get; set; }
-        ICommand Start { get; set; }
-        ICommand End { get; set; }
     }
 }

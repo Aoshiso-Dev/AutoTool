@@ -13,6 +13,7 @@ using Panels.List.Interface;
 using Panels.List.Class;
 using Panels.List;
 using Panels.Command.Interface;
+using Panels.Command.Factory;
 
 
 namespace Panels.ViewModel
@@ -94,7 +95,14 @@ namespace Panels.ViewModel
         public void Down(int lineNumber) => CommandList.Move(lineNumber - 1, lineNumber);
 
         [RelayCommand]
-        public void Delete(int lineNumber) => CommandList.Remove(CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber));
+        public void Delete(int lineNumber)
+        {
+            var item = CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber);
+            if (item != null)
+            {
+                CommandList.Remove(item);
+            }
+        }
 
         [RelayCommand]
         public void Save() => CommandList.Save();
@@ -116,8 +124,10 @@ namespace Panels.ViewModel
 
             if (captureWindow.ShowDialog() == true)
             {
-                var imageItem = item as IImageCommandSettings;
-                imageItem.ImagePath = capturePath;
+                if (item is IImageCommandSettings imageItem)
+                {
+                    imageItem.ImagePath = capturePath;
+                }
             }
         }
 
@@ -127,7 +137,7 @@ namespace Panels.ViewModel
             var item = CommandList[lineNumber - 1];
 
             if (item == null) return;
-            
+
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = "Image Files (*.png;*.jpg;*.bmp)|*.png;*.jpg;*.bmp|All Files (*.*)|*.*",
@@ -137,14 +147,57 @@ namespace Panels.ViewModel
 
             if (dialog.ShowDialog() == true)
             {
-                var imageItem = item as IImageCommandSettings;
-                imageItem.ImagePath = dialog.FileName;
+                if (item is IImageCommandSettings imageItem)
+                {
+                    imageItem.ImagePath = dialog.FileName;
+                }
             }
         }
 
         [RelayCommand]
         public void Run()
         {
+            try {
+                if (_cts == null)
+                {
+                    _cts = new CancellationTokenSource();
+                    RunButtonText = "Stop";
+                    RunButtonColor = Brushes.Red;
+                    RunAsync(_cts.Token);
+                }
+                else
+                {
+                    _cts.Cancel();
+                    _cts = null;
+                    RunButtonText = "Run";
+                    RunButtonColor = Brushes.Green;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public async Task RunAsync(CancellationToken cancellationToken)
+        {
+            //CommandList.CalcurateNestLevel();
+            var macro = MacroFactory.CreateMacro(CommandList.Items);
+
+            try
+            {
+                macro.Execute(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                _cts = null;
+                RunButtonText = "Run";
+                RunButtonColor = Brushes.Green;
+            }
         }
     }
 }

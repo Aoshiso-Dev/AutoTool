@@ -12,7 +12,7 @@ namespace Panels.View
         private Rectangle _selectionRectangle;
 
         // 呼び出し元から設定するためのファイル名プロパティ
-        public string FileName { get; set; }
+        public string FileName { get; set; } = string.Empty;
 
         public CaptureWindow()
         {

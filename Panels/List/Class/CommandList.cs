@@ -29,7 +29,6 @@ namespace Panels.List.Class
                     throw new ArgumentOutOfRangeException(nameof(index), "Index is out of range.");
 
                 Items[index] = value;
-                OnPropertyChanged(nameof(Items));
             }
         }
 
@@ -37,29 +36,23 @@ namespace Panels.List.Class
         {
             Items.Add(item);
 
-            foreach (var i in Items)
-            {
-                i.LineNumber = Items.IndexOf(i) + 1;
-            }
-
-            OnPropertyChanged(nameof(Items));
+            ReorderItems();
+            CalcurateNestLevel();
+            PairLoopItems();
         }
 
         public void Remove(ICommandListItem item)
         {
             Items.Remove(item);
 
-            for(int i = 0; i < Items.Count; i++)
-            {
-                Items[i].LineNumber = i + 1;
-            }
+            ReorderItems();
+            CalcurateNestLevel();
+            PairLoopItems();
         }
 
         public void Clear()
         {
             Items.Clear();
-
-            OnPropertyChanged(nameof(Items));
         }
 
         public void Move(int oldIndex, int newIndex)
@@ -73,12 +66,9 @@ namespace Panels.List.Class
             Items.RemoveAt(oldIndex);
             Items.Insert(newIndex, item);
 
-            foreach (var i in Items)
-            {
-                i.LineNumber = Items.IndexOf(i) + 1;
-            }
-
-            OnPropertyChanged(nameof(Items));
+            ReorderItems();
+            CalcurateNestLevel();
+            PairLoopItems();
         }
 
         public void Copy(int oldIndex, int newIndex)
@@ -91,12 +81,72 @@ namespace Panels.List.Class
             var item = Items[oldIndex];
             Items.Insert(newIndex, item);
 
-            foreach (var i in Items)
+            ReorderItems();
+            CalcurateNestLevel();
+            PairLoopItems();
+        }
+
+        public void ReorderItems()
+        {
+            foreach (var item in Items)
             {
-                i.LineNumber = Items.IndexOf(i) + 1;
+                item.LineNumber = Items.IndexOf(item) + 1;
+            }
+        }
+
+        public void CalcurateNestLevel()
+        {
+            var nestLevel = 0;
+
+            foreach (var item in Items)
+            {
+                if (item.ItemType == ItemType.EndLoop)
+                {
+                    nestLevel--;
+                }
+
+                item.NestLevel = nestLevel;
+
+                if (item.ItemType == ItemType.Loop)
+                {
+                    nestLevel++;
+                }
+
+            }
+            /*
+            nestLevel = 0;
+            var startLoopItems = Items.OfType<ILoopItem>().Where(x => x.ItemType == ItemType.Loop).ToList();
+            foreach (var startLoopItem in startLoopItems)
+            {
+                startLoopItem.NestLevel = nestLevel;
+                nestLevel++;
             }
 
-            OnPropertyChanged(nameof(Items));
+            nestLevel = 0;
+            var endLoopItems = Items.OfType<IEndLoopItem>().Where(x => x.ItemType == ItemType.EndLoop).Reverse().ToList();
+            foreach (var endLoopItem in endLoopItems)
+            {
+                endLoopItem.NestLevel = nestLevel;
+                nestLevel++;
+            }
+            */
+        }
+
+        public void PairLoopItems()
+        {
+            var loopItems = Items.OfType<ILoopItem>().Where(x => x.ItemType == ItemType.Loop).ToList();
+            var endLoopItems = Items.OfType<IEndLoopItem>().Where(x => x.ItemType == ItemType.EndLoop).ToList();
+
+            foreach (var loopItem in loopItems)
+            {
+                var endLoopItem = endLoopItems.FirstOrDefault(x => x.NestLevel == loopItem.NestLevel && x.Pair == null);
+
+                if (endLoopItem != null)
+                {
+                    loopItem.Pair = endLoopItem;
+                    endLoopItem.Pair = loopItem;
+                }
+            }
         }
 
         public void Save()

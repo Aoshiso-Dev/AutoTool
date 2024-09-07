@@ -14,22 +14,26 @@ namespace Panels.List.Interface
         public int LineNumber { get; set; }
         public bool IsRunning { get; set; }
         public string ItemType { get; set; }
+        public int NestLevel { get; set; }
+        public bool IsInLoop { get; set; }
+
+        ICommandListItem Clone();
     }
 
     public interface IWaitImageItem : ICommandListItem
     {
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
-        public TimeSpan Timeout { get; set; }
-        public TimeSpan Interval { get; set; }
+        public double Timeout { get; set; }
+        public double Interval { get; set; }
     }
 
     public interface IClickImageItem : ICommandListItem
     {
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
-        public TimeSpan Timeout { get; set; }
-        public TimeSpan Interval { get; set; }
+        public double Timeout { get; set; }
+        public double Interval { get; set; }
         public System.Windows.Input.MouseButton Button { get; set; }
     }
 
@@ -50,12 +54,12 @@ namespace Panels.List.Interface
 
     public interface IWaitItem : ICommandListItem
     {
-        public TimeSpan Wait { get; set; }
+        public double Wait { get; set; }
     }
 
     public interface IIfItem : ICommandListItem
     {
-        public ConditionType ConditionType { get; set; }
+        public object? Condition { get; set; }
     }
 
     public interface IEndIfItem : ICommandListItem
@@ -65,9 +69,11 @@ namespace Panels.List.Interface
     public interface ILoopItem : ICommandListItem
     {
         public int LoopCount { get; set; }
+        public object? Pair { get; set; }
     }
 
     public interface IEndLoopItem : ICommandListItem
     {
+        public object? Pair { get; set; }
     }
 }
