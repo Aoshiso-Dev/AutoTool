@@ -217,31 +217,68 @@
                                         </StackPanel>
                                     </StackPanel>
                                     
-                                    <!-- If コマンドの設定 -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=If}">
+                                    <!-- IfImageExist -->
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=IfImageExist}">
                                         <StackPanel Orientation="Horizontal">
-                                            <ComboBox ItemsSource="{Binding ConditionTypes}" SelectedItem="{Binding ConditionType}"/>
-                                            <!-- ImageExists -->
-                                            <StackPanel Visibility="{Binding ConditionType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=ImageExists}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="Path:" Width="60" Margin="2"/>
-                                                    <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
-                                                    <Button Content="Browse" Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="Timeout:" Width="60" Margin="2"/>
-                                                    <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                                    <TextBlock Text="ms" Margin="2"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
-                                                    <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                                    <TextBlock Text="ms" Margin="2"/>
-                                                </StackPanel>
-                                            </StackPanel>
+                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                            <Button Content="Browse"
+                                                    Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                    CommandParameter="{Binding LineNumber}"
+                                                    Margin="2"/>
+                                            <Button Content="Capture"
+                                                    Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                    CommandParameter="{Binding LineNumber}"
+                                                    Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Threshold:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="(0.1~1.0)" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Interval:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
                                         </StackPanel>
                                     </StackPanel>
                                     
+                                    <!-- IfImageNotExist -->
+                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=IfImageNotExist}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                            <Button Content="Browse"
+                                                    Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                    CommandParameter="{Binding LineNumber}"
+                                                    Margin="2"/>
+                                            <Button Content="Capture"
+                                                    Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                    CommandParameter="{Binding LineNumber}"
+                                                    Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Threshold:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="(0.1~1.0)" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Interval:" Width="60" Margin="2"/>
+                                            <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <TextBlock Text="ms" Margin="2"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
                                 </StackPanel>
                                 
                             </DataTemplate>

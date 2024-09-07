@@ -8,7 +8,7 @@ using System.IO;
 using System.Windows;
 using Panels.List.Class;
 using Panels.List.Interface;
-using Panels.List;
+using Panels.List.Type;
 
 
 public class JsonSerializerHelper

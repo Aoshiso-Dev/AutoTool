@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Panels.List;
+using System.Windows;
+using Panels.Command.Class;
 
 namespace Panels.List.Class
 {
@@ -14,18 +16,16 @@ namespace Panels.List.Class
     {
         [ObservableProperty]
         private bool _isRunning = false;
-
         [ObservableProperty]
         private int _lineNumber = 0;
-
         [ObservableProperty]
         private string _itemType = "None";
-
         [ObservableProperty]
         private int _nestLevel = 0;
-
         [ObservableProperty]
         private bool _isInLoop = false;
+        [ObservableProperty]
+        private bool _isInIf = false;
 
         public CommandListItem() { }
 
@@ -190,45 +190,78 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class IfItem : CommandListItem, IIfItem, IIfCommandSettings
+    internal partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IImageCommandSettings
     {
         [ObservableProperty]
-        private object? _condition = null;
+        private string _imagePath = string.Empty;
+        [ObservableProperty]
+        private double _threshold = 0.8;
+        [ObservableProperty]
+        private int _timeout = 5000;
+        [ObservableProperty]
+        private int _interval = 500;
         [ObservableProperty]
         private object? _pair = null;
 
 
-        public IfItem() { }
+        public IfImageExistItem() { }
 
-        public IfItem(IfItem? item = null) : base(item)
+        public IfImageExistItem(IfImageExistItem? item = null) : base(item)
         {
             if(item != null)
             {
-                Condition = item.Condition;
+                ImagePath = item.ImagePath;
+                Threshold = item.Threshold;
+                Timeout = item.Timeout;
+                Interval = item.Interval;
                 Pair = item.Pair;
             }
         }
 
         public new ICommandListItem Clone()
         {
-            return new IfItem(this);
+            return new IfImageExistItem(this);
         }
     }
 
-    internal partial class EndIfItem : CommandListItem, IEndIfItem, IIfCommandSettings
+    internal partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IImageCommandSettings
     {
         [ObservableProperty]
-        private object? _condition = null;
+        private string _imagePath = string.Empty;
+        [ObservableProperty]
+        private double _threshold = 0.8;
+        [ObservableProperty]
+        private int _timeout = 5000;
+        [ObservableProperty]
+        private int _interval = 500;
+        [ObservableProperty]
+        private object? _pair = null;
 
 
-        public EndIfItem() { }
-        public EndIfItem(EndIfItem? item = null) : base(item)
+        public IfImageNotExistItem() { }
+
+        public IfImageNotExistItem(IfImageNotExistItem? item = null) : base(item)
         {
-            if(item != null)
+            if (item != null)
             {
-                Condition = item.Condition;
+                ImagePath = item.ImagePath;
+                Threshold = item.Threshold;
+                Timeout = item.Timeout;
+                Interval = item.Interval;
+                Pair = item.Pair;
             }
         }
+
+        public new ICommandListItem Clone()
+        {
+            return new IfImageNotExistItem(this);
+        }
+    }
+
+    internal partial class EndIfItem : CommandListItem, IEndIfItem
+    {
+        public EndIfItem() { }
+        public EndIfItem(EndIfItem? item = null) : base(item) { }
 
         public new ICommandListItem Clone()
         {
@@ -260,20 +293,11 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class EndLoopItem : CommandListItem,IEndLoopItem, ILoopCommandSettings
+    internal partial class EndLoopItem : CommandListItem,IEndLoopItem
     {
-        [ObservableProperty]
-        private int _loopCount = 2;
-
         public EndLoopItem() { }
 
-        public EndLoopItem(EndLoopItem? item = null) : base(item)
-        {
-            if(item != null)
-            {
-                LoopCount = item.LoopCount;
-            }
-        }
+        public EndLoopItem(EndLoopItem? item = null) : base(item) { }
 
         public new ICommandListItem Clone()
         {

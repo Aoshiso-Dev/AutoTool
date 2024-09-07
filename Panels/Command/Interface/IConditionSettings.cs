@@ -14,7 +14,7 @@ namespace Panels.Command.Interface
     {
         string ImagePath { get; set; }
         double Threshold { get; set; }
-        double Timeout { get; set; }
-        double Interval { get; set; }
+        int Timeout { get; set; }
+        int Interval { get; set; }
     }
 }

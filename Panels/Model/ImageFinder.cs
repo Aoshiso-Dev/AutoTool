@@ -58,6 +58,12 @@ public class ImageFinder
                 return null; // ループを終了
             }
 
+            // タイムアウト
+            if (cts.Token.IsCancellationRequested)
+            {
+                return null; // ループを終了
+            }
+
             // スクリーンショットを取得
             using Mat screenMat = ScreenCaptureHelper.CaptureScreen();
 

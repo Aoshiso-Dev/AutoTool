@@ -40,11 +40,6 @@ namespace Panels.Command.Interface
         int Wait { get; set; }
     }
 
-    public interface IIfCommandSettings : ICommandSettings
-    {
-        object? Condition { get; set; }
-    }
-
     public interface ILoopCommandSettings : ICommandSettings
     {
         int LoopCount { get; set; }

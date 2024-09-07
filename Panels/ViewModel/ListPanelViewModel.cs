@@ -11,9 +11,9 @@ using Panels.View;
 using Panels.Model;
 using Panels.List.Interface;
 using Panels.List.Class;
-using Panels.List;
 using Panels.Command.Interface;
 using Panels.Command.Factory;
+using Panels.List.Type;
 
 
 namespace Panels.ViewModel
@@ -38,6 +38,12 @@ namespace Panels.ViewModel
         private string _selectedItemType = string.Empty;
 
         [ObservableProperty]
+        private ObservableCollection<string> _conditionTypes = new();
+
+        [ObservableProperty]
+        private string _selectedConditionType = string.Empty;
+
+        [ObservableProperty]
         private int _executedLineNumber = 0;
 
         public ListPanelViewModel()
@@ -49,8 +55,14 @@ namespace Panels.ViewModel
             ItemTypes.Add(ItemType.Wait);
             ItemTypes.Add(ItemType.Loop);
             ItemTypes.Add(ItemType.EndLoop);
-            //ItemTypes.Add(ItemType.If);
-            //ItemTypes.Add(ItemType.EndIf);
+            ItemTypes.Add(ItemType.IfImageExist);
+            ItemTypes.Add(ItemType.IfImageNotExist);
+            ItemTypes.Add(ItemType.EndIf);
+
+            ConditionTypes.Add(ConditionType.True);
+            ConditionTypes.Add(ConditionType.False);
+            ConditionTypes.Add(ConditionType.ImageExists);
+            ConditionTypes.Add(ConditionType.ImageNotExists);
         }
 
         [RelayCommand]
@@ -82,12 +94,15 @@ namespace Panels.ViewModel
                 case nameof(ItemType.EndLoop):
                     CommandList.Add(new EndLoopItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
                     break;
-                    //case nameof(ItemType.If):
-                    //    CommandList.Add(new IfItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
-                    //    break;
-                    //case nameof(ItemType.EndIf):
-                    //    CommandList.Add(new EndIfItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
-                    //    break;
+                case nameof(ItemType.IfImageExist):
+                     CommandList.Add(new IfImageExistItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                      break;
+                case nameof(ItemType.IfImageNotExist):
+                    CommandList.Add(new IfImageNotExistItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    break;
+                case nameof(ItemType.EndIf):
+                      CommandList.Add(new EndIfItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    break;
             }
         }
 

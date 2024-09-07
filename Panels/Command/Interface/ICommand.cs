@@ -28,6 +28,10 @@ namespace Panels.Command.Interface
     {
     }
 
+    public interface IIfCommand : ICommand
+    {
+    }
+
     public interface IImageCommand : ICommand
     {
         new IImageCommandSettings Settings { get; }
@@ -48,9 +52,14 @@ namespace Panels.Command.Interface
         new IWaitCommandSettings Settings { get; }
     }
 
-    public interface IIfCommand : ICommand
+    public interface IIfImageExistCommand : ICommand, IIfCommand
     {
-        new IIfCommandSettings Settings { get; }
+        new IImageCommandSettings Settings { get; }
+    }
+
+    public interface IIfImageNotExistCommand : ICommand, IIfCommand
+    {
+        new IImageCommandSettings Settings { get; }
     }
 
     public interface ILoopCommand : ICommand

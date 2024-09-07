@@ -16,6 +16,7 @@ namespace Panels.List.Interface
         public string ItemType { get; set; }
         public int NestLevel { get; set; }
         public bool IsInLoop { get; set; }
+        public bool IsInIf { get; set; }
 
         ICommandListItem Clone();
     }
@@ -59,7 +60,25 @@ namespace Panels.List.Interface
 
     public interface IIfItem : ICommandListItem
     {
-        public object? Condition { get; set; }
+        public object? Pair { get; set; }
+    }
+
+    public interface IIfImageExistItem : ICommandListItem, IIfItem
+    {
+        public string ImagePath { get; set; }
+        public double Threshold { get; set; }
+        public int Timeout { get; set; }
+        public int Interval { get; set; }
+        public object? Pair { get; set; }
+    }
+
+    public interface IIfImageNotExistItem : ICommandListItem, IIfItem
+    {
+        public string ImagePath { get; set; }
+        public double Threshold { get; set; }
+        public int Timeout { get; set; }
+        public int Interval { get; set; }
+        public object? Pair { get; set; }
     }
 
     public interface IEndIfItem : ICommandListItem

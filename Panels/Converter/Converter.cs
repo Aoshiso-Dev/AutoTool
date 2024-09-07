@@ -50,29 +50,6 @@ namespace Panels.Converter
         }
     }
 
-    /*
-    // Keyを文字列に変換するコンバータ
-    public class KeyToStringConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is Key key)
-            {
-                return key.ToString();
-            }
-            return string.Empty;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is string keyString && Enum.TryParse(typeof(Key), keyString, out var result))
-            {
-                return result;
-            }
-            return Key.None;
-        }
-    }
-    */
     public class KeyToStringConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)

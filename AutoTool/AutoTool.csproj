@@ -6,7 +6,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Resource\AutoTool.ico</ApplicationIcon>
+    <FileVersion>1.1.0</FileVersion>
+    <AssemblyVersion>1.1.0</AssemblyVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Resource\AutoTool.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="OpenCvSharp4" Version="4.10.0.20240616" />

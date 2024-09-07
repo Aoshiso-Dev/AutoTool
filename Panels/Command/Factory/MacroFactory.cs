@@ -10,6 +10,8 @@ using Panels.List;
 using Panels.List.Interface;
 using Panels.List.Class;
 using System.Windows;
+using System.ComponentModel;
+using System.Diagnostics;
 
 namespace Panels.Command.Factory
 {
@@ -34,12 +36,9 @@ namespace Panels.Command.Factory
         {
             var commands = new List<ICommand>();
 
-            var iterator = items.GetEnumerator();
-
-            while(iterator.MoveNext())
+            foreach(var item in items)
             {
-                var item = iterator.Current;
-
+                Debug.WriteLine($"Create: {item.LineNumber}, {item.ItemType}");
                 var command = CreateCommand(parent, item, items, updateRunning);
 
                 if (command != null)
@@ -55,11 +54,15 @@ namespace Panels.Command.Factory
         {
             if(item.IsInLoop)
             {
-                // Do nothing
-                return new BaseCommand(parent, new CommandSettings());
+                return null;
             }
 
-            ICommand command;
+            //if(item.IsInIf)
+            //{
+            //    return new BaseCommand(parent, new CommandSettings());
+            //}
+
+            ICommand? command;
 
             switch(item)
             {
@@ -78,23 +81,29 @@ namespace Panels.Command.Factory
                 case WaitImageItem waitImageItem:
                     command = CreateWaitImageComand(parent, waitImageItem);
                     break;
-                //case IfItem ifItem:
-                //    command = CreateIfComand(parent, ifItem);
-                //    break;
-                //case EndIfItem endIfItem:
-                //    // Do nothing
-                //    return new BaseCommand(parent, new CommandSettings());
+                case IfImageExistItem ifImageExistItem:
+                    command = CreateIfCommand(parent, ifImageExistItem, items, updateRunnning);
+                    break;
+                case IfImageNotExistItem ifImageNotExistItem:
+                    command = CreateIfCommand(parent, ifImageNotExistItem, items, updateRunnning);
+                    break;
+                case EndIfItem endIfItem:
+                    command = null;
+                    break;
                 case LoopItem loopItem:
                     command = CreateLoopComand(parent, loopItem, items, updateRunnning);
                     break;
                 case EndLoopItem endLoopItem:
-                    // Do nothing
-                    return new BaseCommand(parent, new CommandSettings());
+                    command = null;
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            command.OnCommandRunning += updateRunnning;
+            if (command != null)
+            {
+                command.OnCommandRunning += updateRunnning;
+            }
 
             return command;
         }
@@ -155,15 +164,84 @@ namespace Panels.Command.Factory
             { ListNumber = item.LineNumber };
         }
 
-        //private static IfCommand? CreateIfComand(ICommand parent, IIfItem item)
-        //{
-        //    // TODO
-        //
-        //    return null ?? new IfCommand(parent, new IfCommandSettings() { Condition = null});
-        //}
+        private static ICommand CreateIfCommand(ICommand parent, IIfItem ifItem, IEnumerable<ICommandListItem> items, EventHandler<int> updateRunning)
+        {
+            var endIfItem = ifItem.Pair as ICommandListItem;
+
+            if (endIfItem == null)
+            {
+                throw new Exception("ifItem.Pair is null");
+            }
+
+            // ifItemとendIfItemの間のコマンドを取得
+            var startIfIndex = ifItem.LineNumber;
+            var endIfIndex = endIfItem.LineNumber;
+            var childrenListItems = items.Where(x => x.LineNumber > startIfIndex && x.LineNumber < endIfIndex).ToList();
+
+            if (childrenListItems.Count == 0)
+            {
+                throw new Exception("childrenListItems.Count is 0");
+            }
+
+            // IfCommandを作成
+            IIfCommand ifCommand = new IfCommand(null, new CommandSettings());
+            switch (ifItem)
+            {
+                case IfImageExistItem ifImageExistItem:
+                    ifCommand = new IfImageExistCommand(parent, new ImageCommandSettings()
+                    {
+                        ImagePath = ifImageExistItem.ImagePath,
+                        Threshold = ifImageExistItem.Threshold,
+                        Timeout = ifImageExistItem.Timeout,
+                        Interval = ifImageExistItem.Interval,
+                    })
+                    {
+                        ListNumber = ifImageExistItem.LineNumber,
+                    };
+                    break;
+                case IfImageNotExistItem ifImageNotExistItem:
+                    ifCommand = new IfImageNotExistCommand(parent, new ImageCommandSettings()
+                    {
+                        ImagePath = ifImageNotExistItem.ImagePath,
+                        Threshold = ifImageNotExistItem.Threshold,
+                        Timeout = ifImageNotExistItem.Timeout,
+                        Interval = ifImageNotExistItem.Interval,
+                    })
+                    {
+                        ListNumber = ifImageNotExistItem.LineNumber,
+                    };
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            // IfCommandの子コマンドを作成
+            ifCommand.Children = ListItemToCommand(ifCommand, childrenListItems, updateRunning);
+
+            // IsInIfをtrueにする
+            foreach (var childrenListItem in childrenListItems)
+            {
+                if (childrenListItem is IfImageExistItem)
+                {
+                    continue;
+                }
+                else if (childrenListItem is IfImageNotExistItem)
+                {
+                    continue;
+                }
+
+                if (childrenListItem.NestLevel == ifItem.NestLevel + 1)
+                {
+                    childrenListItem.IsInIf = true;
+                }
+            }
+
+            return ifCommand;
+        }
 
         private static LoopCommand CreateLoopComand(ICommand parent, ILoopItem loopItem, IEnumerable<ICommandListItem> items, EventHandler<int> updateRunning)
         {
+            // endLoopItemを取得
             var endLoopItem = loopItem.Pair as ICommandListItem;
 
             if (endLoopItem == null)
@@ -172,15 +250,14 @@ namespace Panels.Command.Factory
             }
 
             // loopItemとendLoopItemの間のコマンドを取得
-            var startLoopIndex = loopItem.LineNumber - 1;
-            var endLoopIndex = endLoopItem.LineNumber - 1;
-            var childrenListItems = items.Skip(startLoopIndex + 1).Take(endLoopIndex - startLoopIndex - 1).ToList();
+            var childrenListItems = items.Where(x => x.LineNumber > loopItem.LineNumber && x.LineNumber < endLoopItem.LineNumber).ToList();
 
             if (childrenListItems.Count == 0)
             {
                 throw new Exception("childrenListItems.Count is 0");
             }
 
+            // LoopCommandを作成
             var loopCommand = new LoopCommand(parent, new LoopCommandSettings()
             {
                 LoopCount = loopItem.LoopCount,
@@ -189,22 +266,12 @@ namespace Panels.Command.Factory
                 ListNumber = loopItem.LineNumber,
             };
 
+            // LoopCommandの子コマンドを作成
             loopCommand.Children = ListItemToCommand(loopCommand, childrenListItems, updateRunning);
 
-
             // IsInLoopをtrueにする
-            foreach (var childrenListItem in childrenListItems)
-            {
-                if (childrenListItem is LoopItem)
-                {
-                    continue;
-                }
+            childrenListItems.Where(x => x.NestLevel == loopItem.NestLevel + 1).ToList().ForEach(x => x.IsInLoop = true);
 
-                if (childrenListItem.NestLevel == loopItem.NestLevel + 1)
-                {
-                    childrenListItem.IsInLoop = true;
-                }
-            }
 
             return loopCommand;
         }

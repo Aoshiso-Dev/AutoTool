@@ -9,11 +9,8 @@ namespace Panels.Command.Interface
 {
     public interface ICondition
     {
-        bool Evaluate(out Exception? exception);
-    }
+        IConditionSettings Settings { get; }
 
-    public interface IImageCondition : ICondition
-    {
-        IImageConditionSettings Settings { get; }
+        Task<bool> Evaluate(CancellationToken cancellationToken);
     }
 }

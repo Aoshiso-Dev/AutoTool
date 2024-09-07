@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Panels.List
+namespace Panels.List.Type
 {
     public class ItemType
     {
@@ -15,7 +15,8 @@ namespace Panels.List
         public static readonly string Wait = "Wait";
         public static readonly string Loop = "Loop";
         public static readonly string EndLoop = "EndLoop";
-        //public static readonly string If = "If";
-        //public static readonly string EndIf = "EndIf";
+        public static readonly string IfImageExist = "IfImageExist";
+        public static readonly string IfImageNotExist = "IfImageNotExist";
+        public static readonly string EndIf = "EndIf";
     }
 }

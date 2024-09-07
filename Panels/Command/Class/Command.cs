@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -79,6 +82,7 @@ namespace Panels.Command.Class
         {
             OnCommandRunning?.Invoke(this, ListNumber);
             await Task.Delay(0, cancellationToken);
+
             return true;
         }
         public bool CanExecute()
@@ -195,6 +199,8 @@ namespace Panels.Command.Class
 
         new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
+            Debug.WriteLine($"{ListNumber} : WaitCommand");
+
             await base.Execute(cancellationToken);
 
             await Task.Delay(Settings.Wait, cancellationToken);
@@ -209,16 +215,45 @@ namespace Panels.Command.Class
 
     internal class IfCommand : BaseCommand, ICommand, IIfCommand
     {
-        new public IIfCommandSettings Settings => (IIfCommandSettings)base.Settings;
+        public IfCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+    }
+    internal class IfImageExistCommand : BaseCommand, ICommand, IIfImageExistCommand
+    {
+        new public IImageCommandSettings Settings => (IImageCommandSettings)base.Settings;
 
-        public IfCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
+
+        public IfImageExistCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
         {
         }
 
         new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
             await base.Execute(cancellationToken);
-            throw new NotImplementedException();
+
+            if (Children == null)
+            {
+                throw new Exception("Children is null");
+            }
+
+            var point = await ImageFinder.WaitForImageAsync(Settings.ImagePath, Settings.Threshold, Settings.Timeout, Settings.Interval, cancellationToken);
+
+            if (point != null)
+            {
+                foreach (var command in Children)
+                {
+                    if (!await command.Execute(cancellationToken))
+                    {
+                        return false;
+                    }
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
         new public bool CanExecute()
         {
@@ -226,7 +261,52 @@ namespace Panels.Command.Class
         }
     }
 
-    internal class LoopCommand : BaseCommand, ICommand, ILoopCommand
+    internal class IfImageNotExistCommand : BaseCommand, ICommand, IIfImageNotExistCommand
+    {
+        new public IImageCommandSettings Settings => (IImageCommandSettings)base.Settings;
+
+
+        public IfImageNotExistCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
+        {
+        }
+
+        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        {
+            await base.Execute(cancellationToken);
+
+            if (Children == null)
+            {
+                throw new Exception("Children is null");
+            }
+
+            var point = await ImageFinder.WaitForImageAsync(Settings.ImagePath, Settings.Threshold, Settings.Timeout, Settings.Interval, cancellationToken);
+
+            if (point == null)
+            {
+                foreach (var command in Children)
+                {
+                    if (!await command.Execute(cancellationToken))
+                    {
+                        return false;
+                    }
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+        
+        new public bool CanExecute()
+        {
+            return true;
+        }
+    }
+
+        internal class LoopCommand : BaseCommand, ICommand, ILoopCommand
     {
         new public ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings;
 
@@ -236,6 +316,8 @@ namespace Panels.Command.Class
 
         new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
+            Debug.WriteLine($"{ListNumber} : {nameof(LoopCommand)}");
+
             await base.Execute(cancellationToken);
 
             if ( Children == null)

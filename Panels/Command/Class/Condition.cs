@@ -5,67 +5,81 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Panels.Command.Class;
 using Panels.Command.Interface;
 
 namespace Panels.Command.Class
 {
-    internal class Condition : ICondition
+    public partial class Condition : ObservableObject, ICondition
     {
-        public bool Evaluate(out Exception? exception)
+        [ObservableProperty]
+        private IConditionSettings _settings = new ConditionSettings();
+
+        public async Task<bool> Evaluate(CancellationToken cancellationToken)
         {
+            await Task.Delay(0);
             throw new NotImplementedException();
         }
     }
 
-    internal class  TrueCondition : Condition
+    public partial class TrueCondition : ObservableObject, ICondition
     {
-        public new bool Evaluate(out Exception? exception)
+        [ObservableProperty]
+        private IConditionSettings _settings = new ConditionSettings();
+
+        public async Task<bool> Evaluate(CancellationToken cancellationToken)
         {
-            exception = null;
             return true;
         }
     }
 
-    internal class FalseCondition : Condition
+    public partial class FalseCondition : ObservableObject, ICondition
     {
-        public new bool Evaluate(out Exception? exception)
+        [ObservableProperty]
+        private IConditionSettings _settings = new ConditionSettings();
+
+        public async Task<bool> Evaluate(CancellationToken cancellationToken)
         {
-            exception = null;
             return false;
         }
     }
 
-    internal class ImageExistsCondition : Condition, IImageCondition
+    public partial class ImageExistsCondition : ObservableObject, ICondition
     {
-        public IImageConditionSettings Settings { get; set; }
+
+        [ObservableProperty]
+        private IConditionSettings _settings = new ImageConditionSettings();
 
         public ImageExistsCondition(IImageConditionSettings settings)
         {
             Settings = settings;
         }
 
-        public new bool Evaluate(out Exception? exception)
+        public async Task<bool> Evaluate(CancellationToken cancellationToken)
         {
-            // TODO
-            exception = null;
-            return true;
+            var settings = (IImageConditionSettings)Settings;
+            var point = await ImageFinder.WaitForImageAsync(settings.ImagePath, settings.Threshold, settings.Timeout, settings.Interval, cancellationToken);
+
+            return point != null;
         }
     }
 
-    internal class ImageNotExistsCondition : Condition, IImageCondition
+    public partial class ImageNotExistsCondition : ObservableObject, ICondition
     {
-        public IImageConditionSettings Settings { get; set; }
+        [ObservableProperty]
+        private IConditionSettings _settings = new ImageConditionSettings();
 
         public ImageNotExistsCondition(IImageConditionSettings settings)
         {
             Settings = settings;
         }
 
-        public new bool Evaluate(out Exception? exception)
+        public async Task<bool> Evaluate(CancellationToken cancellationToken)
         {
-            // TODO
-            exception = null;
-            return true;
+            var settings = (IImageConditionSettings)Settings;
+            var point = await ImageFinder.WaitForImageAsync(settings.ImagePath, settings.Threshold, settings.Timeout, settings.Interval, cancellationToken);
+            
+            return point == null;
         }
     }
 }

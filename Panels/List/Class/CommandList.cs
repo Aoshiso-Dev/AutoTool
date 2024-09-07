@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Win32;
 using Panels.List.Interface;
+using Panels.List.Type;
 
 namespace Panels.List.Class
 {
@@ -39,6 +40,7 @@ namespace Panels.List.Class
 
             ReorderItems();
             CalcurateNestLevel();
+            PairIfItems();
             PairLoopItems();
         }
 
@@ -48,6 +50,7 @@ namespace Panels.List.Class
 
             ReorderItems();
             CalcurateNestLevel();
+            PairIfItems();
             PairLoopItems();
         }
 
@@ -69,6 +72,7 @@ namespace Panels.List.Class
 
             ReorderItems();
             CalcurateNestLevel();
+            PairIfItems();
             PairLoopItems();
         }
 
@@ -84,6 +88,7 @@ namespace Panels.List.Class
 
             ReorderItems();
             CalcurateNestLevel();
+            PairIfItems();
             PairLoopItems();
         }
 
@@ -105,6 +110,10 @@ namespace Panels.List.Class
                 {
                     nestLevel--;
                 }
+                if(item.ItemType == ItemType.EndIf)
+                {
+                    nestLevel--;
+                }
 
                 item.NestLevel = nestLevel;
 
@@ -112,7 +121,30 @@ namespace Panels.List.Class
                 {
                     nestLevel++;
                 }
+                if (item.ItemType == ItemType.IfImageExist)
+                {
+                    nestLevel++;
+                }
+                if (item.ItemType == ItemType.IfImageNotExist)
+                {
+                    nestLevel++;
+                }
+            }
+        }
 
+        public void PairIfItems()
+        {
+            var ifItems = Items.OfType<IIfItem>().Where(x => x.ItemType == ItemType.IfImageExist || x.ItemType == ItemType.IfImageNotExist).ToList();
+            var endIfItems = Items.OfType<IEndIfItem>().Where(x => x.ItemType == ItemType.EndIf).ToList();
+
+            foreach (var ifItem in ifItems)
+            {
+                var endIfItem = endIfItems.FirstOrDefault(x => x.NestLevel == ifItem.NestLevel);
+
+                if (endIfItem != null)
+                {
+                    ifItem.Pair = endIfItem;
+                }
             }
         }
 

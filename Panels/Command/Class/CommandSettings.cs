@@ -55,11 +55,6 @@ namespace Panels.Command.Define
         }
     }
 
-    public class IfCommandSettings : ICommandSettings, IIfCommandSettings
-    {
-        public object? Condition { get; set; } = new object();
-    }
-
     public class LoopCommandSettings : ICommandSettings, ILoopCommandSettings
     {
         public int LoopCount { get; set; }
