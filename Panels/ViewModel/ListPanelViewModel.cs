@@ -37,6 +37,9 @@ namespace Panels.ViewModel
         [ObservableProperty]
         private string _selectedItemType = string.Empty;
 
+        [ObservableProperty]
+        private int _executedLineNumber = 0;
+
         public ListPanelViewModel()
         {
             ItemTypes.Add(ItemType.WaitImage);
@@ -182,7 +185,7 @@ namespace Panels.ViewModel
         public async Task RunAsync(CancellationToken cancellationToken)
         {
             //CommandList.CalcurateNestLevel();
-            var macro = MacroFactory.CreateMacro(CommandList.Items);
+            var macro = MacroFactory.CreateMacro(CommandList.Items, UpdateRunning);
 
             try
             {
@@ -197,6 +200,19 @@ namespace Panels.ViewModel
                 _cts = null;
                 RunButtonText = "Run";
                 RunButtonColor = Brushes.Green;
+            }
+        }
+
+        private void UpdateRunning(object? sender, int lineNumber)
+        {
+            foreach (var item in CommandList.Items)
+            {
+                item.IsRunning = false;
+            }
+
+            if (lineNumber > 0)
+            {
+                CommandList.Items[lineNumber - 1].IsRunning = true;
             }
         }
     }

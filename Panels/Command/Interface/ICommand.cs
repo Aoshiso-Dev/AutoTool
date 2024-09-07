@@ -11,11 +11,13 @@ namespace Panels.Command.Interface
 
     public interface ICommand
     {
+        int ListNumber { get; set; }
         bool IsEnabled { get; set; }
         ICommand? Parent { get; set; }
         IEnumerable<ICommand> Children { get; set; }
         int NestLevel { get; set; }
         ICommandSettings Settings { get; }
+        EventHandler<int> OnCommandRunning { get; set; }
 
         bool Execute(CancellationToken cancellationToken);
 

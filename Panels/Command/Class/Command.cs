@@ -11,12 +11,14 @@ namespace Panels.Command.Class
 {
     public class RootCommand : IRootCommand
     {
+        public int ListNumber { get; set; } = 0;
         public bool IsEnabled { get; set; } = true;
         public ICommand? Parent { get; set; } = null;
         public int NestLevel { get; set; } = 0;
         public ICommandSettings Settings { get; } = new CommandSettings();
 
         public IEnumerable<ICommand> Children { get; set; } = new List<ICommand>();
+        public EventHandler<int> OnCommandRunning { get; set; }
 
         public RootCommand()
         {
@@ -38,6 +40,8 @@ namespace Panels.Command.Class
                 }
             }
 
+            OnCommandRunning?.Invoke(this, 0);
+
             return true;
         }
 
@@ -55,11 +59,13 @@ namespace Panels.Command.Class
 
     public class BaseCommand : ICommand
     {
+        public int ListNumber { get; set; }
         public bool IsEnabled { get; set; }
         public ICommand? Parent { get; set; }
         public IEnumerable<ICommand> Children { get; set; }
         public int NestLevel { get; set; }
         public ICommandSettings Settings { get; }
+        public EventHandler<int> OnCommandRunning { get; set; }
 
         public BaseCommand(ICommand parent, ICommandSettings settings)
         {
@@ -71,6 +77,7 @@ namespace Panels.Command.Class
 
         public bool Execute(CancellationToken cancellationToken )
         {
+            OnCommandRunning?.Invoke(this, ListNumber);
             return true;
         }
         public bool CanExecute()
@@ -87,6 +94,7 @@ namespace Panels.Command.Class
 
         new public bool Execute(CancellationToken cancellationToken)
         {
+            base.Execute(cancellationToken);
             MessageBox.Show("WaitImageCommand executed.");
             return true;
         }
@@ -104,6 +112,7 @@ namespace Panels.Command.Class
 
         new public bool Execute(CancellationToken cancellationToken)
         {
+            base.Execute(cancellationToken);
             MessageBox.Show("ClickImageCommand executed.");
             return true;
         }
@@ -121,6 +130,7 @@ namespace Panels.Command.Class
 
         new public bool Execute(CancellationToken cancellationToken)
         {
+            base.Execute(cancellationToken);
             MessageBox.Show("HotkeyCommand executed.");
             return true;
         }
@@ -138,6 +148,7 @@ namespace Panels.Command.Class
 
         new public bool Execute(CancellationToken cancellationToken)
         {
+            base.Execute(cancellationToken);
             MessageBox.Show("ClickCommand executed.");
             return true;
         }
@@ -155,6 +166,7 @@ namespace Panels.Command.Class
 
         new public bool Execute(CancellationToken cancellationToken)
         {
+            base.Execute(cancellationToken);
             MessageBox.Show("WaitCommand executed.");
             return true;
         }
@@ -174,6 +186,7 @@ namespace Panels.Command.Class
 
         new public bool Execute(CancellationToken cancellationToken)
         {
+            base.Execute(cancellationToken);
             throw new NotImplementedException();
         }
         new public bool CanExecute()
@@ -192,6 +205,7 @@ namespace Panels.Command.Class
 
         new public bool Execute(CancellationToken cancellationToken)
         {
+            base.Execute(cancellationToken);
 
             if ( Children == null)
             {

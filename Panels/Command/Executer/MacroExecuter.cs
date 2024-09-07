@@ -11,8 +11,6 @@ namespace Panels.Command.Executer
     {
         public static void Execute(IRootCommand macro, CancellationToken cancellationToken)
         {
-            Exception? e = null;
-
             foreach (var command in macro.Children)
             {
                 if (!command.Execute(cancellationToken))
