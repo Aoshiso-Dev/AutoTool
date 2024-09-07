@@ -201,7 +201,7 @@ namespace Panels.List.Class
         [ObservableProperty]
         private int _interval = 500;
         [ObservableProperty]
-        private object? _pair = null;
+        private ICommandListItem? _pair = null;
 
 
         public IfImageExistItem() { }
@@ -235,7 +235,7 @@ namespace Panels.List.Class
         [ObservableProperty]
         private int _interval = 500;
         [ObservableProperty]
-        private object? _pair = null;
+        private ICommandListItem? _pair = null;
 
 
         public IfImageNotExistItem() { }

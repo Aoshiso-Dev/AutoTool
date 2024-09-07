@@ -70,6 +70,7 @@ namespace Panels.Command.Factory
                     command = CreateWaitComand(parent, waitItem);
                     break;
                 case ClickItem clickItem:
+                    MessageBox.Show(clickItem.Button.ToString());
                     command = CreateClickComand(parent, clickItem);
                     break;
                 case HotkeyItem hotkeyItem:
@@ -181,7 +182,7 @@ namespace Panels.Command.Factory
             }
 
             // IfCommandを作成
-            IIfCommand ifCommand = new IfCommand(null, new CommandSettings());
+            IIfCommand ifCommand = new IfCommand(new RootCommand(), new CommandSettings());
             switch (ifItem)
             {
                 case IfImageExistItem ifImageExistItem:

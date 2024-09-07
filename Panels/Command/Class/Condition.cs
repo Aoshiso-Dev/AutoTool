@@ -29,6 +29,7 @@ namespace Panels.Command.Class
 
         public async Task<bool> Evaluate(CancellationToken cancellationToken)
         {
+            await Task.Delay(0);
             return true;
         }
     }
@@ -40,6 +41,7 @@ namespace Panels.Command.Class
 
         public async Task<bool> Evaluate(CancellationToken cancellationToken)
         {
+            await Task.Delay(0);
             return false;
         }
     }

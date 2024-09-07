@@ -43,7 +43,10 @@ public class ScreenCaptureHelper
         var directory = System.IO.Path.GetDirectoryName(filePath);
         if (!System.IO.Directory.Exists(directory))
         {
-            System.IO.Directory.CreateDirectory(directory);
+            if (directory != null)
+            {
+                System.IO.Directory.CreateDirectory(directory);
+            }
         }
 
         image.SaveImage(filePath);

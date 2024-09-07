@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Panels.Command.Define;
 using Panels.Command.Interface;
 
@@ -162,7 +163,12 @@ namespace Panels.Command.Class
     {
         new public IClickCommandSettings Settings => (IClickCommandSettings)base.Settings;
 
-        public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
+        {
+            Settings.Button = Settings.Button;
+            Settings.X = Settings.X;
+            Settings.Y = Settings.Y;
+        }
 
         new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
@@ -310,7 +316,7 @@ namespace Panels.Command.Class
     {
         new public ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings;
 
-        public LoopCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings)
+        public LoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
         {
         }
 

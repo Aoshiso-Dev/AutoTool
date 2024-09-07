@@ -187,19 +187,23 @@
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="X:" Width="60" Margin="2"/>
                                             <TextBox Text="{Binding X, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                            <Button Content="Pick" Command="{Binding DataContext.PickPointCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="Y:" Width="60" Margin="2"/>
                                             <TextBox Text="{Binding Y, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
                                         </StackPanel>
-                                        <!--
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="Button:" Width="60" Margin="2"/>
-                                            <ComboBox ItemsSource="{Binding Buttons}" SelectedItem="{Binding Button}" Width="80" Margin="2"/>
+                                            <!--
+                                            <ComboBox ItemsSource="{Binding DataContext.Buttons, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" SelectedItem="{Binding Button}" Width="80" Margin="2"/>
+                                            -->
+                                            <RadioButton GroupName="Button" Content="Left" Command="{Binding DataContext.CheckLeftMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                            <RadioButton GroupName="Button" Content="Right" Command="{Binding DataContext.CheckRightMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                            <RadioButton GroupName="Button" Content="Middle" Command="{Binding DataContext.CheckMiddleMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
                                         </StackPanel>
-                                        -->
                                     </StackPanel>
-
+                                    
                                     <!-- Wait -->
                                     <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Wait}">
                                         <StackPanel Orientation="Horizontal">

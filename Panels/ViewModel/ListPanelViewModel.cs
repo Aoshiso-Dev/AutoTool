@@ -14,6 +14,8 @@ using Panels.List.Class;
 using Panels.Command.Interface;
 using Panels.Command.Factory;
 using Panels.List.Type;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 
 namespace Panels.ViewModel
@@ -38,10 +40,7 @@ namespace Panels.ViewModel
         private string _selectedItemType = string.Empty;
 
         [ObservableProperty]
-        private ObservableCollection<string> _conditionTypes = new();
-
-        [ObservableProperty]
-        private string _selectedConditionType = string.Empty;
+        private ObservableCollection<MouseButton> _buttons = new();
 
         [ObservableProperty]
         private int _executedLineNumber = 0;
@@ -59,10 +58,9 @@ namespace Panels.ViewModel
             ItemTypes.Add(ItemType.IfImageNotExist);
             ItemTypes.Add(ItemType.EndIf);
 
-            ConditionTypes.Add(ConditionType.True);
-            ConditionTypes.Add(ConditionType.False);
-            ConditionTypes.Add(ConditionType.ImageExists);
-            ConditionTypes.Add(ConditionType.ImageNotExists);
+            Buttons.Add(MouseButton.Left);
+            Buttons.Add(MouseButton.Right);
+            Buttons.Add(MouseButton.Middle);
         }
 
         [RelayCommand]
@@ -139,6 +137,7 @@ namespace Panels.ViewModel
             {
                 // キャプチャウィンドウを表示
                 var captureWindow = new CaptureWindow();
+                captureWindow.Mode = 0; // 選択領域モード
 
                 if (captureWindow.ShowDialog() == true)
                 {
@@ -152,6 +151,27 @@ namespace Panels.ViewModel
                     ScreenCaptureHelper.SaveCapture(capturedMat, $"{capturePath}");
 
                     imageItem.ImagePath = capturePath;
+                }
+            }
+        }
+
+        [RelayCommand]
+        public void PickPoint(int lineNumber)
+        {
+            var item = CommandList[lineNumber - 1];
+
+            if (item == null) return;
+
+            if (item is IClickItem clickItem)
+            {
+                // キャプチャウィンドウを表示
+                var captureWindow = new CaptureWindow();
+                captureWindow.Mode = 1; // ポイント選択モード
+
+                if (captureWindow.ShowDialog() == true)
+                {
+                    clickItem.X = (int)captureWindow.SelectedPoint.X;
+                    clickItem.Y = (int)captureWindow.SelectedPoint.Y;
                 }
             }
         }
@@ -180,7 +200,46 @@ namespace Panels.ViewModel
         }
 
         [RelayCommand]
-        public async void Run()
+        public void CheckLeftMouseButton(int lineNumber)
+        {
+            var item = CommandList[lineNumber - 1];
+
+            if (item == null) return;
+
+            if (item is IClickItem clickItem)
+            {
+                clickItem.Button = MouseButton.Left;
+            }
+        }
+
+        [RelayCommand]
+        public void CheckRightMouseButton(int lineNumber)
+        {
+            var item = CommandList[lineNumber - 1];
+
+            if (item == null) return;
+
+            if (item is IClickItem clickItem)
+            {
+                clickItem.Button = MouseButton.Right;
+            }
+        }
+
+        [RelayCommand]
+        public void CheckMiddleMouseButton(int lineNumber)
+        {
+            var item = CommandList[lineNumber - 1];
+
+            if (item == null) return;
+
+            if (item is IClickItem clickItem)
+            {
+                clickItem.Button = MouseButton.Middle;
+            }
+        }
+
+        [RelayCommand]
+        public async Task Run()
         {
             if (!CommandList.Items.Where(x => x.IsRunning == true).Any())
             {
@@ -188,7 +247,7 @@ namespace Panels.ViewModel
             }
             else
             {
-                _cts.Cancel();
+                _cts?.Cancel();
             }
         }
 

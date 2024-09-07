@@ -60,7 +60,7 @@ namespace Panels.List.Interface
 
     public interface IIfItem : ICommandListItem
     {
-        public object? Pair { get; set; }
+        public ICommandListItem? Pair { get; set; }
     }
 
     public interface IIfImageExistItem : ICommandListItem, IIfItem
@@ -69,7 +69,6 @@ namespace Panels.List.Interface
         public double Threshold { get; set; }
         public int Timeout { get; set; }
         public int Interval { get; set; }
-        public object? Pair { get; set; }
     }
 
     public interface IIfImageNotExistItem : ICommandListItem, IIfItem
@@ -78,7 +77,6 @@ namespace Panels.List.Interface
         public double Threshold { get; set; }
         public int Timeout { get; set; }
         public int Interval { get; set; }
-        public object? Pair { get; set; }
     }
 
     public interface IEndIfItem : ICommandListItem
