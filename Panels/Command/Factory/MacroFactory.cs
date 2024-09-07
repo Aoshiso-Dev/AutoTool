@@ -57,10 +57,10 @@ namespace Panels.Command.Factory
                 return null;
             }
 
-            //if(item.IsInIf)
-            //{
-            //    return new BaseCommand(parent, new CommandSettings());
-            //}
+            if(item.IsInIf)
+            {
+                return new BaseCommand(parent, new CommandSettings());
+            }
 
             ICommand? command;
 
@@ -166,18 +166,15 @@ namespace Panels.Command.Factory
 
         private static ICommand CreateIfCommand(ICommand parent, IIfItem ifItem, IEnumerable<ICommandListItem> items, EventHandler<int> updateRunning)
         {
+            // endIfItemを取得
             var endIfItem = ifItem.Pair as ICommandListItem;
-
             if (endIfItem == null)
             {
                 throw new Exception("ifItem.Pair is null");
             }
 
             // ifItemとendIfItemの間のコマンドを取得
-            var startIfIndex = ifItem.LineNumber;
-            var endIfIndex = endIfItem.LineNumber;
-            var childrenListItems = items.Where(x => x.LineNumber > startIfIndex && x.LineNumber < endIfIndex).ToList();
-
+            var childrenListItems = items.Where(x => x.LineNumber > ifItem.LineNumber && x.LineNumber < endIfItem.LineNumber).ToList();
             if (childrenListItems.Count == 0)
             {
                 throw new Exception("childrenListItems.Count is 0");
@@ -219,22 +216,7 @@ namespace Panels.Command.Factory
             ifCommand.Children = ListItemToCommand(ifCommand, childrenListItems, updateRunning);
 
             // IsInIfをtrueにする
-            foreach (var childrenListItem in childrenListItems)
-            {
-                if (childrenListItem is IfImageExistItem)
-                {
-                    continue;
-                }
-                else if (childrenListItem is IfImageNotExistItem)
-                {
-                    continue;
-                }
-
-                if (childrenListItem.NestLevel == ifItem.NestLevel + 1)
-                {
-                    childrenListItem.IsInIf = true;
-                }
-            }
+            childrenListItems.Where(x => x.NestLevel == ifItem.NestLevel + 1).ToList().ForEach(x => x.IsInIf = true);
 
             return ifCommand;
         }
