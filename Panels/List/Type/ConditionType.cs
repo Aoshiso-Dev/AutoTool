@@ -12,5 +12,16 @@ namespace Panels.List.Type
         public static readonly string False = "False";
         public static readonly string ImageExists = "ImageExists";
         public static readonly string ImageNotExists = "ImageNotExists";
+
+        public static IEnumerable<string> GetTypes()
+        {
+            return new List<string>
+            {
+                True,
+                False,
+                ImageExists,
+                ImageNotExists
+            };
+        }
     }
 }

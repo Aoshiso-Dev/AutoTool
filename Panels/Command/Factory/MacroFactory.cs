@@ -71,7 +71,6 @@ namespace Panels.Command.Factory
                     command = CreateWaitComand(parent, waitItem);
                     break;
                 case ClickItem clickItem:
-                    MessageBox.Show(clickItem.Button.ToString());
                     command = CreateClickComand(parent, clickItem);
                     break;
                 case HotkeyItem hotkeyItem:
@@ -115,7 +114,7 @@ namespace Panels.Command.Factory
 
         private static WaitImageCommand CreateWaitImageComand(ICommand parent, IWaitImageItem item)
         {
-            return new WaitImageCommand(parent, new ImageCommandSettings()
+            return new WaitImageCommand(parent, new WaitImageCommandSettings()
             {
                 ImagePath = item.ImagePath,
                 Threshold = item.Threshold,
@@ -127,7 +126,7 @@ namespace Panels.Command.Factory
 
         private static ClickImageCommand CreateClickImageComand(ICommand parent, IClickImageItem item)
         {
-            return new ClickImageCommand(parent, new ImageCommandSettings()
+            return new ClickImageCommand(parent, new ClickImageCommandSettings()
             {
                 ImagePath = item.ImagePath,
                 Threshold = item.Threshold,
@@ -190,7 +189,7 @@ namespace Panels.Command.Factory
             switch (ifItem)
             {
                 case IfImageExistItem ifImageExistItem:
-                    ifCommand = new IfImageExistCommand(parent, new ImageCommandSettings()
+                    ifCommand = new IfImageExistCommand(parent, new WaitImageCommandSettings()
                     {
                         ImagePath = ifImageExistItem.ImagePath,
                         Threshold = ifImageExistItem.Threshold,
@@ -202,7 +201,7 @@ namespace Panels.Command.Factory
                     };
                     break;
                 case IfImageNotExistItem ifImageNotExistItem:
-                    ifCommand = new IfImageNotExistCommand(parent, new ImageCommandSettings()
+                    ifCommand = new IfImageNotExistCommand(parent, new WaitImageCommandSettings()
                     {
                         ImagePath = ifImageNotExistItem.ImagePath,
                         Threshold = ifImageNotExistItem.Threshold,

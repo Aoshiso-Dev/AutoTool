@@ -15,12 +15,21 @@ namespace Panels.Command.Define
         }
     }
 
-    public class ImageCommandSettings : ICommandSettings, IImageCommandSettings
+    public class WaitImageCommandSettings : ICommandSettings, IWaitImageCommandSettings
     {
         public string ImagePath { get; set; } = string.Empty;
         public double Threshold { get; set; }
         public int Timeout { get; set; }
         public int Interval { get; set; }
+    }
+
+    public class ClickImageCommandSettings : ICommandSettings, IClickImageCommandSettings
+    {
+        public string ImagePath { get; set; } = string.Empty;
+        public double Threshold { get; set; }
+        public int Timeout { get; set; }
+        public int Interval { get; set; }
+        public System.Windows.Input.MouseButton Button { get; set; }
     }
 
     public class HotkeyCommandSettings : ICommandSettings, IHotkeyCommandSettings

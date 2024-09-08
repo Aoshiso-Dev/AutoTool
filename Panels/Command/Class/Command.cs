@@ -93,9 +93,9 @@ namespace Panels.Command.Class
         }
     }
 
-    public class WaitImageCommand : BaseCommand, ICommand, IImageCommand
+    public class WaitImageCommand : BaseCommand, ICommand, IWaitImageCommand
     {
-        new public IImageCommandSettings Settings => (IImageCommandSettings)base.Settings;
+        new public IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings;
 
         public WaitImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
@@ -113,9 +113,9 @@ namespace Panels.Command.Class
         }
     }
 
-    public class ClickImageCommand : BaseCommand, ICommand, IImageCommand
+    public class ClickImageCommand : BaseCommand, ICommand, IClickImageCommand
     {
-        new public IImageCommandSettings Settings => (IImageCommandSettings)base.Settings;
+        new public IClickImageCommandSettings Settings => (IClickImageCommandSettings)base.Settings;
 
         public ClickImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
@@ -127,7 +127,18 @@ namespace Panels.Command.Class
                 
             if( point != null)
             {
-                MouseControlHelper.Click(point.Value.X, point.Value.Y);
+                switch(Settings.Button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        MouseControlHelper.Click(point.Value.X, point.Value.Y);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        MouseControlHelper.RightClick(point.Value.X, point.Value.Y);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        MouseControlHelper.MiddleClick(point.Value.X, point.Value.Y);
+                        break;
+                }
 
                 return true;
             }
@@ -226,7 +237,7 @@ namespace Panels.Command.Class
     }
     internal class IfImageExistCommand : BaseCommand, ICommand, IIfImageExistCommand
     {
-        new public IImageCommandSettings Settings => (IImageCommandSettings)base.Settings;
+        new public IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings;
 
 
         public IfImageExistCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
@@ -270,7 +281,7 @@ namespace Panels.Command.Class
 
     internal class IfImageNotExistCommand : BaseCommand, ICommand, IIfImageNotExistCommand
     {
-        new public IImageCommandSettings Settings => (IImageCommandSettings)base.Settings;
+        new public IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings;
 
 
         public IfImageNotExistCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)

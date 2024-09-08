@@ -47,7 +47,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class WaitImageItem : CommandListItem, IWaitImageItem, IImageCommandSettings
+    internal partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
         private string _imagePath = string.Empty;
@@ -77,7 +77,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class ClickImageItem : CommandListItem, IClickImageItem, IImageCommandSettings
+    internal partial class ClickImageItem : CommandListItem, IClickImageItem, IClickImageCommandSettings
     {
         [ObservableProperty]
         private string _imagePath = string.Empty;
@@ -190,7 +190,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IImageCommandSettings
+    internal partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
         private string _imagePath = string.Empty;
@@ -224,7 +224,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IImageCommandSettings
+    internal partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
         private string _imagePath = string.Empty;

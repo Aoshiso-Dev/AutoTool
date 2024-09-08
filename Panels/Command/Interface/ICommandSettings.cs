@@ -13,7 +13,7 @@ namespace Panels.Command.Interface
     {
     }
 
-    public interface IImageCommandSettings : ICommandSettings
+    public interface IWaitImageCommandSettings : ICommandSettings
     {
         string ImagePath { get; set; }
         double Threshold { get; set; }
@@ -21,6 +21,14 @@ namespace Panels.Command.Interface
         int Interval { get; set; }
     }
 
+    public interface IClickImageCommandSettings : ICommandSettings
+    {
+        string ImagePath { get; set; }
+        double Threshold { get; set; }
+        int Timeout { get; set; }
+        int Interval { get; set; }
+        MouseButton Button { get; set; }
+    }
     public interface IHotkeyCommandSettings : ICommandSettings
     {
         bool Ctrl { get; set; }

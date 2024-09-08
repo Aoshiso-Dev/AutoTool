@@ -32,9 +32,14 @@ namespace Panels.Command.Interface
     {
     }
 
-    public interface IImageCommand : ICommand
+    public interface IWaitImageCommand : ICommand
     {
-        new IImageCommandSettings Settings { get; }
+        new IWaitImageCommandSettings Settings { get; }
+    }
+    
+    public interface IClickImageCommand : ICommand
+    {
+        new IClickImageCommandSettings Settings { get; }
     }
 
     public interface IHotkeyCommand : ICommand
@@ -54,12 +59,12 @@ namespace Panels.Command.Interface
 
     public interface IIfImageExistCommand : ICommand, IIfCommand
     {
-        new IImageCommandSettings Settings { get; }
+        new IWaitImageCommandSettings Settings { get; }
     }
 
     public interface IIfImageNotExistCommand : ICommand, IIfCommand
     {
-        new IImageCommandSettings Settings { get; }
+        new IWaitImageCommandSettings Settings { get; }
     }
 
     public interface ILoopCommand : ICommand

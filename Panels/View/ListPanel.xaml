@@ -152,6 +152,12 @@
                                             <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
                                             <TextBlock Text="ms" Margin="2"/>
                                         </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Button:" Width="60" Margin="2"/>
+                                            <RadioButton GroupName="{Binding LineNumber}"  Content="Left" Command="{Binding DataContext.CheckLeftMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                            <RadioButton GroupName="{Binding LineNumber}"  Content="Right" Command="{Binding DataContext.CheckRightMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                            <RadioButton GroupName="{Binding LineNumber}"  Content="Middle" Command="{Binding DataContext.CheckMiddleMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                        </StackPanel>
                                         <!--
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="Button:" Width="60" Margin="2"/>
@@ -195,12 +201,9 @@
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="Button:" Width="60" Margin="2"/>
-                                            <!--
-                                            <ComboBox ItemsSource="{Binding DataContext.Buttons, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" SelectedItem="{Binding Button}" Width="80" Margin="2"/>
-                                            -->
-                                            <RadioButton GroupName="Button" Content="Left" Command="{Binding DataContext.CheckLeftMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
-                                            <RadioButton GroupName="Button" Content="Right" Command="{Binding DataContext.CheckRightMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
-                                            <RadioButton GroupName="Button" Content="Middle" Command="{Binding DataContext.CheckMiddleMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                            <RadioButton GroupName="{Binding LineNumber}" Content="Left" Command="{Binding DataContext.CheckLeftMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                            <RadioButton GroupName="{Binding LineNumber}" Content="Right" Command="{Binding DataContext.CheckRightMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                            <RadioButton GroupName="{Binding LineNumber}" Content="Middle" Command="{Binding DataContext.CheckMiddleMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
                                         </StackPanel>
                                     </StackPanel>
                                     

@@ -16,6 +16,8 @@ using Panels.Command.Factory;
 using Panels.List.Type;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Panels.Command.Define;
+using System.IO;
 
 
 namespace Panels.ViewModel
@@ -47,21 +49,10 @@ namespace Panels.ViewModel
 
         public ListPanelViewModel()
         {
-            ItemTypes.Add(ItemType.WaitImage);
-            ItemTypes.Add(ItemType.ClickImage);
-            ItemTypes.Add(ItemType.Click);
-            ItemTypes.Add(ItemType.Hotkey);
-            ItemTypes.Add(ItemType.Wait);
-            ItemTypes.Add(ItemType.Loop);
-            ItemTypes.Add(ItemType.EndLoop);
-            ItemTypes.Add(ItemType.Break);
-            ItemTypes.Add(ItemType.IfImageExist);
-            ItemTypes.Add(ItemType.IfImageNotExist);
-            ItemTypes.Add(ItemType.EndIf);
-
-            Buttons.Add(MouseButton.Left);
-            Buttons.Add(MouseButton.Right);
-            Buttons.Add(MouseButton.Middle);
+            foreach(var type in ItemType.GetTypes())
+            {
+                ItemTypes.Add(type);
+            }
         }
 
         [RelayCommand]
@@ -137,24 +128,55 @@ namespace Panels.ViewModel
 
             if (item == null) return;
 
-            if (item is IImageCommandSettings imageItem)
+            // 共通のキャプチャ処理
+            string? CaptureAndSaveImage()
             {
                 // キャプチャウィンドウを表示
-                var captureWindow = new CaptureWindow();
-                captureWindow.Mode = 0; // 選択領域モード
+                var captureWindow = new CaptureWindow
+                {
+                    Mode = 0 // 選択領域モード
+                };
 
                 if (captureWindow.ShowDialog() == true)
                 {
+                    // キャプチャ保存先ディレクトリの存在確認と作成
+                    var captureDirectory = System.IO.Path.Combine(Panels.Model.Path.GetCurrentDirectory(), "Capture");
+                    if (!Directory.Exists(captureDirectory))
+                    {
+                        Directory.CreateDirectory(captureDirectory);
+                    }
+
                     // 現在時間をファイル名として指定する
-                    var capturePath = Path.GetCurrentDirectory() + @"\Capture\" + $"{DateTime.Now:yyyyMMddHHmmss}.png";
+                    var capturePath = System.IO.Path.Combine(captureDirectory, $"{DateTime.Now:yyyyMMddHHmmss}.png");
 
                     // 選択領域をキャプチャ
                     var capturedMat = ScreenCaptureHelper.CaptureRegion(captureWindow.SelectedRegion);
 
                     // 指定されたファイル名で保存
-                    ScreenCaptureHelper.SaveCapture(capturedMat, $"{capturePath}");
+                    ScreenCaptureHelper.SaveCapture(capturedMat, capturePath);
 
-                    imageItem.ImagePath = capturePath;
+                    return capturePath;
+                }
+
+                return null;
+            }
+
+            // IWaitImageCommandSettingsの場合
+            if (item is WaitImageItem waitImageItem)
+            {
+                var capturePath = CaptureAndSaveImage();
+                if (capturePath != null)
+                {
+                    waitImageItem.ImagePath = capturePath;
+                }
+            }
+            // IClickImageCommandSettingsの場合
+            else if (item is ClickImageItem clickImageItem)
+            {
+                var capturePath = CaptureAndSaveImage();
+                if (capturePath != null)
+                {
+                    clickImageItem.ImagePath = capturePath;
                 }
             }
         }
@@ -202,7 +224,7 @@ namespace Panels.ViewModel
                 }
                 else if (item is ClickImageItem clickImageItem)
                 {
-                    imageItem.ImagePath = dialog.FileName;
+                    clickImageItem.ImagePath = dialog.FileName;
                 }
             }
         }
@@ -217,6 +239,10 @@ namespace Panels.ViewModel
             if (item is IClickItem clickItem)
             {
                 clickItem.Button = MouseButton.Left;
+            }
+            else if(item is IClickImageItem clickImageItem)
+            {
+                clickImageItem.Button = MouseButton.Left;
             }
         }
 

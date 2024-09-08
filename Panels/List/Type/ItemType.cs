@@ -19,5 +19,23 @@ namespace Panels.List.Type
         public static readonly string IfImageExist = "IfImageExist";
         public static readonly string IfImageNotExist = "IfImageNotExist";
         public static readonly string EndIf = "EndIf";
+
+        public static IEnumerable<string> GetTypes()
+        {
+            return new List<string>
+            {
+                WaitImage,
+                ClickImage,
+                Click,
+                Hotkey,
+                Wait,
+                Loop,
+                EndLoop,
+                Break,
+                IfImageExist,
+                IfImageNotExist,
+                EndIf
+            };
+        }
     }
 }
