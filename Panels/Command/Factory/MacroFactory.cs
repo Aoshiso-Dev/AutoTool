@@ -106,7 +106,11 @@ namespace Panels.Command.Factory
 
             if (command != null)
             {
-                command.OnCommandRunning += updateRunnning;
+                //command.OnCommandRunningが空なら
+                if (command.OnCommandRunning == null)
+                {
+                    command.OnCommandRunning += updateRunnning;
+                }
             }
 
             return command;

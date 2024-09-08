@@ -6,7 +6,7 @@
              xmlns:vm="clr-namespace:Panels.ViewModel"
              xmlns:converter="clr-namespace:Panels.Converter"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="1200">
+             d:DesignHeight="1000" d:DesignWidth="1000">
 
     <UserControl.Resources>
         <converter:BooleanToTextConverter x:Key="BooleanToTextConverter" TrueText=">>" FalseText=""/>
@@ -19,293 +19,301 @@
         <vm:ListPanelViewModel/>
     </UserControl.DataContext>
 
-    <Grid>
-        <StackPanel>
-            <!-- Buttons -->
-            <StackPanel Orientation="Horizontal">
-                <Button Content="{Binding RunButtonText}" Command="{Binding RunCommand}" Width="100" Margin="2" Foreground="White" Background="{Binding RunButtonColor}"/>
-                <StackPanel>
-                    <Button Content="Save" Command="{Binding SaveCommand}" Width="100" Margin="2"/>
-                    <Button Content="Load" Command="{Binding LoadCommand}" Width="100" Margin="2"/>
-                </StackPanel>
-                <Button Content="Clear" Command="{Binding ClearCommand}" Width="100" Margin="2"/>
-                <StackPanel>
-                    <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" Width="100" Margin="2"/>
-                    <Button Content="Add" Command="{Binding AddCommand}" Width="100" Margin="2"/>
-                </StackPanel>
+    <DockPanel LastChildFill="True">
+        <!--
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        -->
+
+        <!-- Buttons -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+            <Button Content="{Binding RunButtonText}" Command="{Binding RunCommand}" Width="100" Margin="2" Foreground="White" Background="{Binding RunButtonColor}"/>
+            <StackPanel>
+                <Button Content="Save" Command="{Binding SaveCommand}" Width="100" Margin="2"/>
+                <Button Content="Load" Command="{Binding LoadCommand}" Width="100" Margin="2"/>
             </StackPanel>
+            <Button Content="Clear" Command="{Binding ClearCommand}" Width="100" Margin="2"/>
+            <StackPanel>
+                <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" Width="100" Margin="2"/>
+                <Button Content="Add" Command="{Binding AddCommand}" Width="100" Margin="2"/>
+            </StackPanel>
+        </StackPanel>
 
-            <!-- DataGrid -->
-            <DataGrid ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True">
-                
-                <DataGrid.RowStyle>
-                    <Style TargetType="DataGridRow">
-                        <Setter Property="MinHeight" Value="70"/>
+        <!-- DataGrid -->
+        <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" MaxHeight="800">
 
-                        <!-- 通常の行の色 -->
-                        <Setter Property="Background" Value="White"/>
-                        <!-- IsRunning が true の場合、行の背景色を変更 -->
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                <Setter Property="Background" Value="CadetBlue"/>
-                            </DataTrigger>
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="MinHeight" Value="70"/>
 
-                            <DataTrigger Binding="{Binding IsRunning}" Value="False">
-                                <Setter Property="Background" Value="White"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </DataGrid.RowStyle>
-                
-                <DataGrid.Columns>
-                    <!-- IsRunning -->
-                    <DataGridTemplateColumn Header="Run" Width="50">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding IsRunning, Converter={StaticResource BooleanToTextConverter}}" VerticalAlignment="Center"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
+                    <!-- 通常の行の色 -->
+                    <Setter Property="Background" Value="White"/>
+                    <!-- IsRunning が true の場合、行の背景色を変更 -->
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                            <Setter Property="Background" Value="CadetBlue"/>
+                        </DataTrigger>
+
+                        <DataTrigger Binding="{Binding IsRunning}" Value="False">
+                            <Setter Property="Background" Value="White"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+
+            <DataGrid.Columns>
+                <!-- IsRunning -->
+                <DataGridTemplateColumn Header="Run" Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding IsRunning, Converter={StaticResource BooleanToTextConverter}}" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
 
 
-                    <!-- LineNumber -->
-                    <!--
-                    <DataGridTemplateColumn Header="LineNumber" Width="150">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding LineNumber}" VerticalAlignment="Center"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    -->
+                <!-- LineNumber -->
+                <DataGridTemplateColumn Header="LineNumber" Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding LineNumber}" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
 
-                    <!-- NestLevel -->
-                    <!--
+                <!-- NestLevel -->
+                <!--
                     <DataGridTextColumn Header="" Width="30" Binding="{Binding NestLevel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
                     -->
-                    
-                    <!-- Command -->
-                    <DataGridTemplateColumn Header="Command" Width="150">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding ItemType, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
 
-                    <!-- Settings -->
-                    <DataGridTemplateColumn Header="Settings" Width="600">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel>
-                                    <!-- WaitImage -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=WaitImage}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
-                                            <Button Content="Browse"
+                <!-- Command -->
+                <DataGridTemplateColumn Header="Command" Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ItemType, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Settings -->
+                <DataGridTemplateColumn Header="Settings" Width="600">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <!-- WaitImage -->
+                                <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=WaitImage}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                        <Button Content="Browse"
                                                     Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                                                     CommandParameter="{Binding LineNumber}"
                                                     Margin="2"/>
-                                            <Button Content="Capture"
+                                        <Button Content="Capture"
                                                     Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                                                     CommandParameter="{Binding LineNumber}"
                                                     Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Threshold:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="(0.1~1.0)" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Timeout:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Interval:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                        </StackPanel>
                                     </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Threshold:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="(0.1~1.0)" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Interval:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
+                                </StackPanel>
 
-                                    <!-- ClickImage -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=ClickImage}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
-                                            <Button Content="Browse" Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
-                                            <Button Content="Capture" Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Threshold:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="(0.1~1.0)" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Timeout:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Interval:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Button:" Width="60" Margin="2"/>
-                                            <RadioButton GroupName="{Binding LineNumber}"  Content="Left" Command="{Binding DataContext.CheckLeftMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
-                                            <RadioButton GroupName="{Binding LineNumber}"  Content="Right" Command="{Binding DataContext.CheckRightMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
-                                            <RadioButton GroupName="{Binding LineNumber}"  Content="Middle" Command="{Binding DataContext.CheckMiddleMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
-                                        </StackPanel>
-                                        <!--
+                                <!-- ClickImage -->
+                                <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=ClickImage}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                        <Button Content="Browse" Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                        <Button Content="Capture" Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Threshold:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="(0.1~1.0)" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Interval:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Button:" Width="60" Margin="2"/>
+                                        <RadioButton GroupName="{Binding LineNumber}"  Content="Left" IsChecked="False" Command="{Binding DataContext.CheckLeftMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                        <RadioButton GroupName="{Binding LineNumber}"  Content="Right" IsChecked="False" Command="{Binding DataContext.CheckRightMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                        <RadioButton GroupName="{Binding LineNumber}"  Content="Middle" IsChecked="False" Command="{Binding DataContext.CheckMiddleMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                    </StackPanel>
+                                    <!--
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="Button:" Width="60" Margin="2"/>
                                             <ComboBox ItemsSource="{Binding Buttons}" SelectedItem="{Binding Button}" Width="80" Margin="2"/>
                                         </StackPanel>
                                         -->
-                                    </StackPanel>
+                                </StackPanel>
 
-                                    <!-- Hotkey -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Hotkey}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Ctrl:" Width="60" Margin="2"/>
-                                            <CheckBox IsChecked="{Binding Ctrl, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Shift:" Width="60" Margin="2"/>
-                                            <CheckBox IsChecked="{Binding Shift, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Alt:" Width="60" Margin="2"/>
-                                            <CheckBox IsChecked="{Binding Alt, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Key:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource KeyToStringConverter}}"
+                                <!-- Hotkey -->
+                                <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Hotkey}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Ctrl:" Width="60" Margin="2"/>
+                                        <CheckBox IsChecked="{Binding Ctrl, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Shift:" Width="60" Margin="2"/>
+                                        <CheckBox IsChecked="{Binding Shift, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Alt:" Width="60" Margin="2"/>
+                                        <CheckBox IsChecked="{Binding Alt, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Key:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource KeyToStringConverter}}"
                                              Width="50" Margin="2"
                                              converter:KeyInputBehavior.Key="{Binding Key, Mode=TwoWay}"/>
-                                        </StackPanel>
                                     </StackPanel>
-                                    
-                                    <!-- Click -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Click}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="X:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding X, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <Button Content="Pick" Command="{Binding DataContext.PickPointCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Y:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Y, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Button:" Width="60" Margin="2"/>
-                                            <RadioButton GroupName="{Binding LineNumber}" Content="Left" Command="{Binding DataContext.CheckLeftMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
-                                            <RadioButton GroupName="{Binding LineNumber}" Content="Right" Command="{Binding DataContext.CheckRightMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
-                                            <RadioButton GroupName="{Binding LineNumber}" Content="Middle" Command="{Binding DataContext.CheckMiddleMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
-                                        </StackPanel>
-                                    </StackPanel>
-                                    
-                                    <!-- Wait -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Wait}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Wait, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                        </StackPanel>
-                                    </StackPanel>
+                                </StackPanel>
 
-                                    <!-- Loop -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Loop}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="LoopCount:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding LoopCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                        </StackPanel>
+                                <!-- Click -->
+                                <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Click}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="X:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding X, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <Button Content="Pick" Command="{Binding DataContext.PickPointCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
                                     </StackPanel>
-                                    
-                                    <!-- IfImageExist -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=IfImageExist}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
-                                            <Button Content="Browse"
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Y:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Y, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Button:" Width="60" Margin="2"/>
+                                        <RadioButton GroupName="{Binding LineNumber}" Content="Left" Command="{Binding DataContext.CheckLeftMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                        <RadioButton GroupName="{Binding LineNumber}" Content="Right" Command="{Binding DataContext.CheckRightMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                        <RadioButton GroupName="{Binding LineNumber}" Content="Middle" Command="{Binding DataContext.CheckMiddleMouseButtonCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="80" Margin="2"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Wait -->
+                                <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Wait}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Wait, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Loop -->
+                                <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=Loop}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="LoopCount:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding LoopCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- IfImageExist -->
+                                <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=IfImageExist}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                        <Button Content="Browse"
                                                     Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                                                     CommandParameter="{Binding LineNumber}"
                                                     Margin="2"/>
-                                            <Button Content="Capture"
+                                        <Button Content="Capture"
                                                     Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                                                     CommandParameter="{Binding LineNumber}"
                                                     Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Threshold:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="(0.1~1.0)" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Timeout:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Interval:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                        </StackPanel>
                                     </StackPanel>
-                                    
-                                    <!-- IfImageNotExist -->
-                                    <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=IfImageNotExist}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Path:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
-                                            <Button Content="Browse"
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Threshold:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="(0.1~1.0)" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Interval:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- IfImageNotExist -->
+                                <StackPanel Visibility="{Binding ItemType, Converter={StaticResource StringToVisibilityConverter}, ConverterParameter=IfImageNotExist}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Path:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="2"/>
+                                        <Button Content="Browse"
                                                     Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                                                     CommandParameter="{Binding LineNumber}"
                                                     Margin="2"/>
-                                            <Button Content="Capture"
+                                        <Button Content="Capture"
                                                     Command="{Binding DataContext.CaptureCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                                                     CommandParameter="{Binding LineNumber}"
                                                     Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Threshold:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="(0.1~1.0)" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Timeout:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Interval:" Width="60" Margin="2"/>
-                                            <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
-                                            <TextBlock Text="ms" Margin="2"/>
-                                        </StackPanel>
                                     </StackPanel>
-
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Threshold:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="(0.1~1.0)" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Interval:" Width="60" Margin="2"/>
+                                        <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="2"/>
+                                        <TextBlock Text="ms" Margin="2"/>
+                                    </StackPanel>
                                 </StackPanel>
-                                
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
 
-                    <!-- Up / Dn -->
-                    <DataGridTemplateColumn Header="" Width="100">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="Up" Command="{Binding DataContext.UpCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
-                                    <Button Content="Dn" Command="{Binding DataContext.DownCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
-                                    <Button Content="Del" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-        </StackPanel>
-    </Grid>
+                            </StackPanel>
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Up / Dn -->
+                <DataGridTemplateColumn Header="" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Up" Command="{Binding DataContext.UpCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                <Button Content="Dn" Command="{Binding DataContext.DownCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                                <Button Content="Del" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding LineNumber}" Margin="2"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Log -->
+        <TextBox  DockPanel.Dock="Bottom" Text="{Binding Log, UpdateSourceTrigger=PropertyChanged}" TextChanged="LogTextBox_TextChanged" Height="100" IsReadOnly="True" VerticalScrollBarVisibility="Auto"/>
+
+    </DockPanel>
 </UserControl>

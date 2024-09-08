@@ -6,10 +6,11 @@
         xmlns:local="clr-namespace:AutoTool"
         xmlns:panels="clr-namespace:Panels.View;assembly=Panels"
         mc:Ignorable="d"
-        Title="AutoTool" Height="760" Width="1280">
+        Title="AutoTool" Height="1000" Width="1100"
+        ResizeMode="NoResize">
     <Grid>
         <StackPanel>
-            <panels:ListPanel/>
+            <panels:ListPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
         </StackPanel>
     </Grid>
 </Window>

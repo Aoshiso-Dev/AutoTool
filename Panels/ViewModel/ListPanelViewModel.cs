@@ -18,6 +18,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Panels.Command.Define;
 using System.IO;
+using System.Windows.Media.Animation;
+using System.Text;
 
 
 namespace Panels.ViewModel
@@ -46,6 +48,10 @@ namespace Panels.ViewModel
 
         [ObservableProperty]
         private int _executedLineNumber = 0;
+
+        [ObservableProperty]
+        private string _log = string.Empty;
+
 
         public ListPanelViewModel()
         {
@@ -316,8 +322,11 @@ namespace Panels.ViewModel
             }
         }
 
-        private void UpdateRunning(object? sender, int lineNumber)
+        private async void UpdateRunning(object? sender, int lineNumber)
         {
+            //CommandList.Items.ToList().ForEach(x => x.IsRunning = false);
+
+            /*
             foreach (var item in CommandList.Items)
             {
                 item.IsRunning = false;
@@ -326,6 +335,27 @@ namespace Panels.ViewModel
             if (lineNumber > 0)
             {
                 CommandList.Items[lineNumber - 1].IsRunning = true;
+                var type = CommandList.Items[lineNumber - 1].ItemType;
+
+                DateTime dateTime = DateTime.Now;
+                Log += $"[{dateTime.ToString()}] Executed: {lineNumber}, {type}\n";
+            }
+            */
+
+            foreach (var item in CommandList.Items)
+            {
+                item.IsRunning = false;
+            }
+
+            if (lineNumber > 0)
+            {
+                CommandList.Items[lineNumber - 1].IsRunning = true;
+
+                await Task.Run(() =>
+                {
+                    DateTime dateTime = DateTime.Now;
+                    Log += $"[{dateTime.ToString()}] Executed: {lineNumber}, {CommandList.Items[lineNumber - 1].ItemType}\n";
+                });
             }
         }
     }

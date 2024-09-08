@@ -24,5 +24,14 @@ namespace Panels.View
         {
             InitializeComponent();
         }
+
+        private void LogTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            if (textBox != null)
+            {
+                textBox.ScrollToEnd();  // ログが更新されたらスクロール
+            }
+        }
     }
 }

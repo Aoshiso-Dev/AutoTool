@@ -83,7 +83,10 @@ namespace Panels.Command.Class
 
         public async Task<bool> Execute(CancellationToken cancellationToken )
         {
-            OnCommandRunning?.Invoke(this, ListNumber);
+            DateTime dateTime = DateTime.Now;
+            Debug.WriteLine($"{dateTime} : {ListNumber} ");
+
+            await Task.Run(() => OnCommandRunning?.Invoke(this, ListNumber));
 
             return true;
         }
@@ -352,14 +355,16 @@ namespace Panels.Command.Class
                 {
                     foreach (var command in Children)
                     {
-                        if (cancellationToken.IsCancellationRequested)
+                        if (cancellationToken.IsCancellationRequested || _cts.IsCancellationRequested)
                         {
                             return false;
                         }
 
+
                         if (!await command.Execute(_cts.Token))
                         {
                             _cts.Cancel();
+                            return true;
                         }
                     }
                 }
@@ -389,8 +394,6 @@ namespace Panels.Command.Class
 
         new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            Debug.WriteLine($"{ListNumber} : {nameof(BreakCommand)}");
-
             await base.Execute(cancellationToken);
 
             return false;
