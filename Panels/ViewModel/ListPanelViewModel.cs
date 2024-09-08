@@ -196,7 +196,11 @@ namespace Panels.ViewModel
 
             if (dialog.ShowDialog() == true)
             {
-                if (item is IImageCommandSettings imageItem)
+                if (item is WaitImageItem waitImageItem)
+                {
+                    waitImageItem.ImagePath = dialog.FileName;
+                }
+                else if (item is ClickImageItem clickImageItem)
                 {
                     imageItem.ImagePath = dialog.FileName;
                 }
