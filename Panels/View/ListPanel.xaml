@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:Panels.ViewModel"
-             xmlns:converter="clr-namespace:Panels.Converter"
+             xmlns:converter="clr-namespace:Panels.View.Converter"
              mc:Ignorable="d"
              d:DesignHeight="1000" d:DesignWidth="1000">
 
@@ -15,32 +15,13 @@
         <converter:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter" />
     </UserControl.Resources>
 
+    <!-- ViewModel -->
     <UserControl.DataContext>
         <vm:ListPanelViewModel/>
     </UserControl.DataContext>
 
     <DockPanel LastChildFill="True">
-        <!--
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        -->
-
-        <!-- Buttons -->
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-            <Button Content="{Binding RunButtonText}" Command="{Binding RunCommand}" Width="100" Margin="2" Foreground="White" Background="{Binding RunButtonColor}"/>
-            <StackPanel>
-                <Button Content="Save" Command="{Binding SaveCommand}" Width="100" Margin="2"/>
-                <Button Content="Load" Command="{Binding LoadCommand}" Width="100" Margin="2"/>
-            </StackPanel>
-            <Button Content="Clear" Command="{Binding ClearCommand}" Width="100" Margin="2"/>
-            <StackPanel>
-                <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" Width="100" Margin="2"/>
-                <Button Content="Add" Command="{Binding AddCommand}" Width="100" Margin="2"/>
-            </StackPanel>
-        </StackPanel>
+        
 
         <!-- DataGrid -->
         <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" MaxHeight="800">
@@ -311,9 +292,6 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
-
-        <!-- Log -->
-        <TextBox  DockPanel.Dock="Bottom" Text="{Binding Log, UpdateSourceTrigger=PropertyChanged}" TextChanged="LogTextBox_TextChanged" Height="100" IsReadOnly="True" VerticalScrollBarVisibility="Auto"/>
 
     </DockPanel>
 </UserControl>

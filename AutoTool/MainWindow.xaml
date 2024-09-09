@@ -5,12 +5,23 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AutoTool"
         xmlns:panels="clr-namespace:Panels.View;assembly=Panels"
+        xmlns:converter="clr-namespace:Panels.View.Converter;assembly=Panels"
+        xmlns:vm="MainW"
         mc:Ignorable="d"
         Title="AutoTool" Height="1000" Width="1100"
         ResizeMode="NoResize">
-    <Grid>
-        <StackPanel>
-            <panels:ListPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
-        </StackPanel>
-    </Grid>
+
+    <Window.DataContext>
+        <local:MainWindowViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+        <local:MainWindowViewModel x:Key="vm"/>
+    </Window.Resources>
+
+    <DockPanel  DataContext="{StaticResource vm}" LastChildFill="True">
+        <panels:ButtonPanel DataContext="{Binding ButtonPanelViewModel}" DockPanel.Dock="Top"/>
+        <panels:LogPanel DataContext="{Binding LogPanelViewModel}" DockPanel.Dock="Bottom" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+        <panels:ListPanel DataContext="{Binding ListPanelViewModel}"/>
+    </DockPanel>
 </Window>

@@ -9,12 +9,17 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.0" />
-    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20240616" />
-    <PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20240616" />
-    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20240616" />
-    <PackageReference Include="OpenCvSharp4.Windows" Version="4.10.0.20240616" />
-    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20240616" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Command\Command.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="View\LogPanel.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 
 </Project>

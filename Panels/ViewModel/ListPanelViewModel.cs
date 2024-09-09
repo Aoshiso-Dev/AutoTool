@@ -1,106 +1,72 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Panels.View;
-using Panels.Model;
-using Panels.List.Interface;
 using Panels.List.Class;
-using Panels.Command.Interface;
-using Panels.Command.Factory;
-using Panels.List.Type;
-using System.Windows.Controls;
 using System.Windows.Input;
-using Panels.Command.Define;
 using System.IO;
-using System.Windows.Media.Animation;
-using System.Text;
+using Panels.Model.MacroFactory;
+using Panels.Model.List.Interface;
+using Panels.Model.List.Type;
+using Panels.Message;
+using CommunityToolkit.Mvvm.Messaging;
+using Panels.Model;
 
 
 namespace Panels.ViewModel
 {
-    internal partial class ListPanelViewModel : ObservableObject
+    public partial class ListPanelViewModel : ObservableObject
     {
-        private CancellationTokenSource? _cts = null;
-
-        [ObservableProperty]
-        private string _runButtonText = "Run";
-
-        [ObservableProperty]
-        private Brush _runButtonColor = Brushes.Green;
-
         [ObservableProperty]
         private CommandList _commandList = new();
 
         [ObservableProperty]
-        private ObservableCollection<string> _itemTypes = new();
-
-        [ObservableProperty]
-        private string _selectedItemType = string.Empty;
-
-        [ObservableProperty]
-        private ObservableCollection<MouseButton> _buttons = new();
-
-        [ObservableProperty]
         private int _executedLineNumber = 0;
-
-        [ObservableProperty]
-        private string _log = string.Empty;
 
 
         public ListPanelViewModel()
         {
-            foreach(var type in ItemType.GetTypes())
-            {
-                ItemTypes.Add(type);
-            }
         }
 
         [RelayCommand]
-        public void Clear() => CommandList.Clear();
-
-        [RelayCommand]
-        public void Add()
+        public void Add(string itemType)
         {
-            switch (SelectedItemType)
+            switch (itemType)
             {
                 case nameof(ItemType.WaitImage):
-                    CommandList.Add(new WaitImageItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    CommandList.Add(new WaitImageItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
                 case nameof(ItemType.ClickImage):
-                    CommandList.Add(new ClickImageItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    CommandList.Add(new ClickImageItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
                 case nameof(ItemType.Click):
-                    CommandList.Add(new ClickItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    CommandList.Add(new ClickItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
                 case nameof(ItemType.Hotkey):
-                    CommandList.Add(new HotkeyItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    CommandList.Add(new HotkeyItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
                 case nameof(ItemType.Wait):
-                    CommandList.Add(new WaitItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    CommandList.Add(new WaitItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
                 case nameof(ItemType.Loop):
-                    CommandList.Add(new LoopItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    CommandList.Add(new LoopItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
                 case nameof(ItemType.EndLoop):
-                    CommandList.Add(new EndLoopItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    CommandList.Add(new EndLoopItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
                 case nameof(ItemType.Break):
-                    CommandList.Add(new BreakItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    CommandList.Add(new BreakItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
                 case nameof(ItemType.IfImageExist):
-                     CommandList.Add(new IfImageExistItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                     CommandList.Add(new IfImageExistItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                       break;
                 case nameof(ItemType.IfImageNotExist):
-                    CommandList.Add(new IfImageNotExistItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                    CommandList.Add(new IfImageNotExistItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
                 case nameof(ItemType.EndIf):
-                      CommandList.Add(new EndIfItem { LineNumber = CommandList.Items.Count + 1, ItemType = SelectedItemType, });
+                      CommandList.Add(new EndIfItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
                     break;
             }
         }
@@ -122,12 +88,6 @@ namespace Panels.ViewModel
         }
 
         [RelayCommand]
-        public void Save() => CommandList.Save();
-
-        [RelayCommand]
-        public void Load() => CommandList.Load();
-
-        [RelayCommand]
         public void Capture(int lineNumber)
         {
             var item = CommandList[lineNumber - 1];
@@ -146,7 +106,7 @@ namespace Panels.ViewModel
                 if (captureWindow.ShowDialog() == true)
                 {
                     // キャプチャ保存先ディレクトリの存在確認と作成
-                    var captureDirectory = System.IO.Path.Combine(Panels.Model.Path.GetCurrentDirectory(), "Capture");
+                    var captureDirectory = System.IO.Path.Combine(Model.Path.GetCurrentDirectory(), "Capture");
                     if (!Directory.Exists(captureDirectory))
                     {
                         Directory.CreateDirectory(captureDirectory);
@@ -275,87 +235,6 @@ namespace Panels.ViewModel
             if (item is IClickItem clickItem)
             {
                 clickItem.Button = MouseButton.Middle;
-            }
-        }
-
-        [RelayCommand]
-        public void Run()
-        {
-            if (!CommandList.Items.Where(x => x.IsRunning == true).Any())
-            {
-                _ = RunAsync();
-            }
-            else
-            {
-                _cts?.Cancel();
-            }
-        }
-
-        public async Task RunAsync()
-        {
-
-            var macro = MacroFactory.CreateMacro(CommandList.Items, UpdateRunning);
-
-            try
-            {
-                _cts = new CancellationTokenSource();
-                RunButtonText = "Stop";
-                RunButtonColor = Brushes.Red;
-
-                await macro.Execute(_cts.Token);
-            }
-            catch (Exception ex)
-            {
-                if (_cts != null && !_cts.Token.IsCancellationRequested)
-                {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            finally
-            {
-                RunButtonText = "Run";
-                RunButtonColor = Brushes.Green;
-                CommandList.Items.Where(x => x.IsRunning).ToList().ForEach(x => x.IsRunning = false);
-
-                _cts?.Dispose();
-                _cts = null;
-            }
-        }
-
-        private async void UpdateRunning(object? sender, int lineNumber)
-        {
-            //CommandList.Items.ToList().ForEach(x => x.IsRunning = false);
-
-            /*
-            foreach (var item in CommandList.Items)
-            {
-                item.IsRunning = false;
-            }
-
-            if (lineNumber > 0)
-            {
-                CommandList.Items[lineNumber - 1].IsRunning = true;
-                var type = CommandList.Items[lineNumber - 1].ItemType;
-
-                DateTime dateTime = DateTime.Now;
-                Log += $"[{dateTime.ToString()}] Executed: {lineNumber}, {type}\n";
-            }
-            */
-
-            foreach (var item in CommandList.Items)
-            {
-                item.IsRunning = false;
-            }
-
-            if (lineNumber > 0)
-            {
-                CommandList.Items[lineNumber - 1].IsRunning = true;
-
-                await Task.Run(() =>
-                {
-                    DateTime dateTime = DateTime.Now;
-                    Log += $"[{dateTime.ToString()}] Executed: {lineNumber}, {CommandList.Items[lineNumber - 1].ItemType}\n";
-                });
             }
         }
     }
