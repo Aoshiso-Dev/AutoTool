@@ -12,6 +12,7 @@ using Panels.Model.List.Type;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
 using System.Security.Cryptography.X509Certificates;
+using Panels.List.Class;
 
 namespace Panels.ViewModel
 {
@@ -20,20 +21,11 @@ namespace Panels.ViewModel
         [ObservableProperty]
         private bool _isRunning = false;
 
-        /*
         [ObservableProperty]
-        private string _runButtonText = "Run";
-
-        [ObservableProperty]
-        private Brush _runButtonColor = Brushes.Green;
-        */
-
-        [ObservableProperty]
-        private ObservableCollection<string> _itemTypes = new ObservableCollection<string>();
+        private ObservableCollection<string> _itemTypes = new();
 
         [ObservableProperty]
         private string _selectedItemType;
-
 
         public ButtonPanelViewModel()
         {
@@ -81,34 +73,5 @@ namespace Panels.ViewModel
         {
             WeakReferenceMessenger.Default.Send(new AddMessage(SelectedItemType));
         }
-
-        /*
-        public void RunButtonColorChange()
-        {
-            if (RunButtonColor == Brushes.Green)
-            {
-                RunButtonColor = Brushes.Red;
-            }
-            else
-            {
-                RunButtonColor = Brushes.Green;
-            }
-        }
-
-        public void RunButtonTextChange()
-        {
-            if (RunButtonText == "Run")
-            {
-                RunButtonText = "Stop";
-            }
-            else
-            {
-                RunButtonText = "Run";
-            }
-        }
-        */
-
-
-
     }
 }

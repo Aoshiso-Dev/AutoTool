@@ -20,7 +20,7 @@
         
 
         <!-- DataGrid -->
-        <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" MaxHeight="800">
+        <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding DataContext.SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" MaxHeight="800">
 
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">

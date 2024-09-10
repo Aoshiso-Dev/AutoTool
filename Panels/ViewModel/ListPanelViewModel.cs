@@ -22,6 +22,9 @@ namespace Panels.ViewModel
         [ObservableProperty]
         private CommandList _commandList = new();
 
+        [ObservableProperty]
+        private int _selectedLineNumber = 0;
+
         //[ObservableProperty]
         private int _executedLineNumber = 0;
         public int ExecutedLineNumber
@@ -47,41 +50,27 @@ namespace Panels.ViewModel
         [RelayCommand]
         public void Add(string itemType)
         {
-            switch (itemType)
+            ICommandListItem? item = itemType switch
             {
-                case nameof(ItemType.WaitImage):
-                    CommandList.Add(new WaitImageItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
-                case nameof(ItemType.ClickImage):
-                    CommandList.Add(new ClickImageItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
-                case nameof(ItemType.Click):
-                    CommandList.Add(new ClickItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
-                case nameof(ItemType.Hotkey):
-                    CommandList.Add(new HotkeyItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
-                case nameof(ItemType.Wait):
-                    CommandList.Add(new WaitItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
-                case nameof(ItemType.Loop):
-                    CommandList.Add(new LoopItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
-                case nameof(ItemType.EndLoop):
-                    CommandList.Add(new EndLoopItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
-                case nameof(ItemType.Break):
-                    CommandList.Add(new BreakItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
-                case nameof(ItemType.IfImageExist):
-                     CommandList.Add(new IfImageExistItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                      break;
-                case nameof(ItemType.IfImageNotExist):
-                    CommandList.Add(new IfImageNotExistItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
-                case nameof(ItemType.EndIf):
-                      CommandList.Add(new EndIfItem { LineNumber = CommandList.Items.Count + 1, ItemType = itemType, });
-                    break;
+                nameof(ItemType.WaitImage) => new WaitImageItem(),
+                nameof(ItemType.ClickImage) => new ClickImageItem(),
+                nameof(ItemType.Click) => new ClickItem(),
+                nameof(ItemType.Hotkey) => new HotkeyItem(),
+                nameof(ItemType.Wait) => new WaitItem(),
+                nameof(ItemType.Loop) => new LoopItem(),
+                nameof(ItemType.EndLoop) => new EndLoopItem(),
+                nameof(ItemType.Break) => new BreakItem(),
+                nameof(ItemType.IfImageExist) => new IfImageExistItem(),
+                nameof(ItemType.IfImageNotExist) => new IfImageNotExistItem(),
+                nameof(ItemType.EndIf) => new EndIfItem(),
+                _ => null
+            };
+
+            if (item != null)
+            {
+                item.LineNumber = CommandList.Items.Count + 1;
+                item.ItemType = itemType;
+                CommandList.Add(item);
             }
         }
 

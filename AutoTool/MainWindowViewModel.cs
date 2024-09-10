@@ -63,7 +63,7 @@ namespace AutoTool
 
             WeakReferenceMessenger.Default.Register<AddMessage>(this, (sender, message) =>
             {
-                ListPanelViewModel.Add(message.ItemType);
+                ListPanelViewModel.Add((message as AddMessage).ItemType);
             });
 
             WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>

@@ -25,17 +25,12 @@
                     </Style>
                 </Button.Style>
             </Button>
-            <Image Source="Resources/Run.png" Width="20" Height="20"/>
-                <StackPanel>
+            <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" VerticalContentAlignment="Center" Width="200" Margin="2"/>
+            <Button Content="Add" Command="{Binding AddCommand}" Width="100" Height="Auto" Margin="2"/>
+            <Button Content="Clear" Command="{Binding ClearCommand}" Width="100" Height="Auto" Margin="2"/>
+            <StackPanel>
                 <Button Content="Save" Command="{Binding SaveCommand}" Width="100" Margin="2"/>
                 <Button Content="Load" Command="{Binding LoadCommand}" Width="100" Margin="2"/>
-            </StackPanel>
-            <StackPanel>
-                <Button Content="Clear" Command="{Binding ClearCommand}" Width="100" Margin="2"/>
-            </StackPanel>
-            <StackPanel>
-                <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" Width="100" Margin="2"/>
-                <Button Content="Add" Command="{Binding AddCommand}" Width="100" Margin="2"/>
             </StackPanel>
         </StackPanel>
     </Grid>
