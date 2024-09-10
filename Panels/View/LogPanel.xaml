@@ -7,10 +7,6 @@
              mc:Ignorable="d"
              d:DesignHeight="1000" d:DesignWidth="1000">
 
-    <UserControl.DataContext>
-        <vm:LogPanelViewModel/>
-    </UserControl.DataContext>
-
     <Grid>
         <TextBox Text="{Binding Log}" Width="Auto" Height="200"/>
     </Grid>

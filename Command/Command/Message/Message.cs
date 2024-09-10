@@ -9,7 +9,7 @@ namespace Command.Message
 {
     public class ExecuteCommandMessage
     {
-        ICommand Command { get; set; }
+        public ICommand Command { get; set; }
         public ExecuteCommandMessage(ICommand command) { Command = command; }
     }
 }

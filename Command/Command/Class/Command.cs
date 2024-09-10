@@ -85,12 +85,7 @@ namespace Command.Class
 
         public async Task<bool> Execute(CancellationToken cancellationToken )
         {
-            DateTime dateTime = DateTime.Now;
-            Debug.WriteLine($"{dateTime} : {LineNumber} ");
-
             WeakReferenceMessenger.Default.Send(new ExecuteCommandMessage(this));
-
-            await Task.Run(() => OnCommandRunning?.Invoke(this, LineNumber));
 
             return true;
         }
@@ -375,7 +370,6 @@ namespace Command.Class
             }
             catch (OperationCanceledException)
             {
-                Debug.WriteLine("Break!!");
             }
             finally
             {

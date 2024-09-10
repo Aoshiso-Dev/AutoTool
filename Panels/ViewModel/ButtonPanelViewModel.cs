@@ -11,18 +11,22 @@ using System.Collections.ObjectModel;
 using Panels.Model.List.Type;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Panels.ViewModel
 {
     public partial class ButtonPanelViewModel : ObservableObject
     {
+        [ObservableProperty]
         private bool _isRunning = false;
 
+        /*
         [ObservableProperty]
         private string _runButtonText = "Run";
 
         [ObservableProperty]
         private Brush _runButtonColor = Brushes.Green;
+        */
 
         [ObservableProperty]
         private ObservableCollection<string> _itemTypes = new ObservableCollection<string>();
@@ -44,10 +48,14 @@ namespace Panels.ViewModel
         [RelayCommand]
         public void Run()
         {
-            WeakReferenceMessenger.Default.Send(new RunMessage());
-
-            RunButtonColorChange();
-            RunButtonTextChange();
+            if (IsRunning)
+            {
+                WeakReferenceMessenger.Default.Send(new StopMessage());
+            }
+            else
+            {
+                WeakReferenceMessenger.Default.Send(new RunMessage());
+            }
         }
 
         [RelayCommand]
@@ -74,6 +82,7 @@ namespace Panels.ViewModel
             WeakReferenceMessenger.Default.Send(new AddMessage(SelectedItemType));
         }
 
+        /*
         public void RunButtonColorChange()
         {
             if (RunButtonColor == Brushes.Green)
@@ -97,6 +106,7 @@ namespace Panels.ViewModel
                 RunButtonText = "Run";
             }
         }
+        */
 
 
 

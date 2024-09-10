@@ -22,8 +22,22 @@ namespace Panels.ViewModel
         [ObservableProperty]
         private CommandList _commandList = new();
 
-        [ObservableProperty]
+        //[ObservableProperty]
         private int _executedLineNumber = 0;
+        public int ExecutedLineNumber
+        {
+            get => _executedLineNumber;
+            set
+            {
+                SetProperty(ref _executedLineNumber, value);
+                CommandList.Items.ToList().ForEach(x => x.IsRunning = false);
+                var cmd = CommandList.Items.Where(x => x.LineNumber == value).FirstOrDefault();
+                if (cmd != null)
+                {
+                    cmd.IsRunning = true;
+                }
+            }
+        }
 
 
         public ListPanelViewModel()

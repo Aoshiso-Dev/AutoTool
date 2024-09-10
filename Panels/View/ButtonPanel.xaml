@@ -8,16 +8,25 @@
              mc:Ignorable="d" 
              d:DesignHeight="50" d:DesignWidth="800">
 
-    <!-- ViewModel -->
-    <UserControl.DataContext>
-        <vm:ButtonPanelViewModel/>
-    </UserControl.DataContext>
-
     <Grid>
         <!-- Buttons -->
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-            <Button Content="{Binding RunButtonText}" Command="{Binding RunCommand}" Width="100" Margin="2" Foreground="White" Background="{Binding RunButtonColor}"/>
-            <StackPanel>
+            <Button Command="{Binding RunCommand}" Width="100" Margin="2" Foreground="White">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="Green"/>
+                        <Setter Property="Content" Value="Run"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                <Setter Property="Background" Value="Red"/>
+                                <Setter Property="Content" Value="Stop"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Image Source="Resources/Run.png" Width="20" Height="20"/>
+                <StackPanel>
                 <Button Content="Save" Command="{Binding SaveCommand}" Width="100" Margin="2"/>
                 <Button Content="Load" Command="{Binding LoadCommand}" Width="100" Margin="2"/>
             </StackPanel>

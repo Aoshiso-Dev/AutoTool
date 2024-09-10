@@ -30,6 +30,27 @@ namespace Panels.View.Converter
         }
     }
 
+    // 数値が一致したらTrueを返すコンバータ
+    public class NumberToBooleanConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            if (values.Length == 2 && values[0] is int lineNumber && values[1] is int executedLineNumber)
+            {
+               Debug.WriteLine($"LineNumber: {lineNumber}, ExecutedLineNumber: {executedLineNumber}");
+
+                return lineNumber == executedLineNumber;
+            }
+
+            return false;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     // 文字列が一致したらVisibleを返すコンバータ
     public class StringToVisibilityConverter : IValueConverter
     {

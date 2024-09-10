@@ -15,11 +15,7 @@
         <local:MainWindowViewModel/>
     </Window.DataContext>
 
-    <Window.Resources>
-        <local:MainWindowViewModel x:Key="vm"/>
-    </Window.Resources>
-
-    <DockPanel  DataContext="{StaticResource vm}" LastChildFill="True">
+    <DockPanel LastChildFill="True">
         <panels:ButtonPanel DataContext="{Binding ButtonPanelViewModel}" DockPanel.Dock="Top"/>
         <panels:LogPanel DataContext="{Binding LogPanelViewModel}" DockPanel.Dock="Bottom" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
         <panels:ListPanel DataContext="{Binding ListPanelViewModel}"/>

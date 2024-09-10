@@ -9,16 +9,12 @@
              d:DesignHeight="1000" d:DesignWidth="1000">
 
     <UserControl.Resources>
+        <converter:NumberToBooleanConverter x:Key="NumberToBooleanConverter"/>
         <converter:BooleanToTextConverter x:Key="BooleanToTextConverter" TrueText=">>" FalseText=""/>
         <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
         <converter:KeyToStringConverter x:Key="KeyToStringConverter" />
         <converter:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter" />
     </UserControl.Resources>
-
-    <!-- ViewModel -->
-    <UserControl.DataContext>
-        <vm:ListPanelViewModel/>
-    </UserControl.DataContext>
 
     <DockPanel LastChildFill="True">
         
@@ -29,46 +25,32 @@
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="MinHeight" Value="70"/>
-
                     <!-- 通常の行の色 -->
                     <Setter Property="Background" Value="White"/>
-                    <!-- IsRunning が true の場合、行の背景色を変更 -->
+                    <!-- 実行中の場合、行の背景色を変更 -->
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                            <Setter Property="Background" Value="CadetBlue"/>
-                        </DataTrigger>
-
-                        <DataTrigger Binding="{Binding IsRunning}" Value="False">
-                            <Setter Property="Background" Value="White"/>
+                            <Setter Property="Background" Value="LightBlue"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </DataGrid.RowStyle>
 
             <DataGrid.Columns>
-                <!-- IsRunning -->
-                <DataGridTemplateColumn Header="Run" Width="50">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding IsRunning, Converter={StaticResource BooleanToTextConverter}}" VerticalAlignment="Center"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-
+                
                 <!-- LineNumber -->
-                <DataGridTemplateColumn Header="LineNumber" Width="150">
+                <DataGridTemplateColumn Header="" Width="30">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding LineNumber}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding LineNumber}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
                 <!-- NestLevel -->
                 <!--
-                    <DataGridTextColumn Header="" Width="30" Binding="{Binding NestLevel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
-                    -->
+                <DataGridTextColumn Header="" Width="30" Binding="{Binding NestLevel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                -->
 
                 <!-- Command -->
                 <DataGridTemplateColumn Header="Command" Width="150">

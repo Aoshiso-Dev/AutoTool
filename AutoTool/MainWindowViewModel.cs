@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 using Panels.List.Class;
 using Panels.Model.MacroFactory;
 using System.Windows;
+using Command.Class;
 using Command.Interface;
 using Command.Message;
 
@@ -18,8 +19,6 @@ namespace AutoTool
 {
     public partial class MainWindowViewModel : ObservableObject
     {
-        private bool _isRunning = false;
-
         private CancellationTokenSource? _cts;
 
         [ObservableProperty]
@@ -39,16 +38,12 @@ namespace AutoTool
 
             WeakReferenceMessenger.Default.Register<RunMessage>(this, async (sender, message) =>
             {
-                if (_isRunning)
-                {
-                    await Run(sender, EventArgs.Empty);
-                }
-                else
-                {
-                    _cts?.Cancel();
-                }
+                await Run();
+            });
 
-                _isRunning = !_isRunning;
+            WeakReferenceMessenger.Default.Register<StopMessage>(this, (sender, message) =>
+            {
+                _cts?.Cancel();
             });
 
             WeakReferenceMessenger.Default.Register<SaveMessage>(this, (sender, message) =>
@@ -68,7 +63,7 @@ namespace AutoTool
 
             WeakReferenceMessenger.Default.Register<AddMessage>(this, (sender, message) =>
             {
-                //ListPanelViewModel.Add(message.ItemType);
+                ListPanelViewModel.Add(message.ItemType);
             });
 
             WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>
@@ -78,23 +73,27 @@ namespace AutoTool
 
             WeakReferenceMessenger.Default.Register<ExecuteCommandMessage>(this, (sender, message) =>
             {
-                var now = DateTime.Now;
-                var command = message as ICommand;
+                var command = (message as ExecuteCommandMessage).Command;
                 if (command != null)
                 {
-                    LogPanelViewModel.Log += $"[{now}] {command.LineNumber} : {command.GetType()}\n";
+                    LogPanelViewModel.Log += $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()}\n";
+
+                    ListPanelViewModel.ExecutedLineNumber = command.LineNumber;
                 }
             });
         }
 
-        public async Task Run(object sender, EventArgs e)
+        public async Task Run()
         {
             var listItems = ListPanelViewModel.CommandList.Items;
-            var macro = MacroFactory.CreateMacro(listItems);
+            var macro = MacroFactory.CreateMacro(listItems) as LoopCommand;
 
             try
             {
+                ButtonPanelViewModel.IsRunning = true;
+
                 _cts = new CancellationTokenSource();
+
                 await macro.Execute(_cts.Token);
             }
             catch (Exception ex)
@@ -111,8 +110,7 @@ namespace AutoTool
                 _cts?.Dispose();
                 _cts = null;
 
-                ButtonPanelViewModel.RunButtonColorChange();
-                ButtonPanelViewModel.RunButtonTextChange();
+                ButtonPanelViewModel.IsRunning = false;
             }
         }
     }
