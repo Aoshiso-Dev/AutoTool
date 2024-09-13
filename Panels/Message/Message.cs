@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Panels.Model.List.Interface;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -36,5 +37,27 @@ namespace Panels.Message
     {
         public string ItemType { get; set; }
         public AddMessage(string itemType) { ItemType = itemType; }
+    }
+
+    public class UpMessage
+    {
+    }
+
+    public class DownMessage
+    {
+    }
+
+    public class DeleteMessage
+    {
+    }
+
+    public class  SelectMessage
+    {
+        public ICommandListItem Item { get; set; }
+        public SelectMessage(ICommandListItem item) { Item = item; }
+    }
+
+    public class ApplyMessage
+    {
     }
 }

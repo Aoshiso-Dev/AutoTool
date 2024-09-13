@@ -28,11 +28,15 @@ namespace AutoTool
         private ListPanelViewModel _listPanelViewModel;
 
         [ObservableProperty]
+        private EditPanelViewModel _editPanelViewModel;
+
+        [ObservableProperty]
         private LogPanelViewModel _logPanelViewModel;
 
         public MainWindowViewModel()
         {
             ListPanelViewModel = new ListPanelViewModel();
+            EditPanelViewModel = new EditPanelViewModel();
             ButtonPanelViewModel = new ButtonPanelViewModel();
             LogPanelViewModel = new LogPanelViewModel();
 
@@ -64,6 +68,34 @@ namespace AutoTool
             WeakReferenceMessenger.Default.Register<AddMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.Add((message as AddMessage).ItemType);
+                ListPanelViewModel.SelectedLineNumber = ListPanelViewModel.CommandList.Items.Count;
+                EditPanelViewModel.Item = ListPanelViewModel.CommandList.Items.Last();
+            });
+
+            WeakReferenceMessenger.Default.Register<UpMessage>(this, (sender, message) =>
+            {
+                ListPanelViewModel.Up();
+            });
+
+            WeakReferenceMessenger.Default.Register<DownMessage>(this, (sender, message) =>
+            {
+                ListPanelViewModel.Down();
+            });
+
+            WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (sender, message) =>
+            {
+                ListPanelViewModel.Delete();
+            });
+
+            WeakReferenceMessenger.Default.Register<SelectMessage>(this, (sender, message) =>
+            {
+                EditPanelViewModel.Item = (message as SelectMessage).Item;
+            });
+
+            WeakReferenceMessenger.Default.Register<ApplyMessage>(this, (sender, message) =>
+            {
+                ListPanelViewModel.UpdateSelectedItem(EditPanelViewModel.Item);
+                ListPanelViewModel.SelectedLineNumber = EditPanelViewModel.Item.LineNumber - 1;
             });
 
             WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>
@@ -91,6 +123,7 @@ namespace AutoTool
             try
             {
                 ButtonPanelViewModel.IsRunning = true;
+                EditPanelViewModel.IsRunning = true;
 
                 _cts = new CancellationTokenSource();
 
@@ -111,6 +144,7 @@ namespace AutoTool
                 _cts = null;
 
                 ButtonPanelViewModel.IsRunning = false;
+                EditPanelViewModel.IsRunning = false;
             }
         }
     }

@@ -20,16 +20,10 @@ namespace Panels.List.Class
         {
             get
             {
-                if (index < 0 || index >= Items.Count)
-                    throw new ArgumentOutOfRangeException(nameof(index), "Index is out of range.");
-
                 return Items[index];
             }
             set
             {
-                if (index < 0 || index >= Items.Count)
-                    throw new ArgumentOutOfRangeException(nameof(index), "Index is out of range.");
-
                 Items[index] = value;
             }
         }
@@ -144,6 +138,7 @@ namespace Panels.List.Class
                 if (endIfItem != null)
                 {
                     ifItem.Pair = endIfItem;
+                    endIfItem.Pair = ifItem;
                 }
             }
         }
@@ -160,6 +155,7 @@ namespace Panels.List.Class
                 if (endLoopItem != null)
                 {
                     loopItem.Pair = endLoopItem;
+                    endLoopItem.Pair = loopItem;
                 }
             }
         }

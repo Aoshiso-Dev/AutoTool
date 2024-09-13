@@ -9,6 +9,8 @@ using System.Windows;
 using Command.Interface;
 using Command.Class;
 using Panels.Model.List.Interface;
+using System.Windows.Controls;
+using System.Text.Json.Serialization;
 
 namespace Panels.List.Class
 {
@@ -17,9 +19,13 @@ namespace Panels.List.Class
         [ObservableProperty]
         private bool _isRunning = false;
         [ObservableProperty]
+        private bool _isSelected = false;
+        [ObservableProperty]
         private int _lineNumber = 0;
         [ObservableProperty]
         private string _itemType = "None";
+        [ObservableProperty]
+        private string _description = string.Empty;
         [ObservableProperty]
         private int _nestLevel = 0;
         [ObservableProperty]
@@ -34,10 +40,12 @@ namespace Panels.List.Class
             if (item != null)
             {
                 IsRunning = item.IsRunning;
+                IsSelected = item.IsSelected;
                 LineNumber = item.LineNumber;
                 ItemType = item.ItemType;
                 NestLevel = item.NestLevel;
                 IsInLoop = item.IsInLoop;
+                
             }
         }
 
@@ -57,6 +65,9 @@ namespace Panels.List.Class
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
+
+        [JsonIgnore]
+        new public string Description => $"Path:{System.IO.Path.GetFileName(ImagePath)} / Threshold:{Threshold} / Timeout:{Timeout} / Interval:{Interval}";
 
         public WaitImageItem() { }
 
@@ -90,6 +101,9 @@ namespace Panels.List.Class
         [ObservableProperty]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
 
+        [JsonIgnore]
+        new public string Description => $"Path:{System.IO.Path.GetFileName(ImagePath)} / Threshold:{Threshold} / Timeout:{Timeout} / Interval:{Interval} / Button:{Button}";
+
         public ClickImageItem() { }
 
         public ClickImageItem(ClickImageItem? item = null) : base(item)
@@ -121,6 +135,9 @@ namespace Panels.List.Class
         [ObservableProperty]
         private System.Windows.Input.Key _key = System.Windows.Input.Key.Escape;
 
+        [JsonIgnore]
+        new public string Description => $"Ctrl:{Ctrl} / Alt:{Alt} / Shift:{Shift} / Key:{Key}";
+
         public HotkeyItem() { }
 
         public HotkeyItem(HotkeyItem? item = null) : base(item)
@@ -149,6 +166,8 @@ namespace Panels.List.Class
         [ObservableProperty]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
 
+        [JsonIgnore]
+        new public string Description => $"X:{X} / Y:{Y} / Button:{Button}";
 
         public ClickItem() { }
 
@@ -173,7 +192,8 @@ namespace Panels.List.Class
         [ObservableProperty]
         private int _wait = 5000;
 
-
+        [JsonIgnore]
+        new public string Description => $"Wait:{Wait}";
         public WaitItem() { }
 
         public WaitItem(WaitItem? item = null) : base(item)
@@ -200,9 +220,11 @@ namespace Panels.List.Class
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
-        [ObservableProperty]
+        [ObservableProperty, JsonIgnore]
         private ICommandListItem? _pair = null;
 
+        [JsonIgnore]
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / Path:{System.IO.Path.GetFileName(ImagePath)} / Threshold:{Threshold} / Timeout:{Timeout} / Interval:{Interval}";
 
         public IfImageExistItem() { }
 
@@ -234,8 +256,11 @@ namespace Panels.List.Class
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
-        [ObservableProperty]
+        [ObservableProperty, JsonIgnore]
         private ICommandListItem? _pair = null;
+
+        [JsonIgnore]
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / Path:{System.IO.Path.GetFileName(ImagePath)} / Threshold:{Threshold} / Timeout:{Timeout} / Interval:{Interval}";
 
 
         public IfImageNotExistItem() { }
@@ -260,6 +285,12 @@ namespace Panels.List.Class
 
     internal partial class EndIfItem : CommandListItem, IEndIfItem
     {
+        [ObservableProperty, JsonIgnore]
+        private ICommandListItem? _pair = null;
+
+        [JsonIgnore]
+        new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
+
         public EndIfItem() { }
         public EndIfItem(EndIfItem? item = null) : base(item) { }
 
@@ -273,8 +304,12 @@ namespace Panels.List.Class
     {
         [ObservableProperty]
         private int _loopCount = 2;
-        [ObservableProperty]
-        private object? _pair = null;
+        [ObservableProperty, JsonIgnore]
+        private ICommandListItem? _pair = null;
+
+        [JsonIgnore]
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / LoopCount:{LoopCount}";
+
 
         public LoopItem() { }
 
@@ -295,6 +330,12 @@ namespace Panels.List.Class
 
     internal partial class EndLoopItem : CommandListItem,IEndLoopItem
     {
+        [ObservableProperty, JsonIgnore]
+        private ICommandListItem? _pair = null;
+
+        [JsonIgnore]
+        new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
+
         public EndLoopItem() { }
 
         public EndLoopItem(EndLoopItem? item = null) : base(item) { }

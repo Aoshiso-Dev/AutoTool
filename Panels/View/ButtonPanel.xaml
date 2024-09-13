@@ -5,8 +5,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Panels.View"
              xmlns:vm="clr-namespace:Panels.ViewModel"
+             xmlns:converter="clr-namespace:Panels.View.Converter"
              mc:Ignorable="d" 
              d:DesignHeight="50" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+
 
     <Grid>
         <!-- Buttons -->
@@ -25,12 +34,16 @@
                     </Style>
                 </Button.Style>
             </Button>
-            <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" VerticalContentAlignment="Center" Width="200" Margin="2"/>
-            <Button Content="Add" Command="{Binding AddCommand}" Width="100" Height="Auto" Margin="2"/>
-            <Button Content="Clear" Command="{Binding ClearCommand}" Width="100" Height="Auto" Margin="2"/>
             <StackPanel>
-                <Button Content="Save" Command="{Binding SaveCommand}" Width="100" Margin="2"/>
-                <Button Content="Load" Command="{Binding LoadCommand}" Width="100" Margin="2"/>
+                <Button Content="Up" Command="{Binding UpCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
+                <Button Content="Down" Command="{Binding DownCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
+            </StackPanel>
+            <Button Content="Add" Command="{Binding AddCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
+            <Button Content="Delete" Command="{Binding DeleteCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
+            <Button Content="Clear" Command="{Binding ClearCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
+            <StackPanel>
+                <Button Content="Save" Command="{Binding SaveCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
+                <Button Content="Load" Command="{Binding LoadCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
             </StackPanel>
         </StackPanel>
     </Grid>

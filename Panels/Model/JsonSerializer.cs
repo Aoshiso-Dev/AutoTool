@@ -22,6 +22,7 @@ public class JsonSerializerHelper
 
         var options = new JsonSerializerOptions
         {
+            ReferenceHandler = ReferenceHandler.Preserve,
             Converters = { new CommandListItemConverter() },
             WriteIndented = true
         };
@@ -39,6 +40,7 @@ public class JsonSerializerHelper
 
         var options = new JsonSerializerOptions
         {
+            ReferenceHandler = ReferenceHandler.Preserve,
             Converters = { new CommandListItemConverter() },
             WriteIndented = true
         };
@@ -50,6 +52,26 @@ public class JsonSerializerHelper
 
 internal class CommandListItemConverter : JsonConverter<ICommandListItem>
 {
+    private readonly Dictionary<string, Type> _itemTypeMapping;
+
+    public CommandListItemConverter()
+    {
+        _itemTypeMapping = new Dictionary<string, Type>
+        {
+            { nameof(ItemType.WaitImage), typeof(WaitImageItem) },
+            { nameof(ItemType.ClickImage), typeof(ClickImageItem) },
+            { nameof(ItemType.Click), typeof(ClickItem) },
+            { nameof(ItemType.Hotkey), typeof(HotkeyItem) },
+            { nameof(ItemType.Wait), typeof(WaitItem) },
+            { nameof(ItemType.Loop), typeof(LoopItem) },
+            { nameof(ItemType.EndLoop), typeof(EndLoopItem) },
+            { nameof(ItemType.Break), typeof(BreakItem) },
+            { nameof(ItemType.IfImageExist), typeof(IfImageExistItem) },
+            { nameof(ItemType.IfImageNotExist), typeof(IfImageNotExistItem) },
+            { nameof(ItemType.EndIf), typeof(EndIfItem) }
+        };
+    }
+
     public override ICommandListItem Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using (JsonDocument doc = JsonDocument.ParseValue(ref reader))
@@ -57,73 +79,60 @@ internal class CommandListItemConverter : JsonConverter<ICommandListItem>
             var jsonObject = doc.RootElement;
             var type = jsonObject.GetProperty("ItemType").GetString();
 
-            return type switch
+            if (_itemTypeMapping.TryGetValue(type, out Type? targetType))
             {
-                nameof(ItemType.WaitImage) => JsonSerializer.Deserialize<WaitImageItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.ClickImage) => JsonSerializer.Deserialize<ClickImageItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.Click) => JsonSerializer.Deserialize<ClickItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.Hotkey) => JsonSerializer.Deserialize<HotkeyItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.Wait) => JsonSerializer.Deserialize<WaitItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.Loop) => JsonSerializer.Deserialize<LoopItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.EndLoop) => JsonSerializer.Deserialize<EndLoopItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.Break) => JsonSerializer.Deserialize<BreakItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.IfImageExist) => JsonSerializer.Deserialize<IfImageExistItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.IfImageNotExist) => JsonSerializer.Deserialize<IfImageNotExistItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                nameof(ItemType.EndIf) => JsonSerializer.Deserialize<EndIfItem>(jsonObject.GetRawText(), options) ?? new CommandListItem(),
-                _ => throw new NotSupportedException($"Type {type} is not supported"),
-            };
+                return (ICommandListItem?)JsonSerializer.Deserialize(jsonObject.GetRawText(), targetType, options)
+                       ?? throw new JsonException($"Failed to deserialize {type}");
+            }
+            throw new NotSupportedException($"Type {type} is not supported");
         }
     }
 
     public override void Write(Utf8JsonWriter writer, ICommandListItem value, JsonSerializerOptions options)
     {
-        if (value is WaitImageItem waitImageItem)
+        // Pair プロパティを一時的に保存
+        object? originalPair = null;
+
+        if (value is IIfItem ifItem)
         {
-            JsonSerializer.Serialize(writer, waitImageItem, options);
+            originalPair = ifItem.Pair;
+            ifItem.Pair = null; // シリアライズ時に Pair を無視
         }
-        else if (value is ClickImageItem clickImageItem)
+        else if (value is IEndIfItem endIfItem)
         {
-            JsonSerializer.Serialize(writer, clickImageItem, options);
+            originalPair = endIfItem.Pair;
+            endIfItem.Pair = null;
         }
-        else if (value is ClickItem clickItem)
+        else if (value is ILoopItem loopItem)
         {
-            JsonSerializer.Serialize(writer, clickItem, options);
+            originalPair = loopItem.Pair;
+            loopItem.Pair = null;
         }
-        else if (value is HotkeyItem hotkeyItem)
+        else if (value is IEndLoopItem endLoopItem)
         {
-            JsonSerializer.Serialize(writer, hotkeyItem, options);
+            originalPair = endLoopItem.Pair;
+            endLoopItem.Pair = null;
         }
-        else if (value is WaitItem waitItem)
+
+        // オブジェクトをシリアライズ
+        JsonSerializer.Serialize(writer, value, value.GetType(), options);
+
+        // 元の Pair の値を復元
+        if (value is IIfItem ifItemRestored)
         {
-            JsonSerializer.Serialize(writer, waitItem, options);
+            ifItemRestored.Pair = originalPair as IIfItem;
         }
-        else if (value is LoopItem loopItem)
+        else if (value is IEndIfItem endIfItemRestored)
         {
-            JsonSerializer.Serialize(writer, loopItem, options);
+            endIfItemRestored.Pair = originalPair as IEndIfItem;
         }
-        else if (value is EndLoopItem endLoopItem)
+        else if (value is ILoopItem loopItemRestored)
         {
-            JsonSerializer.Serialize(writer, endLoopItem, options);
+            loopItemRestored.Pair = originalPair as ILoopItem;
         }
-        else if(value is BreakItem breakItem)
+        else if (value is IEndLoopItem endLoopItemRestored)
         {
-            JsonSerializer.Serialize(writer, breakItem, options);
-        }
-        else if(value is IfImageExistItem ifImageExistItem)
-        {
-            JsonSerializer.Serialize(writer, ifImageExistItem, options);
-        }
-        else if (value is IfImageNotExistItem ifImageNotExistItem)
-        {
-            JsonSerializer.Serialize(writer, ifImageNotExistItem, options);
-        }
-        else if (value is EndIfItem endIfItem)
-        {
-            JsonSerializer.Serialize(writer, endIfItem, options);
-        }
-        else
-        {
-            throw new NotSupportedException($"Type {value.GetType().Name} is not supported");
+            endLoopItemRestored.Pair = originalPair as IEndLoopItem;
         }
     }
 }

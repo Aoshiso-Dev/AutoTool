@@ -22,8 +22,16 @@ namespace Panels.ViewModel
         [ObservableProperty]
         private CommandList _commandList = new();
 
-        [ObservableProperty]
         private int _selectedLineNumber = 0;
+        public int SelectedLineNumber
+        {
+            get => _selectedLineNumber;
+            set
+            {
+                SetProperty(ref _selectedLineNumber, value);
+                OnUpdateSelectedLineNumber();
+            }
+        }
 
         //[ObservableProperty]
         private int _executedLineNumber = 0;
@@ -75,169 +83,81 @@ namespace Panels.ViewModel
         }
 
         [RelayCommand]
-        public void Up(int lineNumber) => CommandList.Move(lineNumber - 1, lineNumber - 2);
-
-        [RelayCommand]
-        public void Down(int lineNumber) => CommandList.Move(lineNumber - 1, lineNumber);
-
-        [RelayCommand]
-        public void Delete(int lineNumber)
+        public void Up()
         {
-            var item = CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber);
+            if(SelectedLineNumber == 0)
+            {
+                return;
+            }
+
+            var selectedBak = SelectedLineNumber;
+            CommandList.Move(SelectedLineNumber, SelectedLineNumber - 1);
+            SelectedLineNumber = selectedBak - 1;
+        }
+
+        [RelayCommand]
+        public void Down()
+        {
+            if(SelectedLineNumber == CommandList.Items.Count - 1)
+            {
+                return;
+            }
+
+            var selectedBak = SelectedLineNumber;
+            CommandList.Move(SelectedLineNumber, SelectedLineNumber + 1);
+            SelectedLineNumber = selectedBak + 1;
+        }
+
+        [RelayCommand]
+        public void Delete()
+        {
+            var item = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
             if (item != null)
             {
-                CommandList.Remove(item);
-            }
-        }
+                var index = CommandList.Items.IndexOf(item);
+                CommandList.Items.RemoveAt(index);
 
-        [RelayCommand]
-        public void Capture(int lineNumber)
-        {
-            var item = CommandList[lineNumber - 1];
-
-            if (item == null) return;
-
-            // 共通のキャプチャ処理
-            string? CaptureAndSaveImage()
-            {
-                // キャプチャウィンドウを表示
-                var captureWindow = new CaptureWindow
+                // LineNumberを振り直す
+                for (int i = index; i < CommandList.Items.Count; i++)
                 {
-                    Mode = 0 // 選択領域モード
-                };
-
-                if (captureWindow.ShowDialog() == true)
-                {
-                    // キャプチャ保存先ディレクトリの存在確認と作成
-                    var captureDirectory = System.IO.Path.Combine(Model.Path.GetCurrentDirectory(), "Capture");
-                    if (!Directory.Exists(captureDirectory))
-                    {
-                        Directory.CreateDirectory(captureDirectory);
-                    }
-
-                    // 現在時間をファイル名として指定する
-                    var capturePath = System.IO.Path.Combine(captureDirectory, $"{DateTime.Now:yyyyMMddHHmmss}.png");
-
-                    // 選択領域をキャプチャ
-                    var capturedMat = ScreenCaptureHelper.CaptureRegion(captureWindow.SelectedRegion);
-
-                    // 指定されたファイル名で保存
-                    ScreenCaptureHelper.SaveCapture(capturedMat, capturePath);
-
-                    return capturePath;
+                    CommandList.Items[i].LineNumber = i + 1;
                 }
 
-                return null;
-            }
-
-            // IWaitImageCommandSettingsの場合
-            if (item is WaitImageItem waitImageItem)
-            {
-                var capturePath = CaptureAndSaveImage();
-                if (capturePath != null)
+                // 選択行を変更する
+                if (CommandList.Items.Count == 0)
                 {
-                    waitImageItem.ImagePath = capturePath;
+                    SelectedLineNumber = 0;
                 }
-            }
-            // IClickImageCommandSettingsの場合
-            else if (item is ClickImageItem clickImageItem)
-            {
-                var capturePath = CaptureAndSaveImage();
-                if (capturePath != null)
+                else if (index == CommandList.Items.Count)
                 {
-                    clickImageItem.ImagePath = capturePath;
+                    SelectedLineNumber = index - 1;
+                }
+                else
+                {
+                    SelectedLineNumber = index;
                 }
             }
         }
 
-        [RelayCommand]
-        public void PickPoint(int lineNumber)
+        private void OnUpdateSelectedLineNumber()
         {
-            var item = CommandList[lineNumber - 1];
-
-            if (item == null) return;
-
-            if (item is IClickItem clickItem)
+            var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
+            if (existingItem != null)
             {
-                // キャプチャウィンドウを表示
-                var captureWindow = new CaptureWindow();
-                captureWindow.Mode = 1; // ポイント選択モード
-
-                if (captureWindow.ShowDialog() == true)
-                {
-                    clickItem.X = (int)captureWindow.SelectedPoint.X;
-                    clickItem.Y = (int)captureWindow.SelectedPoint.Y;
-                }
+                WeakReferenceMessenger.Default.Send(new SelectMessage(existingItem));
             }
         }
 
-        [RelayCommand]
-        public void Browse(int lineNumber)
+        public void UpdateSelectedItem(ICommandListItem item)
         {
-            var item = CommandList[lineNumber - 1];
-
-            if (item == null) return;
-
-            var dialog = new Microsoft.Win32.OpenFileDialog
+            var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == item.LineNumber);
+            if (existingItem != null)
             {
-                Filter = "Image Files (*.png;*.jpg;*.bmp)|*.png;*.jpg;*.bmp|All Files (*.*)|*.*",
-                FilterIndex = 1,
-                Multiselect = false,
-            };
+                var index = CommandList.Items.IndexOf(existingItem);
+                CommandList.Items[index] = item;
 
-            if (dialog.ShowDialog() == true)
-            {
-                if (item is WaitImageItem waitImageItem)
-                {
-                    waitImageItem.ImagePath = dialog.FileName;
-                }
-                else if (item is ClickImageItem clickImageItem)
-                {
-                    clickImageItem.ImagePath = dialog.FileName;
-                }
-            }
-        }
-
-        [RelayCommand]
-        public void CheckLeftMouseButton(int lineNumber)
-        {
-            var item = CommandList[lineNumber - 1];
-
-            if (item == null) return;
-
-            if (item is IClickItem clickItem)
-            {
-                clickItem.Button = MouseButton.Left;
-            }
-            else if(item is IClickImageItem clickImageItem)
-            {
-                clickImageItem.Button = MouseButton.Left;
-            }
-        }
-
-        [RelayCommand]
-        public void CheckRightMouseButton(int lineNumber)
-        {
-            var item = CommandList[lineNumber - 1];
-
-            if (item == null) return;
-
-            if (item is IClickItem clickItem)
-            {
-                clickItem.Button = MouseButton.Right;
-            }
-        }
-
-        [RelayCommand]
-        public void CheckMiddleMouseButton(int lineNumber)
-        {
-            var item = CommandList[lineNumber - 1];
-
-            if (item == null) return;
-
-            if (item is IClickItem clickItem)
-            {
-                clickItem.Button = MouseButton.Middle;
+                // Descriptionを更新する
+                existingItem.Description = item.Description;
             }
         }
     }

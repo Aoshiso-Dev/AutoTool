@@ -73,5 +73,23 @@ namespace Panels.ViewModel
         {
             WeakReferenceMessenger.Default.Send(new AddMessage(SelectedItemType));
         }
+
+        [RelayCommand]
+        public void Up()
+        {
+            WeakReferenceMessenger.Default.Send(new UpMessage());
+        }
+
+        [RelayCommand]
+        public void Down()
+        {
+            WeakReferenceMessenger.Default.Send(new DownMessage());
+        }
+
+        [RelayCommand]
+        public void Delete()
+        {
+            WeakReferenceMessenger.Default.Send(new DeleteMessage());
+        }
     }
 }

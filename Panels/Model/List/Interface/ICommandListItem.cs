@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Panels.Model.List.Interface
@@ -12,7 +13,9 @@ namespace Panels.Model.List.Interface
     {
         public int LineNumber { get; set; }
         public bool IsRunning { get; set; }
+        public bool IsSelected { get; set; }
         public string ItemType { get; set; }
+        public string Description { get; set; }
         public int NestLevel { get; set; }
         public bool IsInLoop { get; set; }
         public bool IsInIf { get; set; }
@@ -59,6 +62,7 @@ namespace Panels.Model.List.Interface
 
     public interface IIfItem : ICommandListItem
     {
+        [JsonIgnore]
         public ICommandListItem? Pair { get; set; }
     }
 
@@ -80,16 +84,21 @@ namespace Panels.Model.List.Interface
 
     public interface IEndIfItem : ICommandListItem
     {
+        [JsonIgnore]
+        public ICommandListItem? Pair { get; set; }
     }
 
     public interface ILoopItem : ICommandListItem
     {
         public int LoopCount { get; set; }
-        public object? Pair { get; set; }
+        [JsonIgnore]
+        public ICommandListItem? Pair { get; set; }
     }
 
     public interface IEndLoopItem : ICommandListItem
     {
+        [JsonIgnore]
+        public ICommandListItem? Pair { get; set; }
     }
 
     public interface IBreakItem : ICommandListItem

@@ -9,6 +9,24 @@ using System.Windows.Controls;
 
 namespace Panels.View.Converter
 {
+    // ブール値を反転するコンバータ
+    public class InverseBooleanConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return !boolValue;
+            }
+            return null;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     // ブール値を文字列に変換するコンバータ
     public class BooleanToTextConverter : IValueConverter
     {
