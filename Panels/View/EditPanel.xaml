@@ -16,58 +16,56 @@
     <Grid>
         <DockPanel LastChildFill="True" Margin="10" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}">
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Visibility="{Binding VisibilityLineNumber}">
-                <TextBlock DockPanel.Dock="Top" Text="Edit :" FontWeight="Bold" FontSize="16" Margin="2"/>
+                <TextBlock DockPanel.Dock="Top" Text="編集 :" FontWeight="Bold" FontSize="16" Margin="2"/>
                 <TextBlock DockPanel.Dock="Top" Text="{Binding LineNumber}" FontWeight="Bold" FontSize="16" Margin="2"/>
                 <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedItemType}" FontWeight="Bold" FontSize="16" Margin="2"/>
                 <Border BorderThickness="5"/>
             </StackPanel>
             <StackPanel>
-                <!-- Command -->
+                <!-- コマンド -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityCommand}">
-                    <TextBlock Text="Command:" Width="60" Margin="2"/>
+                    <TextBlock Text="コマンド:" Width="60" Margin="2"/>
                     <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" Width="200" Margin="2"/>
                 </StackPanel>
-                <!-- ImagePath -->
+                <!-- 画像パス -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityImagePath}">
-                    <TextBlock Text="Path:" Width="60" Margin="2"/>
+                    <TextBlock Text="パス:" Width="60" Margin="2"/>
                     <TextBox Text="{Binding ImagePath}" Width="300" Margin="2"/>
-                    <Button Content="Browse" 
+                    <Button Content="参照" 
                             Command="{Binding BrowseCommand}"
-                           
                             Margin="2"/>
-                    <Button Content="Capture"
+                    <Button Content="キャプチャ"
                             Command="{Binding CaptureCommand}"
-                           
                             Margin="2"/>
                 </StackPanel>
 
-                <!-- Threshold -->
+                <!-- 閾値 -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityThreshold}">
-                    <TextBlock Text="Threshold:" Width="60" Margin="2"/>
+                    <TextBlock Text="閾値:" Width="60" Margin="2"/>
                     <TextBox Text="{Binding Threshold}" Width="80" Margin="2"/>
                     <TextBlock Text="(0.1~1.0)" Margin="2"/>
                 </StackPanel>
 
-                <!-- Timeout -->
+                <!-- タイムアウト -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityTimeout}">
-                    <TextBlock Text="Timeout:" Width="60" Margin="2"/>
+                    <TextBlock Text="タイムアウト:" Width="60" Margin="2"/>
                     <TextBox Text="{Binding Timeout}" Width="80" Margin="2"/>
                     <TextBlock Text="ms" Margin="2"/>
                 </StackPanel>
 
-                <!-- Interval -->
+                <!-- 間隔 -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityInterval}">
-                    <TextBlock Text="Interval:" Width="60" Margin="2"/>
+                    <TextBlock Text="間隔:" Width="60" Margin="2"/>
                     <TextBox Text="{Binding Interval}" Width="80" Margin="2"/>
                     <TextBlock Text="ms" Margin="2"/>
                 </StackPanel>
 
-                <!-- XY Pos -->
+                <!-- XY 座標 -->
                 <StackPanel Visibility="{Binding VisibilityXYPos}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="X:" Width="60" Margin="2"/>
                         <TextBox Text="{Binding X}" Width="80" Margin="2"/>
-                        <Button Content="Pick" Command="{Binding PickPointCommand}" Margin="2"/>
+                        <Button Content="選択" Command="{Binding PickPointCommand}" Margin="2"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Y:" Width="60" Margin="2"/>
@@ -75,13 +73,13 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- MouseButton -->
+                <!-- マウスボタン -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityMouseButton}">
-                    <TextBlock Text="Button:" Width="60" Margin="2"/>
+                    <TextBlock Text="ボタン:" Width="60" Margin="2"/>
                     <ComboBox ItemsSource="{Binding MouseButtons}" SelectedItem="{Binding SelectedMouseButton}"/>
                 </StackPanel>
 
-                <!-- Hotkey -->
+                <!-- ホットキー -->
                 <StackPanel Visibility="{Binding VisibilityHotkey}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Ctrl:" Width="60" Margin="2"/>
@@ -96,24 +94,23 @@
                         <CheckBox IsChecked="{Binding Alt}" Margin="2"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Key:" Width="60" Margin="2"/>
+                        <TextBlock Text="キー:" Width="60" Margin="2"/>
                         <TextBox Text="{Binding Key, Converter={StaticResource KeyToStringConverter}}"
                               Width="50" Margin="2"
                               converter:KeyInputBehavior.Key="{Binding Key, Mode=TwoWay}"/>
                     </StackPanel>
                 </StackPanel>
 
-
-                <!-- Wait -->
+                <!-- 待機時間 -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityWait}">
-                    <TextBlock Text="WaitTime:" Width="60" Margin="2"/>
+                    <TextBlock Text="待機時間:" Width="60" Margin="2"/>
                     <TextBox Text="{Binding Wait}" Width="80" Margin="2"/>
                     <TextBlock Text="ms" Margin="2"/>
                 </StackPanel>
 
-                <!-- Loop -->
+                <!-- ループ -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityLoop}">
-                    <TextBlock Text="LoopCount:" Width="60" Margin="2"/>
+                    <TextBlock Text="ループ回数:" Width="60" Margin="2"/>
                     <TextBox Text="{Binding LoopCount, Mode=TwoWay}" Width="80" Margin="2"/>
                 </StackPanel>
             </StackPanel>

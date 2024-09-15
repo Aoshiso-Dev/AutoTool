@@ -13,6 +13,7 @@ using Panels.Model.List.Type;
 using Panels.Message;
 using CommunityToolkit.Mvvm.Messaging;
 using Panels.Model;
+using System.Windows.Data;
 
 
 namespace Panels.ViewModel
@@ -79,6 +80,8 @@ namespace Panels.ViewModel
                 item.LineNumber = CommandList.Items.Count + 1;
                 item.ItemType = itemType;
                 CommandList.Add(item);
+
+                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
             }
         }
 
@@ -156,8 +159,7 @@ namespace Panels.ViewModel
                 var index = CommandList.Items.IndexOf(existingItem);
                 CommandList.Items[index] = item;
 
-                // Descriptionを更新する
-                existingItem.Description = item.Description;
+                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
             }
         }
     }

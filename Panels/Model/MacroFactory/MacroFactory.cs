@@ -116,6 +116,7 @@ namespace Panels.Model.MacroFactory
                 Threshold = item.Threshold,
                 Timeout = item.Timeout,
                 Interval = item.Interval,
+                Button = item.Button,
             })
             { LineNumber = item.LineNumber };
         }

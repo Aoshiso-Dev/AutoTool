@@ -15,35 +15,33 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-
-
     <Grid>
-        <!-- Buttons -->
+        <!-- ボタン -->
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
             <Button Command="{Binding RunCommand}" Width="100" Margin="2" Foreground="White">
                 <Button.Style>
                     <Style TargetType="Button">
                         <Setter Property="Background" Value="Green"/>
-                        <Setter Property="Content" Value="Run"/>
+                        <Setter Property="Content" Value="実行"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsRunning}" Value="True">
                                 <Setter Property="Background" Value="Red"/>
-                                <Setter Property="Content" Value="Stop"/>
+                                <Setter Property="Content" Value="停止"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Button.Style>
             </Button>
             <StackPanel>
-                <Button Content="Up" Command="{Binding UpCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
-                <Button Content="Down" Command="{Binding DownCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
+                <Button Content="上へ" Command="{Binding UpCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
+                <Button Content="下へ" Command="{Binding DownCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
             </StackPanel>
-            <Button Content="Add" Command="{Binding AddCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
-            <Button Content="Delete" Command="{Binding DeleteCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
-            <Button Content="Clear" Command="{Binding ClearCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
+            <Button Content="追加" Command="{Binding AddCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
+            <Button Content="削除" Command="{Binding DeleteCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
+            <Button Content="クリア" Command="{Binding ClearCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
             <StackPanel>
-                <Button Content="Save" Command="{Binding SaveCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
-                <Button Content="Load" Command="{Binding LoadCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
+                <Button Content="マクロ保存" Command="{Binding SaveCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
+                <Button Content="マクロ読込" Command="{Binding LoadCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
             </StackPanel>
         </StackPanel>
     </Grid>

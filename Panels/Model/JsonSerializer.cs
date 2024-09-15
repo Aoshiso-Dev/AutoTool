@@ -90,49 +90,25 @@ internal class CommandListItemConverter : JsonConverter<ICommandListItem>
 
     public override void Write(Utf8JsonWriter writer, ICommandListItem value, JsonSerializerOptions options)
     {
-        // Pair プロパティを一時的に保存
-        object? originalPair = null;
-
+        // 相互参照回避
         if (value is IIfItem ifItem)
         {
-            originalPair = ifItem.Pair;
-            ifItem.Pair = null; // シリアライズ時に Pair を無視
+            ifItem.Pair = null;
         }
         else if (value is IEndIfItem endIfItem)
         {
-            originalPair = endIfItem.Pair;
             endIfItem.Pair = null;
         }
         else if (value is ILoopItem loopItem)
         {
-            originalPair = loopItem.Pair;
             loopItem.Pair = null;
         }
         else if (value is IEndLoopItem endLoopItem)
         {
-            originalPair = endLoopItem.Pair;
             endLoopItem.Pair = null;
         }
 
         // オブジェクトをシリアライズ
         JsonSerializer.Serialize(writer, value, value.GetType(), options);
-
-        // 元の Pair の値を復元
-        if (value is IIfItem ifItemRestored)
-        {
-            ifItemRestored.Pair = originalPair as IIfItem;
-        }
-        else if (value is IEndIfItem endIfItemRestored)
-        {
-            endIfItemRestored.Pair = originalPair as IEndIfItem;
-        }
-        else if (value is ILoopItem loopItemRestored)
-        {
-            loopItemRestored.Pair = originalPair as ILoopItem;
-        }
-        else if (value is IEndLoopItem endLoopItemRestored)
-        {
-            endLoopItemRestored.Pair = originalPair as IEndLoopItem;
-        }
     }
 }

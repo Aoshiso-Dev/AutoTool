@@ -17,9 +17,8 @@
     </UserControl.Resources>
 
     <DockPanel LastChildFill="True">
-        
 
-        <!-- DataGrid -->
+        <!-- データグリッド -->
         <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding DataContext.SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" MaxHeight="800">
             <DataGrid.Resources>
                 <Style TargetType="DataGridRow">
@@ -37,8 +36,8 @@
                             </MultiTrigger.Conditions>
                             <Setter Property="Background" Value="LightBlue" />
                         </MultiTrigger>
-                        
-                        <!-- IsRunning が　true の場合 -->
+
+                        <!-- IsRunning が true の場合 -->
                         <DataTrigger Binding="{Binding IsRunning}" Value="True">
                             <Setter Property="Background" Value="LightGreen" />
                         </DataTrigger>
@@ -60,7 +59,7 @@
                             <Setter Property="Background" Value="LightBlue" />
                         </MultiTrigger>
 
-                        <!-- IsRunning が　true の場合 -->
+                        <!-- IsRunning が true の場合 -->
                         <DataTrigger Binding="{Binding IsRunning}" Value="True">
                             <Setter Property="Background" Value="LightGreen" />
                         </DataTrigger>
@@ -69,8 +68,8 @@
             </DataGrid.Resources>
 
             <DataGrid.Columns>
-                
-                <!-- LineNumber -->
+
+                <!-- 行番号 -->
                 <DataGridTemplateColumn Header="" Width="30">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -79,13 +78,13 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- NestLevel -->
+                <!-- ネストレベル -->
                 <!--
                 <DataGridTextColumn Header="" Width="30" Binding="{Binding NestLevel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
                 -->
 
-                <!-- Command -->
-                <DataGridTemplateColumn Header="Command" Width="150">
+                <!-- コマンド -->
+                <DataGridTemplateColumn Header="コマンド" Width="150">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding ItemType}" VerticalAlignment="Center" Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}"/>
@@ -93,15 +92,14 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- Description -->
-                <DataGridTemplateColumn Header="Description" Width="*">
+                <!-- 説明 -->
+                <DataGridTemplateColumn Header="説明" Width="*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Description}" VerticalAlignment="Center"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-
 
             </DataGrid.Columns>
         </DataGrid>

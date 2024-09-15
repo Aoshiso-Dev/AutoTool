@@ -11,6 +11,8 @@ using Command.Class;
 using Panels.Model.List.Interface;
 using System.Windows.Controls;
 using System.Text.Json.Serialization;
+using OpenCvSharp.Features2D;
+using System.Windows.Input;
 
 namespace Panels.List.Class
 {
@@ -67,13 +69,13 @@ namespace Panels.List.Class
         private int _interval = 500;
 
         [JsonIgnore]
-        new public string Description => $"Path:{System.IO.Path.GetFileName(ImagePath)} / Threshold:{Threshold} / Timeout:{Timeout} / Interval:{Interval}";
+        new public string Description => $"パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public WaitImageItem() { }
 
         public WaitImageItem(WaitImageItem? item = null) : base(item)
         {
-            if(item != null)
+            if (item != null)
             {
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
@@ -102,13 +104,13 @@ namespace Panels.List.Class
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
 
         [JsonIgnore]
-        new public string Description => $"Path:{System.IO.Path.GetFileName(ImagePath)} / Threshold:{Threshold} / Timeout:{Timeout} / Interval:{Interval} / Button:{Button}";
+        new public string Description => $"パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
 
         public ClickImageItem() { }
 
         public ClickImageItem(ClickImageItem? item = null) : base(item)
         {
-            if(item != null)
+            if (item != null)
             {
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
@@ -136,13 +138,13 @@ namespace Panels.List.Class
         private System.Windows.Input.Key _key = System.Windows.Input.Key.Escape;
 
         [JsonIgnore]
-        new public string Description => $"Ctrl:{Ctrl} / Alt:{Alt} / Shift:{Shift} / Key:{Key}";
+        new public string Description => $"Ctrl:{Ctrl} / Alt:{Alt} / Shift:{Shift} / キー:{Key}";
 
         public HotkeyItem() { }
 
         public HotkeyItem(HotkeyItem? item = null) : base(item)
         {
-            if(item != null)
+            if (item != null)
             {
                 Ctrl = item.Ctrl;
                 Alt = item.Alt;
@@ -167,13 +169,13 @@ namespace Panels.List.Class
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
 
         [JsonIgnore]
-        new public string Description => $"X:{X} / Y:{Y} / Button:{Button}";
+        new public string Description => $"X座標:{X} / Y座標:{Y} / ボタン:{Button}";
 
         public ClickItem() { }
 
         public ClickItem(ClickItem? item = null) : base(item)
         {
-            if(item != null)
+            if (item != null)
             {
                 X = item.X;
                 Y = item.Y;
@@ -193,12 +195,12 @@ namespace Panels.List.Class
         private int _wait = 5000;
 
         [JsonIgnore]
-        new public string Description => $"Wait:{Wait}";
+        new public string Description => $"待機時間:{Wait}ms";
         public WaitItem() { }
 
         public WaitItem(WaitItem? item = null) : base(item)
         {
-            if(item != null)
+            if (item != null)
             {
                 Wait = item.Wait;
             }
@@ -224,13 +226,13 @@ namespace Panels.List.Class
         private ICommandListItem? _pair = null;
 
         [JsonIgnore]
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / Path:{System.IO.Path.GetFileName(ImagePath)} / Threshold:{Threshold} / Timeout:{Timeout} / Interval:{Interval}";
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public IfImageExistItem() { }
 
         public IfImageExistItem(IfImageExistItem? item = null) : base(item)
         {
-            if(item != null)
+            if (item != null)
             {
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
@@ -260,8 +262,7 @@ namespace Panels.List.Class
         private ICommandListItem? _pair = null;
 
         [JsonIgnore]
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / Path:{System.IO.Path.GetFileName(ImagePath)} / Threshold:{Threshold} / Timeout:{Timeout} / Interval:{Interval}";
-
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public IfImageNotExistItem() { }
 
@@ -308,14 +309,13 @@ namespace Panels.List.Class
         private ICommandListItem? _pair = null;
 
         [JsonIgnore]
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / LoopCount:{LoopCount}";
-
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / ループ回数:{LoopCount}";
 
         public LoopItem() { }
 
         public LoopItem(LoopItem? item = null) : base(item)
         {
-            if(item != null)
+            if (item != null)
             {
                 LoopCount = item.LoopCount;
                 Pair = item.Pair;
@@ -328,7 +328,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class EndLoopItem : CommandListItem,IEndLoopItem
+    internal partial class EndLoopItem : CommandListItem, IEndLoopItem
     {
         [ObservableProperty, JsonIgnore]
         private ICommandListItem? _pair = null;
@@ -357,4 +357,5 @@ namespace Panels.List.Class
             return new BreakItem(this);
         }
     }
+
 }

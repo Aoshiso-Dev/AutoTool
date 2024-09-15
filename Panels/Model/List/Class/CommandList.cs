@@ -160,7 +160,19 @@ namespace Panels.List.Class
             }
         }
 
-        public void Save()
+        public IEnumerable<ICommandListItem> Clone()
+        {
+            var clone = new List<ICommandListItem>();
+
+            foreach (var item in Items)
+            {
+                clone.Add(item.Clone());
+            }
+
+            return clone;
+        }
+
+            public void Save()
         {
             var dialog = new SaveFileDialog();
             dialog.Filter = "Macro files (*.macro)|*.macro|All files (*.*)|*.*";
@@ -176,7 +188,9 @@ namespace Panels.List.Class
                 return;
             }
 
-            JsonSerializerHelper.SerializeToFile(Items, dialog.FileName);
+            var cloneItems = Clone();
+
+            JsonSerializerHelper.SerializeToFile(cloneItems, dialog.FileName);
         }
 
         public void Load()

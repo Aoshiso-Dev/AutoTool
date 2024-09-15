@@ -140,6 +140,12 @@ namespace Command.Class
                     case System.Windows.Input.MouseButton.Middle:
                         MouseControlHelper.MiddleClick(point.Value.X, point.Value.Y);
                         break;
+                    case System.Windows.Input.MouseButton.XButton1:
+                        //MouseControlHelper.XButton1Click(point.Value.X, point.Value.Y);
+                        break;
+                    case System.Windows.Input.MouseButton.XButton2:
+                        //MouseControlHelper.XButton2Click(point.Value.X, point.Value.Y);
+                        break;
                 }
 
                 return true;
@@ -177,12 +183,7 @@ namespace Command.Class
     {
         new public IClickCommandSettings Settings => (IClickCommandSettings)base.Settings;
 
-        public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
-        {
-            Settings.Button = Settings.Button;
-            Settings.X = Settings.X;
-            Settings.Y = Settings.Y;
-        }
+        public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings){ }
 
         new public async Task<bool> Execute(CancellationToken cancellationToken)
         {

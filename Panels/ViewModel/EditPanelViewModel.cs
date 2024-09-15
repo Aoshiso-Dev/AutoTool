@@ -18,6 +18,8 @@ using Panels.View;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
+using System.Collections;
+using System.Windows.Data;
 
 namespace Panels.ViewModel
 {
@@ -72,25 +74,31 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IWaitImageItem waitImageItem)
+                return Item switch
                 {
-                    return waitImageItem.ImagePath;
-                }
-                else if (Item is IClickImageItem clickImageItem)
-                {
-                    return clickImageItem.ImagePath;
-                }
-                return string.Empty;
+                    IWaitImageItem waitImageItem => waitImageItem.ImagePath,
+                    IClickImageItem clickImageItem => clickImageItem.ImagePath,
+                    IIfImageExistItem ifImageExistItem => ifImageExistItem.ImagePath,
+                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.ImagePath,
+                    _ => string.Empty,
+                };
             }
             set
             {
-                if (Item is IWaitImageItem waitImageItem)
+                switch (Item)
                 {
-                    waitImageItem.ImagePath = value;
-                }
-                else if (Item is IClickImageItem clickImageItem)
-                {
-                    clickImageItem.ImagePath = value;
+                    case IWaitImageItem waitImageItem:
+                        waitImageItem.ImagePath = value;
+                        break;
+                    case IClickImageItem clickImageItem:
+                        clickImageItem.ImagePath = value;
+                        break;
+                    case IIfImageExistItem ifImageExistItem:
+                        ifImageExistItem.ImagePath = value;
+                        break;
+                    case IIfImageNotExistItem ifImageNotExistItem:
+                        ifImageNotExistItem.ImagePath = value;
+                        break;
                 }
 
                 UpdateItemProperties();
@@ -101,25 +109,31 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IWaitImageItem waitImageItem)
+                return Item switch
                 {
-                    return waitImageItem.Threshold;
-                }
-                else if (Item is IClickImageItem clickImageItem)
-                {
-                    return clickImageItem.Threshold;
-                }
-                return 0;
+                    IWaitImageItem waitImageItem => waitImageItem.Threshold,
+                    IClickImageItem clickImageItem => clickImageItem.Threshold,
+                    IIfImageExistItem ifImageExistItem => ifImageExistItem.Threshold,
+                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.Threshold,
+                    _ => 0,
+                };
             }
             set
             {
-                if (Item is IWaitImageItem waitImageItem)
+                switch (Item)
                 {
-                    waitImageItem.Threshold = value;
-                }
-                else if (Item is IClickImageItem clickImageItem)
-                {
-                    clickImageItem.Threshold = value;
+                    case IWaitImageItem waitImageItem:
+                        waitImageItem.Threshold = value;
+                        break;
+                    case IClickImageItem clickImageItem:
+                        clickImageItem.Threshold = value;
+                        break;
+                    case IIfImageExistItem ifImageExistItem:
+                        ifImageExistItem.Threshold = value;
+                        break;
+                    case IIfImageNotExistItem ifImageNotExistItem:
+                        ifImageNotExistItem.Threshold = value;
+                        break;
                 }
 
                 UpdateItemProperties();
@@ -130,25 +144,31 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IWaitImageItem waitImageItem)
+                return Item switch
                 {
-                    return waitImageItem.Timeout;
-                }
-                else if (Item is IClickImageItem clickImageItem)
-                {
-                    return clickImageItem.Timeout;
-                }
-                return 0;
+                    IWaitImageItem waitImageItem => waitImageItem.Timeout,
+                    IClickImageItem clickImageItem => clickImageItem.Timeout,
+                    IIfImageExistItem ifImageExistItem => ifImageExistItem.Timeout,
+                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.Timeout,
+                    _ => 0,
+                };
             }
             set
             {
-                if (Item is IWaitImageItem waitImageItem)
+                switch (Item)
                 {
-                    waitImageItem.Timeout = value;
-                }
-                else if (Item is IClickImageItem clickImageItem)
-                {
-                    clickImageItem.Timeout = value;
+                    case IWaitImageItem waitImageItem:
+                        waitImageItem.Timeout = value;
+                        break;
+                    case IClickImageItem clickImageItem:
+                        clickImageItem.Timeout = value;
+                        break;
+                    case IIfImageExistItem ifImageExistItem:
+                        ifImageExistItem.Timeout = value;
+                        break;
+                    case IIfImageNotExistItem ifImageNotExistItem:
+                        ifImageNotExistItem.Timeout = value;
+                        break;
                 }
 
                 UpdateItemProperties();
@@ -159,25 +179,31 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IWaitImageItem waitImageItem)
+                return Item switch
                 {
-                    return waitImageItem.Interval;
-                }
-                else if (Item is IClickImageItem clickImageItem)
-                {
-                    return clickImageItem.Interval;
-                }
-                return 0;
+                    IWaitImageItem waitImageItem => waitImageItem.Interval,
+                    IClickImageItem clickImageItem => clickImageItem.Interval,
+                    IIfImageExistItem ifImageExistItem => ifImageExistItem.Interval,
+                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.Interval,
+                    _ => 0,
+                };
             }
             set
             {
-                if (Item is IWaitImageItem waitImageItem)
+                switch (Item)
                 {
-                    waitImageItem.Interval = value;
-                }
-                else if (Item is IClickImageItem clickImageItem)
-                {
-                    clickImageItem.Interval = value;
+                    case IWaitImageItem waitImageItem:
+                        waitImageItem.Interval = value;
+                        break;
+                    case IClickImageItem clickImageItem:
+                        clickImageItem.Interval = value;
+                        break;
+                    case IIfImageExistItem ifImageExistItem:
+                        ifImageExistItem.Interval = value;
+                        break;
+                    case IIfImageNotExistItem ifImageNotExistItem:
+                        ifImageNotExistItem.Interval = value;
+                        break;
                 }
             }
         }
@@ -186,26 +212,23 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IClickImageItem clickImageItem)
+                return Item switch
                 {
-                    return clickImageItem.Button;
-                }
-                else if (Item is IClickItem clickItem)
-                {
-                    return clickItem.Button;
-                }
-
-                return System.Windows.Input.MouseButton.Left;
+                    IClickImageItem clickImageItem => clickImageItem.Button,
+                    IClickItem clickItem => clickItem.Button,
+                    _ => System.Windows.Input.MouseButton.Left,
+                };
             }
             set
             {
-                if (Item is IClickImageItem clickImageItem)
+                switch (Item)
                 {
-                    clickImageItem.Button = value;
-                }
-                else if (Item is IClickItem clickItem)
-                {
-                    clickItem.Button = value;
+                    case IClickImageItem clickImageItem:
+                        clickImageItem.Button = value;
+                        break;
+                    case IClickItem clickItem:
+                        clickItem.Button = value;
+                        break;
                 }
 
                 UpdateItemProperties();
@@ -216,11 +239,7 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IHotkeyItem hotkeyItem)
-                {
-                    return hotkeyItem.Ctrl;
-                }
-                return false;
+                return Item is IHotkeyItem hotkeyItem ? hotkeyItem.Ctrl : false;
             }
             set
             {
@@ -237,11 +256,7 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IHotkeyItem hotkeyItem)
-                {
-                    return hotkeyItem.Alt;
-                }
-                return false;
+                return Item is IHotkeyItem hotkeyItem ? hotkeyItem.Alt : false;
             }
             set
             {
@@ -258,11 +273,7 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IHotkeyItem hotkeyItem)
-                {
-                    return hotkeyItem.Shift;
-                }
-                return false;
+                return Item is IHotkeyItem hotkeyItem ? hotkeyItem.Shift : false;
             }
             set
             {
@@ -279,11 +290,7 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IHotkeyItem hotkeyItem)
-                {
-                    return hotkeyItem.Key;
-                }
-                return System.Windows.Input.Key.Escape;
+                return Item is IHotkeyItem hotkeyItem ? hotkeyItem.Key : System.Windows.Input.Key.Escape;
             }
             set
             {
@@ -300,11 +307,7 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IClickItem clickItem)
-                {
-                    return clickItem.X;
-                }
-                return 0;
+                return Item is IClickItem clickItem ? clickItem.X : 0;
             }
             set
             {
@@ -321,11 +324,7 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IClickItem clickItem)
-                {
-                    return clickItem.Y;
-                }
-                return 0;
+                return Item is IClickItem clickItem ? clickItem.Y : 0;
             }
             set
             {
@@ -342,11 +341,7 @@ namespace Panels.ViewModel
         {
             get
             {
-                if (Item is IWaitItem waitItem)
-                {
-                    return waitItem.Wait;
-                }
-                return 0;
+                return Item is IWaitItem waitItem ? waitItem.Wait : 0;
             }
             set
             {
@@ -358,6 +353,25 @@ namespace Panels.ViewModel
                 UpdateItemProperties();
             }
         }
+
+        public int LoopCount
+        {
+            get
+            {
+                return Item is ILoopItem loopItem ? loopItem.LoopCount : 0;
+
+            }
+            set
+            {
+                if (Item is ILoopItem loopItem)
+                {
+                    loopItem.LoopCount = value;
+                }
+
+                UpdateItemProperties();
+            }
+        }
+
         #endregion
 
         #region Visibility
@@ -552,11 +566,17 @@ namespace Panels.ViewModel
             }
             else if (Item is IIfImageExistItem)
             {
-                VisibilityLoop = Visibility.Visible;
+                VisibilityImagePath = Visibility.Visible;
+                VisibilityThreshold = Visibility.Visible;
+                VisibilityTimeout = Visibility.Visible;
+                VisibilityInterval = Visibility.Visible;
             }
             else if (Item is IIfImageNotExistItem)
             {
-                VisibilityLoop = Visibility.Visible;
+                VisibilityImagePath = Visibility.Visible;
+                VisibilityThreshold = Visibility.Visible;
+                VisibilityTimeout = Visibility.Visible;
+                VisibilityInterval = Visibility.Visible;
             }
             else if (Item is IEndIfItem)
             {
@@ -586,6 +606,7 @@ namespace Panels.ViewModel
             OnPropertyChanged(nameof(X));
             OnPropertyChanged(nameof(Y));
             OnPropertyChanged(nameof(Wait));
+            OnPropertyChanged(nameof(LoopCount));
 
             WeakReferenceMessenger.Default.Send(new ApplyMessage());
         }
