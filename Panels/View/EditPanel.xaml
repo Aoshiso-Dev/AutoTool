@@ -32,11 +32,11 @@
                     <TextBlock Text="パス:" Width="60" Margin="2"/>
                     <TextBox Text="{Binding ImagePath}" Width="300" Margin="2"/>
                     <Button Content="参照" 
-                            Command="{Binding BrowseCommand}"
-                            Margin="2"/>
+                                Command="{Binding BrowseCommand}"
+                                Margin="2"/>
                     <Button Content="キャプチャ"
-                            Command="{Binding CaptureCommand}"
-                            Margin="2"/>
+                                Command="{Binding CaptureCommand}"
+                                Margin="2"/>
                 </StackPanel>
 
                 <!-- 閾値 -->
@@ -96,8 +96,8 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="キー:" Width="60" Margin="2"/>
                         <TextBox Text="{Binding Key, Converter={StaticResource KeyToStringConverter}}"
-                              Width="50" Margin="2"
-                              converter:KeyInputBehavior.Key="{Binding Key, Mode=TwoWay}"/>
+                                  Width="50" Margin="2"
+                                  converter:KeyInputBehavior.Key="{Binding Key, Mode=TwoWay}"/>
                     </StackPanel>
                 </StackPanel>
 
@@ -113,6 +113,12 @@
                     <TextBlock Text="ループ回数:" Width="60" Margin="2"/>
                     <TextBox Text="{Binding LoopCount, Mode=TwoWay}" Width="80" Margin="2"/>
                 </StackPanel>
+            </StackPanel>
+            
+            
+            <!-- 画像 -->
+            <StackPanel DockPanel.Dock="Right" Visibility="{Binding VisibilityImagePath}">
+                <Image Source="{Binding ImagePath}" Stretch="Uniform" Width="150" Height="150"/>
             </StackPanel>
         </DockPanel>
     </Grid>

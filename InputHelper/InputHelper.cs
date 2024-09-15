@@ -112,7 +112,7 @@ namespace InputHelper
             KeyUp(key);
         }
 
-        public static void KeyPress(System.Windows.Input.Key key, bool ctrl, bool alt, bool shift)
+        public static void KeyPress(bool ctrl, bool alt, bool shift, System.Windows.Input.Key key)
         {
             if (ctrl) KeyDown(Key.LeftCtrl);
             if (alt) KeyDown(Key.LeftAlt);

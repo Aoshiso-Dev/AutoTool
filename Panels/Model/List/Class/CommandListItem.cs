@@ -34,6 +34,8 @@ namespace Panels.List.Class
         private bool _isInLoop = false;
         [ObservableProperty]
         private bool _isInIf = false;
+        [ObservableProperty]
+        private int _progress = 0;
 
         public CommandListItem() { }
 
@@ -68,7 +70,6 @@ namespace Panels.List.Class
         [ObservableProperty]
         private int _interval = 500;
 
-        [JsonIgnore]
         new public string Description => $"パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public WaitImageItem() { }
@@ -103,7 +104,6 @@ namespace Panels.List.Class
         [ObservableProperty]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
 
-        [JsonIgnore]
         new public string Description => $"パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
 
         public ClickImageItem() { }
@@ -137,7 +137,6 @@ namespace Panels.List.Class
         [ObservableProperty]
         private System.Windows.Input.Key _key = System.Windows.Input.Key.Escape;
 
-        [JsonIgnore]
         new public string Description => $"Ctrl:{Ctrl} / Alt:{Alt} / Shift:{Shift} / キー:{Key}";
 
         public HotkeyItem() { }
@@ -168,7 +167,6 @@ namespace Panels.List.Class
         [ObservableProperty]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
 
-        [JsonIgnore]
         new public string Description => $"X座標:{X} / Y座標:{Y} / ボタン:{Button}";
 
         public ClickItem() { }
@@ -194,7 +192,6 @@ namespace Panels.List.Class
         [ObservableProperty]
         private int _wait = 5000;
 
-        [JsonIgnore]
         new public string Description => $"待機時間:{Wait}ms";
         public WaitItem() { }
 
@@ -222,10 +219,9 @@ namespace Panels.List.Class
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
-        [ObservableProperty, JsonIgnore]
+        [ObservableProperty]
         private ICommandListItem? _pair = null;
 
-        [JsonIgnore]
         new public string Description => $"{LineNumber}->{Pair?.LineNumber} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public IfImageExistItem() { }
@@ -258,10 +254,9 @@ namespace Panels.List.Class
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
-        [ObservableProperty, JsonIgnore]
+        [ObservableProperty]
         private ICommandListItem? _pair = null;
 
-        [JsonIgnore]
         new public string Description => $"{LineNumber}->{Pair?.LineNumber} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public IfImageNotExistItem() { }
@@ -286,10 +281,9 @@ namespace Panels.List.Class
 
     internal partial class EndIfItem : CommandListItem, IEndIfItem
     {
-        [ObservableProperty, JsonIgnore]
+        [ObservableProperty]
         private ICommandListItem? _pair = null;
 
-        [JsonIgnore]
         new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
 
         public EndIfItem() { }
@@ -301,14 +295,13 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class LoopItem : CommandListItem, ILoopItem, ICommandListItem, ILoopCommandSettings
+    internal partial class LoopItem : CommandListItem, ILoopItem, ICommandListItem
     {
         [ObservableProperty]
         private int _loopCount = 2;
-        [ObservableProperty, JsonIgnore]
+        [ObservableProperty]
         private ICommandListItem? _pair = null;
 
-        [JsonIgnore]
         new public string Description => $"{LineNumber}->{Pair?.LineNumber} / ループ回数:{LoopCount}";
 
         public LoopItem() { }
@@ -330,15 +323,20 @@ namespace Panels.List.Class
 
     internal partial class EndLoopItem : CommandListItem, IEndLoopItem
     {
-        [ObservableProperty, JsonIgnore]
+        [ObservableProperty]
         private ICommandListItem? _pair = null;
 
-        [JsonIgnore]
         new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
 
         public EndLoopItem() { }
 
-        public EndLoopItem(EndLoopItem? item = null) : base(item) { }
+        public EndLoopItem(EndLoopItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                Pair = item.Pair;
+            }
+        }
 
         public new ICommandListItem Clone()
         {

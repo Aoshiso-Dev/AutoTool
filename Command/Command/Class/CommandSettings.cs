@@ -67,8 +67,19 @@ namespace Command.Class
     public class LoopCommandSettings : ICommandSettings, ILoopCommandSettings
     {
         public int LoopCount { get; set; }
+        public ICommand? Pair { get; set; }
 
         public LoopCommandSettings()
+        {
+        }
+    }
+
+    public class EndLoopCommandSettings : ICommandSettings, IEndLoopCommandSettings
+    {
+        public int LoopCount { get; set; }
+        public ICommand? Pair { get; set; }
+
+        public EndLoopCommandSettings()
         {
         }
     }

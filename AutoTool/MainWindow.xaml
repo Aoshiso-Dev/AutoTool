@@ -16,6 +16,9 @@
 
     <DockPanel LastChildFill="True">
         <panels:ButtonPanel DockPanel.Dock="Top" DataContext="{Binding ButtonPanelViewModel}" Margin="2"/>
+        <!--
+        <panels:RunningPanel DockPanel.Dock="Top" DataContext="{Binding RunningPanelViewModel}" Margin="2"/>
+        -->
         <panels:LogPanel  DockPanel.Dock="Bottom" DataContext="{Binding LogPanelViewModel}" Height="100" Margin="2"/>
         <panels:EditPanel DockPanel.Dock="Bottom" DataContext="{Binding EditPanelViewModel}" Height="200" Margin="2"/>
         <panels:ListPanel DataContext="{Binding ListPanelViewModel}" Margin="2"/>

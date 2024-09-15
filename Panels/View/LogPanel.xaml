@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:Panels.ViewModel"
              mc:Ignorable="d"
-             d:DesignHeight="1000" d:DesignWidth="1000">
+             d:DesignHeight="150" d:DesignWidth="1000">
 
     <Grid>
         <TextBox Text="{Binding Log}" Width="Auto" Height="200"/>

@@ -25,6 +25,9 @@ namespace AutoTool
         private ButtonPanelViewModel _buttonPanelViewModel;
 
         [ObservableProperty]
+        private RunningPanelViewModel _runningPanelViewModel;
+
+        [ObservableProperty]
         private ListPanelViewModel _listPanelViewModel;
 
         [ObservableProperty]
@@ -39,6 +42,7 @@ namespace AutoTool
             EditPanelViewModel = new EditPanelViewModel();
             ButtonPanelViewModel = new ButtonPanelViewModel();
             LogPanelViewModel = new LogPanelViewModel();
+            RunningPanelViewModel = new RunningPanelViewModel();
 
             WeakReferenceMessenger.Default.Register<RunMessage>(this, async (sender, message) =>
             {
@@ -94,7 +98,7 @@ namespace AutoTool
 
             WeakReferenceMessenger.Default.Register<ApplyMessage>(this, (sender, message) =>
             {
-                ListPanelViewModel.UpdateSelectedItem(EditPanelViewModel.Item);
+                ListPanelViewModel.SelectedItem = EditPanelViewModel.Item;
                 ListPanelViewModel.SelectedLineNumber = EditPanelViewModel.Item.LineNumber - 1;
             });
 
@@ -103,14 +107,49 @@ namespace AutoTool
                 LogPanelViewModel.Log += message.Text + Environment.NewLine;
             });
 
-            WeakReferenceMessenger.Default.Register<ExecuteCommandMessage>(this, (sender, message) =>
+            WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (sender, message) =>
             {
-                var command = (message as ExecuteCommandMessage).Command;
-                if (command != null)
-                {
-                    LogPanelViewModel.Log += $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()}\n";
+                var command = (message as StartCommandMessage).Command;
 
-                    ListPanelViewModel.ExecutedLineNumber = command.LineNumber;
+                LogPanelViewModel.Log += $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Started\n";
+                ListPanelViewModel.ExecutedLineNumber = command.LineNumber;
+
+                
+                var commandItem = ListPanelViewModel.CommandList.Items.FirstOrDefault(x => x.LineNumber == command.LineNumber);
+
+                if (commandItem != null)
+                {
+                    commandItem.Progress = 0;
+                    commandItem.IsRunning = true;
+                }
+            });
+
+            WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (sender, message) =>
+            {
+                var command = (message as FinishCommandMessage).Command;
+
+                LogPanelViewModel.Log += $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Finished\n";
+                ListPanelViewModel.ExecutedLineNumber = 0;
+
+                var commandItem = ListPanelViewModel.CommandList.Items.FirstOrDefault(x => x.LineNumber == command.LineNumber);
+
+                if (commandItem != null)
+                {
+                    commandItem.Progress = 0;
+                    commandItem.IsRunning = false;
+                }
+        });
+
+            WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (sender, message) =>
+            {
+                var command = (message as UpdateProgressMessage).Command;
+                var progress = (message as UpdateProgressMessage).Progress;
+
+                var commandItem = ListPanelViewModel.CommandList.Items.Where(x => x.LineNumber == command.LineNumber).FirstOrDefault();
+
+                if (commandItem != null)
+                {
+                    commandItem.Progress = progress;
                 }
             });
         }
@@ -122,6 +161,8 @@ namespace AutoTool
 
             try
             {
+                ListPanelViewModel.CommandList.Items.ToList().ForEach(x => x.Progress = 0);
+
                 ButtonPanelViewModel.IsRunning = true;
                 EditPanelViewModel.IsRunning = true;
 
@@ -145,6 +186,8 @@ namespace AutoTool
 
                 ButtonPanelViewModel.IsRunning = false;
                 EditPanelViewModel.IsRunning = false;
+
+                ListPanelViewModel.CommandList.Items.ToList().ForEach(x => x.Progress = 0);
             }
         }
     }

@@ -7,9 +7,22 @@ using Command.Interface;
 
 namespace Command.Message
 {
-    public class ExecuteCommandMessage
+    public class StartCommandMessage
     {
         public ICommand Command { get; set; }
-        public ExecuteCommandMessage(ICommand command) { Command = command; }
+        public StartCommandMessage(ICommand command) { Command = command; }
+    }
+
+    public class FinishCommandMessage
+    {
+        public ICommand Command { get; set; }
+        public FinishCommandMessage(ICommand command) { Command = command; }
+    }
+
+    public class  UpdateProgressMessage
+    {
+        public ICommand Command { get; set; }
+        public int Progress { get; set; }
+        public UpdateProgressMessage(ICommand command, int progress) { Command = command;  Progress = progress; }
     }
 }

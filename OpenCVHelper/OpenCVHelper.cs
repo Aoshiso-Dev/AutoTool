@@ -124,5 +124,40 @@ namespace OpenCVHelper
                 await Task.Delay(waitTimeMs, cancellationToken); // 非同期で待機
             }
         }
+
+        public static OpenCvSharp.Point? SearchImage(string imagePath, double threshold = 0.8)
+        {
+            // ファイル存在確認
+            if (!System.IO.File.Exists(imagePath))
+            {
+                throw new System.IO.FileNotFoundException("ファイルが見つかりません。", imagePath);
+            }
+
+            // スクリーンショットを取得
+            using Mat screenMat = ScreenCaptureHelper.CaptureScreen();
+
+            // 対象の画像を読み込む
+            using Mat template = Cv2.ImRead(imagePath, ImreadModes.Color);
+
+            // 色空間を揃える
+            Cv2.CvtColor(screenMat, screenMat, ColorConversionCodes.BGRA2BGR);
+            Cv2.CvtColor(template, template, ColorConversionCodes.BGRA2BGR);
+
+            // マッチングを実行
+            using Mat result = new Mat();
+            Cv2.MatchTemplate(screenMat, template, result, TemplateMatchModes.CCoeffNormed);
+
+            // マッチング結果から最大値とその位置を取得
+            Cv2.MinMaxLoc(result, out _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
+
+            if (maxVal >= threshold)
+            {
+                // 対象画像の中心座標を計算して返す
+                OpenCvSharp.Point center = new OpenCvSharp.Point(maxLoc.X + template.Width / 2, maxLoc.Y + template.Height / 2);
+                return center;
+            }
+
+            return null;
+        }
     }
 }

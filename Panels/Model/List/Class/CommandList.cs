@@ -86,6 +86,16 @@ namespace Panels.List.Class
             PairLoopItems();
         }
 
+        public void Override(int index, ICommandListItem item)
+        {
+            Items[index] = item.Clone();
+
+            ReorderItems();
+            CalcurateNestLevel();
+            PairIfItems();
+            PairLoopItems();
+        }
+
         public void ReorderItems()
         {
             foreach (var item in Items)
@@ -255,6 +265,10 @@ namespace Panels.List.Class
 
                 }
             }
+
+            CalcurateNestLevel();
+            PairIfItems();
+            PairLoopItems();
         }
     }
 }

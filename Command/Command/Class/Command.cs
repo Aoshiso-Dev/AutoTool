@@ -15,54 +15,6 @@ using Command.Message;
 
 namespace Command.Class
 {
-    public class RootCommand : IRootCommand
-    {
-        public int LineNumber { get; set; } = 0;
-        public bool IsEnabled { get; set; } = true;
-        public ICommand? Parent { get; set; } = null;
-        public int NestLevel { get; set; } = 0;
-        public ICommandSettings Settings { get; } = new CommandSettings();
-
-        public IEnumerable<ICommand> Children { get; set; } = new List<ICommand>();
-        public EventHandler<int>? OnCommandRunning { get; set; }
-
-        public RootCommand()
-        {
-            Children = new List<ICommand>();
-        }
-
-        public async Task<bool> Execute(CancellationToken cancellationToken)
-        {
-            foreach (var command in Children)
-            {
-                if (!await command.Execute(cancellationToken))
-                {
-                    return false;
-                }
-
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return false;
-                }
-            }
-
-            OnCommandRunning?.Invoke(this, 0);
-
-            return true;
-        }
-
-        public bool CanExecute()
-        {
-            return true;
-        }
-
-        public RootCommand(ICommandSettings settings)
-        {
-            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            Children = new List<ICommand>();
-        }
-    }
-
     public class BaseCommand : ICommand
     {
         public int LineNumber { get; set; }
@@ -71,7 +23,8 @@ namespace Command.Class
         public IEnumerable<ICommand> Children { get; set; }
         public int NestLevel { get; set; }
         public ICommandSettings Settings { get; }
-        public EventHandler<int>? OnCommandRunning { get; set; } = null;
+        public EventHandler? OnStartCommand { get; set; }
+        public EventHandler? OnFinishCommand { get; set; }
 
         public BaseCommand() { }
 
@@ -81,18 +34,31 @@ namespace Command.Class
             NestLevel = parent == null ? 0 : parent.NestLevel + 1;
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             Children = new List<ICommand>();
+
+            OnStartCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
+            OnFinishCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
         }
 
-        public async Task<bool> Execute(CancellationToken cancellationToken )
+        public virtual async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            WeakReferenceMessenger.Default.Send(new ExecuteCommandMessage(this));
+            OnStartCommand?.Invoke(this, EventArgs.Empty);
+            bool result = await Task.FromResult(true); // 子クラスで上書き
+            OnFinishCommand?.Invoke(this, EventArgs.Empty);
+            return result;
+        }
 
-            return true;
-        }
-        public bool CanExecute()
+        public bool CanExecute() => true;
+
+        // 進捗報告を共通化
+        protected void ReportProgress(double elapsedMilliseconds, double totalMilliseconds)
         {
-            return true;
+            int progress = (int)((elapsedMilliseconds / totalMilliseconds) * 100);
+            WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(this, progress));
         }
+    }
+
+    public class RootCommand : BaseCommand, ICommand, IRootCommand
+    {
     }
 
     public class WaitImageCommand : BaseCommand, ICommand, IWaitImageCommand
@@ -101,17 +67,31 @@ namespace Command.Class
 
         public WaitImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new async public Task<bool> Execute(CancellationToken cancellationToken)
+        public override async Task<bool> Execute(CancellationToken cancellationToken)
         {
             await base.Execute(cancellationToken);
 
-            var point = await ImageSearchHelper.WaitForImageAsync(Settings.ImagePath, Settings.Threshold, Settings.Timeout, Settings.Interval, cancellationToken);
+            var stopwatch = Stopwatch.StartNew();
 
-            return point != null;
-        }
-        new public bool CanExecute()
-        {
-            return true;
+            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
+            {
+                var point = ImageSearchHelper.SearchImage(Settings.ImagePath);
+
+                if (point != null)
+                {
+                    OnFinishCommand?.Invoke(this, new EventArgs());
+
+                    return true;
+                }
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
+
+                await Task.Delay(Settings.Interval, cancellationToken);
+            }
+
+            return false;
         }
     }
 
@@ -121,42 +101,48 @@ namespace Command.Class
 
         public ClickImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        public override async Task<bool> Execute(CancellationToken cancellationToken)
         {
             await base.Execute(cancellationToken);
 
-            var point = await ImageSearchHelper.WaitForImageAsync(Settings.ImagePath, Settings.Threshold, Settings.Timeout, Settings.Interval, cancellationToken);
-                
-            if( point != null)
+            var stopwatch = Stopwatch.StartNew();
+
+            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                switch(Settings.Button)
+                var point = ImageSearchHelper.SearchImage(Settings.ImagePath);
+
+                if (point != null)
                 {
-                    case System.Windows.Input.MouseButton.Left:
-                        MouseControlHelper.Click(point.Value.X, point.Value.Y);
-                        break;
-                    case System.Windows.Input.MouseButton.Right:
-                        MouseControlHelper.RightClick(point.Value.X, point.Value.Y);
-                        break;
-                    case System.Windows.Input.MouseButton.Middle:
-                        MouseControlHelper.MiddleClick(point.Value.X, point.Value.Y);
-                        break;
-                    case System.Windows.Input.MouseButton.XButton1:
-                        //MouseControlHelper.XButton1Click(point.Value.X, point.Value.Y);
-                        break;
-                    case System.Windows.Input.MouseButton.XButton2:
-                        //MouseControlHelper.XButton2Click(point.Value.X, point.Value.Y);
-                        break;
+                    switch (Settings.Button)
+                    {
+                        case System.Windows.Input.MouseButton.Left:
+                            MouseControlHelper.Click(point.Value.X, point.Value.Y);
+                            break;
+                        case System.Windows.Input.MouseButton.Right:
+                            MouseControlHelper.RightClick(point.Value.X, point.Value.Y);
+                            break;
+                        case System.Windows.Input.MouseButton.Middle:
+                            MouseControlHelper.MiddleClick(point.Value.X, point.Value.Y);
+                            break;
+                        default:
+                            throw new Exception("Invalid MouseButton.");
+                    }
+
+                    OnFinishCommand?.Invoke(this, new EventArgs());
+
+                    return true;
                 }
 
-                return true;
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
+
+                await Task.Delay(Settings.Interval, cancellationToken);
             }
 
             return false;
         }
-        new public bool CanExecute()
-        {
-            return true;
-        }
+
     }
 
     public class HotkeyCommand : BaseCommand, ICommand, IHotkeyCommand
@@ -165,16 +151,12 @@ namespace Command.Class
 
         public HotkeyCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        public override async Task<bool> Execute(CancellationToken cancellationToken)
         {
             await base.Execute(cancellationToken);
 
-            KeyControlHelper.KeyPress(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift);
+            KeyControlHelper.KeyPress(Settings.Ctrl, Settings.Alt, Settings.Shift, Settings.Key);
 
-            return true;
-        }
-        new public bool CanExecute()
-        {
             return true;
         }
     }
@@ -185,11 +167,11 @@ namespace Command.Class
 
         public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings){ }
 
-        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        public override async Task<bool> Execute(CancellationToken cancellationToken)
         {
             await base.Execute(cancellationToken);
 
-            switch (Settings.Button)
+            switch(Settings.Button)
             {
                 case System.Windows.Input.MouseButton.Left:
                     MouseControlHelper.Click(Settings.X, Settings.Y);
@@ -201,13 +183,9 @@ namespace Command.Class
                     MouseControlHelper.MiddleClick(Settings.X, Settings.Y);
                     break;
                 default:
-                    throw new Exception("Invalid MouseButton.");
+                    throw new Exception("マウスボタンが不正です。");
             }
 
-            return true;
-        }
-        new public bool CanExecute()
-        {
             return true;
         }
     }
@@ -218,18 +196,21 @@ namespace Command.Class
 
         public WaitCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        public override async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            Debug.WriteLine($"{LineNumber} : WaitCommand");
-
             await base.Execute(cancellationToken);
 
-            await Task.Delay(Settings.Wait, cancellationToken);
+            var stopwatch = Stopwatch.StartNew();
 
-            return true;
-        }
-        new public bool CanExecute()
-        {
+            while (stopwatch.ElapsedMilliseconds < Settings.Wait)
+            {
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Wait);
+
+                await Task.Delay(100, cancellationToken);
+            }
+
             return true;
         }
     }
@@ -253,33 +234,52 @@ namespace Command.Class
 
             if (Children == null)
             {
-                throw new Exception("Children is null");
+                throw new Exception("If内に要素がありません。");
             }
 
-            var point = await ImageSearchHelper.WaitForImageAsync(Settings.ImagePath, Settings.Threshold, Settings.Timeout, Settings.Interval, cancellationToken);
+            var stopwatch = Stopwatch.StartNew();
 
-            if (point != null)
+            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                foreach (var command in Children)
+
+                var point = ImageSearchHelper.SearchImage(Settings.ImagePath);
+
+                if (point != null)
                 {
-                    if (!await command.Execute(cancellationToken))
+                    foreach (var command in Children)
                     {
-                        return false;
+                        WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
                     }
 
-                    if (cancellationToken.IsCancellationRequested)
+                    foreach (var command in Children)
                     {
-                        return false;
+                        if (!await command.Execute(cancellationToken))
+                        {
+                            return false;
+                        }
+
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            return false;
+                        }
                     }
+
+                    return true;
                 }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
+
+                await Task.Delay(Settings.Interval, cancellationToken);
             }
 
             return true;
         }
-        new public bool CanExecute()
-        {
-            return true;
-        }
+
     }
 
     public class IfImageNotExistCommand : BaseCommand, ICommand, IIfImageNotExistCommand
@@ -297,32 +297,45 @@ namespace Command.Class
 
             if (Children == null)
             {
-                throw new Exception("Children is null");
+                throw new Exception("If内に要素がありません。");
             }
 
-            var point = await ImageSearchHelper.WaitForImageAsync(Settings.ImagePath, Settings.Threshold, Settings.Timeout, Settings.Interval, cancellationToken);
+            var stopwatch = Stopwatch.StartNew();
 
-            if (point == null)
+            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                foreach (var command in Children)
-                {
-                    if (!await command.Execute(cancellationToken))
-                    {
-                        return false;
-                    }
+                var point = ImageSearchHelper.SearchImage(Settings.ImagePath);
 
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return false;
-                    }
+                if(point != null)
+                {
+                    return true;
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
+
+                await Task.Delay(Settings.Interval, cancellationToken);
+            }
+
+            OnFinishCommand?.Invoke(this, new EventArgs());
+
+            foreach (var command in Children)
+            {
+                if (!await command.Execute(cancellationToken))
+                {
+                    return false;
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return false;
                 }
             }
 
-            return true;
-        }
-        
-        new public bool CanExecute()
-        {
             return true;
         }
     }
@@ -334,19 +347,18 @@ namespace Command.Class
 
         public LoopCommand() { }
 
-        public LoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
-        {
-        }
+        public LoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
         new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
             await base.Execute(cancellationToken);
+            OnFinishCommand = null;
+
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             if ( Children == null)
             {
-                throw new Exception("Children is null");
+                throw new Exception("ループ内に要素がありません。");
             }
 
             try
@@ -355,10 +367,15 @@ namespace Command.Class
                 {
                     foreach (var command in Children)
                     {
-                        if (cancellationToken.IsCancellationRequested || _cts.IsCancellationRequested)
-                        {
-                            return false;
-                        }
+                        WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
+                    }
+
+                    foreach (var command in Children)
+                    {
+                        //if (cancellationToken.IsCancellationRequested || _cts.IsCancellationRequested)
+                        //{
+                        //    return false;
+                        //}
 
 
                         if (!await command.Execute(_cts.Token))
@@ -367,6 +384,8 @@ namespace Command.Class
                             return true;
                         }
                     }
+
+                    ReportProgress(i, Settings.LoopCount);
                 }
             }
             catch (OperationCanceledException)
@@ -380,10 +399,22 @@ namespace Command.Class
 
             return true;
         }
+    }
 
-        new public bool CanExecute()
+    public class EndLoopCommand : BaseCommand, ICommand, IEndLoopCommand
+    {
+        public IEndLoopCommandSettings Settings => (IEndLoopCommandSettings)base.Settings;
+
+        public EndLoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+
+        public override Task<bool> Execute(CancellationToken cancellationToken)
         {
-            return true;
+            foreach (var command in Children)
+            {
+                WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
+            }
+
+            return Task.FromResult(true);
         }
     }
 
@@ -396,11 +427,6 @@ namespace Command.Class
             await base.Execute(cancellationToken);
 
             return false;
-        }
-
-        new public bool CanExecute()
-        {
-            return true;
         }
     }
 }

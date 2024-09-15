@@ -16,7 +16,8 @@ namespace Command.Interface
         IEnumerable<ICommand> Children { get; set; }
         int NestLevel { get; set; }
         ICommandSettings Settings { get; }
-        EventHandler<int>? OnCommandRunning { get; set; }
+        EventHandler OnStartCommand { get; set; }
+        EventHandler OnFinishCommand { get; set; }
 
         Task<bool> Execute(CancellationToken cancellationToken);
 
@@ -69,6 +70,11 @@ namespace Command.Interface
     public interface ILoopCommand : ICommand
     {
         new ILoopCommandSettings Settings { get; }
+    }
+
+    public interface IEndLoopCommand : ICommand
+    {
+        new IEndLoopCommandSettings Settings { get; }
     }
 
     public interface IBreakCommand : ICommand

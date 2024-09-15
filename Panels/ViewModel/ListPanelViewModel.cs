@@ -30,7 +30,35 @@ namespace Panels.ViewModel
             set
             {
                 SetProperty(ref _selectedLineNumber, value);
-                OnUpdateSelectedLineNumber();
+
+                var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
+                if (existingItem != null)
+                {
+                    WeakReferenceMessenger.Default.Send(new SelectMessage(existingItem));
+                }
+            }
+        }
+
+        private ICommandListItem? _selectedItem;
+        public ICommandListItem? SelectedItem
+        {
+            get => _selectedItem;
+            set
+            {
+                SetProperty(ref _selectedItem, value);
+
+                var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == value.LineNumber);
+                if (existingItem != null)
+                {
+                    var index = CommandList.Items.IndexOf(existingItem);
+                    CommandList.Items[index] = value;
+
+                    CommandList.CalcurateNestLevel();
+                    CommandList.PairIfItems();
+                    CommandList.PairLoopItems();
+
+                    CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+                }
             }
         }
 
@@ -47,10 +75,10 @@ namespace Panels.ViewModel
                 if (cmd != null)
                 {
                     cmd.IsRunning = true;
+                    CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
                 }
             }
         }
-
 
         public ListPanelViewModel()
         {
@@ -139,27 +167,6 @@ namespace Panels.ViewModel
                 {
                     SelectedLineNumber = index;
                 }
-            }
-        }
-
-        private void OnUpdateSelectedLineNumber()
-        {
-            var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
-            if (existingItem != null)
-            {
-                WeakReferenceMessenger.Default.Send(new SelectMessage(existingItem));
-            }
-        }
-
-        public void UpdateSelectedItem(ICommandListItem item)
-        {
-            var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == item.LineNumber);
-            if (existingItem != null)
-            {
-                var index = CommandList.Items.IndexOf(existingItem);
-                CommandList.Items[index] = item;
-
-                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
             }
         }
     }

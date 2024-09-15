@@ -51,5 +51,12 @@ namespace Command.Interface
     public interface ILoopCommandSettings : ICommandSettings
     {
         int LoopCount { get; set; }
+        ICommand? Pair { get; set; }
+    }
+
+    public interface IEndLoopCommandSettings : ICommandSettings
+    {
+        int LoopCount { get; set; }
+        ICommand? Pair { get; set; }
     }
 }

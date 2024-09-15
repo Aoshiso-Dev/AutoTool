@@ -3,6 +3,7 @@ using Command.Class;
 using Panels.List.Class;
 using System.Diagnostics;
 using Panels.Model.List.Interface;
+using System.Windows;
 
 namespace Panels.Model.MacroFactory
 {
@@ -84,6 +85,7 @@ namespace Panels.Model.MacroFactory
                     command = CreateLoopComand(parent, loopItem, items);
                     break;
                 case EndLoopItem endLoopItem:
+                    //command = CreateEndLoopCommand(parent, endLoopItem, items);
                     command = null;
                     break;
                 case BreakItem breakItem:
@@ -170,7 +172,7 @@ namespace Panels.Model.MacroFactory
             }
 
             // IfCommandを作成
-            IIfCommand ifCommand = new IfCommand(new RootCommand(), new CommandSettings());
+            IIfCommand ifCommand = new IfCommand(new BaseCommand(), new CommandSettings());
             switch (ifItem)
             {
                 case IfImageExistItem ifImageExistItem:
@@ -217,7 +219,7 @@ namespace Panels.Model.MacroFactory
 
             if (endLoopItem == null)
             {
-                throw new Exception("loopItem.Pair is null");
+                throw new Exception("対になるEndLoopが見つかりません。");
             }
 
             // loopItemとendLoopItemの間のコマンドを取得
@@ -225,13 +227,15 @@ namespace Panels.Model.MacroFactory
 
             if (childrenListItems.Count == 0)
             {
-                throw new Exception("childrenListItems.Count is 0");
+                throw new Exception("Loopの中に要素がありません。");
             }
 
             // LoopCommandを作成
+            var endLoopCommand = parent.Children.FirstOrDefault(x => x.LineNumber == loopItem.Pair?.LineNumber) as EndLoopCommand;
             var loopCommand = new LoopCommand(parent, new LoopCommandSettings()
             {
                 LoopCount = loopItem.LoopCount,
+                Pair = endLoopCommand,
             })
             {
                 LineNumber = loopItem.LineNumber,
@@ -245,6 +249,28 @@ namespace Panels.Model.MacroFactory
 
 
             return loopCommand;
+        }
+
+        private static EndLoopCommand CreateEndLoopCommand(ICommand parent, IEndLoopItem endLoopItem, IEnumerable<ICommandListItem> items)
+        {
+            var loopItem = endLoopItem.Pair as LoopItem;
+            if(loopItem == null)
+            {
+                throw new Exception("対になるLoopが見つかりません。");
+            }
+
+            var loopCommand = parent.Children.FirstOrDefault(x => x.LineNumber == loopItem.LineNumber);
+
+            if (loopCommand == null)
+            {
+                throw new Exception("対になるLoopCommandが見つかりません。");
+            }
+
+            return new EndLoopCommand(parent, new EndLoopCommandSettings() { Pair = loopCommand })
+            {
+                LineNumber = endLoopItem.LineNumber,
+                Children = loopCommand.Children,
+            };
         }
     }
 }

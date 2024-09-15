@@ -19,6 +19,7 @@ namespace Panels.Model.List.Interface
         public int NestLevel { get; set; }
         public bool IsInLoop { get; set; }
         public bool IsInIf { get; set; }
+        public int Progress { get; set; }
 
         ICommandListItem Clone();
     }
@@ -62,7 +63,6 @@ namespace Panels.Model.List.Interface
 
     public interface IIfItem : ICommandListItem
     {
-        [JsonIgnore]
         public ICommandListItem? Pair { get; set; }
     }
 
@@ -84,20 +84,17 @@ namespace Panels.Model.List.Interface
 
     public interface IEndIfItem : ICommandListItem
     {
-        [JsonIgnore]
         public ICommandListItem? Pair { get; set; }
     }
 
     public interface ILoopItem : ICommandListItem
     {
         public int LoopCount { get; set; }
-        [JsonIgnore]
         public ICommandListItem? Pair { get; set; }
     }
 
     public interface IEndLoopItem : ICommandListItem
     {
-        [JsonIgnore]
         public ICommandListItem? Pair { get; set; }
     }
 
