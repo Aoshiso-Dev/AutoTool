@@ -16,7 +16,7 @@ using System.Windows.Input;
 
 namespace Panels.List.Class
 {
-    internal partial class CommandListItem : ObservableObject, ICommandListItem
+    public partial class CommandListItem : ObservableObject, ICommandListItem
     {
         [ObservableProperty]
         private bool _isRunning = false;
@@ -59,7 +59,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImageCommandSettings
+    public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
         private string _imagePath = string.Empty;
@@ -91,7 +91,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class ClickImageItem : CommandListItem, IClickImageItem, IClickImageCommandSettings
+    public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickImageCommandSettings
     {
         [ObservableProperty]
         private string _imagePath = string.Empty;
@@ -126,7 +126,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class HotkeyItem : CommandListItem, IHotkeyItem, IHotkeyCommandSettings
+    public partial class HotkeyItem : CommandListItem, IHotkeyItem, IHotkeyCommandSettings
     {
         [ObservableProperty]
         private bool _ctrl = false;
@@ -171,7 +171,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class ClickItem : CommandListItem, IClickItem, IClickCommandSettings
+    public partial class ClickItem : CommandListItem, IClickItem, IClickCommandSettings
     {
         [ObservableProperty]
         private int _x = 0;
@@ -200,7 +200,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class WaitItem : CommandListItem, IWaitItem, IWaitCommandSettings
+    public partial class WaitItem : CommandListItem, IWaitItem, IWaitCommandSettings
     {
         [ObservableProperty]
         private int _wait = 5000;
@@ -222,7 +222,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IWaitImageCommandSettings
+    public partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
         private string _imagePath = string.Empty;
@@ -257,7 +257,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IWaitImageCommandSettings
+    public partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
         private string _imagePath = string.Empty;
@@ -292,7 +292,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class EndIfItem : CommandListItem, IEndIfItem
+    public partial class EndIfItem : CommandListItem, IEndIfItem
     {
         [ObservableProperty]
         private ICommandListItem? _pair = null;
@@ -308,7 +308,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class LoopItem : CommandListItem, ILoopItem, ICommandListItem
+    public partial class LoopItem : CommandListItem, ILoopItem, ICommandListItem
     {
         [ObservableProperty]
         private int _loopCount = 2;
@@ -334,7 +334,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class EndLoopItem : CommandListItem, IEndLoopItem
+    public partial class EndLoopItem : CommandListItem, IEndLoopItem
     {
         [ObservableProperty]
         private ICommandListItem? _pair = null;
@@ -357,7 +357,7 @@ namespace Panels.List.Class
         }
     }
 
-    internal partial class BreakItem : CommandListItem, IBreakItem
+    public partial class BreakItem : CommandListItem, IBreakItem
     {
         public BreakItem() { }
 

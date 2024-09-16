@@ -16,6 +16,7 @@ using Command.Interface;
 using Command.Message;
 using System.Windows.Controls;
 using System.Windows.Data;
+using Panels.Model.List.Interface;
 
 namespace AutoTool
 {
@@ -25,9 +26,6 @@ namespace AutoTool
 
         [ObservableProperty]
         private ButtonPanelViewModel _buttonPanelViewModel;
-
-        [ObservableProperty]
-        private FavoritePanelViewModel _runningPanelViewModel;
 
         [ObservableProperty]
         private ListPanelViewModel _listPanelViewModel;
@@ -50,84 +48,89 @@ namespace AutoTool
             EditPanelViewModel = new EditPanelViewModel();
             ButtonPanelViewModel = new ButtonPanelViewModel();
             LogPanelViewModel = new LogPanelViewModel();
-            RunningPanelViewModel = new FavoritePanelViewModel();
             FavoritePanelViewModel = new FavoritePanelViewModel();
 
+            // From ButtonPanelViewModel
             WeakReferenceMessenger.Default.Register<RunMessage>(this, async (sender, message) =>
             {
+                ListPanelViewModel.Prepare();
+                EditPanelViewModel.Prepare();
+                LogPanelViewModel.Prepare();
+                FavoritePanelViewModel.Prepare();
+                ButtonPanelViewModel.Prepare();
+
+                ListPanelViewModel.SetRunningState(true);
+                EditPanelViewModel.SetRunningState(true);
+                FavoritePanelViewModel.SetRunningState(true);
+                LogPanelViewModel.SetRunningState(true);
+                ButtonPanelViewModel.SetRunningState(true);
+
                 await Run();
             });
-
             WeakReferenceMessenger.Default.Register<StopMessage>(this, (sender, message) =>
             {
+                ListPanelViewModel.SetRunningState(false);
+                EditPanelViewModel.SetRunningState(false);
+                FavoritePanelViewModel.SetRunningState(false);
+                LogPanelViewModel.SetRunningState(false);
+                ButtonPanelViewModel.SetRunningState(false);
+
                 _cts?.Cancel();
             });
-
             WeakReferenceMessenger.Default.Register<SaveMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.Save();
             });
-
             WeakReferenceMessenger.Default.Register<LoadMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.Load();
             });
-
             WeakReferenceMessenger.Default.Register<ClearMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.Clear();
             });
-
             WeakReferenceMessenger.Default.Register<AddMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.Add((message as AddMessage).ItemType);
             });
-
             WeakReferenceMessenger.Default.Register<UpMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.Up();
             });
-
             WeakReferenceMessenger.Default.Register<DownMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.Down();
             });
-
             WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.Delete();
 
                 if (ListPanelViewModel.GetCount() == 0)
                 {
-                    EditPanelViewModel.Item = null;
+                    EditPanelViewModel.SetItem(null);
                 }
             });
 
+            // From ListPanelViewModel
             WeakReferenceMessenger.Default.Register<ChangeSelectedMessage>(this, (sender, message) =>
             {
                 EditPanelViewModel.SetItem((message as ChangeSelectedMessage).Item);
             });
 
-            WeakReferenceMessenger.Default.Register<ApplyMessage>(this, (sender, message) =>
+            // From EditPanelViewModel
+            WeakReferenceMessenger.Default.Register<RefreshListViewMessage>(this, (sender, message) =>
             {
-                ListPanelViewModel.SelectedItem = EditPanelViewModel.Item;
-                ListPanelViewModel.SelectedLineNumber = EditPanelViewModel.Item != null ? EditPanelViewModel.Item.LineNumber - 1 : 0;
+                ListPanelViewModel.Refresh();
             });
 
-            WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>
-            {
-                LogPanelViewModel.Log += message.Text + Environment.NewLine;
-            });
-
+            // From Commands
             WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (sender, message) =>
             {
                 var command = (message as StartCommandMessage).Command;
 
-                LogPanelViewModel.Log += $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Started\n";
-                ListPanelViewModel.ExecutedLineNumber = command.LineNumber;
+                LogPanelViewModel.WriteLog($"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Started");
 
-                
-                var commandItem = ListPanelViewModel.CommandList.Items.FirstOrDefault(x => x.LineNumber == command.LineNumber);
+                var commandItem = ListPanelViewModel.GetExecutedItem();
 
                 if (commandItem != null)
                 {
@@ -135,23 +138,20 @@ namespace AutoTool
                     commandItem.IsRunning = true;
                 }
             });
-
             WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (sender, message) =>
             {
                 var command = (message as FinishCommandMessage).Command;
 
-                LogPanelViewModel.Log += $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Finished\n";
-                ListPanelViewModel.ExecutedLineNumber = 0;
+                LogPanelViewModel.WriteLog($"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Finished");
 
-                var commandItem = ListPanelViewModel.CommandList.Items.FirstOrDefault(x => x.LineNumber == command.LineNumber);
+                var commandItem = ListPanelViewModel.GetExecutedItem();
 
                 if (commandItem != null)
                 {
                     commandItem.Progress = 0;
                     commandItem.IsRunning = false;
                 }
-        });
-
+            });
             WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (sender, message) =>
             {
                 var command = (message as UpdateProgressMessage).Command;
@@ -164,6 +164,12 @@ namespace AutoTool
                     commandItem.Progress = progress;
                 }
             });
+
+            // From Other
+            WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>
+            {
+                LogPanelViewModel.WriteLog((message as LogMessage).Text);
+            });
         }
 
         public async Task Run()
@@ -171,12 +177,14 @@ namespace AutoTool
             var listItems = ListPanelViewModel.CommandList.Items;
             var macro = MacroFactory.CreateMacro(listItems) as LoopCommand;
 
+            if(macro == null)
+            {
+                return;
+            }
+
             try
             {
-                ListPanelViewModel.CommandList.Items.ToList().ForEach(x => x.Progress = 0);
-
-                ButtonPanelViewModel.IsRunning = true;
-                EditPanelViewModel.IsRunning = true;
+                SetRunningState(true);
 
                 _cts = new CancellationTokenSource();
 
@@ -196,11 +204,19 @@ namespace AutoTool
                 _cts?.Dispose();
                 _cts = null;
 
-                ButtonPanelViewModel.IsRunning = false;
-                EditPanelViewModel.IsRunning = false;
+                SetRunningState(false);
 
                 ListPanelViewModel.CommandList.Items.ToList().ForEach(x => x.Progress = 0);
             }
+        }
+
+        public void SetRunningState(bool isRunning)
+        {
+            ButtonPanelViewModel.SetRunningState(isRunning);
+            EditPanelViewModel.SetRunningState(isRunning);
+            FavoritePanelViewModel.SetRunningState(isRunning);
+            ListPanelViewModel.SetRunningState(isRunning);
+            LogPanelViewModel.SetRunningState(isRunning);
         }
     }
 }

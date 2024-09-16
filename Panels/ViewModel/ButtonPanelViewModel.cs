@@ -91,5 +91,13 @@ namespace Panels.ViewModel
         {
             WeakReferenceMessenger.Default.Send(new DeleteMessage());
         }
+        public void SetRunningState(bool isRunning)
+        {
+            IsRunning = isRunning;
+        }
+
+        public void Prepare()
+        {
+        }
     }
 }

@@ -79,6 +79,11 @@ internal class CommandListItemConverter : JsonConverter<ICommandListItem>
             var jsonObject = doc.RootElement;
             var type = jsonObject.GetProperty("ItemType").GetString();
 
+            if(type == null)
+            {
+                throw new JsonException("ItemType is not found");
+            }
+
             if (_itemTypeMapping.TryGetValue(type, out Type? targetType))
             {
                 return (ICommandListItem?)JsonSerializer.Deserialize(jsonObject.GetRawText(), targetType, options)

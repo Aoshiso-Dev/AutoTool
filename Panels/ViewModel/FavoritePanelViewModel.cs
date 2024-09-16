@@ -27,5 +27,14 @@ namespace Panels.ViewModel
             FavoriteList.Add("test3");
 
         }
+
+        public void SetRunningState(bool isRunning)
+        {
+            IsRunning = isRunning;
+        }
+
+        public void Prepare()
+        {
+        }
     }
 }

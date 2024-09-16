@@ -20,6 +20,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 using System.Collections;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace Panels.ViewModel
 {
@@ -27,21 +28,36 @@ namespace Panels.ViewModel
     {
         [ObservableProperty]
         private bool _isRunning = false;
-        
+
+        private bool _isUpdating;
+
         #region Item
-        private ICommandListItem? _item = new CommandListItem();
+        private ICommandListItem? _item = null;
         public ICommandListItem? Item
         {
-            get { return _item; }
+            get => _item;
             set
             {
-                if (SetProperty(ref _item, value))
-                {
-                    UpdateVisibility();
-                    UpdateItemProperties();
-                }
+                SetProperty(ref _item, value);
+                OnItemChanged();
             }
         }
+        #endregion
+
+        #region IsProperties
+        public bool IsNotNullItem => Item != null;
+        public bool IsWaitImageItem => Item is WaitImageItem;
+        public bool IsClickImageItem => Item is ClickImageItem;
+        public bool IsHotkeyItem => Item is HotkeyItem;
+        public bool IsClickItem => Item is ClickItem;
+        public bool IsWaitItem => Item is WaitItem;
+        public bool IsLoopItem => Item is LoopItem;
+        public bool IsEndLoopItem => Item is EndLoopItem;
+        public bool IsBreakItem => Item is BreakItem;
+        public bool IsIfImageExistItem => Item is IfImageExistItem;
+        public bool IsIfImageNotExistItem => Item is IfImageNotExistItem;
+        public bool IsEndIfItem => Item is EndIfItem;
+
         #endregion
 
         #region ItemProperties
@@ -383,12 +399,13 @@ namespace Panels.ViewModel
             get { return Item != null ? Item.ItemType : "None"; }
             set
             {
-                if (Item != null)
+                if (Item == null)
                 {
-                    Item.ItemType = value;
-                    OnSelectedItemTypeChanged();
-                    UpdateItemProperties();
+                    return;
                 }
+
+                Item.ItemType = value;
+                OnSelectedItemTypeChanged();
             }
         }
 
@@ -437,6 +454,13 @@ namespace Panels.ViewModel
             }
         }
 
+        #region OnChanged
+        private void OnItemChanged()
+        {
+            UpdateItemProperties();
+            UpdateIsProperties();
+        }
+
         private void OnSelectedItemTypeChanged()
         {
             if(Item == null)
@@ -483,101 +507,71 @@ namespace Panels.ViewModel
                     Item = new EndIfItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.EndIf) };
                     break;
             }
+
+            UpdateItemProperties();
+            UpdateIsProperties();
         }
+        #endregion
 
-        private void UpdateVisibility()
+        #region Update
+        private void UpdateIsProperties()
         {
-            VisibilityCommand = Item != null ? Visibility.Visible : Visibility.Collapsed;
-
-            VisibilityImagePath = Visibility.Collapsed;
-            VisibilityThreshold = Visibility.Collapsed;
-            VisibilityTimeout = Visibility.Collapsed;
-            VisibilityInterval = Visibility.Collapsed;
-            VisibilityXYPos = Visibility.Collapsed;
-            VisibilityMouseButton = Visibility.Collapsed;
-            VisibilityHotkey = Visibility.Collapsed;
-            VisibilityClick = Visibility.Collapsed;
-            VisibilityWait = Visibility.Collapsed;
-            VisibilityLoop = Visibility.Collapsed;
-
-            if (Item is IWaitImageItem)
-            {
-                VisibilityImagePath = Visibility.Visible;
-                VisibilityThreshold = Visibility.Visible;
-                VisibilityTimeout = Visibility.Visible;
-                VisibilityInterval = Visibility.Visible;
-            }
-            else if (Item is IClickImageItem)
-            {
-                VisibilityImagePath = Visibility.Visible;
-                VisibilityThreshold = Visibility.Visible;
-                VisibilityTimeout = Visibility.Visible;
-                VisibilityInterval = Visibility.Visible;
-                VisibilityMouseButton = Visibility.Visible;
-            }
-            else if (Item is IHotkeyItem)
-            {
-                VisibilityHotkey = Visibility.Visible;
-            }
-            else if (Item is IClickItem)
-            {
-                VisibilityXYPos = Visibility.Visible;
-                VisibilityMouseButton = Visibility.Visible;
-            }
-            else if (Item is IWaitItem)
-            {
-                VisibilityWait = Visibility.Visible;
-            }
-            else if (Item is ILoopItem)
-            {
-                VisibilityLoop = Visibility.Visible;
-            }
-            else if(Item is IEndLoopItem)
-            {
-            }
-            else if(Item is IBreakItem)
-            {
-            }
-            else if (Item is IIfImageExistItem)
-            {
-                VisibilityImagePath = Visibility.Visible;
-                VisibilityThreshold = Visibility.Visible;
-                VisibilityTimeout = Visibility.Visible;
-                VisibilityInterval = Visibility.Visible;
-            }
-            else if (Item is IIfImageNotExistItem)
-            {
-                VisibilityImagePath = Visibility.Visible;
-                VisibilityThreshold = Visibility.Visible;
-                VisibilityTimeout = Visibility.Visible;
-                VisibilityInterval = Visibility.Visible;
-            }
-            else if (Item is IEndIfItem)
-            {
-            }
-
+            OnPropertyChanged(nameof(IsNotNullItem));
+            OnPropertyChanged(nameof(IsWaitImageItem));
+            OnPropertyChanged(nameof(IsClickImageItem));
+            OnPropertyChanged(nameof(IsHotkeyItem));
+            OnPropertyChanged(nameof(IsClickItem));
+            OnPropertyChanged(nameof(IsWaitItem));
+            OnPropertyChanged(nameof(IsLoopItem));
+            OnPropertyChanged(nameof(IsEndLoopItem));
+            OnPropertyChanged(nameof(IsBreakItem));
+            OnPropertyChanged(nameof(IsIfImageExistItem));
+            OnPropertyChanged(nameof(IsIfImageNotExistItem));
+            OnPropertyChanged(nameof(IsEndIfItem));
         }
 
         void UpdateItemProperties()
         {
-            OnPropertyChanged(nameof(SelectedItemType));
-            OnPropertyChanged(nameof(ImagePath));
-            OnPropertyChanged(nameof(Threshold));
-            OnPropertyChanged(nameof(Timeout));
-            OnPropertyChanged(nameof(Interval));
-            OnPropertyChanged(nameof(MouseButton));
-            OnPropertyChanged(nameof(Ctrl));
-            OnPropertyChanged(nameof(Alt));
-            OnPropertyChanged(nameof(Shift));
-            OnPropertyChanged(nameof(Key));
-            OnPropertyChanged(nameof(X));
-            OnPropertyChanged(nameof(Y));
-            OnPropertyChanged(nameof(Wait));
-            OnPropertyChanged(nameof(LoopCount));
+            if (_isUpdating) return;
 
-            WeakReferenceMessenger.Default.Send(new ApplyMessage());
+            try
+            {
+                _isUpdating = true;
+                OnPropertyChanged(nameof(Item));
+                OnPropertyChanged(nameof(SelectedItemType));
+                OnPropertyChanged(nameof(ImagePath));
+                OnPropertyChanged(nameof(Threshold));
+                OnPropertyChanged(nameof(Timeout));
+                OnPropertyChanged(nameof(Interval));
+                OnPropertyChanged(nameof(MouseButton));
+                OnPropertyChanged(nameof(Ctrl));
+                OnPropertyChanged(nameof(Alt));
+                OnPropertyChanged(nameof(Shift));
+                OnPropertyChanged(nameof(Key));
+                OnPropertyChanged(nameof(X));
+                OnPropertyChanged(nameof(Y));
+                OnPropertyChanged(nameof(Wait));
+                OnPropertyChanged(nameof(LoopCount));
+
+                WeakReferenceMessenger.Default.Send(new RefreshListViewMessage());
+            }
+            finally
+            {
+                _isUpdating = false;
+            }
         }
+        #endregion
 
+        #region Command
+        [RelayCommand]
+        private void Enter(KeyEventArgs e)
+        {
+            // エンターキーが押されたときのみ処理を行う
+            if (e.Key == Key.Enter)
+            {
+                OnPropertyChanged();
+            }
+        }
         [RelayCommand]
         public void Browse()
         {
@@ -638,16 +632,28 @@ namespace Panels.ViewModel
                 Y = (int)captureWindow.SelectedPoint.Y;
             }
         }
+        #endregion
 
-        [RelayCommand]
-        public void Apply()
+        #region Call from MainWindowViewModel
+        public ICommandListItem? GetItem()
         {
-            WeakReferenceMessenger.Default.Send(new ApplyMessage());
+            return Item;
         }
 
-        public void SetItem(ICommandListItem item)
+        public void SetItem(ICommandListItem? item)
         {
             Item = item;
         }
+
+        public void SetRunningState(bool isRunning)
+        {
+            IsRunning = isRunning;
+        }
+
+        public void Prepare()
+        {
+        }
+
+        #endregion
     }
 }

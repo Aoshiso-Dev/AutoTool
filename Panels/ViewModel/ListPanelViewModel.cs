@@ -21,6 +21,10 @@ namespace Panels.ViewModel
 {
     public partial class ListPanelViewModel : ObservableObject
     {
+        #region Properties
+        [ObservableProperty]
+        private bool _isRunning;
+
         [ObservableProperty]
         private CommandList _commandList = new();
 
@@ -31,42 +35,18 @@ namespace Panels.ViewModel
             set
             {
                 SetProperty(ref _selectedLineNumber, value);
-
-                var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
-                if (existingItem != null)
-                {
-                    WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(existingItem));
-                }
+                OnSelectedLineNumberChanged();
             }
         }
 
-        private ICommandListItem? _selectedItem;
+        private ICommandListItem? _selectedItem = null;
         public ICommandListItem? SelectedItem
         {
             get => _selectedItem;
             set
             {
                 SetProperty(ref _selectedItem, value);
-
-                if(value == null)
-                {
-                    return;
-                }
-
-                var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == value.LineNumber);
-                if (existingItem != null)
-                {
-                    var index = CommandList.Items.IndexOf(existingItem);
-                    CommandList.Items[index] = value;
-
-                    CommandList.CalcurateNestLevel();
-                    CommandList.PairIfItems();
-                    CommandList.PairLoopItems();
-
-                    SelectedLineNumber = value.LineNumber - 1;
-
-                    CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-                }
+                OnSelectedItemChanged();
             }
         }
 
@@ -77,20 +57,45 @@ namespace Panels.ViewModel
             set
             {
                 SetProperty(ref _executedLineNumber, value);
-                CommandList.Items.ToList().ForEach(x => x.IsRunning = false);
-                var cmd = CommandList.Items.Where(x => x.LineNumber == value).FirstOrDefault();
-                if (cmd != null)
-                {
-                    cmd.IsRunning = true;
-                    CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-                }
+                OnExecutedLineNumberChanged();
             }
         }
+        #endregion
 
         public ListPanelViewModel()
         {
         }
 
+
+        #region OnChanged
+        private void OnSelectedLineNumberChanged()
+        {
+            var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
+            WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(existingItem));
+        }
+
+        private void OnSelectedItemChanged()
+        {
+            WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(SelectedItem));
+        }
+
+        private void OnExecutedLineNumberChanged()
+        {
+            CommandList.Items.ToList().ForEach(x => x.IsRunning = false);
+            var cmd = CommandList.Items.Where(x => x.LineNumber == ExecutedLineNumber).FirstOrDefault();
+            if (cmd != null)
+            {
+                cmd.IsRunning = true;
+                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+            }
+        }
+        #endregion
+
+        #region ListIntaraction
+        public void Refresh()
+        {
+            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+        }
         public void Add(string itemType)
         {
             ICommandListItem? item = itemType switch
@@ -122,7 +127,8 @@ namespace Panels.ViewModel
                     CommandList.Add(item);
                 }
 
-                SelectedLineNumber = CommandList.Items.IndexOf(item);
+                SetSelectedLineNumber(CommandList.Items.IndexOf(item));
+                SetSelectedItem(item);
 
                 CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
             }
@@ -137,7 +143,7 @@ namespace Panels.ViewModel
 
             var selectedBak = SelectedLineNumber;
             CommandList.Move(SelectedLineNumber, SelectedLineNumber - 1);
-            SelectedLineNumber = selectedBak - 1;
+            SetSelectedLineNumber(selectedBak - 1);
         }
 
         public void Down()
@@ -149,7 +155,7 @@ namespace Panels.ViewModel
 
             var selectedBak = SelectedLineNumber;
             CommandList.Move(SelectedLineNumber, SelectedLineNumber + 1);
-            SelectedLineNumber = selectedBak + 1;
+            SetSelectedLineNumber(selectedBak + 1);
         }
 
         public void Delete()
@@ -163,15 +169,15 @@ namespace Panels.ViewModel
             var index = CommandList.Items.IndexOf(SelectedItem);
             if (CommandList.Items.Count == 0)
             {
-                SelectedLineNumber = 0;
+                SetSelectedLineNumber(0);
             }
             else if (index == CommandList.Items.Count)
             {
-                SelectedLineNumber = index - 1;
+                SetSelectedLineNumber(index - 1);
             }
             else
             {
-                SelectedLineNumber = index;
+                SetSelectedLineNumber(index);
             }
             
             // 削除
@@ -181,7 +187,7 @@ namespace Panels.ViewModel
         public void Clear()
         {
             CommandList.Clear();
-            SelectedLineNumber = 0;
+            SetSelectedLineNumber(0);
             SelectedItem = null;
         }
 
@@ -193,13 +199,44 @@ namespace Panels.ViewModel
         public void Load()
         {
             CommandList.Load();
-            SelectedLineNumber = 0;
+            SetSelectedLineNumber(0);
             SelectedItem = null;
         }
+        #endregion
 
+        #region Call from MainWindowViewModel
         public int GetCount()
         {
             return CommandList.Items.Count;
         }
+
+        public ICommandListItem? GetExecutedItem()
+        {
+            return CommandList.Items.Where(x => x.IsRunning == IsRunning).FirstOrDefault();
+        }
+
+        public void SetRunningState(bool isRunning)
+        {
+            IsRunning = isRunning;
+        }
+
+        public void SetSelectedItem(ICommandListItem? item)
+        {
+            SelectedItem = item;
+        }
+
+        public void SetSelectedLineNumber(int lineNumber)
+        {
+            SelectedLineNumber = lineNumber;
+        }
+
+        public void Prepare()
+        {
+            CommandList.Items.ToList().ForEach(x => x.IsRunning = false);
+            CommandList.Items.ToList().ForEach(x => x.Progress = 0);
+
+            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+        }
+        #endregion
     }
 }

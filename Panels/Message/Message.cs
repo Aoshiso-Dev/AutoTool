@@ -53,11 +53,11 @@ namespace Panels.Message
 
     public class  ChangeSelectedMessage
     {
-        public ICommandListItem Item { get; set; }
-        public ChangeSelectedMessage(ICommandListItem item) { Item = item; }
+        public ICommandListItem? Item { get; set; }
+        public ChangeSelectedMessage(ICommandListItem? item) { Item = item; }
     }
 
-    public class ApplyMessage
+    public class RefreshListViewMessage
     {
     }
 }
