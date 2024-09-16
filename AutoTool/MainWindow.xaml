@@ -23,9 +23,11 @@
             <TabItem Header="ログ">
                 <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="2"/>
             </TabItem>
+            <!--
             <TabItem Header="お気に入り">
                 <panels:FavoritePanel DataContext="{Binding FavoritePanelViewModel}" Margin="2"/>
             </TabItem>
+            -->
         </TabControl>
 
         <panels:ListPanel DataContext="{Binding ListPanelViewModel}" Margin="2"/>

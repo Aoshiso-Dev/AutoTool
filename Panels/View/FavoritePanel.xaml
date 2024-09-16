@@ -8,29 +8,15 @@
              d:DesignHeight="150" d:DesignWidth="1000">
 
     <Grid>
-        <DataGrid ItemsSource="{Binding FavoriteList}">
-            <DataGrid.Columns>
+        <StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="名前 :" Margin="2"/>
+                <TextBox Text="{Binding FavoriteName}" Width="200" Margin="2"/>
+                <Button Content="現在のリストを追加" Command="{Binding AddFavoriteCommand}" HorizontalAlignment="Left" Width="100" Margin="2"/>
+            </StackPanel>
 
-                <DataGridTemplateColumn Header="名前" Width="100">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBox Text="{Binding Name}" Width="100"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <DataGridTemplateColumn Header="ボタン">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="削除"/>
-                                <Button Content="登録"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                
-            </DataGrid.Columns>
-        </DataGrid>
+            <DataGrid ItemsSource="{Binding FavoriteList}">
+            </DataGrid>
+        </StackPanel>
     </Grid>
 </UserControl>

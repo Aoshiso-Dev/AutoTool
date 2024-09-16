@@ -51,12 +51,6 @@ namespace Panels.Message
     {
     }
 
-    public class EditMessage
-    {
-        public ICommandListItem Item { get; set; }
-        public EditMessage(ICommandListItem item) { Item = item; }
-    }
-
     public class  ChangeSelectedMessage
     {
         public ICommandListItem Item { get; set; }
@@ -65,11 +59,5 @@ namespace Panels.Message
 
     public class ApplyMessage
     {
-    }
-
-    public class ChangeTabMessage
-    {
-        public int TabIndex { get; set; }
-        public ChangeTabMessage(int tabIndex) { TabIndex = tabIndex; }
     }
 }

@@ -308,6 +308,7 @@ namespace Command.Class
 
                 if(point != null)
                 {
+                    OnFinishCommand?.Invoke(this, new EventArgs());
                     return true;
                 }
 

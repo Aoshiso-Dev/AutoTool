@@ -48,6 +48,16 @@ namespace Panels.List.Class
             PairLoopItems();
         }
 
+        public void Insert(int index, ICommandListItem item)
+        {
+            Items.Insert(index, item);
+
+            ReorderItems();
+            CalcurateNestLevel();
+            PairIfItems();
+            PairLoopItems();
+        }
+
         public void Clear()
         {
             Items.Clear();

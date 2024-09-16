@@ -644,5 +644,10 @@ namespace Panels.ViewModel
         {
             WeakReferenceMessenger.Default.Send(new ApplyMessage());
         }
+
+        public void SetItem(ICommandListItem item)
+        {
+            Item = item;
+        }
     }
 }

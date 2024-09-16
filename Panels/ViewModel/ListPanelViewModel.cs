@@ -14,6 +14,7 @@ using Panels.Message;
 using CommunityToolkit.Mvvm.Messaging;
 using Panels.Model;
 using System.Windows.Data;
+using System.Security.Cryptography.X509Certificates;
 
 
 namespace Panels.ViewModel
@@ -62,12 +63,13 @@ namespace Panels.ViewModel
                     CommandList.PairIfItems();
                     CommandList.PairLoopItems();
 
+                    SelectedLineNumber = value.LineNumber - 1;
+
                     CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
                 }
             }
         }
 
-        //[ObservableProperty]
         private int _executedLineNumber = 0;
         public int ExecutedLineNumber
         {
@@ -89,7 +91,6 @@ namespace Panels.ViewModel
         {
         }
 
-        [RelayCommand]
         public void Add(string itemType)
         {
             ICommandListItem? item = itemType switch
@@ -110,15 +111,23 @@ namespace Panels.ViewModel
 
             if (item != null)
             {
-                item.LineNumber = CommandList.Items.Count + 1;
                 item.ItemType = itemType;
-                CommandList.Add(item);
+
+                if(CommandList.Items.Count != 0)
+                {
+                    CommandList.Insert(SelectedLineNumber, item);
+                }
+                else
+                {
+                    CommandList.Add(item);
+                }
+
+                SelectedLineNumber = CommandList.Items.IndexOf(item);
 
                 CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
             }
         }
 
-        [RelayCommand]
         public void Up()
         {
             if(SelectedLineNumber == 0)
@@ -131,7 +140,6 @@ namespace Panels.ViewModel
             SelectedLineNumber = selectedBak - 1;
         }
 
-        [RelayCommand]
         public void Down()
         {
             if(SelectedLineNumber == CommandList.Items.Count - 1)
@@ -144,45 +152,54 @@ namespace Panels.ViewModel
             SelectedLineNumber = selectedBak + 1;
         }
 
-        [RelayCommand]
         public void Delete()
         {
-            var item = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
-            if (item != null)
+            if (SelectedItem == null)
             {
-                var index = CommandList.Items.IndexOf(item);
-                CommandList.Items.RemoveAt(index);
-
-                // LineNumberを振り直す
-                for (int i = index; i < CommandList.Items.Count; i++)
-                {
-                    CommandList.Items[i].LineNumber = i + 1;
-                }
-
-                // 選択行を変更する
-                if (CommandList.Items.Count == 0)
-                {
-                    SelectedLineNumber = 0;
-                }
-                else if (index == CommandList.Items.Count)
-                {
-                    SelectedLineNumber = index - 1;
-                }
-                else
-                {
-                    SelectedLineNumber = index;
-                }
+                return;
             }
+
+            // 選択行を変更する
+            var index = CommandList.Items.IndexOf(SelectedItem);
+            if (CommandList.Items.Count == 0)
+            {
+                SelectedLineNumber = 0;
+            }
+            else if (index == CommandList.Items.Count)
+            {
+                SelectedLineNumber = index - 1;
+            }
+            else
+            {
+                SelectedLineNumber = index;
+            }
+            
+            // 削除
+            CommandList.Remove(SelectedItem);
         }
 
-        [RelayCommand]
-        public void Edit(int lineNumber)
+        public void Clear()
         {
-            var item = CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber);
-            if (item != null)
-            {
-                WeakReferenceMessenger.Default.Send(new EditMessage(item));
-            }
+            CommandList.Clear();
+            SelectedLineNumber = 0;
+            SelectedItem = null;
+        }
+
+        public void Save()
+        {
+            CommandList.Save();
+        }
+
+        public void Load()
+        {
+            CommandList.Load();
+            SelectedLineNumber = 0;
+            SelectedItem = null;
+        }
+
+        public int GetCount()
+        {
+            return CommandList.Items.Count;
         }
     }
 }
