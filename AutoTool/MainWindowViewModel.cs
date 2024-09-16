@@ -14,6 +14,8 @@ using System.Windows;
 using Command.Class;
 using Command.Interface;
 using Command.Message;
+using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace AutoTool
 {
@@ -25,7 +27,7 @@ namespace AutoTool
         private ButtonPanelViewModel _buttonPanelViewModel;
 
         [ObservableProperty]
-        private RunningPanelViewModel _runningPanelViewModel;
+        private FavoritePanelViewModel _runningPanelViewModel;
 
         [ObservableProperty]
         private ListPanelViewModel _listPanelViewModel;
@@ -36,13 +38,20 @@ namespace AutoTool
         [ObservableProperty]
         private LogPanelViewModel _logPanelViewModel;
 
+        [ObservableProperty]
+        private FavoritePanelViewModel _favoritePanelViewModel;
+
+        [ObservableProperty]
+        private int _selectedListTabIndex = 0;
+
         public MainWindowViewModel()
         {
             ListPanelViewModel = new ListPanelViewModel();
             EditPanelViewModel = new EditPanelViewModel();
             ButtonPanelViewModel = new ButtonPanelViewModel();
             LogPanelViewModel = new LogPanelViewModel();
-            RunningPanelViewModel = new RunningPanelViewModel();
+            RunningPanelViewModel = new FavoritePanelViewModel();
+            FavoritePanelViewModel = new FavoritePanelViewModel();
 
             WeakReferenceMessenger.Default.Register<RunMessage>(this, async (sender, message) =>
             {
@@ -67,6 +76,7 @@ namespace AutoTool
             WeakReferenceMessenger.Default.Register<ClearMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.CommandList.Clear();
+                EditPanelViewModel.Item = null;
             });
 
             WeakReferenceMessenger.Default.Register<AddMessage>(this, (sender, message) =>
@@ -89,17 +99,31 @@ namespace AutoTool
             WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.Delete();
+                if (ListPanelViewModel.SelectedLineNumber == 0)
+                {
+                    EditPanelViewModel.Item = null;
+                }
             });
 
-            WeakReferenceMessenger.Default.Register<SelectMessage>(this, (sender, message) =>
+            WeakReferenceMessenger.Default.Register<EditMessage>(this, (sender, message) =>
             {
-                EditPanelViewModel.Item = (message as SelectMessage).Item;
+                EditPanelViewModel.Item = (message as EditMessage).Item.Clone();
+            });
+
+            WeakReferenceMessenger.Default.Register<ChangeSelectedMessage>(this, (sender, message) =>
+            {
+                EditPanelViewModel.Item = (message as ChangeSelectedMessage).Item;
             });
 
             WeakReferenceMessenger.Default.Register<ApplyMessage>(this, (sender, message) =>
             {
                 ListPanelViewModel.SelectedItem = EditPanelViewModel.Item;
-                ListPanelViewModel.SelectedLineNumber = EditPanelViewModel.Item.LineNumber - 1;
+                ListPanelViewModel.SelectedLineNumber = EditPanelViewModel.Item != null ? EditPanelViewModel.Item.LineNumber - 1 : 0;
+            });
+
+            WeakReferenceMessenger.Default.Register<ChangeTabMessage>(this, (sender, message) =>
+            {
+                SelectedListTabIndex = (message as ChangeTabMessage).TabIndex;
             });
 
             WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>

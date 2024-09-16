@@ -137,7 +137,20 @@ namespace Panels.List.Class
         [ObservableProperty]
         private System.Windows.Input.Key _key = System.Windows.Input.Key.Escape;
 
-        new public string Description => $"Ctrl:{Ctrl} / Alt:{Alt} / Shift:{Shift} / キー:{Key}";
+        new public string Description
+        {
+            get
+            {
+                var keys = new List<string>();
+
+                if (Ctrl) keys.Add("Ctrl");
+                if (Alt) keys.Add("Alt");
+                if (Shift) keys.Add("Shift");
+                keys.Add(Key.ToString());
+
+                return string.Join(" + ", keys);
+            }
+        }
 
         public HotkeyItem() { }
 

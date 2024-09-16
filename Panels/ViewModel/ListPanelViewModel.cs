@@ -34,7 +34,7 @@ namespace Panels.ViewModel
                 var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
                 if (existingItem != null)
                 {
-                    WeakReferenceMessenger.Default.Send(new SelectMessage(existingItem));
+                    WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(existingItem));
                 }
             }
         }
@@ -46,6 +46,11 @@ namespace Panels.ViewModel
             set
             {
                 SetProperty(ref _selectedItem, value);
+
+                if(value == null)
+                {
+                    return;
+                }
 
                 var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == value.LineNumber);
                 if (existingItem != null)
@@ -167,6 +172,16 @@ namespace Panels.ViewModel
                 {
                     SelectedLineNumber = index;
                 }
+            }
+        }
+
+        [RelayCommand]
+        public void Edit(int lineNumber)
+        {
+            var item = CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber);
+            if (item != null)
+            {
+                WeakReferenceMessenger.Default.Send(new EditMessage(item));
             }
         }
     }

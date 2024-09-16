@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
+using System.Drawing;
 
 
 namespace InputHelper
@@ -13,6 +14,9 @@ namespace InputHelper
     {
         [DllImport("user32.dll", SetLastError = true)]
         static extern bool SetCursorPos(int X, int Y);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool GetCursorPos(out Point lpPoint);
 
         [DllImport("user32.dll", SetLastError = true)]
         static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, int dwExtraInfo);
@@ -85,6 +89,23 @@ namespace InputHelper
             SetCursorPos(x2, y2);
             Thread.Sleep(100);
             mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
+        }
+
+        public static void MiddleDrag(int x1, int y1, int x2, int y2)
+        {
+            SetCursorPos(x1, y1);
+            mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
+            Thread.Sleep(100);
+            SetCursorPos(x2, y2);
+            Thread.Sleep(100);
+            mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0);
+        }
+
+        public static Point GetCursorPosition()
+        {
+            Point lpPoint;
+            GetCursorPos(out lpPoint);
+            return lpPoint;
         }
     }
 

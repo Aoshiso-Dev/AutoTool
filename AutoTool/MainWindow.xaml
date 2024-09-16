@@ -16,11 +16,19 @@
 
     <DockPanel LastChildFill="True">
         <panels:ButtonPanel DockPanel.Dock="Top" DataContext="{Binding ButtonPanelViewModel}" Margin="2"/>
-        <!--
-        <panels:RunningPanel DockPanel.Dock="Top" DataContext="{Binding RunningPanelViewModel}" Margin="2"/>
-        -->
-        <panels:LogPanel  DockPanel.Dock="Bottom" DataContext="{Binding LogPanelViewModel}" Height="100" Margin="2"/>
-        <panels:EditPanel DockPanel.Dock="Bottom" DataContext="{Binding EditPanelViewModel}" Height="200" Margin="2"/>
+        <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="200">
+            <TabItem Header="編集">
+                <panels:EditPanel DataContext="{Binding EditPanelViewModel}" Margin="2"/>
+            </TabItem>
+            <TabItem Header="ログ">
+                <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="2"/>
+            </TabItem>
+            <TabItem Header="お気に入り">
+                <panels:FavoritePanel DataContext="{Binding FavoritePanelViewModel}" Margin="2"/>
+            </TabItem>
+        </TabControl>
+
         <panels:ListPanel DataContext="{Binding ListPanelViewModel}" Margin="2"/>
+        
     </DockPanel>
 </Window>

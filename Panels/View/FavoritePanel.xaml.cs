@@ -16,11 +16,11 @@ using System.Windows.Shapes;
 namespace Panels.View
 {
     /// <summary>
-    /// RunningPanel.xaml の相互作用ロジック
+    /// ListPanel.xaml の相互作用ロジック
     /// </summary>
-    public partial class RunningPanel : UserControl
+    public partial class FavoritePanel : UserControl
     {
-        public RunningPanel()
+        public FavoritePanel()
         {
             InitializeComponent();
         }

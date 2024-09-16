@@ -10,12 +10,12 @@ using Panels.Message;
 namespace Panels.ViewModel
 {
 
-    public partial class RunningPanelViewModel : ObservableObject
+    public partial class FavoritePanelViewModel : ObservableObject
     {
         [ObservableProperty]
-        private string _runningInfo = string.Empty;
+        private bool _isRunning = false;
 
-        public RunningPanelViewModel()
+        public FavoritePanelViewModel()
         {
         }
     }

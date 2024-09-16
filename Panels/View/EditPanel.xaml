@@ -14,19 +14,15 @@
     </UserControl.Resources>
 
     <Grid>
-        <DockPanel LastChildFill="True" Margin="10" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}">
-            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Visibility="{Binding VisibilityLineNumber}">
-                <TextBlock DockPanel.Dock="Top" Text="編集 :" FontWeight="Bold" FontSize="16" Margin="2"/>
-                <TextBlock DockPanel.Dock="Top" Text="{Binding LineNumber}" FontWeight="Bold" FontSize="16" Margin="2"/>
-                <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedItemType}" FontWeight="Bold" FontSize="16" Margin="2"/>
-                <Border BorderThickness="5"/>
-            </StackPanel>
+        <Border BorderBrush="LightGray" BorderThickness="1">
+            <DockPanel LastChildFill="True" Margin="10" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}">
             <StackPanel>
                 <!-- コマンド -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityCommand}">
                     <TextBlock Text="コマンド:" Width="60" Margin="2"/>
                     <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" Width="200" Margin="2"/>
                 </StackPanel>
+
                 <!-- 画像パス -->
                 <StackPanel Orientation="Horizontal" Visibility="{Binding VisibilityImagePath}">
                     <TextBlock Text="パス:" Width="60" Margin="2"/>
@@ -113,13 +109,15 @@
                     <TextBlock Text="ループ回数:" Width="60" Margin="2"/>
                     <TextBox Text="{Binding LoopCount, Mode=TwoWay}" Width="80" Margin="2"/>
                 </StackPanel>
+
             </StackPanel>
-            
-            
+
             <!-- 画像 -->
             <StackPanel DockPanel.Dock="Right" Visibility="{Binding VisibilityImagePath}">
                 <Image Source="{Binding ImagePath}" Stretch="Uniform" Width="150" Height="150"/>
             </StackPanel>
+
         </DockPanel>
+        </Border>
     </Grid>
 </UserControl>

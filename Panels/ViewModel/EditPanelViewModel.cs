@@ -29,8 +29,8 @@ namespace Panels.ViewModel
         private bool _isRunning = false;
         
         #region Item
-        private ICommandListItem _item = new CommandListItem();
-        public ICommandListItem Item
+        private ICommandListItem? _item = new CommandListItem();
+        public ICommandListItem? Item
         {
             get { return _item; }
             set
@@ -45,30 +45,6 @@ namespace Panels.ViewModel
         #endregion
 
         #region ItemProperties
-
-        public bool IsSelected
-        {
-            get
-            {
-                return Item.IsSelected;
-            }
-            set
-            {
-                Item.IsSelected = value;
-            }
-        }
-
-        public int LineNumber
-        {
-            get
-            {
-                return Item.LineNumber;
-            }
-            set
-            {
-                Item.LineNumber = value;
-            }
-        }
 
         public string ImagePath
         {
@@ -376,8 +352,6 @@ namespace Panels.ViewModel
 
         #region Visibility
         [ObservableProperty]
-        private Visibility _visibilityLineNumber = Visibility.Collapsed;
-        [ObservableProperty]
         private Visibility _visibilityCommand = Visibility.Collapsed;
         [ObservableProperty]
         private Visibility _visibilityImagePath = Visibility.Collapsed;
@@ -404,19 +378,22 @@ namespace Panels.ViewModel
         #region ComboBox
         [ObservableProperty]
         private ObservableCollection<string> _itemTypes = new();
-        public string SelectedItemType {
-            get { return Item.ItemType; }
-            set 
-            { 
-                Item.ItemType = value;
-                OnSelectedItemTypeChanged();
-                UpdateItemProperties();
-            } 
+        public string SelectedItemType
+        {
+            get { return Item != null ? Item.ItemType : "None"; }
+            set
+            {
+                if (Item != null)
+                {
+                    Item.ItemType = value;
+                    OnSelectedItemTypeChanged();
+                    UpdateItemProperties();
+                }
+            }
         }
 
         [ObservableProperty]
         private ObservableCollection<System.Windows.Input.MouseButton> _mouseButtons = new();
-        private System.Windows.Input.MouseButton _selectedMouseButton = System.Windows.Input.MouseButton.Left;
         public System.Windows.Input.MouseButton SelectedMouseButton
         {
             get
@@ -462,6 +439,11 @@ namespace Panels.ViewModel
 
         private void OnSelectedItemTypeChanged()
         {
+            if(Item == null)
+            {
+                return;
+            }
+
             var lineNumber = Item.LineNumber;
             var isSelected = Item.IsSelected;
 
@@ -505,13 +487,7 @@ namespace Panels.ViewModel
 
         private void UpdateVisibility()
         {
-            if (Item == null)
-            {
-                return;
-            }
-
-            VisibilityLineNumber = Visibility.Visible;
-            VisibilityCommand = Visibility.Visible;
+            VisibilityCommand = Item != null ? Visibility.Visible : Visibility.Collapsed;
 
             VisibilityImagePath = Visibility.Collapsed;
             VisibilityThreshold = Visibility.Collapsed;
@@ -523,8 +499,6 @@ namespace Panels.ViewModel
             VisibilityClick = Visibility.Collapsed;
             VisibilityWait = Visibility.Collapsed;
             VisibilityLoop = Visibility.Collapsed;
-
-            LineNumber = Item.LineNumber;
 
             if (Item is IWaitImageItem)
             {
@@ -586,14 +560,7 @@ namespace Panels.ViewModel
 
         void UpdateItemProperties()
         {
-            if (Item == null)
-            {
-                return;
-            }
-
             OnPropertyChanged(nameof(SelectedItemType));
-            OnPropertyChanged(nameof(IsSelected));
-            OnPropertyChanged(nameof(LineNumber));
             OnPropertyChanged(nameof(ImagePath));
             OnPropertyChanged(nameof(Threshold));
             OnPropertyChanged(nameof(Timeout));
@@ -639,7 +606,7 @@ namespace Panels.ViewModel
             if (captureWindow.ShowDialog() == true)
             {
                 // キャプチャ保存先ディレクトリの存在確認と作成
-                var captureDirectory = System.IO.Path.Combine(Model.Path.GetCurrentDirectory(), "Capture");
+                var captureDirectory = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Capture");
                 if (!Directory.Exists(captureDirectory))
                 {
                     Directory.CreateDirectory(captureDirectory);
@@ -649,10 +616,10 @@ namespace Panels.ViewModel
                 var capturePath = System.IO.Path.Combine(captureDirectory, $"{DateTime.Now:yyyyMMddHHmmss}.png");
 
                 // 選択領域をキャプチャ
-                var capturedMat = ScreenCaptureHelper.CaptureRegion(captureWindow.SelectedRegion);
+                var capturedMat = OpenCVHelper.ScreenCaptureHelper.CaptureRegion(captureWindow.SelectedRegion);
 
                 // 指定されたファイル名で保存
-                ScreenCaptureHelper.SaveCapture(capturedMat, capturePath);
+                OpenCVHelper.ScreenCaptureHelper.SaveCapture(capturedMat, capturePath);
 
                 ImagePath = capturePath;
             }
@@ -670,6 +637,12 @@ namespace Panels.ViewModel
                 X = (int)captureWindow.SelectedPoint.X;
                 Y = (int)captureWindow.SelectedPoint.Y;
             }
+        }
+
+        [RelayCommand]
+        public void Apply()
+        {
+            WeakReferenceMessenger.Default.Send(new ApplyMessage());
         }
     }
 }

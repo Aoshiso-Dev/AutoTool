@@ -23,8 +23,8 @@ namespace Command.Class
         public IEnumerable<ICommand> Children { get; set; }
         public int NestLevel { get; set; }
         public ICommandSettings Settings { get; }
-        public EventHandler? OnStartCommand { get; set; }
-        public EventHandler? OnFinishCommand { get; set; }
+        public EventHandler OnStartCommand { get; set; }
+        public EventHandler OnFinishCommand { get; set; }
 
         public BaseCommand() { }
 
@@ -352,7 +352,6 @@ namespace Command.Class
         new public async Task<bool> Execute(CancellationToken cancellationToken)
         {
             await base.Execute(cancellationToken);
-            OnFinishCommand = null;
 
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 

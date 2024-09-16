@@ -45,7 +45,30 @@
                         </MultiTrigger>
                     </Style.Triggers>
                 </Style>
+                <Style TargetType="DataGridCell">
+                    <Style.Triggers>
+                        <!-- IsRunning が true の場合 -->
+                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                            <Setter Property="Background" Value="LightGreen" />
+                        </DataTrigger>
+
+                        <!-- IsSelected が true で DataGrid にフォーカスがある場合 -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="LightBlue" />
+                        </Trigger>
+
+                        <!-- IsSelected が true で DataGrid にフォーカスがない場合 -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True" />
+                                <Condition Property="IsKeyboardFocusWithin" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="LightBlue" />
+                        </MultiTrigger>
+                    </Style.Triggers>
+                </Style>
             </DataGrid.Resources>
+            
 
             <DataGrid.Columns>
                 
@@ -98,8 +121,8 @@
                 <DataGridTextColumn Header="" Width="30" Binding="{Binding NestLevel, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
                 -->
 
-                <!-- Command -->
-                <DataGridTemplateColumn Header="Command" Width="150">
+                <!-- コマンド -->
+                <DataGridTemplateColumn Header="コマンド" Width="150">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <!-- 行全体の内容 (通常のデータを表示) -->
@@ -109,15 +132,25 @@
                 </DataGridTemplateColumn>
                 
 
-                <!-- Description -->
-                <DataGridTemplateColumn Header="Description" Width="*">
+                <!-- 説明 -->
+                <DataGridTemplateColumn Header="説明" Width="*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Description}" VerticalAlignment="Center"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-
+                    
+                <!-- 設定 -->
+                <DataGridTemplateColumn Header="設定" Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="" Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" CommandParameter="{Binding LineNumber}" Width="50" Margin="2"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
 
             </DataGrid.Columns>
         </DataGrid>
