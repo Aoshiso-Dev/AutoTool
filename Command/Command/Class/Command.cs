@@ -15,7 +15,7 @@ using Command.Message;
 
 namespace Command.Class
 {
-    public class BaseCommand : ICommand
+    public abstract class BaseCommand : ICommand
     {
         public int LineNumber { get; set; }
         public bool IsEnabled { get; set; }
@@ -42,14 +42,16 @@ namespace Command.Class
         public virtual async Task<bool> Execute(CancellationToken cancellationToken)
         {
             OnStartCommand?.Invoke(this, EventArgs.Empty);
-            bool result = await Task.FromResult(true); // 子クラスで上書き
+            bool result = await DoExecuteAsync(cancellationToken);
             OnFinishCommand?.Invoke(this, EventArgs.Empty);
+
             return result;
         }
+        
+        protected abstract Task<bool> DoExecuteAsync(CancellationToken cancellationToken);
 
         public bool CanExecute() => true;
 
-        // 進捗報告を共通化
         protected void ReportProgress(double elapsedMilliseconds, double totalMilliseconds)
         {
             int progress = (int)((elapsedMilliseconds / totalMilliseconds) * 100);
@@ -59,6 +61,22 @@ namespace Command.Class
 
     public class RootCommand : BaseCommand, ICommand, IRootCommand
     {
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
+        }
+    }
+
+    public class NothingCommand : BaseCommand, ICommand, IRootCommand
+    {
+        public NothingCommand() { }
+
+        public NothingCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
+        }
     }
 
     public class WaitImageCommand : BaseCommand, ICommand, IWaitImageCommand
@@ -67,10 +85,8 @@ namespace Command.Class
 
         public WaitImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        public override async Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            await base.Execute(cancellationToken);
-
             var stopwatch = Stopwatch.StartNew();
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
@@ -79,8 +95,6 @@ namespace Command.Class
 
                 if (point != null)
                 {
-                    OnFinishCommand?.Invoke(this, new EventArgs());
-
                     return true;
                 }
 
@@ -101,10 +115,8 @@ namespace Command.Class
 
         public ClickImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        public override async Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            await base.Execute(cancellationToken);
-
             var stopwatch = Stopwatch.StartNew();
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
@@ -128,8 +140,6 @@ namespace Command.Class
                             throw new Exception("Invalid MouseButton.");
                     }
 
-                    OnFinishCommand?.Invoke(this, new EventArgs());
-
                     return true;
                 }
 
@@ -151,10 +161,8 @@ namespace Command.Class
 
         public HotkeyCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        public override async Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            await base.Execute(cancellationToken);
-
             KeyControlHelper.KeyPress(Settings.Ctrl, Settings.Alt, Settings.Shift, Settings.Key);
 
             return true;
@@ -167,10 +175,8 @@ namespace Command.Class
 
         public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings){ }
 
-        public override async Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            await base.Execute(cancellationToken);
-
             switch(Settings.Button)
             {
                 case System.Windows.Input.MouseButton.Left:
@@ -196,10 +202,8 @@ namespace Command.Class
 
         public WaitCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        public override async Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            await base.Execute(cancellationToken);
-
             var stopwatch = Stopwatch.StartNew();
 
             while (stopwatch.ElapsedMilliseconds < Settings.Wait)
@@ -218,6 +222,11 @@ namespace Command.Class
     public class IfCommand : BaseCommand, ICommand, IIfCommand
     {
         public IfCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            return await Task.FromResult(true);
+        }
     }
     public class IfImageExistCommand : BaseCommand, ICommand, IIfImageExistCommand
     {
@@ -228,10 +237,8 @@ namespace Command.Class
         {
         }
 
-        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            await base.Execute(cancellationToken);
-
             if (Children == null)
             {
                 throw new Exception("If内に要素がありません。");
@@ -291,10 +298,8 @@ namespace Command.Class
         {
         }
 
-        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            await base.Execute(cancellationToken);
-
             if (Children == null)
             {
                 throw new Exception("If内に要素がありません。");
@@ -308,7 +313,6 @@ namespace Command.Class
 
                 if(point != null)
                 {
-                    OnFinishCommand?.Invoke(this, new EventArgs());
                     return true;
                 }
 
@@ -350,10 +354,9 @@ namespace Command.Class
 
         public LoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            await base.Execute(cancellationToken);
-
+            OnFinishCommand = delegate { };
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             if ( Children == null)
@@ -407,14 +410,14 @@ namespace Command.Class
 
         public EndLoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        public override Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             foreach (var command in Children)
             {
                 WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
             }
 
-            return Task.FromResult(true);
+            return true;
         }
     }
 
@@ -422,10 +425,8 @@ namespace Command.Class
     {
         public BreakCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-        new public async Task<bool> Execute(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            await base.Execute(cancellationToken);
-
             return false;
         }
     }

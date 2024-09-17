@@ -57,7 +57,13 @@ namespace Panels.Message
         public ChangeSelectedMessage(ICommandListItem? item) { Item = item; }
     }
 
-    public class RefreshListViewMessage
+    public class EditCommandMessage
+    {
+        public ICommandListItem? Item { get; set; }
+        public EditCommandMessage(ICommandListItem? item) { Item = item; }
+    }
+
+        public class RefreshListViewMessage
     {
     }
 }

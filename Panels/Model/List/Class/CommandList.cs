@@ -58,6 +58,26 @@ namespace Panels.List.Class
             PairLoopItems();
         }
 
+        public void Override(int index, ICommandListItem item)
+        {
+            if(item == null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            if(index < 0 || index >= Items.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
+            Items[index] = item;
+
+            ReorderItems();
+            CalcurateNestLevel();
+            PairIfItems();
+            PairLoopItems();
+        }
+
         public void Clear()
         {
             Items.Clear();
@@ -89,16 +109,6 @@ namespace Panels.List.Class
 
             var item = Items[oldIndex];
             Items.Insert(newIndex, item);
-
-            ReorderItems();
-            CalcurateNestLevel();
-            PairIfItems();
-            PairLoopItems();
-        }
-
-        public void Override(int index, ICommandListItem item)
-        {
-            Items[index] = item.Clone();
 
             ReorderItems();
             CalcurateNestLevel();

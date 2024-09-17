@@ -50,7 +50,7 @@ namespace Panels.Model.MacroFactory
 
             if (item.IsInIf)
             {
-                return new BaseCommand(parent, new CommandSettings());
+                return new NothingCommand(parent, new CommandSettings());
             }
 
             ICommand? command;
@@ -172,7 +172,7 @@ namespace Panels.Model.MacroFactory
             }
 
             // IfCommandを作成
-            IIfCommand ifCommand = new IfCommand(new BaseCommand(), new CommandSettings());
+            IIfCommand ifCommand = new IfCommand(new NothingCommand(), new CommandSettings());
             switch (ifItem)
             {
                 case IfImageExistItem ifImageExistItem:

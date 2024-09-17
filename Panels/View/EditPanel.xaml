@@ -19,7 +19,9 @@
 
     <Grid>
         <Border BorderBrush="LightGray" BorderThickness="1">
-            <DockPanel LastChildFill="True" Margin="10" IsEnabled="{Binding IsRunning, Converter={StaticResource BoolToVisibilityConverter}}">
+            <DockPanel LastChildFill="True" Margin="10"
+                       IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
+                       Visibility="{Binding DataContext.IsListNotEmpty, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BoolToVisibilityConverter}, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}">
                 <StackPanel>
                     <!-- コマンドスタックパネル -->
                     <StackPanel Orientation="Horizontal" Margin="1">
@@ -95,7 +97,7 @@
                         <StackPanel Orientation="Horizontal" Margin="1">
                             <TextBlock Text="X座標:" Width="60" Margin="1"/>
                             <TextBox Text="{Binding X}" Width="100" Margin="1"/>
-                            <Button Content="取得" Command="{Binding PickCommand}" Width="50" Margin="1"/>
+                            <Button Content="取得" Command="{Binding PickPointCommand}" Width="50" Margin="1"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="1">
                             <TextBlock Text="Y座標:" Width="60" Margin="1"/>
@@ -136,7 +138,9 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="1">
                             <TextBlock Text="キー:" Width="60" Margin="1"/>
-                            <TextBox Text="{Binding Key}" Width="100" Margin="1"/>
+                            <TextBox Text="{Binding Key, Converter={StaticResource KeyToStringConverter}}"
+                              Width="100" Margin="2"
+                              converter:KeyInputBehavior.Key="{Binding Key, Mode=TwoWay}"/>
                         </StackPanel>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
@@ -166,19 +170,19 @@
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
-
-                    <!-- 画像のプレビュー -->
-                    <StackPanel Orientation="Horizontal" Margin="1">
-                        <Image Source="{Binding ImagePath}" Width="150" Height="150" Margin="1"/>
-                        <StackPanel.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsWaitImageItem"/>
-                                <Binding Path="IsClickImageItem"/>
-                                <Binding Path="IsIfImageExistItem"/>
-                                <Binding Path="IsIfImageNotExistItem"/>
-                            </MultiBinding>
-                        </StackPanel.Visibility>
-                    </StackPanel>
+                </StackPanel>
+                
+                <!-- 画像のプレビュー -->
+                <StackPanel Orientation="Horizontal" Margin="1">
+                    <Image Source="{Binding ImagePath}" Width="150" Height="150" Margin="1"/>
+                    <StackPanel.Visibility>
+                        <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                            <Binding Path="IsWaitImageItem"/>
+                            <Binding Path="IsClickImageItem"/>
+                            <Binding Path="IsIfImageExistItem"/>
+                            <Binding Path="IsIfImageNotExistItem"/>
+                        </MultiBinding>
+                    </StackPanel.Visibility>
                 </StackPanel>
             </DockPanel>
         </Border>

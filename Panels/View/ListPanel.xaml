@@ -9,6 +9,7 @@
              d:DesignHeight="1000" d:DesignWidth="1000">
 
     <UserControl.Resources>
+        <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         <converter:NumberToBooleanConverter x:Key="NumberToBooleanConverter"/>
         <converter:BooleanToTextConverter x:Key="BooleanToTextConverter" TrueText=">>" FalseText=""/>
         <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
@@ -20,44 +21,46 @@
         
 
         <!-- DataGrid -->
-        <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding DataContext.SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-            
+        <DataGrid DockPanel.Dock="Top"
+                  ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding DataContext.SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                  SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                  >
+
             <DataGrid.Resources>
-                <Style TargetType="DataGridRow">
-                    <Style.Triggers>
-                        <!-- IsRunning が true の場合 -->
-                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                            <Setter Property="Background" Value="LightGreen" />
-                        </DataTrigger>
-
-                        <!-- IsSelected が true で DataGrid にフォーカスがある場合 -->
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="LightBlue" />
-                        </Trigger>
-
-                        <!-- IsSelected が true で DataGrid にフォーカスがない場合 -->
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="IsSelected" Value="True" />
-                                <Condition Property="IsKeyboardFocusWithin" Value="False" />
-                            </MultiTrigger.Conditions>
-                            <Setter Property="Background" Value="LightBlue" />
-                        </MultiTrigger>
-                    </Style.Triggers>
-                </Style>
+                
                 <Style TargetType="DataGridCell">
                     <Style.Triggers>
-                        <!-- IsRunning が true の場合 -->
-                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                            <Setter Property="Background" Value="LightGreen" />
-                        </DataTrigger>
-
-                        <!-- IsSelected が true で DataGrid にフォーカスがある場合 -->
-                        <Trigger Property="IsSelected" Value="True">
+                        <!-- IsSelected が true かつ マクロ未実行の場合 -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsSelected}" Value="True" />
+                                <Condition Binding="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" Value="False" />
+                            </MultiDataTrigger.Conditions>
                             <Setter Property="Background" Value="LightBlue" />
-                        </Trigger>
+                        </MultiDataTrigger>
+
+                        <!-- IsRunning が true かつ マクロ実行中の場合 -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsRunning}" Value="True" />
+                                <Condition Binding="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Background" Value="LightBlue" />
+                            <Setter Property="FontWeight" Value="Bold"/>
+                        </MultiDataTrigger>
+
+                        <!-- IsRunning が false かつ マクロ実行中の場合 -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsRunning}" Value="False" />
+                                <Condition Binding="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Background" Value="LightGray" />
+                        </MultiDataTrigger>
+
 
                         <!-- IsSelected が true で DataGrid にフォーカスがない場合 -->
+                        <!--
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
                                 <Condition Property="IsSelected" Value="True" />
@@ -65,6 +68,7 @@
                             </MultiTrigger.Conditions>
                             <Setter Property="Background" Value="LightBlue" />
                         </MultiTrigger>
+                        -->
                     </Style.Triggers>
                 </Style>
             </DataGrid.Resources>
@@ -80,13 +84,15 @@
                                 <ProgressBar Value="{Binding Progress}" Maximum="100" Height="20" VerticalAlignment="Center">
                                     <ProgressBar.Resources>
                                         <Style TargetType="ProgressBar">
-                                            <Setter Property="Foreground" Value="LawnGreen"/>
+                                            <Setter Property="Foreground" Value="LightGreen"/>
                                             <Setter Property="Background" Value="Transparent"/>
+                                            <!--
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Progress}" Value="100">
                                                     <Setter Property="Foreground" Value="LightGray"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
+                                            -->
                                         </Style>
                                     </ProgressBar.Resources>
                                 </ProgressBar>

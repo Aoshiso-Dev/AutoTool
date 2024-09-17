@@ -39,14 +39,21 @@ namespace Panels.ViewModel
             }
         }
 
-        private ICommandListItem? _selectedItem = null;
         public ICommandListItem? SelectedItem
         {
-            get => _selectedItem;
+            get
+            {
+                return CommandList.Items.FirstOrDefault(x => x.IsSelected == true);
+            }
             set
             {
-                SetProperty(ref _selectedItem, value);
-                OnSelectedItemChanged();
+                var existingItem = CommandList.Items.FirstOrDefault(x => x.IsSelected == true);
+
+                var index = CommandList.Items.IndexOf(existingItem);
+
+                CommandList.Override(index, value);
+
+                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
             }
         }
 
@@ -70,13 +77,14 @@ namespace Panels.ViewModel
         #region OnChanged
         private void OnSelectedLineNumberChanged()
         {
-            var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
-            WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(existingItem));
-        }
+            CommandList.Items.ToList().ForEach(x => x.IsSelected = false);
 
-        private void OnSelectedItemChanged()
-        {
-            WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(SelectedItem));
+            var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
+            if (existingItem != null)
+            {
+                existingItem.IsSelected = true;
+                WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(existingItem));
+            }
         }
 
         private void OnExecutedLineNumberChanged()
@@ -96,6 +104,7 @@ namespace Panels.ViewModel
         {
             CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
         }
+
         public void Add(string itemType)
         {
             ICommandListItem? item = itemType switch
@@ -118,17 +127,16 @@ namespace Panels.ViewModel
             {
                 item.ItemType = itemType;
 
-                if(CommandList.Items.Count != 0)
+                if(CommandList.Items.Count != 0 && SelectedLineNumber >= 0)
                 {
-                    CommandList.Insert(SelectedLineNumber, item);
+                    CommandList.Insert(SelectedLineNumber + 1, item);
                 }
                 else
                 {
                     CommandList.Add(item);
                 }
 
-                SetSelectedLineNumber(CommandList.Items.IndexOf(item));
-                SetSelectedItem(item);
+                SelectedLineNumber = CommandList.Items.IndexOf(item);
 
                 CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
             }
@@ -143,7 +151,7 @@ namespace Panels.ViewModel
 
             var selectedBak = SelectedLineNumber;
             CommandList.Move(SelectedLineNumber, SelectedLineNumber - 1);
-            SetSelectedLineNumber(selectedBak - 1);
+            SelectedLineNumber = selectedBak - 1;
         }
 
         public void Down()
@@ -155,7 +163,7 @@ namespace Panels.ViewModel
 
             var selectedBak = SelectedLineNumber;
             CommandList.Move(SelectedLineNumber, SelectedLineNumber + 1);
-            SetSelectedLineNumber(selectedBak + 1);
+            SelectedLineNumber = selectedBak + 1;
         }
 
         public void Delete()
@@ -165,30 +173,29 @@ namespace Panels.ViewModel
                 return;
             }
 
-            // 選択行を変更する
             var index = CommandList.Items.IndexOf(SelectedItem);
+
+            CommandList.Remove(SelectedItem);
+
             if (CommandList.Items.Count == 0)
             {
-                SetSelectedLineNumber(0);
+                SelectedLineNumber = 0;
             }
             else if (index == CommandList.Items.Count)
             {
-                SetSelectedLineNumber(index - 1);
+                SelectedLineNumber = index - 1;
             }
             else
             {
-                SetSelectedLineNumber(index);
+                SelectedLineNumber = index;
             }
             
-            // 削除
-            CommandList.Remove(SelectedItem);
         }
 
         public void Clear()
         {
             CommandList.Clear();
-            SetSelectedLineNumber(0);
-            SelectedItem = null;
+            SelectedLineNumber = 0;
         }
 
         public void Save()
@@ -199,8 +206,8 @@ namespace Panels.ViewModel
         public void Load()
         {
             CommandList.Load();
-            SetSelectedLineNumber(0);
-            SelectedItem = null;
+            SelectedLineNumber = 0;
+            SelectedItem = CommandList.Items.FirstOrDefault();
         }
         #endregion
 
@@ -210,9 +217,14 @@ namespace Panels.ViewModel
             return CommandList.Items.Count;
         }
 
-        public ICommandListItem? GetExecutedItem()
+        public ICommandListItem? GetRunningItem()
         {
-            return CommandList.Items.Where(x => x.IsRunning == IsRunning).FirstOrDefault();
+            return CommandList.Items.FirstOrDefault(x => x.IsRunning == true);
+        }
+
+        public ICommandListItem? GetItem(int lineNumber)
+        {
+            return CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber);
         }
 
         public void SetRunningState(bool isRunning)

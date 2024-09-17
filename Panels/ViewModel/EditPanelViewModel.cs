@@ -39,12 +39,30 @@ namespace Panels.ViewModel
             set
             {
                 SetProperty(ref _item, value);
-                OnItemChanged();
+
+                UpdateProperties();
+                UpdateIsProperties();
+            }
+        }
+        #endregion
+
+        #region ListCount
+        private int _listCount = 0;
+        public int ListCount
+        {
+            get => _listCount;
+            set
+            {
+                SetProperty(ref _listCount, value);
+
+                UpdateIsProperties();
+                UpdateProperties();
             }
         }
         #endregion
 
         #region IsProperties
+        public bool IsListNotEmpty => ListCount > 0;
         public bool IsNotNullItem => Item != null;
         public bool IsWaitImageItem => Item is WaitImageItem;
         public bool IsClickImageItem => Item is ClickImageItem;
@@ -60,7 +78,7 @@ namespace Panels.ViewModel
 
         #endregion
 
-        #region ItemProperties
+        #region Properties
 
         public string ImagePath
         {
@@ -93,7 +111,7 @@ namespace Panels.ViewModel
                         break;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -128,7 +146,7 @@ namespace Panels.ViewModel
                         break;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -163,7 +181,7 @@ namespace Panels.ViewModel
                         break;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -197,6 +215,8 @@ namespace Panels.ViewModel
                         ifImageNotExistItem.Interval = value;
                         break;
                 }
+
+                UpdateProperties();
             }
         }
 
@@ -223,7 +243,7 @@ namespace Panels.ViewModel
                         break;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -240,7 +260,7 @@ namespace Panels.ViewModel
                     hotkeyItem.Ctrl = value;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -257,7 +277,7 @@ namespace Panels.ViewModel
                     hotkeyItem.Alt = value;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -274,7 +294,7 @@ namespace Panels.ViewModel
                     hotkeyItem.Shift = value;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -291,7 +311,7 @@ namespace Panels.ViewModel
                     hotkeyItem.Key = value;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -308,7 +328,7 @@ namespace Panels.ViewModel
                     clickItem.X = value;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -325,7 +345,7 @@ namespace Panels.ViewModel
                     clickItem.Y = value;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -342,7 +362,7 @@ namespace Panels.ViewModel
                     waitItem.Wait = value;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
@@ -360,35 +380,10 @@ namespace Panels.ViewModel
                     loopItem.LoopCount = value;
                 }
 
-                UpdateItemProperties();
+                UpdateProperties();
             }
         }
 
-        #endregion
-
-        #region Visibility
-        [ObservableProperty]
-        private Visibility _visibilityCommand = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityImagePath = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityThreshold = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityTimeout = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityInterval = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityXYPos = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityMouseButton = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityHotkey = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityClick = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityWait = Visibility.Collapsed;
-        [ObservableProperty]
-        private Visibility _visibilityLoop = Visibility.Collapsed;
         #endregion
 
         #region ComboBox
@@ -406,6 +401,8 @@ namespace Panels.ViewModel
 
                 Item.ItemType = value;
                 OnSelectedItemTypeChanged();
+
+                WeakReferenceMessenger.Default.Send(new RefreshListViewMessage());
             }
         }
 
@@ -414,7 +411,7 @@ namespace Panels.ViewModel
         public System.Windows.Input.MouseButton SelectedMouseButton
         {
             get
-            {
+        {
                 if (Item is IClickImageItem clickImageItem)
                 {
                     return clickImageItem.Button;
@@ -455,21 +452,10 @@ namespace Panels.ViewModel
         }
 
         #region OnChanged
-        private void OnItemChanged()
-        {
-            UpdateItemProperties();
-            UpdateIsProperties();
-        }
-
         private void OnSelectedItemTypeChanged()
         {
-            if(Item == null)
-            {
-                return;
-            }
-
-            var lineNumber = Item.LineNumber;
-            var isSelected = Item.IsSelected;
+            var lineNumber = Item?.LineNumber ?? 0;
+            var isSelected = Item?.IsSelected ?? false;
 
             switch (SelectedItemType)
             {
@@ -508,14 +494,17 @@ namespace Panels.ViewModel
                     break;
             }
 
-            UpdateItemProperties();
+            UpdateProperties();
             UpdateIsProperties();
+
+            WeakReferenceMessenger.Default.Send(new EditCommandMessage(Item));
         }
         #endregion
 
         #region Update
         private void UpdateIsProperties()
         {
+            OnPropertyChanged(nameof(IsListNotEmpty));
             OnPropertyChanged(nameof(IsNotNullItem));
             OnPropertyChanged(nameof(IsWaitImageItem));
             OnPropertyChanged(nameof(IsClickImageItem));
@@ -530,35 +519,33 @@ namespace Panels.ViewModel
             OnPropertyChanged(nameof(IsEndIfItem));
         }
 
-        void UpdateItemProperties()
+        void UpdateProperties()
         {
-            if (_isUpdating) return;
-
-            try
+            if(_isUpdating)
             {
-                _isUpdating = true;
-                OnPropertyChanged(nameof(Item));
-                OnPropertyChanged(nameof(SelectedItemType));
-                OnPropertyChanged(nameof(ImagePath));
-                OnPropertyChanged(nameof(Threshold));
-                OnPropertyChanged(nameof(Timeout));
-                OnPropertyChanged(nameof(Interval));
-                OnPropertyChanged(nameof(MouseButton));
-                OnPropertyChanged(nameof(Ctrl));
-                OnPropertyChanged(nameof(Alt));
-                OnPropertyChanged(nameof(Shift));
-                OnPropertyChanged(nameof(Key));
-                OnPropertyChanged(nameof(X));
-                OnPropertyChanged(nameof(Y));
-                OnPropertyChanged(nameof(Wait));
-                OnPropertyChanged(nameof(LoopCount));
+                return;
+            }
 
-                WeakReferenceMessenger.Default.Send(new RefreshListViewMessage());
-            }
-            finally
-            {
-                _isUpdating = false;
-            }
+            _isUpdating = true;
+
+            OnPropertyChanged(nameof(SelectedItemType));
+            OnPropertyChanged(nameof(ImagePath));
+            OnPropertyChanged(nameof(Threshold));
+            OnPropertyChanged(nameof(Timeout));
+            OnPropertyChanged(nameof(Interval));
+            OnPropertyChanged(nameof(MouseButton));
+            OnPropertyChanged(nameof(Ctrl));
+            OnPropertyChanged(nameof(Alt));
+            OnPropertyChanged(nameof(Shift));
+            OnPropertyChanged(nameof(Key));
+            OnPropertyChanged(nameof(X));
+            OnPropertyChanged(nameof(Y));
+            OnPropertyChanged(nameof(Wait));
+            OnPropertyChanged(nameof(LoopCount));
+
+            WeakReferenceMessenger.Default.Send(new RefreshListViewMessage());
+
+            _isUpdating = false;
         }
         #endregion
 
@@ -569,7 +556,7 @@ namespace Panels.ViewModel
             // エンターキーが押されたときのみ処理を行う
             if (e.Key == Key.Enter)
             {
-                OnPropertyChanged();
+                UpdateProperties();
             }
         }
         [RelayCommand]
@@ -643,6 +630,11 @@ namespace Panels.ViewModel
         public void SetItem(ICommandListItem? item)
         {
             Item = item;
+        }
+
+        public void SetListCount(int listCount)
+        {
+            ListCount = listCount;
         }
 
         public void SetRunningState(bool isRunning)
