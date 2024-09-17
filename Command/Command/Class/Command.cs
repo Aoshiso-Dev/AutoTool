@@ -12,6 +12,7 @@ using OpenCVHelper;
 using InputHelper;
 using CommunityToolkit.Mvvm.Messaging;
 using Command.Message;
+using System.Net.Mail;
 
 namespace Command.Class
 {
@@ -347,7 +348,6 @@ namespace Command.Class
 
     public class LoopCommand : BaseCommand, ICommand, ILoopCommand
     {
-        private CancellationTokenSource? _cts = null;
         new public ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings;
 
         public LoopCommand() { }
@@ -356,48 +356,32 @@ namespace Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            OnFinishCommand = delegate { };
-            _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
             if ( Children == null)
             {
                 throw new Exception("ループ内に要素がありません。");
             }
 
-            try
+            for (int i = 0; i < Settings.LoopCount; i++)
             {
-                for (int i = 0; i < Settings.LoopCount; i++)
+                foreach (var command in Children)
                 {
-                    foreach (var command in Children)
-                    {
-                        WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
-                    }
-
-                    foreach (var command in Children)
-                    {
-                        //if (cancellationToken.IsCancellationRequested || _cts.IsCancellationRequested)
-                        //{
-                        //    return false;
-                        //}
-
-
-                        if (!await command.Execute(_cts.Token))
-                        {
-                            _cts.Cancel();
-                            return true;
-                        }
-                    }
-
-                    ReportProgress(i, Settings.LoopCount);
+                    WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
                 }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            finally
-            {
-                _cts.Dispose();
-                _cts = null;
+
+                foreach (var command in Children)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+
+                    if (!await command.Execute(cancellationToken))
+                    {
+                        return true;
+                    }
+                }
+
+                ReportProgress(i, Settings.LoopCount);
             }
 
             return true;
@@ -406,7 +390,7 @@ namespace Command.Class
 
     public class EndLoopCommand : BaseCommand, ICommand, IEndLoopCommand
     {
-        public IEndLoopCommandSettings Settings => (IEndLoopCommandSettings)base.Settings;
+        new public IEndLoopCommandSettings Settings => (IEndLoopCommandSettings)base.Settings;
 
         public EndLoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
