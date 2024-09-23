@@ -202,44 +202,16 @@ namespace Panels.List.Class
             return clone;
         }
 
-            public void Save()
+        public void Save(string filePath)
         {
-            var dialog = new SaveFileDialog();
-            dialog.Filter = "Macro files (*.macro)|*.macro|All files (*.*)|*.*";
-            dialog.FilterIndex = 1;
-            dialog.RestoreDirectory = true;
-            dialog.FileName = "CommandList.macro";
-            dialog.DefaultExt = ".macro";
-            dialog.Title = "Save Macro File";
-            dialog.ShowDialog();
-
-            if (dialog.FileName == "")
-            {
-                return;
-            }
-
             var cloneItems = Clone();
 
-            JsonSerializerHelper.SerializeToFile(cloneItems, dialog.FileName);
+            JsonSerializerHelper.SerializeToFile(cloneItems, filePath);
         }
 
-        public void Load()
+        public void Load(string filePath)
         {
-            var dialog = new OpenFileDialog();
-            dialog.Filter = "Macro files (*.macro)|*.macro|All files (*.*)|*.*";
-            dialog.FilterIndex = 1;
-            dialog.RestoreDirectory = true;
-            dialog.FileName = "CommandList.macro";
-            dialog.DefaultExt = ".macro";
-            dialog.Title = "Load Macro File";
-            dialog.ShowDialog();
-
-            if (dialog.FileName == "")
-            {
-                return;
-            }
-
-            var deserializedItems = JsonSerializerHelper.DeserializeFromFile<ObservableCollection<ICommandListItem>>(dialog.FileName);
+            var deserializedItems = JsonSerializerHelper.DeserializeFromFile<ObservableCollection<ICommandListItem>>(filePath);
             if (deserializedItems != null)
             {
                 Items.Clear();

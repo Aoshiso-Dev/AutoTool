@@ -17,12 +17,27 @@ using Command.Message;
 using System.Windows.Controls;
 using System.Windows.Data;
 using Panels.Model.List.Interface;
+using Microsoft.Win32;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Xml.Serialization;
+using System.Windows.Shapes;
 
 namespace AutoTool
 {
     public partial class MainWindowViewModel : ObservableObject
     {
+        public class RecentFile
+        {
+            public string FileName { get; set; }
+            public string FilePath { get; set; }
+        }
+
+
         private CancellationTokenSource? _cts;
+
+        [ObservableProperty]
+        private ObservableCollection<RecentFile>? _recentFiles;
 
         [ObservableProperty]
         private ButtonPanelViewModel _buttonPanelViewModel;
@@ -50,6 +65,13 @@ namespace AutoTool
             LogPanelViewModel = new LogPanelViewModel();
             FavoritePanelViewModel = new FavoritePanelViewModel();
 
+            RegisterMessages();
+
+            LoadRecentFiles();
+        }
+
+        private void RegisterMessages()
+        {
             // From ButtonPanelViewModel
             WeakReferenceMessenger.Default.Register<RunMessage>(this, async (sender, message) =>
             {
@@ -120,7 +142,7 @@ namespace AutoTool
             WeakReferenceMessenger.Default.Register<EditCommandMessage>(this, (sender, message) =>
             {
                 var item = (message as EditCommandMessage).Item;
-                if(item != null)
+                if (item != null)
                 {
                     ListPanelViewModel.SetSelectedItem(item);
                     ListPanelViewModel.SetSelectedLineNumber(item.LineNumber - 1);
@@ -187,7 +209,7 @@ namespace AutoTool
             var listItems = ListPanelViewModel.CommandList.Items;
             var macro = MacroFactory.CreateMacro(listItems) as LoopCommand;
 
-            if(macro == null)
+            if (macro == null)
             {
                 return;
             }
@@ -227,5 +249,99 @@ namespace AutoTool
             ListPanelViewModel.SetRunningState(isRunning);
             LogPanelViewModel.SetRunningState(isRunning);
         }
+
+        #region Commands
+        [RelayCommand]
+        private void OpenFile(string filePath = "")
+        {
+            if (string.IsNullOrEmpty(filePath))
+            {
+                var dialog = new OpenFileDialog();
+                dialog.Filter = "Macro files (*.macro)|*.macro|All files (*.*)|*.*";
+                dialog.FilterIndex = 1;
+                dialog.RestoreDirectory = true;
+                dialog.DefaultExt = ".macro";
+                dialog.Title = "Load Macro File";
+                dialog.ShowDialog();
+
+                if (dialog.FileName == "")
+                {
+                    return;
+                }
+
+                filePath = dialog.FileName;
+            }
+
+            ListPanelViewModel.Load(filePath);
+            EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
+
+            AddToRecentFiles(filePath);
+        }
+
+        [RelayCommand]
+        private void SaveFile(string filePath)
+        {
+            var dialog = new SaveFileDialog();
+            dialog.Filter = "Macro files (*.macro)|*.macro|All files (*.*)|*.*";
+            dialog.FilterIndex = 1;
+            dialog.RestoreDirectory = true;
+            dialog.DefaultExt = ".macro";
+            dialog.Title = "Save Macro File";
+            dialog.ShowDialog();
+
+            if (dialog.FileName == "")
+            {
+                return;
+            }
+
+            ListPanelViewModel.Save(dialog.FileName);
+
+            AddToRecentFiles(dialog.FileName);
+        }
+
+        [RelayCommand]
+        private void VersionInfo()
+        {
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            var versionString = $"Version {version.Major}.{version.Minor}.{version.Build}";
+
+            MessageBox.Show(versionString, "Version Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        #endregion
+
+        #region RecentFiles
+        private void LoadRecentFiles()
+        {
+            RecentFiles = XmlSerializer.XmlSerializer.DeserializeFromFile<ObservableCollection<RecentFile>>("RecentFiles.xml");
+
+            if (RecentFiles == null)
+            {
+                RecentFiles = new ObservableCollection<RecentFile>();
+            }
+        }
+
+        private void SaveRecentFiles()
+        {
+            XmlSerializer.XmlSerializer.SerializeToFile(RecentFiles, "RecentFiles.xml");
+        }
+
+        private void AddToRecentFiles(string filePath)
+        {
+            var existingItem = RecentFiles?.FirstOrDefault(f => f.FilePath == filePath);
+            if (existingItem != null)
+            {
+                RecentFiles?.Remove(existingItem);
+            }
+
+            RecentFiles?.Insert(0, new RecentFile { FileName = System.IO.Path.GetFileName(filePath), FilePath = filePath });
+
+            if (RecentFiles?.Count > 10)
+            {
+                RecentFiles?.RemoveAt(RecentFiles.Count - 1);
+            }
+
+            SaveRecentFiles();
+        }
+        #endregion
     }
 }

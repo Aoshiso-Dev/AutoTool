@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Command\Command.csproj" />
     <ProjectReference Include="..\Panels\Panels.csproj" />
+    <ProjectReference Include="..\XmlSerializer\XmlSerializer.csproj" />
   </ItemGroup>
 
 </Project>

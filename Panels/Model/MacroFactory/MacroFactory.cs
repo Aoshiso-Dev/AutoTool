@@ -50,7 +50,8 @@ namespace Panels.Model.MacroFactory
 
             if (item.IsInIf)
             {
-                return new NothingCommand(parent, new CommandSettings());
+                return null;
+                //return new NothingCommand(parent, new CommandSettings());
             }
 
             ICommand? command;

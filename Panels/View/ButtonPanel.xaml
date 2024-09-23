@@ -40,10 +40,6 @@
             <Button Content="追加" Command="{Binding AddCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
             <Button Content="削除" Command="{Binding DeleteCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
             <Button Content="クリア" Command="{Binding ClearCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
-            <StackPanel>
-                <Button Content="マクロ保存" Command="{Binding SaveCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
-                <Button Content="マクロ読込" Command="{Binding LoadCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
-            </StackPanel>
         </StackPanel>
     </Grid>
 </UserControl>

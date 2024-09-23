@@ -15,6 +15,22 @@
     </Window.DataContext>
 
     <DockPanel LastChildFill="True">
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="ファイル">
+                <MenuItem Header="開く"  Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                <MenuItem Header="名前を付けて保存"  Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}">
+                    <MenuItem.ItemTemplate>
+                        <DataTemplate>
+                            <MenuItem Header="{Binding FileName}" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding FilePath}" />
+                        </DataTemplate>
+                    </MenuItem.ItemTemplate>
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="バージョン情報">
+                <MenuItem Header="バージョン情報" Command="{Binding VersionInfoCommand}"/>
+            </MenuItem>
+        </Menu>
         <panels:ButtonPanel DockPanel.Dock="Top" DataContext="{Binding ButtonPanelViewModel}" Margin="2"/>
         <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="200">
             <TabItem Header="編集">

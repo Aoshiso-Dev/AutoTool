@@ -198,16 +198,18 @@ namespace Panels.ViewModel
             SelectedLineNumber = 0;
         }
 
-        public void Save()
+        public void Save(string filePath = "")
         {
-            CommandList.Save();
+            CommandList.Save(filePath);
         }
 
-        public void Load()
+        public void Load(string filePath = "")
         {
-            CommandList.Load();
+            CommandList.Load(filePath);
             SelectedLineNumber = 0;
             SelectedItem = CommandList.Items.FirstOrDefault();
+
+            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
         }
         #endregion
 

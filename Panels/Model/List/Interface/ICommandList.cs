@@ -16,7 +16,7 @@ namespace Panels.Model.List.Interface
         public void Clear();
         public void Move(int oldIndex, int newIndex);
         public void Copy(int oldIndex, int newIndex);
-        public void Save();
-        public void Load();
+        public void Save(string fileName);
+        public void Load(string fileName);
     }
 }
