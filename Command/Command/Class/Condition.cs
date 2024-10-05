@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -54,9 +55,24 @@ namespace Command.Class
         public async Task<bool> Evaluate(CancellationToken cancellationToken)
         {
             var settings = (IImageConditionSettings)Settings;
-            var point = await ImageSearchHelper.WaitForImageAsync(settings.ImagePath, settings.Threshold, settings.Timeout, settings.Interval, cancellationToken);
 
-            return point != null;
+            var stopwatch = Stopwatch.StartNew();
+
+            while (stopwatch.ElapsedMilliseconds < settings.Timeout)
+            {
+                var point = ImageSearchHelper.SearchImageFromScreen(settings.ImagePath, settings.Threshold);
+
+                if (point != null)
+                {
+                    return true;
+                }
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                await Task.Delay(settings.Interval, cancellationToken);
+            }
+
+            return false;
         }
     }
 
@@ -72,9 +88,24 @@ namespace Command.Class
         public async Task<bool> Evaluate(CancellationToken cancellationToken)
         {
             var settings = (IImageConditionSettings)Settings;
-            var point = await ImageSearchHelper.WaitForImageAsync(settings.ImagePath, settings.Threshold, settings.Timeout, settings.Interval, cancellationToken);
-            
-            return point == null;
+
+            var stopwatch = Stopwatch.StartNew();
+
+            while (stopwatch.ElapsedMilliseconds < settings.Timeout)
+            {
+                var point = ImageSearchHelper.SearchImageFromScreen(settings.ImagePath, settings.Threshold);
+
+                if (point != null)
+                {
+                    return false;
+                }
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                await Task.Delay(settings.Interval, cancellationToken);
+            }
+
+            return true;
         }
     }
 }

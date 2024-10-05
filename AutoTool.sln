@@ -15,7 +15,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenCVHelper", "OpenCVHelpe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InputHelper", "InputHelper\InputHelper.csproj", "{D5188F78-3613-4F87-9A9F-8FA7140FB6EE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlSerializer", "XmlSerializer\XmlSerializer.csproj", "{BB0CCBFE-3701-41B2-8A3A-D3FBE31A830C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmlSerializer", "XmlSerializer\XmlSerializer.csproj", "{BB0CCBFE-3701-41B2-8A3A-D3FBE31A830C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OCRHelper", "OCRHelper\OCRHelper.csproj", "{EAD84FF6-7211-4612-B075-C1B3E5735392}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,10 @@ Global
 		{BB0CCBFE-3701-41B2-8A3A-D3FBE31A830C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB0CCBFE-3701-41B2-8A3A-D3FBE31A830C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BB0CCBFE-3701-41B2-8A3A-D3FBE31A830C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAD84FF6-7211-4612-B075-C1B3E5735392}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAD84FF6-7211-4612-B075-C1B3E5735392}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAD84FF6-7211-4612-B075-C1B3E5735392}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAD84FF6-7211-4612-B075-C1B3E5735392}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

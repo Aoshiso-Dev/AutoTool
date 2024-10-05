@@ -22,326 +22,186 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Xml.Serialization;
 using System.Windows.Shapes;
+using System.Security.Policy;
+using AutoTool.ViewModel;
+using AutoTool.Model;
+using static AutoTool.Model.FileManager;
 
 namespace AutoTool
 {
+    public static class TabIndexes
+    {
+        public static readonly int Macro = 0;
+        public static readonly int Monitor = 1;
+    }
+
     public partial class MainWindowViewModel : ObservableObject
     {
-        public class RecentFile
+        private Dictionary<int, FileManager> _fileManagers = [];
+
+        public string AutoToolTitle
         {
-            public string FileName { get; set; }
-            public string FilePath { get; set; }
+            get { return IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened ? $"AutoTool - {CurrentFileName}" : "AutoTool"; }
         }
 
+        private int _selectedTabIndex = TabIndexes.Macro;
+        public int SelectedTabIndex
+        {
+            get { return _selectedTabIndex; }
+            set
+            {
+                SetProperty(ref _selectedTabIndex, value);
 
-        private CancellationTokenSource? _cts;
+                MessageBox.Show($"TabIndex: {SelectedTabIndex}");
+
+                UpdateProperties();
+            }
+        }
+
+        public bool IsFileOperationEnable
+        {
+            get { return _fileManagers.ContainsKey(SelectedTabIndex); }
+        }
+
+        public bool IsFileOpened
+        {
+            get { return IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened; }
+        }
+
+        public string CurrentFileName
+        {
+            get { return _fileManagers[SelectedTabIndex].CurrentFileName; }
+            set
+            {
+                _fileManagers[SelectedTabIndex].CurrentFileName = value;
+                OnPropertyChanged(nameof(CurrentFileName));
+            }
+        }
+
+        public string CurrentFilePath
+        {
+            get { return _fileManagers[SelectedTabIndex].CurrentFilePath; }
+            set
+            {
+                _fileManagers[SelectedTabIndex].CurrentFilePath = value;
+                OnPropertyChanged(nameof(CurrentFilePath));
+            }
+        }
+
+        public ObservableCollection<RecentFile>? RecentFiles
+        {
+            get { return _fileManagers[SelectedTabIndex].RecentFiles; }
+        }
+
+        public string MenuItemHeader_SaveFile
+        {
+            get { return IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened ? $"{CurrentFileName} を保存" : "保存"; }
+        }
+
+        public string MenuItemHeader_SaveFileAs
+        {
+            get { return IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened ? $"{CurrentFileName} を名前を付けて保存" : "名前を付けて保存"; }
+        }
 
         [ObservableProperty]
-        private ObservableCollection<RecentFile>? _recentFiles;
-
-        [ObservableProperty]
-        private ButtonPanelViewModel _buttonPanelViewModel;
-
-        [ObservableProperty]
-        private ListPanelViewModel _listPanelViewModel;
-
-        [ObservableProperty]
-        private EditPanelViewModel _editPanelViewModel;
-
-        [ObservableProperty]
-        private LogPanelViewModel _logPanelViewModel;
-
-        [ObservableProperty]
-        private FavoritePanelViewModel _favoritePanelViewModel;
-
-        [ObservableProperty]
-        private int _selectedListTabIndex = 0;
+        private MacroPanelViewModel _macroPanelViewModel;
 
         public MainWindowViewModel()
         {
-            ListPanelViewModel = new ListPanelViewModel();
-            EditPanelViewModel = new EditPanelViewModel();
-            ButtonPanelViewModel = new ButtonPanelViewModel();
-            LogPanelViewModel = new LogPanelViewModel();
-            FavoritePanelViewModel = new FavoritePanelViewModel();
+            MacroPanelViewModel = new MacroPanelViewModel();
 
-            RegisterMessages();
-
-            LoadRecentFiles();
+            InitializeFileManager();
         }
 
-        private void RegisterMessages()
+        private void InitializeFileManager()
         {
-            // From ButtonPanelViewModel
-            WeakReferenceMessenger.Default.Register<RunMessage>(this, async (sender, message) =>
-            {
-                ListPanelViewModel.Prepare();
-                EditPanelViewModel.Prepare();
-                LogPanelViewModel.Prepare();
-                FavoritePanelViewModel.Prepare();
-                ButtonPanelViewModel.Prepare();
-
-                ListPanelViewModel.SetRunningState(true);
-                EditPanelViewModel.SetRunningState(true);
-                FavoritePanelViewModel.SetRunningState(true);
-                LogPanelViewModel.SetRunningState(true);
-                ButtonPanelViewModel.SetRunningState(true);
-
-                await Run();
-            });
-            WeakReferenceMessenger.Default.Register<StopMessage>(this, (sender, message) =>
-            {
-                ListPanelViewModel.SetRunningState(false);
-                EditPanelViewModel.SetRunningState(false);
-                FavoritePanelViewModel.SetRunningState(false);
-                LogPanelViewModel.SetRunningState(false);
-                ButtonPanelViewModel.SetRunningState(false);
-
-                _cts?.Cancel();
-            });
-            WeakReferenceMessenger.Default.Register<SaveMessage>(this, (sender, message) =>
-            {
-                ListPanelViewModel.Save();
-            });
-            WeakReferenceMessenger.Default.Register<LoadMessage>(this, (sender, message) =>
-            {
-                ListPanelViewModel.Load();
-                EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
-            });
-            WeakReferenceMessenger.Default.Register<ClearMessage>(this, (sender, message) =>
-            {
-                ListPanelViewModel.Clear();
-                EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
-            });
-            WeakReferenceMessenger.Default.Register<AddMessage>(this, (sender, message) =>
-            {
-                ListPanelViewModel.Add((message as AddMessage).ItemType);
-                EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
-            });
-            WeakReferenceMessenger.Default.Register<UpMessage>(this, (sender, message) =>
-            {
-                ListPanelViewModel.Up();
-            });
-            WeakReferenceMessenger.Default.Register<DownMessage>(this, (sender, message) =>
-            {
-                ListPanelViewModel.Down();
-            });
-            WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (sender, message) =>
-            {
-                ListPanelViewModel.Delete();
-                EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
-            });
-
-            // From ListPanelViewModel
-            WeakReferenceMessenger.Default.Register<ChangeSelectedMessage>(this, (sender, message) =>
-            {
-                EditPanelViewModel.SetItem((message as ChangeSelectedMessage).Item);
-            });
-
-            // From EditPanelViewModel
-            WeakReferenceMessenger.Default.Register<EditCommandMessage>(this, (sender, message) =>
-            {
-                var item = (message as EditCommandMessage).Item;
-                if (item != null)
-                {
-                    ListPanelViewModel.SetSelectedItem(item);
-                    ListPanelViewModel.SetSelectedLineNumber(item.LineNumber - 1);
-                }
-            });
-            WeakReferenceMessenger.Default.Register<RefreshListViewMessage>(this, (sender, message) =>
-            {
-                ListPanelViewModel.Refresh();
-            });
-
-            // From Commands
-            WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (sender, message) =>
-            {
-                var command = (message as StartCommandMessage).Command;
-
-                var logString = $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Started";
-                LogPanelViewModel.WriteLog(logString);
-
-                var commandItem = ListPanelViewModel.GetItem(command.LineNumber);
-
-                if (commandItem != null)
-                {
-                    commandItem.Progress = 0;
-                    commandItem.IsRunning = true;
-                }
-            });
-            WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (sender, message) =>
-            {
-                var command = (message as FinishCommandMessage).Command;
-
-                var logString = $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Finished";
-                LogPanelViewModel.WriteLog(logString);
-
-                var commandItem = ListPanelViewModel.GetItem(command.LineNumber);
-
-                if (commandItem != null)
-                {
-                    commandItem.Progress = 0;
-                    commandItem.IsRunning = false;
-                }
-            });
-            WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (sender, message) =>
-            {
-                var command = (message as UpdateProgressMessage).Command;
-                var progress = (message as UpdateProgressMessage).Progress;
-
-                var commandItem = ListPanelViewModel.GetItem(command.LineNumber);
-
-                if (commandItem != null)
-                {
-                    commandItem.Progress = progress;
-                }
-            });
-
-            // From Other
-            WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>
-            {
-                LogPanelViewModel.WriteLog((message as LogMessage).Text);
-            });
+            _fileManagers.Add(
+                TabIndexes.Macro,
+                new FileManager(
+                    new FileManager.FileTypeInfo()
+                    {
+                        Filter = "AutoTool マクロファイル(*.macro)|*.macro",
+                        FilterIndex = 1,
+                        RestoreDirectory = true,
+                        DefaultExt = "macro",
+                        Title = "マクロファイルを開く",
+                    },
+                    SaveFile,
+                    LoadFile
+                    )
+                );
         }
 
-        public async Task Run()
+
+        private void UpdateProperties()
         {
-            var listItems = ListPanelViewModel.CommandList.Items;
-            var macro = MacroFactory.CreateMacro(listItems) as LoopCommand;
-
-            if (macro == null)
-            {
-                return;
-            }
-
-            try
-            {
-                SetRunningState(true);
-
-                _cts = new CancellationTokenSource();
-
-                await macro.Execute(_cts.Token);
-            }
-            catch (Exception ex)
-            {
-                if (_cts != null && !_cts.Token.IsCancellationRequested)
-                {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            finally
-            {
-                listItems.Where(x => x.IsRunning).ToList().ForEach(x => x.IsRunning = false);
-                ListPanelViewModel.CommandList.Items.ToList().ForEach(x => x.Progress = 0);
-
-                _cts?.Dispose();
-                _cts = null;
-
-                SetRunningState(false);
-            }
+            OnPropertyChanged(nameof(IsFileOperationEnable));
+            OnPropertyChanged(nameof(IsFileOpened));
+            OnPropertyChanged(nameof(CurrentFilePath));
+            OnPropertyChanged(nameof(CurrentFileName));
+            OnPropertyChanged(nameof(RecentFiles));
+            OnPropertyChanged(nameof(MenuItemHeader_SaveFile));
+            OnPropertyChanged(nameof(MenuItemHeader_SaveFileAs));
+            OnPropertyChanged(nameof(AutoToolTitle));
         }
 
-        public void SetRunningState(bool isRunning)
-        {
-            ButtonPanelViewModel.SetRunningState(isRunning);
-            EditPanelViewModel.SetRunningState(isRunning);
-            FavoritePanelViewModel.SetRunningState(isRunning);
-            ListPanelViewModel.SetRunningState(isRunning);
-            LogPanelViewModel.SetRunningState(isRunning);
-        }
-
-        #region Commands
-        [RelayCommand]
-        private void OpenFile(string filePath = "")
-        {
-            if (string.IsNullOrEmpty(filePath))
-            {
-                var dialog = new OpenFileDialog();
-                dialog.Filter = "Macro files (*.macro)|*.macro|All files (*.*)|*.*";
-                dialog.FilterIndex = 1;
-                dialog.RestoreDirectory = true;
-                dialog.DefaultExt = ".macro";
-                dialog.Title = "Load Macro File";
-                dialog.ShowDialog();
-
-                if (dialog.FileName == "")
-                {
-                    return;
-                }
-
-                filePath = dialog.FileName;
-            }
-
-            ListPanelViewModel.Load(filePath);
-            EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
-
-            AddToRecentFiles(filePath);
-        }
-
-        [RelayCommand]
-        private void SaveFile(string filePath)
-        {
-            var dialog = new SaveFileDialog();
-            dialog.Filter = "Macro files (*.macro)|*.macro|All files (*.*)|*.*";
-            dialog.FilterIndex = 1;
-            dialog.RestoreDirectory = true;
-            dialog.DefaultExt = ".macro";
-            dialog.Title = "Save Macro File";
-            dialog.ShowDialog();
-
-            if (dialog.FileName == "")
-            {
-                return;
-            }
-
-            ListPanelViewModel.Save(dialog.FileName);
-
-            AddToRecentFiles(dialog.FileName);
-        }
 
         [RelayCommand]
         private void VersionInfo()
         {
             var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            var versionString = $"Version {version.Major}.{version.Minor}.{version.Build}";
+            var appName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            string githubUrl = "https://github.com/Aoshiso-Dev/AutoTool";
+            var versionString = $"{version.Major}.{version.Minor}.{version.Build}";
 
-            MessageBox.Show(versionString, "Version Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"{appName}\nVer.{versionString}\n{githubUrl}", "バージョン情報", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-        #endregion
 
-        #region RecentFiles
-        private void LoadRecentFiles()
+        [RelayCommand]
+        private void OpenFile(string filePath)
         {
-            RecentFiles = XmlSerializer.XmlSerializer.DeserializeFromFile<ObservableCollection<RecentFile>>("RecentFiles.xml");
+            _fileManagers[SelectedTabIndex].OpenFile(filePath);
+            UpdateProperties();
+        }
 
-            if (RecentFiles == null)
+        [RelayCommand]
+        private void SaveFile()
+        {
+            _fileManagers[SelectedTabIndex].SaveFile();
+            UpdateProperties();
+        }
+
+        [RelayCommand]
+        private void SaveFileAs()
+        {
+            _fileManagers[SelectedTabIndex].SaveFileAs();
+            UpdateProperties();
+        }
+
+
+        private void SaveFile(string filePath)
+        {
+            if (SelectedTabIndex == TabIndexes.Macro)
             {
-                RecentFiles = new ObservableCollection<RecentFile>();
+                MacroPanelViewModel.SaveMacroFile(filePath);
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
 
-        private void SaveRecentFiles()
+        private void LoadFile(string filePath)
         {
-            XmlSerializer.XmlSerializer.SerializeToFile(RecentFiles, "RecentFiles.xml");
+            if (SelectedTabIndex == TabIndexes.Macro)
+            {
+                MacroPanelViewModel.LoadMacroFile(filePath);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
-        private void AddToRecentFiles(string filePath)
-        {
-            var existingItem = RecentFiles?.FirstOrDefault(f => f.FilePath == filePath);
-            if (existingItem != null)
-            {
-                RecentFiles?.Remove(existingItem);
-            }
-
-            RecentFiles?.Insert(0, new RecentFile { FileName = System.IO.Path.GetFileName(filePath), FilePath = filePath });
-
-            if (RecentFiles?.Count > 10)
-            {
-                RecentFiles?.RemoveAt(RecentFiles.Count - 1);
-            }
-
-            SaveRecentFiles();
-        }
-        #endregion
     }
 }

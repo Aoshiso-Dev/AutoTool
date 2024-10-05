@@ -7,12 +7,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resource\AutoTool.ico</ApplicationIcon>
-    <FileVersion>1.2.2</FileVersion>
-    <AssemblyVersion>1.2.2</AssemblyVersion>
+    <FileVersion>1.2.3</FileVersion>
+    <AssemblyVersion>1.2.3</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="Resource\AutoTool.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Tesseract" Version="5.2.0" />
   </ItemGroup>
 
   <ItemGroup>

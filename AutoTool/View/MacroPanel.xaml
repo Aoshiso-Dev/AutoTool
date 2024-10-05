@@ -1,0 +1,25 @@
+﻿<UserControl x:Class="AutoTool.View.MacroPanel"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AutoTool"
+        xmlns:panels="clr-namespace:Panels.View;assembly=Panels"
+        xmlns:converter="clr-namespace:Panels.View.Converter;assembly=Panels"
+        xmlns:vm="MainW"
+        mc:Ignorable="d"
+        Height="1000" Width="1000">
+
+    <DockPanel LastChildFill="True">
+        <panels:ButtonPanel DockPanel.Dock="Top" DataContext="{Binding ButtonPanelViewModel}" Margin="2"/>
+        <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="200">
+            <TabItem Header="編集">
+                <panels:EditPanel DataContext="{Binding EditPanelViewModel}" Margin="2"/>
+            </TabItem>
+            <TabItem Header="ログ">
+                <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="2"/>
+            </TabItem>
+        </TabControl>
+        <panels:ListPanel DataContext="{Binding ListPanelViewModel}" Margin="2"/>
+    </DockPanel>
+</UserControl>

@@ -6,20 +6,22 @@
         xmlns:local="clr-namespace:AutoTool"
         xmlns:panels="clr-namespace:Panels.View;assembly=Panels"
         xmlns:converter="clr-namespace:Panels.View.Converter;assembly=Panels"
-        xmlns:vm="MainW"
+        xmlns:vm="clr-namespace:AutoTool.ViewModel"
+        xmlns:panel="clr-namespace:AutoTool.View"
         mc:Ignorable="d"
-        Title="AutoTool" Height="1000" Width="1000">
+        Title="{Binding AutoToolTitle}" Height="1000" Width="1000">
 
     <Window.DataContext>
         <local:MainWindowViewModel/>
     </Window.DataContext>
 
-    <DockPanel LastChildFill="True">
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="ファイル">
-                <MenuItem Header="開く"  Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                <MenuItem Header="名前を付けて保存"  Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}">
+    <StackPanel>
+        <Menu>
+            <MenuItem DockPanel.Dock="Left" Header="ファイル">
+                <MenuItem Header="開く"  Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
+                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFile, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOpened}"/>
+                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFileAs, RelativeSource={RelativeSource AncestorType=Window}}"  Command="{Binding DataContext.SaveFileAsCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
+                <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}" IsEnabled="{Binding IsFileOperationEnable}">
                     <MenuItem.ItemTemplate>
                         <DataTemplate>
                             <MenuItem Header="{Binding FileName}" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding FilePath}" />
@@ -27,26 +29,17 @@
                     </MenuItem.ItemTemplate>
                 </MenuItem>
             </MenuItem>
-            <MenuItem Header="バージョン情報">
-                <MenuItem Header="バージョン情報" Command="{Binding VersionInfoCommand}"/>
-            </MenuItem>
+            <MenuItem DockPanel.Dock="Right" Header="バージョン情報" Command="{Binding VersionInfoCommand}" HorizontalAlignment="Right"/>
         </Menu>
-        <panels:ButtonPanel DockPanel.Dock="Top" DataContext="{Binding ButtonPanelViewModel}" Margin="2"/>
-        <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="200">
-            <TabItem Header="編集">
-                <panels:EditPanel DataContext="{Binding EditPanelViewModel}" Margin="2"/>
-            </TabItem>
-            <TabItem Header="ログ">
-                <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="2"/>
+        <TabControl SelectedIndex="{Binding SelectedTabIndex}">
+            <TabItem Header="マクロ">
+                <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}" Margin="2"/>
             </TabItem>
             <!--
-            <TabItem Header="お気に入り">
-                <panels:FavoritePanel DataContext="{Binding FavoritePanelViewModel}" Margin="2"/>
+            <TabItem Header="モニタリング">
+                <panel:MonitoringPanel  DataContext="{Binding MacroPanelViewModel}" Margin="2"/>
             </TabItem>
             -->
         </TabControl>
-
-        <panels:ListPanel DataContext="{Binding ListPanelViewModel}" Margin="2"/>
-        
-    </DockPanel>
+    </StackPanel>
 </Window>

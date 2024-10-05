@@ -92,7 +92,7 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var point = ImageSearchHelper.SearchImage(Settings.ImagePath);
+                var point = ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold);
 
                 if (point != null)
                 {
@@ -122,7 +122,7 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var point = ImageSearchHelper.SearchImage(Settings.ImagePath);
+                var point = ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold);
 
                 if (point != null)
                 {
@@ -250,7 +250,7 @@ namespace Command.Class
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
 
-                var point = ImageSearchHelper.SearchImage(Settings.ImagePath);
+                var point = ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold);
 
                 if (point != null)
                 {
@@ -310,7 +310,7 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var point = ImageSearchHelper.SearchImage(Settings.ImagePath);
+                var point = ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold);
 
                 if(point != null)
                 {
