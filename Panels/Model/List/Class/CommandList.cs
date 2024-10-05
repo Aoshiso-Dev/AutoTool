@@ -33,7 +33,7 @@ namespace Panels.List.Class
             Items.Add(item);
 
             ReorderItems();
-            CalcurateNestLevel();
+            CalculateNestLevel();
             PairIfItems();
             PairLoopItems();
         }
@@ -43,7 +43,7 @@ namespace Panels.List.Class
             Items.Remove(item);
 
             ReorderItems();
-            CalcurateNestLevel();
+            CalculateNestLevel();
             PairIfItems();
             PairLoopItems();
         }
@@ -53,7 +53,7 @@ namespace Panels.List.Class
             Items.Insert(index, item);
 
             ReorderItems();
-            CalcurateNestLevel();
+            CalculateNestLevel();
             PairIfItems();
             PairLoopItems();
         }
@@ -73,7 +73,7 @@ namespace Panels.List.Class
             Items[index] = item;
 
             ReorderItems();
-            CalcurateNestLevel();
+            CalculateNestLevel();
             PairIfItems();
             PairLoopItems();
         }
@@ -95,7 +95,7 @@ namespace Panels.List.Class
             Items.Insert(newIndex, item);
 
             ReorderItems();
-            CalcurateNestLevel();
+            CalculateNestLevel();
             PairIfItems();
             PairLoopItems();
         }
@@ -111,7 +111,7 @@ namespace Panels.List.Class
             Items.Insert(newIndex, item);
 
             ReorderItems();
-            CalcurateNestLevel();
+            CalculateNestLevel();
             PairIfItems();
             PairLoopItems();
         }
@@ -124,7 +124,7 @@ namespace Panels.List.Class
             }
         }
 
-        public void CalcurateNestLevel()
+        public void CalculateNestLevel()
         {
             var nestLevel = 0;
 
@@ -158,34 +158,58 @@ namespace Panels.List.Class
 
         public void PairIfItems()
         {
-            var ifItems = Items.OfType<IIfItem>().Where(x => x.ItemType == ItemType.IfImageExist || x.ItemType == ItemType.IfImageNotExist).ToList();
-            var endIfItems = Items.OfType<IEndIfItem>().Where(x => x.ItemType == ItemType.EndIf).ToList();
+            var ifItems = Items.OfType<IIfItem>().Where(x => x.ItemType == ItemType.IfImageExist || x.ItemType == ItemType.IfImageNotExist).OrderBy(x => x.LineNumber).ToList();
+            var endIfItems = Items.OfType<IEndIfItem>().Where(x => x.ItemType == ItemType.EndIf).OrderBy(x => x.LineNumber).ToList();
 
             foreach (var ifItem in ifItems)
             {
-                var endIfItem = endIfItems.FirstOrDefault(x => x.NestLevel == ifItem.NestLevel);
-
-                if (endIfItem != null)
+                if(ifItem.Pair != null)
                 {
-                    ifItem.Pair = endIfItem;
-                    endIfItem.Pair = ifItem;
+                    continue;
+                }
+
+                foreach(var endIfItem in endIfItems)
+                {
+                    if (endIfItem.Pair != null)
+                    {
+                        continue;
+                    }
+
+                    if (endIfItem.LineNumber > ifItem.LineNumber)
+                    {
+                        ifItem.Pair = endIfItem;
+                        endIfItem.Pair = ifItem;
+                        break;
+                    }
                 }
             }
         }
 
         public void PairLoopItems()
         {
-            var loopItems = Items.OfType<ILoopItem>().Where(x => x.ItemType == ItemType.Loop).ToList();
-            var endLoopItems = Items.OfType<IEndLoopItem>().Where(x => x.ItemType == ItemType.EndLoop).ToList();
+            var loopItems = Items.OfType<ILoopItem>().Where(x => x.ItemType == ItemType.Loop).OrderBy(x => x.LineNumber).ToList();
+            var endLoopItems = Items.OfType<IEndLoopItem>().Where(x => x.ItemType == ItemType.EndLoop).OrderBy(x => x.LineNumber).ToList();
 
             foreach (var loopItem in loopItems)
             {
-                var endLoopItem = endLoopItems.FirstOrDefault(x => x.NestLevel == loopItem.NestLevel);
-
-                if (endLoopItem != null)
+                if(loopItem.Pair != null)
                 {
-                    loopItem.Pair = endLoopItem;
-                    endLoopItem.Pair = loopItem;
+                    continue;
+                }
+
+                foreach (var endLoopItem in endLoopItems)
+                {
+                    if (endLoopItem.Pair != null)
+                    {
+                        continue;
+                    }
+
+                    if (endLoopItem.LineNumber > loopItem.LineNumber)
+                    {
+                        loopItem.Pair = endLoopItem;
+                        endLoopItem.Pair = loopItem;
+                        break;
+                    }
                 }
             }
         }
@@ -258,7 +282,7 @@ namespace Panels.List.Class
                 }
             }
 
-            CalcurateNestLevel();
+            CalculateNestLevel();
             PairIfItems();
             PairLoopItems();
         }
