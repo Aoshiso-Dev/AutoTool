@@ -175,7 +175,7 @@ namespace Panels.List.Class
                         continue;
                     }
 
-                    if (endIfItem.LineNumber > ifItem.LineNumber)
+                    if (endIfItem.NestLevel == ifItem.NestLevel &&　endIfItem.LineNumber > ifItem.LineNumber)
                     {
                         ifItem.Pair = endIfItem;
                         endIfItem.Pair = ifItem;
@@ -204,7 +204,7 @@ namespace Panels.List.Class
                         continue;
                     }
 
-                    if (endLoopItem.LineNumber > loopItem.LineNumber)
+                    if (endLoopItem.NestLevel == loopItem.NestLevel && endLoopItem.LineNumber > loopItem.LineNumber)
                     {
                         loopItem.Pair = endLoopItem;
                         endLoopItem.Pair = loopItem;
