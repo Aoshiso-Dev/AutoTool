@@ -96,8 +96,8 @@ namespace Command.Class
                 var isScreenCoordinate = string.IsNullOrEmpty(Settings.WindowTitle);// || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle);
 
                 var point = isScreenCoordinate
-                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, true)
-                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, true);
+                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, true)
+                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, true);
 
                 if (point != null)
                 {
