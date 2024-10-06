@@ -93,11 +93,11 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var isScreenCoordinate = string.IsNullOrEmpty(Settings.WindowTitle) || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle);
+                var isScreenCoordinate = string.IsNullOrEmpty(Settings.WindowTitle);// || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle);
 
                 var point = isScreenCoordinate
-                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold)
-                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, Settings.Threshold);
+                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, true)
+                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, true);
 
                 if (point != null)
                 {
@@ -130,8 +130,8 @@ namespace Command.Class
                 var isScreenCoordinate = string.IsNullOrEmpty(Settings.WindowTitle) || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle);
 
                 var point = isScreenCoordinate
-                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold)
-                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, Settings.Threshold);
+                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, true)
+                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, true);
 
                 if (point != null)
                 {
@@ -161,6 +161,7 @@ namespace Command.Class
                         if (!WindowHelper.Info.IsWindowForeground(Settings.WindowTitle))
                         {
                             WindowHelper.Operation.SetForegroundWindow(Settings.WindowTitle);
+                            Thread.Sleep(100);
                         }
 
                         MouseHelper.Input.Move(clickPoint.Item1, clickPoint.Item2);
@@ -225,26 +226,6 @@ namespace Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            if (!WindowHelper.Info.IsWindowForeground(Settings.WindowTitle))
-            {
-                WindowHelper.Operation.SetForegroundWindow(Settings.WindowTitle);
-            }
-
-            switch (Settings.Button)
-            {
-                case System.Windows.Input.MouseButton.Left:
-                    MouseHelper.Input.Click(Settings.X, Settings.Y);
-                    break;
-                case System.Windows.Input.MouseButton.Right:
-                    MouseHelper.Input.RightClick(Settings.X, Settings.Y);
-                    break;
-                case System.Windows.Input.MouseButton.Middle:
-                    MouseHelper.Input.MiddleClick(Settings.X, Settings.Y);
-                    break;
-                default:
-                    throw new Exception("マウスボタンが不正です。");
-            }
-            
             if (string.IsNullOrEmpty(Settings.WindowTitle))
             { 
                 switch (Settings.Button)
@@ -345,8 +326,8 @@ namespace Command.Class
             {
 
                 var point = string.IsNullOrEmpty(Settings.WindowTitle)
-                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold)
-                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, Settings.Threshold);
+                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold)
+                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold);
 
                 if (point != null)
                 {
@@ -407,8 +388,8 @@ namespace Command.Class
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
                 var point = string.IsNullOrEmpty(Settings.WindowTitle)
-                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold)
-                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, Settings.Threshold);
+                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold)
+                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold);
 
                 if (point != null)
                 {

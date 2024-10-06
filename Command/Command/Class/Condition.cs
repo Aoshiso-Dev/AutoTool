@@ -61,8 +61,8 @@ namespace Command.Class
             while (stopwatch.ElapsedMilliseconds < settings.Timeout)
             {
                 var point = string.IsNullOrEmpty(settings.WindowTitle)
-                    ? ImageSearchHelper.SearchImageFromScreen(settings.ImagePath, settings.Threshold)
-                    : ImageSearchHelper.SearchImageFromWindow(settings.WindowTitle, settings.ImagePath, settings.Threshold);
+                    ? ImageSearchHelper.SearchImageFromScreen(settings.ImagePath, cancellationToken, settings.Threshold)
+                    : ImageSearchHelper.SearchImageFromWindow(settings.WindowTitle, settings.ImagePath, cancellationToken, settings.Threshold);
 
                 if (point != null)
                 {
@@ -96,8 +96,8 @@ namespace Command.Class
             while (stopwatch.ElapsedMilliseconds < settings.Timeout)
             {
                 var point = string.IsNullOrEmpty(settings.WindowTitle)
-                    ? ImageSearchHelper.SearchImageFromScreen(settings.ImagePath, settings.Threshold)
-                    : ImageSearchHelper.SearchImageFromWindow(settings.WindowTitle, settings.ImagePath, settings.Threshold);
+                    ? ImageSearchHelper.SearchImageFromScreen(settings.ImagePath, cancellationToken, settings.Threshold)
+                    : ImageSearchHelper.SearchImageFromWindow(settings.WindowTitle, settings.ImagePath, cancellationToken, settings.Threshold);
 
                 if (point != null)
                 {

@@ -199,38 +199,66 @@ namespace OpenCVHelper
 
     public static class ImageSearchHelper
     {
-        public static OpenCvSharp.Point? SearchImage(Mat targetMat, Mat templateMat, double threshold = 0.8)
+        public static async Task<OpenCvSharp.Point?> SearchImage(Mat targetMat, Mat templateMat, CancellationToken token, double threshold = 0.8)
         {
-            // 色空間を揃える
-            Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2BGR);
-            Cv2.CvtColor(templateMat, templateMat, ColorConversionCodes.BGRA2BGR);
-
-            // マッチングを実行
-            using Mat result = new Mat();
-            Cv2.MatchTemplate(targetMat, templateMat, result, TemplateMatchModes.CCoeffNormed);
-
-            // マッチング結果から最大値とその位置を取得
-            Cv2.MinMaxLoc(result, out _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
-
-            if (maxVal >= threshold)
+            return await Task.Run(() =>
             {
-                // 対象画像の中心座標を計算して返す
-                OpenCvSharp.Point center = new OpenCvSharp.Point(maxLoc.X + templateMat.Width / 2, maxLoc.Y + templateMat.Height / 2);
-                return center;
+                // 色空間を揃える
+                Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2BGR);
+                Cv2.CvtColor(templateMat, templateMat, ColorConversionCodes.BGRA2BGR);
+
+                // マッチングを実行
+                using Mat result = new Mat();
+                Cv2.MatchTemplate(targetMat, templateMat, result, TemplateMatchModes.CCoeffNormed);
+
+                // マッチング結果から最大値とその位置を取得
+                Cv2.MinMaxLoc(result, out _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
+
+                if (maxVal >= threshold)
+                {
+                    // 対象画像の中心座標を計算して返す
+                    OpenCvSharp.Point center = new OpenCvSharp.Point(maxLoc.X + templateMat.Width / 2, maxLoc.Y + templateMat.Height / 2);
+                    return center;
+                }
+
+                return (OpenCvSharp.Point?)null;
+            }, token);
+        }
+
+        public static async Task<OpenCvSharp.Point?> SearchImageMultiScale(Mat targetMat, Mat templateMat, CancellationToken token, double threshold = 0.8, double minScale = 0.2, double maxScale = 2.5, double scaleStep = 0.05)
+        {
+            // スケールを調整しながらテンプレートマッチングを実行
+            for (double scale = minScale; scale <= maxScale; scale += scaleStep)
+            {
+                if(token.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                using Mat resizedTemplateMat = new Mat();
+                Cv2.Resize(templateMat, resizedTemplateMat, new OpenCvSharp.Size(templateMat.Width * scale, templateMat.Height * scale));
+
+                var matchLocation = await SearchImage(targetMat, resizedTemplateMat, token, threshold);
+
+                if (matchLocation != null)
+                {
+                    token.ThrowIfCancellationRequested();
+                    return matchLocation;
+                }
             }
 
             return null;
         }
 
-        public static OpenCvSharp.Point? SearchImageFromScreen(Mat templateMat, double threshold = 0.8)
+        public static async Task<OpenCvSharp.Point?> SearchImageFromScreen(Mat templateMat, CancellationToken token, double threshold = 0.8, bool multiScale = false)
         {
             // スクリーンショットを取得
             using Mat screenMat = ScreenCaptureHelper.CaptureScreen();
 
-            return SearchImage(screenMat, templateMat, threshold);
+            return false ? await SearchImageMultiScale(screenMat, templateMat, token, threshold) : await SearchImage(screenMat, templateMat, token, threshold);
         }
 
-        public static OpenCvSharp.Point? SearchImageFromScreen(string imagePath, double threshold = 0.8)
+        public static async Task<OpenCvSharp.Point?> SearchImageFromScreen(string imagePath, CancellationToken token, double threshold = 0.8, bool multiScale = false)
         {
             // ファイル存在確認
             if (!System.IO.File.Exists(imagePath))
@@ -238,26 +266,36 @@ namespace OpenCVHelper
                 throw new System.IO.FileNotFoundException("ファイルが見つかりません。", imagePath);
             }
 
-            return SearchImageFromScreen(new Mat(imagePath), threshold);
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+
+            return await SearchImageFromScreen(new Mat(imagePath), cts.Token, threshold, multiScale);
         }
 
-        public static OpenCvSharp.Point? SearchImageFromWindow(string windowTitle, Mat templateMat, double threshold = 0.8)
+        /*
+        public static async Task<OpenCvSharp.Point?> SearchImageFromWindow(string windowTitle, Mat templateMat, CancellationToken token, double threshold = 0.8, bool multiScale = false)
         {
             // ウィンドウキャプチャ
             using Mat windowMat = ScreenCaptureHelper.CaptureWindow(windowTitle);
 
-            return SearchImage(windowMat, templateMat, threshold);
+            return multiScale ? await SearchImageMultiScale(windowMat, templateMat, token, threshold) : await SearchImage(windowMat, templateMat, token, threshold);
         }
+        */
 
-        public static OpenCvSharp.Point? SearchImageFromWindow(string windowTitle, string imagePath, double threshold = 0.8)
+
+        public static async Task<OpenCvSharp.Point?> SearchImageFromWindow(string windowTitle, string imagePath, CancellationToken token, double threshold = 0.8, bool multiScale = false)
         {
-            // ファイル存在確認
             if (!System.IO.File.Exists(imagePath))
             {
                 throw new System.IO.FileNotFoundException("ファイルが見つかりません。", imagePath);
             }
 
-            return SearchImageFromWindow(windowTitle, new Mat(imagePath), threshold);
+            using Mat windowMat = ScreenCaptureHelper.CaptureWindow(windowTitle);
+            using Mat templateMat = new Mat(imagePath);
+
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+
+            //return false ? await SearchImageMultiScale(windowMat, templateMat, cts.Token, threshold) : await SearchImage(windowMat, templateMat, cts.Token, threshold);
+            return await SearchImage(windowMat, templateMat, cts.Token, threshold);
         }
     }
 }
