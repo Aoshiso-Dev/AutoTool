@@ -13,11 +13,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Command", "Command\Command.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenCVHelper", "OpenCVHelper\OpenCVHelper.csproj", "{BB5A0F47-154E-4C01-86CC-ED5A2E83D966}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InputHelper", "InputHelper\InputHelper.csproj", "{D5188F78-3613-4F87-9A9F-8FA7140FB6EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MouseHelper", "InputHelper\MouseHelper.csproj", "{D5188F78-3613-4F87-9A9F-8FA7140FB6EE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XmlSerializer", "XmlSerializer\XmlSerializer.csproj", "{BB0CCBFE-3701-41B2-8A3A-D3FBE31A830C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OCRHelper", "OCRHelper\OCRHelper.csproj", "{EAD84FF6-7211-4612-B075-C1B3E5735392}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCRHelper", "OCRHelper\OCRHelper.csproj", "{EAD84FF6-7211-4612-B075-C1B3E5735392}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowHelper", "WindowInfoHelper\WindowHelper.csproj", "{23BBB7D7-589E-4E90-AE51-18ABFF577522}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyHelper", "KeyHelper\KeyHelper.csproj", "{1B0C4014-BB8D-4E0D-800C-3301A7329E84}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +57,14 @@ Global
 		{EAD84FF6-7211-4612-B075-C1B3E5735392}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAD84FF6-7211-4612-B075-C1B3E5735392}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAD84FF6-7211-4612-B075-C1B3E5735392}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23BBB7D7-589E-4E90-AE51-18ABFF577522}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23BBB7D7-589E-4E90-AE51-18ABFF577522}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23BBB7D7-589E-4E90-AE51-18ABFF577522}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23BBB7D7-589E-4E90-AE51-18ABFF577522}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B0C4014-BB8D-4E0D-800C-3301A7329E84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B0C4014-BB8D-4E0D-800C-3301A7329E84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B0C4014-BB8D-4E0D-800C-3301A7329E84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B0C4014-BB8D-4E0D-800C-3301A7329E84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

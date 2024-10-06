@@ -14,7 +14,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\InputHelper\InputHelper.csproj" />
+    <ProjectReference Include="..\InputHelper\MouseHelper.csproj" />
+    <ProjectReference Include="..\KeyHelper\KeyHelper.csproj" />
     <ProjectReference Include="..\OpenCVHelper\OpenCVHelper.csproj" />
+    <ProjectReference Include="..\WindowInfoHelper\WindowHelper.csproj" />
   </ItemGroup>
 
 </Project>

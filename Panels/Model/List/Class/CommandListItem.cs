@@ -49,7 +49,6 @@ namespace Panels.List.Class
                 ItemType = item.ItemType;
                 NestLevel = item.NestLevel;
                 IsInLoop = item.IsInLoop;
-                
             }
         }
 
@@ -69,8 +68,10 @@ namespace Panels.List.Class
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
+        [ObservableProperty]
+        private string _windowTitle = string.Empty;
 
-        new public string Description => $"パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) ? "グローバル" : WindowTitle)} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public WaitImageItem() { }
 
@@ -82,6 +83,7 @@ namespace Panels.List.Class
                 Threshold = item.Threshold;
                 Timeout = item.Timeout;
                 Interval = item.Interval;
+                WindowTitle = item.WindowTitle;
             }
         }
 
@@ -103,8 +105,10 @@ namespace Panels.List.Class
         private int _interval = 500;
         [ObservableProperty]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+        [ObservableProperty]
+        private string _windowTitle = string.Empty;
 
-        new public string Description => $"パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
+        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) ? "グローバル" : WindowTitle)} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
 
         public ClickImageItem() { }
 
@@ -117,6 +121,7 @@ namespace Panels.List.Class
                 Timeout = item.Timeout;
                 Interval = item.Interval;
                 Button = item.Button;
+                WindowTitle = item.WindowTitle;
             }
         }
 
@@ -136,11 +141,15 @@ namespace Panels.List.Class
         private bool _shift = false;
         [ObservableProperty]
         private System.Windows.Input.Key _key = System.Windows.Input.Key.Escape;
+        [ObservableProperty]
+        private string _windowTitle = string.Empty;
 
         new public string Description
         {
             get
             {
+                var target = string.IsNullOrEmpty(WindowTitle) ? "グローバル" : WindowTitle;
+
                 var keys = new List<string>();
 
                 if (Ctrl) keys.Add("Ctrl");
@@ -148,7 +157,9 @@ namespace Panels.List.Class
                 if (Shift) keys.Add("Shift");
                 keys.Add(Key.ToString());
 
-                return string.Join(" + ", keys);
+                
+
+                return $"対象：{target} / キー：{string.Join(" + ", keys)}";
             }
         }
 
@@ -162,6 +173,7 @@ namespace Panels.List.Class
                 Alt = item.Alt;
                 Shift = item.Shift;
                 Key = item.Key;
+                WindowTitle = item.WindowTitle;
             }
         }
 
@@ -179,8 +191,10 @@ namespace Panels.List.Class
         private int _y = 0;
         [ObservableProperty]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+        [ObservableProperty]
+        private string _windowTitle = string.Empty;
 
-        new public string Description => $"X座標:{X} / Y座標:{Y} / ボタン:{Button}";
+        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) ? "グローバル" : WindowTitle)} / X座標:{X} / Y座標:{Y} / ボタン:{Button}";
 
         public ClickItem() { }
 
@@ -191,6 +205,7 @@ namespace Panels.List.Class
                 X = item.X;
                 Y = item.Y;
                 Button = item.Button;
+                WindowTitle = item.WindowTitle;
             }
         }
 
@@ -233,9 +248,11 @@ namespace Panels.List.Class
         [ObservableProperty]
         private int _interval = 500;
         [ObservableProperty]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
         private ICommandListItem? _pair = null;
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) ? "グローバル" : WindowTitle)} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public IfImageExistItem() { }
 
@@ -247,6 +264,7 @@ namespace Panels.List.Class
                 Threshold = item.Threshold;
                 Timeout = item.Timeout;
                 Interval = item.Interval;
+                WindowTitle = item.WindowTitle;
                 Pair = item.Pair;
             }
         }
@@ -268,9 +286,11 @@ namespace Panels.List.Class
         [ObservableProperty]
         private int _interval = 500;
         [ObservableProperty]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
         private ICommandListItem? _pair = null;
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) ? "グローバル" : WindowTitle)} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public IfImageNotExistItem() { }
 
@@ -282,6 +302,7 @@ namespace Panels.List.Class
                 Threshold = item.Threshold;
                 Timeout = item.Timeout;
                 Interval = item.Interval;
+                WindowTitle = item.WindowTitle;
                 Pair = item.Pair;
             }
         }

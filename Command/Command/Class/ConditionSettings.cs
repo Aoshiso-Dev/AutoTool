@@ -17,5 +17,6 @@ namespace Command.Class
         public double Threshold { get; set; } = 0.8;
         public int Timeout { get; set; } = 5000;
         public int Interval { get; set; } = 500;
+        public string WindowTitle { get; set; } = string.Empty;
     }
 }

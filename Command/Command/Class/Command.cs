@@ -9,10 +9,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using Command.Interface;
 using OpenCVHelper;
-using InputHelper;
+using MouseHelper;
 using CommunityToolkit.Mvvm.Messaging;
 using Command.Message;
 using System.Net.Mail;
+using KeyHelper;
 
 namespace Command.Class
 {
@@ -92,7 +93,11 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var point = ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold);
+                var isScreenCoordinate = string.IsNullOrEmpty(Settings.WindowTitle) || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle);
+
+                var point = isScreenCoordinate
+                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold)
+                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, Settings.Threshold);
 
                 if (point != null)
                 {
@@ -122,23 +127,58 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var point = ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold);
+                var isScreenCoordinate = string.IsNullOrEmpty(Settings.WindowTitle) || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle);
+
+                var point = isScreenCoordinate
+                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold)
+                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, Settings.Threshold);
 
                 if (point != null)
                 {
-                    switch (Settings.Button)
+                    var clickPoint = isScreenCoordinate
+                        ? new (point.Value.X, point.Value.Y)
+                        : WindowHelper.Coordinate.ClientToScreen(Settings.WindowTitle, point.Value.X, point.Value.Y);
+
+                    if (string.IsNullOrEmpty(Settings.WindowTitle))
                     {
-                        case System.Windows.Input.MouseButton.Left:
-                            MouseControlHelper.Click(point.Value.X, point.Value.Y);
-                            break;
-                        case System.Windows.Input.MouseButton.Right:
-                            MouseControlHelper.RightClick(point.Value.X, point.Value.Y);
-                            break;
-                        case System.Windows.Input.MouseButton.Middle:
-                            MouseControlHelper.MiddleClick(point.Value.X, point.Value.Y);
-                            break;
-                        default:
-                            throw new Exception("Invalid MouseButton.");
+                        switch (Settings.Button)
+                        {
+                            case System.Windows.Input.MouseButton.Left:
+                                MouseHelper.Input.Click(clickPoint.Item1, clickPoint.Item2);
+                                break;
+                            case System.Windows.Input.MouseButton.Right:
+                                MouseHelper.Input.RightClick(clickPoint.Item1, clickPoint.Item2);
+                                break;
+                            case System.Windows.Input.MouseButton.Middle:
+                                MouseHelper.Input.MiddleClick(clickPoint.Item1, clickPoint.Item2);
+                                break;
+                          default:
+                                throw new Exception("Invalid MouseButton.");
+                        }
+                    }
+                    else
+                    {
+                        if (!WindowHelper.Info.IsWindowForeground(Settings.WindowTitle))
+                        {
+                            WindowHelper.Operation.SetForegroundWindow(Settings.WindowTitle);
+                        }
+
+                        MouseHelper.Input.Move(clickPoint.Item1, clickPoint.Item2);
+
+                        switch (Settings.Button)
+                        {
+                            case System.Windows.Input.MouseButton.Left:
+                               MouseHelper.Input.Click(Settings.WindowTitle, clickPoint.Item1, clickPoint.Item2);
+                                break;
+                            case System.Windows.Input.MouseButton.Right:
+                               MouseHelper.Input.RightClick(Settings.WindowTitle, clickPoint.Item1, clickPoint.Item2);
+                                break;
+                            case System.Windows.Input.MouseButton.Middle:
+                                MouseHelper.Input.MiddleClick(Settings.WindowTitle, clickPoint.Item1, clickPoint.Item2);
+                                break;
+                            default:
+                                throw new Exception("Invalid MouseButton.");
+                        }
                     }
 
                     return true;
@@ -164,7 +204,14 @@ namespace Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            KeyControlHelper.KeyPress(Settings.Ctrl, Settings.Alt, Settings.Shift, Settings.Key);
+            if (string.IsNullOrEmpty(Settings.WindowTitle))
+            {
+                KeyHelper.Input.KeyPress(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift);
+            }
+            else
+            {
+                KeyHelper.Input.KeyPress(Settings.WindowTitle, Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift);
+            }
 
             return true;
         }
@@ -178,19 +225,66 @@ namespace Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            switch(Settings.Button)
+            if (!WindowHelper.Info.IsWindowForeground(Settings.WindowTitle))
+            {
+                WindowHelper.Operation.SetForegroundWindow(Settings.WindowTitle);
+            }
+
+            switch (Settings.Button)
             {
                 case System.Windows.Input.MouseButton.Left:
-                    MouseControlHelper.Click(Settings.X, Settings.Y);
+                    MouseHelper.Input.Click(Settings.X, Settings.Y);
                     break;
                 case System.Windows.Input.MouseButton.Right:
-                    MouseControlHelper.RightClick(Settings.X, Settings.Y);
+                    MouseHelper.Input.RightClick(Settings.X, Settings.Y);
                     break;
                 case System.Windows.Input.MouseButton.Middle:
-                    MouseControlHelper.MiddleClick(Settings.X, Settings.Y);
+                    MouseHelper.Input.MiddleClick(Settings.X, Settings.Y);
                     break;
                 default:
                     throw new Exception("マウスボタンが不正です。");
+            }
+            
+            if (string.IsNullOrEmpty(Settings.WindowTitle))
+            { 
+                switch (Settings.Button)
+                {
+                   case System.Windows.Input.MouseButton.Left:
+                       MouseHelper.Input.Click(Settings.X, Settings.Y);
+                       break;
+                   case System.Windows.Input.MouseButton.Right:
+                       MouseHelper.Input.RightClick(Settings.X, Settings.Y);
+                       break;
+                   case System.Windows.Input.MouseButton.Middle:
+                       MouseHelper.Input.MiddleClick(Settings.X, Settings.Y);
+                        break;
+                    default:
+                       throw new Exception("マウスボタンが不正です。");
+                  }
+            }
+            else
+            {
+                if (!WindowHelper.Info.IsWindowForeground(Settings.WindowTitle))
+                {
+                    WindowHelper.Operation.SetForegroundWindow(Settings.WindowTitle);
+                }
+
+                MouseHelper.Input.Move(Settings.X, Settings.Y);
+
+                switch (Settings.Button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        MouseHelper.Input.Click(Settings.WindowTitle, Settings.X, Settings.Y);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        MouseHelper.Input.RightClick(Settings.WindowTitle, Settings.X, Settings.Y);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        MouseHelper.Input.MiddleClick(Settings.WindowTitle, Settings.X, Settings.Y);
+                        break;
+                    default:
+                        throw new Exception("マウスボタンが不正です。");
+                }
             }
 
             return true;
@@ -250,7 +344,9 @@ namespace Command.Class
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
 
-                var point = ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold);
+                var point = string.IsNullOrEmpty(Settings.WindowTitle)
+                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold)
+                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, Settings.Threshold);
 
                 if (point != null)
                 {
@@ -310,9 +406,11 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var point = ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold);
+                var point = string.IsNullOrEmpty(Settings.WindowTitle)
+                    ? ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, Settings.Threshold)
+                    : ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, Settings.Threshold);
 
-                if(point != null)
+                if (point != null)
                 {
                     return true;
                 }

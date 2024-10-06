@@ -31,6 +31,9 @@ namespace AutoTool.ViewModel
         private CancellationTokenSource? _cts;
 
         [ObservableProperty]
+        private bool _isRunning = false;
+
+        [ObservableProperty]
         private ButtonPanelViewModel _buttonPanelViewModel;
 
         [ObservableProperty]
@@ -233,6 +236,8 @@ namespace AutoTool.ViewModel
 
         public void SetRunningState(bool isRunning)
         {
+            IsRunning = isRunning;
+
             ButtonPanelViewModel.SetRunningState(isRunning);
             EditPanelViewModel.SetRunningState(isRunning);
             FavoritePanelViewModel.SetRunningState(isRunning);

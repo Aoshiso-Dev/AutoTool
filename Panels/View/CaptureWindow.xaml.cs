@@ -1,4 +1,4 @@
-﻿using InputHelper;
+﻿using MouseHelper;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Ribbon.Primitives;
@@ -43,7 +43,7 @@ namespace Panels.View
             {
                 if (e.LeftButton == MouseButtonState.Pressed)
                 {
-                    _screenStartPoint = MouseControlHelper.GetCursorPosition();
+                    _screenStartPoint = MouseHelper.Input.GetCursorPosition();
                     _canvasStartPoint = PointToScreen(e.GetPosition(this));
 
                     _canvasSelectionRectangle.Visibility = Visibility.Visible;
@@ -56,7 +56,7 @@ namespace Panels.View
             {
                 if (e.LeftButton == MouseButtonState.Pressed)
                 {
-                    SelectedPoint = MouseControlHelper.GetCursorPosition();
+                    SelectedPoint = MouseHelper.Input.GetCursorPosition();
                     this.DialogResult = true;
                     this.Close();
                 }
@@ -70,7 +70,7 @@ namespace Panels.View
                 if (_canvasSelectionRectangle.Visibility == Visibility.Visible)
                 {
                     // 現在のマウスカーソル位置を取得
-                    _screenCurrentPoint = MouseControlHelper.GetCursorPosition();
+                    _screenCurrentPoint = MouseHelper.Input.GetCursorPosition();
 
                     // キャンバス更新：現在のキャンバス座標を取得
                     _canvasCurrentPoint = PointToScreen(e.GetPosition(this));

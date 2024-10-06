@@ -18,6 +18,7 @@ namespace Command.Interface
         double Threshold { get; set; }
         int Timeout { get; set; }
         int Interval { get; set; }
+        string WindowTitle { get; set; }
     }
 
     public interface IClickImageCommandSettings : ICommandSettings
@@ -27,6 +28,7 @@ namespace Command.Interface
         int Timeout { get; set; }
         int Interval { get; set; }
         MouseButton Button { get; set; }
+        string WindowTitle { get; set; }
     }
     public interface IHotkeyCommandSettings : ICommandSettings
     {
@@ -34,6 +36,7 @@ namespace Command.Interface
         bool Alt { get; set; }
         bool Shift { get; set; }
         Key Key { get; set; }
+        string WindowTitle { get; set; }
     }
 
     public interface IClickCommandSettings : ICommandSettings
@@ -41,6 +44,7 @@ namespace Command.Interface
         MouseButton Button { get; set; }
         int X { get; set; }
         int Y { get; set; }
+        string WindowTitle { get; set; }
     }
 
     public interface IWaitCommandSettings : ICommandSettings

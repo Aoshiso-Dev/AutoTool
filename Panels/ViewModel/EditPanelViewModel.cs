@@ -80,6 +80,94 @@ namespace Panels.ViewModel
 
         #region Properties
 
+        public string WindowTitle
+        {
+            get
+            {
+                return Item switch
+                {
+                    IWaitImageItem waitImageItem => waitImageItem.WindowTitle,
+                    IClickImageItem clickImageItem => clickImageItem.WindowTitle,
+                    IHotkeyItem hotkeyItem => hotkeyItem.WindowTitle,
+                    IClickItem clickItem => clickItem.WindowTitle,
+                    IIfImageExistItem ifImageExistItem => ifImageExistItem.WindowTitle,
+                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowTitle,
+                    _ => string.Empty,
+                };
+            }
+            set
+            {
+                switch (Item)
+                {
+                    case IWaitImageItem waitImageItem:
+                        waitImageItem.WindowTitle = value;
+                        break;
+                    case IClickImageItem clickImageItem:
+                        clickImageItem.WindowTitle = value;
+                        break;
+                    case IHotkeyItem hotkeyItem:
+                        hotkeyItem.WindowTitle = value;
+                        break;
+                    case IClickItem clickItem:
+                        clickItem.WindowTitle = value;
+                        break;
+                    case IIfImageExistItem ifImageExistItem:
+                        ifImageExistItem.WindowTitle = value;
+                        break;
+                    case IIfImageNotExistItem ifImageNotExistItem:
+                        ifImageNotExistItem.WindowTitle = value;
+                        break;
+                }
+
+                UpdateProperties();
+            }
+        }
+
+        /*
+        public string WindowClassName
+        {
+            get
+            {
+                return Item switch
+                {
+                    IWaitImageItem waitImageItem => waitImageItem.WindowClassName,
+                    IClickImageItem clickImageItem => clickImageItem.WindowClassName,
+                    IHotkeyItem hotkeyItem => hotkeyItem.WindowClassName,
+                    IClickItem clickItem => clickItem.WindowClassName,
+                    IIfImageExistItem ifImageExistItem => ifImageExistItem.WindowClassName,
+                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowClassName,
+                    _ => string.Empty,
+                };
+            }
+            set
+            {
+                switch (Item)
+                {
+                    case IWaitImageItem waitImageItem:
+                        waitImageItem.WindowClassName = value;
+                        break;
+                    case IClickImageItem clickImageItem:
+                        clickImageItem.WindowClassName = value;
+                        break;
+                    case IHotkeyItem hotkeyItem:
+                        hotkeyItem.WindowClassName = value;
+                        break;
+                    case IClickItem clickItem:
+                        clickItem.WindowClassName = value;
+                        break;
+                    case IIfImageExistItem ifImageExistItem:
+                        ifImageExistItem.WindowClassName = value;
+                        break;
+                    case IIfImageNotExistItem ifImageNotExistItem:
+                        ifImageNotExistItem.WindowClassName = value;
+                        break;
+                }
+
+                UpdateProperties();
+            }
+        }
+        */
+
         public string ImagePath
         {
             get
@@ -529,6 +617,7 @@ namespace Panels.ViewModel
             _isUpdating = true;
 
             OnPropertyChanged(nameof(SelectedItemType));
+            OnPropertyChanged(nameof(WindowTitle));
             OnPropertyChanged(nameof(ImagePath));
             OnPropertyChanged(nameof(Threshold));
             OnPropertyChanged(nameof(Timeout));
@@ -559,6 +648,18 @@ namespace Panels.ViewModel
                 UpdateProperties();
             }
         }
+
+        [RelayCommand]
+        public void GetWindowInfo()
+        {
+            var getWindowInfoWindow = new GetWindowInfoWindow();
+
+            if (getWindowInfoWindow.ShowDialog() == true)
+            {
+                WindowTitle = getWindowInfoWindow.WindowTitle;
+            }
+        }
+
         [RelayCommand]
         public void Browse()
         {

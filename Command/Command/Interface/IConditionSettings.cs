@@ -16,5 +16,6 @@ namespace Command.Interface
         double Threshold { get; set; }
         int Timeout { get; set; }
         int Interval { get; set; }
+        string WindowTitle { get; set; }
     }
 }

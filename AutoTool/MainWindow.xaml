@@ -9,14 +9,19 @@
         xmlns:vm="clr-namespace:AutoTool.ViewModel"
         xmlns:panel="clr-namespace:AutoTool.View"
         mc:Ignorable="d"
+        xmlns:converters="clr-namespace:AutoTool.View.Converters"
         Title="{Binding AutoToolTitle}" Height="1000" Width="1000">
 
     <Window.DataContext>
         <local:MainWindowViewModel/>
     </Window.DataContext>
 
+    <Window.Resources>
+        <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
+    </Window.Resources>
+
     <StackPanel>
-        <Menu>
+        <Menu IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
             <MenuItem DockPanel.Dock="Left" Header="ファイル">
                 <MenuItem Header="開く"  Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
                 <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFile, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOpened}"/>

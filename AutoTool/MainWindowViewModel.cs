@@ -26,17 +26,30 @@ using System.Security.Policy;
 using AutoTool.ViewModel;
 using AutoTool.Model;
 using static AutoTool.Model.FileManager;
+using System.Windows.Threading;
 
 namespace AutoTool
 {
     public static class TabIndexes
     {
-        public static readonly int Macro = 0;
-        public static readonly int Monitor = 1;
+        public const int Macro = 0;
+        public const int Monitor = 1;
     }
 
     public partial class MainWindowViewModel : ObservableObject
     {
+        public bool IsRunning
+        {
+            get
+            {
+                return SelectedTabIndex switch
+                {
+                    TabIndexes.Macro => MacroPanelViewModel.IsRunning,
+                    _ => false,
+                };
+            }
+        }
+             
         private Dictionary<int, FileManager> _fileManagers = [];
 
         public string AutoToolTitle
@@ -111,6 +124,12 @@ namespace AutoTool
             MacroPanelViewModel = new MacroPanelViewModel();
 
             InitializeFileManager();
+
+            // IsEnabledを定期的に更新する
+            var timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromMilliseconds(100);
+            timer.Tick += (sender, e) => OnPropertyChanged(nameof(IsRunning));
+            timer.Start();
         }
 
         private void InitializeFileManager()

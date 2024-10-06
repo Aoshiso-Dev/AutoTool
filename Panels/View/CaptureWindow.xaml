@@ -9,7 +9,9 @@
         WindowState="Maximized"
         MouseDown="Window_MouseDown"
         MouseMove="Window_MouseMove"
-        MouseUp="Window_MouseUp">
+        MouseUp="Window_MouseUp"
+        Height="50"
+        Width="50">
 
     <Canvas x:Name="MainCanvas" Background="Transparent">
     </Canvas>

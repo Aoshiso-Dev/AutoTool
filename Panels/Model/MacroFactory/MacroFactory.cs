@@ -51,7 +51,6 @@ namespace Panels.Model.MacroFactory
             if (item.IsInIf)
             {
                 return null;
-                //return new NothingCommand(parent, new CommandSettings());
             }
 
             ICommand? command;
@@ -107,6 +106,7 @@ namespace Panels.Model.MacroFactory
                 Threshold = item.Threshold,
                 Timeout = item.Timeout,
                 Interval = item.Interval,
+                WindowTitle = item.WindowTitle,
             })
             { LineNumber = item.LineNumber };
         }
@@ -120,6 +120,7 @@ namespace Panels.Model.MacroFactory
                 Timeout = item.Timeout,
                 Interval = item.Interval,
                 Button = item.Button,
+                WindowTitle = item.WindowTitle,
             })
             { LineNumber = item.LineNumber };
         }
@@ -132,6 +133,7 @@ namespace Panels.Model.MacroFactory
                 Alt = item.Alt,
                 Shift = item.Shift,
                 Key = item.Key,
+                WindowTitle = item.WindowTitle,
             })
             { LineNumber = item.LineNumber };
         }
@@ -143,6 +145,7 @@ namespace Panels.Model.MacroFactory
                 Button = item.Button,
                 X = item.X,
                 Y = item.Y,
+                WindowTitle = item.WindowTitle,
             })
             { LineNumber = item.LineNumber };
         }
@@ -183,6 +186,7 @@ namespace Panels.Model.MacroFactory
                         Threshold = ifImageExistItem.Threshold,
                         Timeout = ifImageExistItem.Timeout,
                         Interval = ifImageExistItem.Interval,
+                        WindowTitle = ifImageExistItem.WindowTitle,
                     })
                     {
                         LineNumber = ifImageExistItem.LineNumber,
@@ -195,6 +199,7 @@ namespace Panels.Model.MacroFactory
                         Threshold = ifImageNotExistItem.Threshold,
                         Timeout = ifImageNotExistItem.Timeout,
                         Interval = ifImageNotExistItem.Interval,
+                        WindowTitle = ifImageNotExistItem.WindowTitle,
                     })
                     {
                         LineNumber = ifImageNotExistItem.LineNumber,

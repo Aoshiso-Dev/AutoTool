@@ -1,0 +1,26 @@
+﻿<Window x:Class="Panels.View.GetWindowInfoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        UseLayoutRounding="False"
+        Topmost="True"
+        SizeToContent="WidthAndHeight"
+        MinWidth="200" MinHeight="50">
+
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+    </Window.Resources>
+
+
+    <StackPanel>
+        <GroupBox Header="ウィンドウ情報（クリックで取得）">
+            <StackPanel>
+                <TextBlock Name="TextBlock_WindowTitle"/>
+                <TextBlock Name="TextBlock_WindowClassName"/>
+            </StackPanel>
+        </GroupBox>
+    </StackPanel>
+</Window>
