@@ -104,6 +104,7 @@ namespace Panels.Model.MacroFactory
             {
                 ImagePath = item.ImagePath,
                 Threshold = item.Threshold,
+                SearchColor = item.SearchColor,
                 Timeout = item.Timeout,
                 Interval = item.Interval,
                 WindowTitle = item.WindowTitle,
@@ -117,6 +118,7 @@ namespace Panels.Model.MacroFactory
             {
                 ImagePath = item.ImagePath,
                 Threshold = item.Threshold,
+                SearchColor = item.SearchColor,
                 Timeout = item.Timeout,
                 Interval = item.Interval,
                 Button = item.Button,
@@ -184,6 +186,7 @@ namespace Panels.Model.MacroFactory
                     {
                         ImagePath = ifImageExistItem.ImagePath,
                         Threshold = ifImageExistItem.Threshold,
+                        SearchColor = ifImageExistItem.SearchColor,
                         Timeout = ifImageExistItem.Timeout,
                         Interval = ifImageExistItem.Interval,
                         WindowTitle = ifImageExistItem.WindowTitle,
@@ -197,6 +200,7 @@ namespace Panels.Model.MacroFactory
                     {
                         ImagePath = ifImageNotExistItem.ImagePath,
                         Threshold = ifImageNotExistItem.Threshold,
+                        SearchColor = ifImageNotExistItem.SearchColor,
                         Timeout = ifImageNotExistItem.Timeout,
                         Interval = ifImageNotExistItem.Interval,
                         WindowTitle = ifImageNotExistItem.WindowTitle,

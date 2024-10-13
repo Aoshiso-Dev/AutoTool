@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using Command.Interface;
 using OpenCVHelper;
-using MouseHelper;
 using CommunityToolkit.Mvvm.Messaging;
 using Command.Message;
 using System.Net.Mail;
 using KeyHelper;
+using MouseHelper;
 
 namespace Command.Class
 {
@@ -28,7 +28,13 @@ namespace Command.Class
         public EventHandler OnStartCommand { get; set; }
         public EventHandler OnFinishCommand { get; set; }
 
-        public BaseCommand() { }
+        public BaseCommand()
+        {
+            Children = new List<ICommand>();
+            Settings = new CommandSettings();
+            OnStartCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
+            OnFinishCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+        }
 
         public BaseCommand(ICommand parent, ICommandSettings settings)
         {
@@ -96,8 +102,8 @@ namespace Command.Class
                 var isScreenCoordinate = string.IsNullOrEmpty(Settings.WindowTitle);// || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle);
 
                 var point = isScreenCoordinate
-                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, true)
-                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, true);
+                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, true)
+                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, true);
 
                 if (point != null)
                 {
@@ -130,8 +136,8 @@ namespace Command.Class
                 var isScreenCoordinate = string.IsNullOrEmpty(Settings.WindowTitle) || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle);
 
                 var point = isScreenCoordinate
-                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, true)
-                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, true);
+                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, true)
+                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, true);
 
                 if (point != null)
                 {
@@ -207,11 +213,11 @@ namespace Command.Class
         {
             if (string.IsNullOrEmpty(Settings.WindowTitle))
             {
-                KeyHelper.Input.KeyPress(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift);
+                await Task.Run(() => KeyHelper.Input.KeyPress(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift));
             }
             else
             {
-                KeyHelper.Input.KeyPress(Settings.WindowTitle, Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift);
+                await Task.Run(() => KeyHelper.Input.KeyPress(Settings.WindowTitle, Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift));
             }
 
             return true;
@@ -231,13 +237,13 @@ namespace Command.Class
                 switch (Settings.Button)
                 {
                    case System.Windows.Input.MouseButton.Left:
-                       MouseHelper.Input.Click(Settings.X, Settings.Y);
+                        await Task.Run(() => MouseHelper.Input.Click(Settings.X, Settings.Y));
                        break;
                    case System.Windows.Input.MouseButton.Right:
-                       MouseHelper.Input.RightClick(Settings.X, Settings.Y);
+                       await Task.Run(() => MouseHelper.Input.RightClick(Settings.X, Settings.Y));
                        break;
                    case System.Windows.Input.MouseButton.Middle:
-                       MouseHelper.Input.MiddleClick(Settings.X, Settings.Y);
+                       await Task.Run(() => MouseHelper.Input.MiddleClick(Settings.X, Settings.Y));
                         break;
                     default:
                        throw new Exception("マウスボタンが不正です。");
@@ -255,13 +261,13 @@ namespace Command.Class
                 switch (Settings.Button)
                 {
                     case System.Windows.Input.MouseButton.Left:
-                        MouseHelper.Input.Click(Settings.WindowTitle, Settings.X, Settings.Y);
+                        await Task.Run(() => MouseHelper.Input.Click(Settings.WindowTitle, Settings.X, Settings.Y));
                         break;
                     case System.Windows.Input.MouseButton.Right:
-                        MouseHelper.Input.RightClick(Settings.WindowTitle, Settings.X, Settings.Y);
+                        await Task.Run(() => MouseHelper.Input.RightClick(Settings.WindowTitle, Settings.X, Settings.Y));
                         break;
                     case System.Windows.Input.MouseButton.Middle:
-                        MouseHelper.Input.MiddleClick(Settings.WindowTitle, Settings.X, Settings.Y);
+                        await Task.Run(() => MouseHelper.Input.MiddleClick(Settings.WindowTitle, Settings.X, Settings.Y));
                         break;
                     default:
                         throw new Exception("マウスボタンが不正です。");
@@ -475,12 +481,15 @@ namespace Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            foreach (var command in Children)
+            return await Task.Run(() =>
             {
-                WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
-            }
+                foreach (var command in Children)
+                {
+                    WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
+                }
 
-            return true;
+                return true;
+            });
         }
     }
 
@@ -490,7 +499,7 @@ namespace Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            return false;
+            return await Task.Run(() => false);
         }
     }
 }

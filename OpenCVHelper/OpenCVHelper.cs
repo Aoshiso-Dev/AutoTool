@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -8,6 +7,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
+using System.Windows.Media;
+using System.Drawing;
+
+using Color = System.Windows.Media.Color;
 
 namespace OpenCVHelper
 {
@@ -199,13 +202,42 @@ namespace OpenCVHelper
 
     public static class ImageSearchHelper
     {
-        public static async Task<OpenCvSharp.Point?> SearchImage(Mat targetMat, Mat templateMat, CancellationToken token, double threshold = 0.8)
+        public static async Task<OpenCvSharp.Point?> SearchImage(Mat targetMat, Mat templateMat, CancellationToken token, double threshold = 0.8, Color? searchColor = null)
         {
             return await Task.Run(() =>
             {
-                // 色空間を揃える
-                Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2BGR);
-                Cv2.CvtColor(templateMat, templateMat, ColorConversionCodes.BGRA2BGR);
+                if(searchColor == null)
+                {
+                    // グレースケールに変換
+                    Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2GRAY);
+                    Cv2.CvtColor(templateMat, templateMat, ColorConversionCodes.BGRA2GRAY);
+                }
+                else
+                {
+                    // 色空間を揃える
+                    Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2BGR);
+                    Cv2.CvtColor(templateMat, templateMat, ColorConversionCodes.BGRA2BGR);
+
+                    // 指定した色に近い色のみ検出
+
+                    var lowerR = searchColor.Value.R - 20; if (lowerR < 0) lowerR = 0;
+                    var lowerG = searchColor.Value.G - 20; if (lowerG < 0) lowerG = 0;
+                    var lowerB = searchColor.Value.B - 20; if (lowerB < 0) lowerB = 0;
+                    var lower = new Scalar(lowerR, lowerG, lowerR);
+
+                    var upperR = searchColor.Value.R + 20; if (upperR > 255) upperR = 255;
+                    var upperG = searchColor.Value.G + 20; if (upperG > 255) upperG = 255;
+                    var upperB = searchColor.Value.B + 20; if (upperB > 255) upperB = 255;
+                    var upper = new Scalar(upperR, upperG, upperB);
+
+                    using Mat mask = new Mat();
+
+                    Cv2.InRange(targetMat, lower, upper, mask);
+                    Cv2.BitwiseAnd(targetMat, targetMat, targetMat, mask);
+
+                    Cv2.InRange(templateMat, lower, upper, mask);
+                    Cv2.BitwiseAnd(templateMat, templateMat, templateMat, mask);
+                }
 
                 // マッチングを実行
                 using Mat result = new Mat();
@@ -224,7 +256,8 @@ namespace OpenCVHelper
                 return (OpenCvSharp.Point?)null;
             }, token);
         }
-
+        /*
+        // 負荷が高いため非推奨
         public static async Task<OpenCvSharp.Point?> SearchImageMultiScale(Mat targetMat, Mat templateMat, CancellationToken token, double threshold = 0.8, double minScale = 0.2, double maxScale = 2.5, double scaleStep = 0.05)
         {
             // スケールを調整しながらテンプレートマッチングを実行
@@ -249,16 +282,18 @@ namespace OpenCVHelper
 
             return null;
         }
+        */
 
-        public static async Task<OpenCvSharp.Point?> SearchImageFromScreen(Mat templateMat, CancellationToken token, double threshold = 0.8, bool multiScale = false)
+        public static async Task<OpenCvSharp.Point?> SearchImageFromScreen(Mat templateMat, CancellationToken token, double threshold = 0.8, Color? searchColor = null, bool multiScale = false)
         {
             // スクリーンショットを取得
             using Mat screenMat = ScreenCaptureHelper.CaptureScreen();
 
-            return false ? await SearchImageMultiScale(screenMat, templateMat, token, threshold) : await SearchImage(screenMat, templateMat, token, threshold);
+            //return false ? await SearchImageMultiScale(screenMat, templateMat, token, threshold) : await SearchImage(screenMat, templateMat, token, threshold, searchColor);
+            return await SearchImage(screenMat, templateMat, token, threshold, searchColor);
         }
 
-        public static async Task<OpenCvSharp.Point?> SearchImageFromScreen(string imagePath, CancellationToken token, double threshold = 0.8, bool multiScale = false)
+        public static async Task<OpenCvSharp.Point?> SearchImageFromScreen(string imagePath, CancellationToken token, double threshold = 0.8, Color? searchColor = null, bool multiScale = false)
         {
             // ファイル存在確認
             if (!System.IO.File.Exists(imagePath))
@@ -268,7 +303,7 @@ namespace OpenCVHelper
 
             var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
 
-            return await SearchImageFromScreen(new Mat(imagePath), cts.Token, threshold, multiScale);
+            return await SearchImageFromScreen(new Mat(imagePath), cts.Token, threshold, searchColor, multiScale);
         }
 
         /*
@@ -282,7 +317,7 @@ namespace OpenCVHelper
         */
 
 
-        public static async Task<OpenCvSharp.Point?> SearchImageFromWindow(string windowTitle, string imagePath, CancellationToken token, double threshold = 0.8, bool multiScale = false)
+        public static async Task<OpenCvSharp.Point?> SearchImageFromWindow(string windowTitle, string imagePath, CancellationToken token, double threshold = 0.8, Color? searchColor = null, bool multiScale = false)
         {
             if (!System.IO.File.Exists(imagePath))
             {
@@ -295,7 +330,7 @@ namespace OpenCVHelper
             var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
 
             //return false ? await SearchImageMultiScale(windowMat, templateMat, cts.Token, threshold) : await SearchImage(windowMat, templateMat, cts.Token, threshold);
-            return await SearchImage(windowMat, templateMat, cts.Token, threshold);
+            return await SearchImage(windowMat, templateMat, cts.Token, threshold, searchColor);
         }
     }
 }

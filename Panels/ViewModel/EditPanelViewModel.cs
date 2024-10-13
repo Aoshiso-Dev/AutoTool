@@ -22,6 +22,8 @@ using System.Collections;
 using System.Windows.Data;
 using System.Windows.Input;
 
+using ColorPickHelper;
+
 namespace Panels.ViewModel
 {
     public partial class EditPanelViewModel : ObservableObject
@@ -235,6 +237,45 @@ namespace Panels.ViewModel
                 }
 
                 UpdateProperties();
+            }
+        }
+
+        public Color? SearchColor
+        {
+            get
+            {
+                return Item switch
+                {
+                    IWaitImageItem waitImageItem => waitImageItem.SearchColor,
+                    IClickImageItem clickImageItem => clickImageItem.SearchColor,
+                    IIfImageExistItem ifImageExistItem => ifImageExistItem.SearchColor,
+                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.SearchColor,
+                    _ => null,
+                };
+            }
+            set
+            {
+                switch (Item)
+                {
+                    case IWaitImageItem waitImageItem:
+                        waitImageItem.SearchColor = value;
+                        break;
+                    case IClickImageItem clickImageItem:
+                        clickImageItem.SearchColor = value;
+                        break;
+                    case IIfImageExistItem ifImageExistItem:
+                        ifImageExistItem.SearchColor = value;
+                        break;
+                    case IIfImageNotExistItem ifImageNotExistItem:
+                        ifImageNotExistItem.SearchColor = value;
+                        break;
+                }
+
+                UpdateProperties();
+
+                OnPropertyChanged(nameof(SearchColorBrush));
+                OnPropertyChanged(nameof(SearchColorText));
+                OnPropertyChanged(nameof(SearchColorTextColor));
             }
         }
 
@@ -474,6 +515,35 @@ namespace Panels.ViewModel
 
         #endregion
 
+        #region ColorPicker
+
+        public Brush SearchColorBrush
+        {
+            get
+            {
+                return new SolidColorBrush(SearchColor ?? Color.FromArgb(0, 0, 0, 0));
+            }
+        }
+
+        public string SearchColorText
+        {
+            get
+            {
+                // RGBの文字列を返す
+                return SearchColor != null ? $"R:{SearchColor.Value.R:D3} G:{SearchColor.Value.G:D3} B:{SearchColor.Value.B:D3}" : "指定なし";
+            }
+        }
+
+        public Brush SearchColorTextColor
+        {
+            get
+            {
+                // 色が指定されている場合は、その色の反転色を返す
+                return SearchColor != null ? new SolidColorBrush(Color.FromArgb(255, (byte)(255 - SearchColor.Value.R), (byte)(255 - SearchColor.Value.G), (byte)(255 - SearchColor.Value.B))) : new SolidColorBrush(Colors.Black);
+            }
+        }
+        #endregion
+
         #region ComboBox
         [ObservableProperty]
         private ObservableCollection<string> _itemTypes = new();
@@ -616,10 +686,12 @@ namespace Panels.ViewModel
 
             _isUpdating = true;
 
+            // 設定値
             OnPropertyChanged(nameof(SelectedItemType));
             OnPropertyChanged(nameof(WindowTitle));
             OnPropertyChanged(nameof(ImagePath));
             OnPropertyChanged(nameof(Threshold));
+            OnPropertyChanged(nameof(SearchColor));
             OnPropertyChanged(nameof(Timeout));
             OnPropertyChanged(nameof(Interval));
             OnPropertyChanged(nameof(MouseButton));
@@ -631,6 +703,11 @@ namespace Panels.ViewModel
             OnPropertyChanged(nameof(Y));
             OnPropertyChanged(nameof(Wait));
             OnPropertyChanged(nameof(LoopCount));
+
+            // 設定画面表示用
+            OnPropertyChanged(nameof(SearchColorBrush));
+            OnPropertyChanged(nameof(SearchColorText));
+            OnPropertyChanged(nameof(SearchColorTextColor));
 
             WeakReferenceMessenger.Default.Send(new RefreshListViewMessage());
 
@@ -705,6 +782,20 @@ namespace Panels.ViewModel
 
                 ImagePath = capturePath;
             }
+        }
+
+        [RelayCommand]
+        public void PickSearchColor()
+        {
+            var colorPickWindow = new ColorPickWindow();
+            colorPickWindow.ShowDialog();
+            SearchColor = colorPickWindow.Color;
+        }
+
+        [RelayCommand]
+        public void ClearSearchColor()
+        {
+            SearchColor = null;
         }
 
         [RelayCommand]

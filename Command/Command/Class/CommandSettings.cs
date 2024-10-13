@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Command.Interface;
+using System.Windows.Media;
 
 namespace Command.Class
 {
@@ -19,6 +19,7 @@ namespace Command.Class
     {
         public string ImagePath { get; set; } = string.Empty;
         public double Threshold { get; set; }
+        public Color? SearchColor { get; set; }
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public string WindowTitle { get; set; } = string.Empty;
@@ -28,6 +29,7 @@ namespace Command.Class
     {
         public string ImagePath { get; set; } = string.Empty;
         public double Threshold { get; set; }
+        public Color? SearchColor { get; set; }
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public System.Windows.Input.MouseButton Button { get; set; }

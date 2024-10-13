@@ -101,6 +101,22 @@
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
+                    
+                    <!-- 検索色指定の設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="強調検索色:"/>
+                        <TextBox Text="{Binding SearchColorText, Mode=OneWay}" Foreground="{Binding SearchColorTextColor}" Background="{Binding SearchColorBrush}"/>
+                        <Button Content="取得" Command="{Binding PickSearchColorCommand}"/>
+                        <Button Content="クリア" Command="{Binding ClearSearchColorCommand}"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsWaitImageItem"/>
+                                <Binding Path="IsClickImageItem"/>
+                                <Binding Path="IsIfImageExistItem"/>
+                                <Binding Path="IsIfImageNotExistItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
 
                     <!-- タイムアウトの設定 -->
                     <StackPanel Orientation="Horizontal">

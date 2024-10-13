@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Command.Interface
 {
@@ -16,6 +17,7 @@ namespace Command.Interface
     {
         string ImagePath { get; set; }
         double Threshold { get; set; }
+        Color? SearchColor { get; set; }
         int Timeout { get; set; }
         int Interval { get; set; }
         string WindowTitle { get; set; }
@@ -25,6 +27,7 @@ namespace Command.Interface
     {
         string ImagePath { get; set; }
         double Threshold { get; set; }
+        Color? SearchColor { get; set; }
         int Timeout { get; set; }
         int Interval { get; set; }
         MouseButton Button { get; set; }

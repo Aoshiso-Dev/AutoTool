@@ -13,6 +13,7 @@ using System.Windows.Controls;
 using System.Text.Json.Serialization;
 using OpenCvSharp.Features2D;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Panels.List.Class
 {
@@ -65,6 +66,8 @@ namespace Panels.List.Class
         [ObservableProperty]
         private double _threshold = 0.8;
         [ObservableProperty]
+        private Color? _searchColor = null;
+        [ObservableProperty]
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
@@ -81,6 +84,7 @@ namespace Panels.List.Class
             {
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
+                SearchColor = item.SearchColor;
                 Timeout = item.Timeout;
                 Interval = item.Interval;
                 WindowTitle = item.WindowTitle;
@@ -100,6 +104,8 @@ namespace Panels.List.Class
         [ObservableProperty]
         private double _threshold = 0.8;
         [ObservableProperty]
+        private Color? _searchColor = null;
+        [ObservableProperty]
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
@@ -118,6 +124,7 @@ namespace Panels.List.Class
             {
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
+                SearchColor = item.SearchColor;
                 Timeout = item.Timeout;
                 Interval = item.Interval;
                 Button = item.Button;
@@ -244,6 +251,8 @@ namespace Panels.List.Class
         [ObservableProperty]
         private double _threshold = 0.8;
         [ObservableProperty]
+        private Color? _searchColor = null;
+        [ObservableProperty]
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
@@ -262,6 +271,7 @@ namespace Panels.List.Class
             {
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
+                SearchColor = item.SearchColor;
                 Timeout = item.Timeout;
                 Interval = item.Interval;
                 WindowTitle = item.WindowTitle;
@@ -282,6 +292,8 @@ namespace Panels.List.Class
         [ObservableProperty]
         private double _threshold = 0.8;
         [ObservableProperty]
+        private Color? _searchColor = null;
+        [ObservableProperty]
         private int _timeout = 5000;
         [ObservableProperty]
         private int _interval = 500;
@@ -300,6 +312,7 @@ namespace Panels.List.Class
             {
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
+                SearchColor = item.SearchColor;
                 Timeout = item.Timeout;
                 Interval = item.Interval;
                 WindowTitle = item.WindowTitle;

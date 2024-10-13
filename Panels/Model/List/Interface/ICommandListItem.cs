@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 namespace Panels.Model.List.Interface
 {
@@ -28,6 +29,7 @@ namespace Panels.Model.List.Interface
     {
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
+        public Color? SearchColor { get; set; }
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public string WindowTitle { get; set; }
@@ -37,6 +39,7 @@ namespace Panels.Model.List.Interface
     {
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
+        public Color? SearchColor { get; set; }
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public System.Windows.Input.MouseButton Button { get; set; }
@@ -74,6 +77,7 @@ namespace Panels.Model.List.Interface
     {
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
+        public Color? SearchColor { get; set; }
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public string WindowTitle { get; set; }
@@ -83,6 +87,7 @@ namespace Panels.Model.List.Interface
     {
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
+        public Color? SearchColor { get; set; }
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public string WindowTitle { get; set; }
