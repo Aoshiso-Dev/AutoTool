@@ -17,13 +17,13 @@
         <converter:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter" />
     </UserControl.Resources>
 
-    <DockPanel LastChildFill="True">
-        
+    <Grid>
 
-        <!-- DataGrid -->
+    <!-- DataGrid -->
         <DataGrid DockPanel.Dock="Top"
                   ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding DataContext.SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                   SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                  ScrollViewer.VerticalScrollBarVisibility="Visible"
                   >
 
             <DataGrid.Resources>
@@ -158,5 +158,5 @@
                     
             </DataGrid.Columns>
         </DataGrid>
-    </DockPanel>
+    </Grid>
 </UserControl>

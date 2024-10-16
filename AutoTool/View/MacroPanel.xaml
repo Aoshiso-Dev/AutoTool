@@ -12,7 +12,7 @@
 
     <DockPanel LastChildFill="True">
         <panels:ButtonPanel DockPanel.Dock="Top" DataContext="{Binding ButtonPanelViewModel}" Margin="2"/>
-        <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="220">
+        <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="250">
             <TabItem Header="編集">
                 <panels:EditPanel DataContext="{Binding EditPanelViewModel}" Margin="2"/>
             </TabItem>

@@ -43,7 +43,7 @@
             <DockPanel LastChildFill="True" Margin="10"
                        IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
                        Visibility="{Binding DataContext.IsListNotEmpty, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BoolToVisibilityConverter}, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}">
-                <StackPanel>
+                <StackPanel DockPanel.Dock="Left">
                     <!-- コマンドスタックパネル -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="コマンド:"/>
@@ -227,17 +227,17 @@
                 </StackPanel>
                 
                 <!-- 画像のプレビュー -->
-                <StackPanel Orientation="Horizontal">
-                    <Image Source="{Binding ImagePath}" Width="150" Height="150"/>
-                    <StackPanel.Visibility>
+                <GroupBox Header="プレビュー">
+                    <Image Source="{Binding ImagePath}" Width="auto" Height="auto"/>
+                    <GroupBox.Visibility>
                         <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                             <Binding Path="IsWaitImageItem"/>
                             <Binding Path="IsClickImageItem"/>
                             <Binding Path="IsIfImageExistItem"/>
                             <Binding Path="IsIfImageNotExistItem"/>
                         </MultiBinding>
-                    </StackPanel.Visibility>
-                </StackPanel>
+                    </GroupBox.Visibility>
+                </GroupBox>
             </DockPanel>
         </Border>
     </Grid>

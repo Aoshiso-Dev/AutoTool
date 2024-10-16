@@ -10,7 +10,8 @@
         xmlns:panel="clr-namespace:AutoTool.View"
         mc:Ignorable="d"
         xmlns:converters="clr-namespace:AutoTool.View.Converters"
-        Title="{Binding AutoToolTitle}" Height="1000" Width="1000">
+        Title="{Binding AutoToolTitle}"
+        SizeToContent="WidthAndHeight">
 
     <Window.DataContext>
         <local:MainWindowViewModel/>
@@ -20,8 +21,13 @@
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
     </Window.Resources>
 
-    <StackPanel>
-        <Menu IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <Menu Grid.Row="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
             <MenuItem DockPanel.Dock="Left" Header="ファイル">
                 <MenuItem Header="開く"  Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
                 <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFile, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOpened}"/>
@@ -36,7 +42,8 @@
             </MenuItem>
             <MenuItem DockPanel.Dock="Right" Header="バージョン情報" Command="{Binding VersionInfoCommand}" HorizontalAlignment="Right"/>
         </Menu>
-        <TabControl SelectedIndex="{Binding SelectedTabIndex}">
+        
+        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}">
             <TabItem Header="マクロ">
                 <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}" Margin="2"/>
             </TabItem>
@@ -46,5 +53,6 @@
             </TabItem>
             -->
         </TabControl>
-    </StackPanel>
+        
+    </Grid>
 </Window>
