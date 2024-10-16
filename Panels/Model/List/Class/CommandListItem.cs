@@ -20,23 +20,25 @@ namespace Panels.List.Class
     public partial class CommandListItem : ObservableObject, ICommandListItem
     {
         [ObservableProperty]
-        private bool _isRunning = false;
+        protected bool _isEnable = true;
         [ObservableProperty]
-        private bool _isSelected = false;
+        protected bool _isRunning = false;
         [ObservableProperty]
-        private int _lineNumber = 0;
+        protected bool _isSelected = false;
         [ObservableProperty]
-        private string _itemType = "None";
+        protected int _lineNumber = 0;
         [ObservableProperty]
-        private string _description = string.Empty;
+        protected string _itemType = "None";
         [ObservableProperty]
-        private int _nestLevel = 0;
+        protected string _description = string.Empty;
         [ObservableProperty]
-        private bool _isInLoop = false;
+        protected int _nestLevel = 0;
         [ObservableProperty]
-        private bool _isInIf = false;
+        protected bool _isInLoop = false;
         [ObservableProperty]
-        private int _progress = 0;
+        protected bool _isInIf = false;
+        [ObservableProperty]
+        protected int _progress = 0;
 
         public CommandListItem() { }
 
@@ -44,12 +46,15 @@ namespace Panels.List.Class
         {
             if (item != null)
             {
+                IsEnable = item.IsEnable;
                 IsRunning = item.IsRunning;
                 IsSelected = item.IsSelected;
                 LineNumber = item.LineNumber;
                 ItemType = item.ItemType;
                 NestLevel = item.NestLevel;
                 IsInLoop = item.IsInLoop;
+                IsInIf = item.IsInIf;
+                Progress = item.Progress;
             }
         }
 
@@ -246,6 +251,26 @@ namespace Panels.List.Class
 
     public partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IWaitImageCommandSettings
     {
+        new public bool IsEnable
+        {
+            get
+            {
+                return base.IsEnable;
+            }
+            set
+            {
+                if (base.IsEnable != value)
+                {
+                    base.IsEnable = value;
+
+                    if (Pair != null)
+                    {
+                        Pair.IsEnable = value;
+                    }
+                }
+            }
+        }
+
         [ObservableProperty]
         private string _imagePath = string.Empty;
         [ObservableProperty]
@@ -260,6 +285,7 @@ namespace Panels.List.Class
         private string _windowTitle = string.Empty;
         [ObservableProperty]
         private ICommandListItem? _pair = null;
+
 
         new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) ? "グローバル" : WindowTitle)} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
@@ -287,6 +313,26 @@ namespace Panels.List.Class
 
     public partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IWaitImageCommandSettings
     {
+        new public bool IsEnable
+        {
+            get
+            {
+                return base.IsEnable;
+            }
+            set
+            {
+                if (base.IsEnable != value)
+                {
+                    base.IsEnable = value;
+
+                    if (Pair != null)
+                    {
+                        Pair.IsEnable = value;
+                    }
+                }
+            }
+        }
+
         [ObservableProperty]
         private string _imagePath = string.Empty;
         [ObservableProperty]
@@ -328,8 +374,29 @@ namespace Panels.List.Class
 
     public partial class EndIfItem : CommandListItem, IEndIfItem
     {
+        new public bool IsEnable
+        {
+            get
+            {
+                return base.IsEnable;
+            }
+            set
+            {
+                if (base.IsEnable != value)
+                {
+                    base.IsEnable = value;
+
+                    if (Pair != null)
+                    {
+                        Pair.IsEnable = value;
+                    }
+                }
+            }
+        }
+
         [ObservableProperty]
         private ICommandListItem? _pair = null;
+
 
         new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
 
@@ -344,6 +411,26 @@ namespace Panels.List.Class
 
     public partial class LoopItem : CommandListItem, ILoopItem, ICommandListItem
     {
+        new public bool IsEnable
+        {
+            get
+            {
+                return base.IsEnable;
+            }
+            set
+            {
+                if (base.IsEnable != value)
+                {
+                    base.IsEnable = value;
+
+                    if (Pair != null)
+                    {
+                        Pair.IsEnable = value;
+                    }
+                }
+            }
+        }
+
         [ObservableProperty]
         private int _loopCount = 2;
         [ObservableProperty]
@@ -370,6 +457,26 @@ namespace Panels.List.Class
 
     public partial class EndLoopItem : CommandListItem, IEndLoopItem
     {
+        new public bool IsEnable
+        {
+            get
+            {
+                return base.IsEnable;
+            }
+            set
+            {
+                if (base.IsEnable != value)
+                {
+                    base.IsEnable = value;
+
+                    if (Pair != null)
+                    {
+                        Pair.IsEnable = value;
+                    }
+                }
+            }
+        }
+
         [ObservableProperty]
         private ICommandListItem? _pair = null;
 

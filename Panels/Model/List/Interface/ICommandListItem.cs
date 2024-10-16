@@ -12,6 +12,7 @@ namespace Panels.Model.List.Interface
 {
     public interface ICommandListItem
     {
+        public bool IsEnable { get; set; }
         public int LineNumber { get; set; }
         public bool IsRunning { get; set; }
         public bool IsSelected { get; set; }

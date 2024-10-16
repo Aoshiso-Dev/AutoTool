@@ -29,12 +29,15 @@ namespace Panels.Model.MacroFactory
 
             foreach (var item in items)
             {
-                Debug.WriteLine($"Create: {item.LineNumber}, {item.ItemType}");
-                var command = CreateCommand(parent, item, items);
-
-                if (command != null)
+                if (item.IsEnable)
                 {
-                    commands.Add(command);
+                    Debug.WriteLine($"Create: {item.LineNumber}, {item.ItemType}");
+                    var command = CreateCommand(parent, item, items);
+
+                    if (command != null)
+                    {
+                        commands.Add(command);
+                    }
                 }
             }
 

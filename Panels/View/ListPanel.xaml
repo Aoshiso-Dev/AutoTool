@@ -76,6 +76,15 @@
 
             <DataGrid.Columns>
                 
+                <!-- IsEnable -->
+                <DataGridTemplateColumn Header="" Width="auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <!-- Progress -->
                 <DataGridTemplateColumn Header="Progress" Width="100">
                     <DataGridTemplateColumn.CellTemplate>
