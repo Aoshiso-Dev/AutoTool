@@ -145,47 +145,28 @@ namespace Command.Class
                         ? new (point.Value.X, point.Value.Y)
                         : WindowHelper.Coordinate.ClientToScreen(Settings.WindowTitle, point.Value.X, point.Value.Y);
 
-                    if (string.IsNullOrEmpty(Settings.WindowTitle))
-                    {
-                        switch (Settings.Button)
-                        {
-                            case System.Windows.Input.MouseButton.Left:
-                                MouseHelper.Input.Click(clickPoint.Item1, clickPoint.Item2);
-                                break;
-                            case System.Windows.Input.MouseButton.Right:
-                                MouseHelper.Input.RightClick(clickPoint.Item1, clickPoint.Item2);
-                                break;
-                            case System.Windows.Input.MouseButton.Middle:
-                                MouseHelper.Input.MiddleClick(clickPoint.Item1, clickPoint.Item2);
-                                break;
-                          default:
-                                throw new Exception("Invalid MouseButton.");
-                        }
-                    }
-                    else
+                    if (!string.IsNullOrEmpty(Settings.WindowTitle))
                     {
                         if (!WindowHelper.Info.IsWindowForeground(Settings.WindowTitle))
                         {
                             WindowHelper.Operation.SetForegroundWindow(Settings.WindowTitle);
                             Thread.Sleep(100);
                         }
+                    }
 
-                        MouseHelper.Input.Move(clickPoint.Item1, clickPoint.Item2);
-
-                        switch (Settings.Button)
-                        {
-                            case System.Windows.Input.MouseButton.Left:
-                               MouseHelper.Input.Click(Settings.WindowTitle, clickPoint.Item1, clickPoint.Item2);
-                                break;
-                            case System.Windows.Input.MouseButton.Right:
-                               MouseHelper.Input.RightClick(Settings.WindowTitle, clickPoint.Item1, clickPoint.Item2);
-                                break;
-                            case System.Windows.Input.MouseButton.Middle:
-                                MouseHelper.Input.MiddleClick(Settings.WindowTitle, clickPoint.Item1, clickPoint.Item2);
-                                break;
-                            default:
-                                throw new Exception("Invalid MouseButton.");
-                        }
+                    switch (Settings.Button)
+                    {
+                        case System.Windows.Input.MouseButton.Left:
+                            await Task.Run(() => MouseHelper.Input.Click(clickPoint.Item1, clickPoint.Item2));
+                            break;
+                        case System.Windows.Input.MouseButton.Right:
+                            await Task.Run(() => MouseHelper.Input.RightClick(clickPoint.Item1, clickPoint.Item2));
+                            break;
+                        case System.Windows.Input.MouseButton.Middle:
+                            await Task.Run(() => MouseHelper.Input.MiddleClick(clickPoint.Item1, clickPoint.Item2));
+                            break;
+                        default:
+                            throw new Exception("マウスボタンが不正です。");
                     }
 
                     return true;
@@ -232,46 +213,27 @@ namespace Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(Settings.WindowTitle))
-            { 
-                switch (Settings.Button)
-                {
-                   case System.Windows.Input.MouseButton.Left:
-                        await Task.Run(() => MouseHelper.Input.Click(Settings.X, Settings.Y));
-                       break;
-                   case System.Windows.Input.MouseButton.Right:
-                       await Task.Run(() => MouseHelper.Input.RightClick(Settings.X, Settings.Y));
-                       break;
-                   case System.Windows.Input.MouseButton.Middle:
-                       await Task.Run(() => MouseHelper.Input.MiddleClick(Settings.X, Settings.Y));
-                        break;
-                    default:
-                       throw new Exception("マウスボタンが不正です。");
-                  }
-            }
-            else
+            if (!string.IsNullOrEmpty(Settings.WindowTitle))
             {
                 if (!WindowHelper.Info.IsWindowForeground(Settings.WindowTitle))
                 {
                     WindowHelper.Operation.SetForegroundWindow(Settings.WindowTitle);
                 }
+            }
 
-                MouseHelper.Input.Move(Settings.X, Settings.Y);
-
-                switch (Settings.Button)
-                {
-                    case System.Windows.Input.MouseButton.Left:
-                        await Task.Run(() => MouseHelper.Input.Click(Settings.WindowTitle, Settings.X, Settings.Y));
-                        break;
-                    case System.Windows.Input.MouseButton.Right:
-                        await Task.Run(() => MouseHelper.Input.RightClick(Settings.WindowTitle, Settings.X, Settings.Y));
-                        break;
-                    case System.Windows.Input.MouseButton.Middle:
-                        await Task.Run(() => MouseHelper.Input.MiddleClick(Settings.WindowTitle, Settings.X, Settings.Y));
-                        break;
-                    default:
-                        throw new Exception("マウスボタンが不正です。");
-                }
+            switch (Settings.Button)
+            {
+                case System.Windows.Input.MouseButton.Left:
+                    await Task.Run(() => MouseHelper.Input.Click(Settings.X, Settings.Y));
+                    break;
+                case System.Windows.Input.MouseButton.Right:
+                    await Task.Run(() => MouseHelper.Input.RightClick(Settings.X, Settings.Y));
+                    break;
+                case System.Windows.Input.MouseButton.Middle:
+                    await Task.Run(() => MouseHelper.Input.MiddleClick(Settings.X, Settings.Y));
+                    break;
+                default:
+                    throw new Exception("マウスボタンが不正です。");
             }
 
             return true;
