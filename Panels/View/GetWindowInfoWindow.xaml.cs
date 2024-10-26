@@ -21,7 +21,7 @@ namespace Panels.View
             InitializeComponent();
 
             // 現在のマウスカーソル位置を取得
-            var _screenCurrentPoint = MouseHelper.Input.GetCursorPosition();
+            var _screenCurrentPoint = MouseHelper.Cursor.GetPos();
 
             // ウィンドウの位置をマウスポインタの位置に変更
             this.Left = _screenCurrentPoint.X + 5;
@@ -42,7 +42,7 @@ namespace Panels.View
         private void OnMouseMove(object? sender, MouseHelper.Event.MouseEventArgs e)
         {
             // 現在のマウスカーソル位置を取得
-            var _screenCurrentPoint = MouseHelper.Input.GetCursorPosition();
+            var _screenCurrentPoint = MouseHelper.Cursor.GetPos();
 
             // ウィンドウの位置をマウスポインタの位置に変更
             this.Left = _screenCurrentPoint.X + 5;
