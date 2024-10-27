@@ -45,21 +45,23 @@ namespace MouseHelper
                 targetY += rect.Top;
                 Window.SaveZOrder(hwnd);
                 Window.BringToFront(hwnd);
-                Thread.Sleep(15);
+                Thread.Sleep(30);
             }
 
             Cursor.Lock(targetX, targetY);
             mouse_event(downEvent, 0, 0, 0, 0);
-            Thread.Sleep(15);
+            Thread.Sleep(30);
             mouse_event(upEvent, 0, 0, 0, 0);
-            Thread.Sleep(15);
+            Thread.Sleep(30);
             Cursor.Unlock();
+            Thread.Sleep(30);
 
             Cursor.SetPos(orgPos.X, orgPos.Y);
 
             if (hwnd != IntPtr.Zero)
             {
                 Window.RestoreZOrder(hwnd);
+                Thread.Sleep(30);
             }
         }
 
@@ -79,7 +81,7 @@ namespace MouseHelper
                 targetY += rect.Top;
                 Window.SaveZOrder(hwnd);
                 Window.BringToFront(hwnd);
-                Thread.Sleep(15);
+                Thread.Sleep(30);
             }
 
             Cursor.Lock(targetX, targetY);
@@ -91,6 +93,7 @@ namespace MouseHelper
             if (hwnd != IntPtr.Zero)
             {
                 Window.RestoreZOrder(hwnd);
+                Thread.Sleep(30);
             }
         }
 
@@ -113,13 +116,13 @@ namespace MouseHelper
                 targetY2 += rect.Top;
                 Window.SaveZOrder(hwnd);
                 Window.BringToFront(hwnd);
-                Thread.Sleep(15);
+                Thread.Sleep(30);
             }
 
             Cursor.Lock(targetX1, targetY1);
             mouse_event(downEvent, 0, 0, 0, 0);
             Cursor.Unlock();
-            Thread.Sleep(10);
+            Thread.Sleep(30);
             Cursor.Lock(targetX2, targetY2);
             mouse_event(upEvent, 0, 0, 0, 0);
             Cursor.Unlock();
@@ -129,6 +132,7 @@ namespace MouseHelper
             if (hwnd != IntPtr.Zero)
             {
                 Window.RestoreZOrder(hwnd);
+                Thread.Sleep(30);
             }
         }
 

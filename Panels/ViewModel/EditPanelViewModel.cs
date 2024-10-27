@@ -82,6 +82,11 @@ namespace Panels.ViewModel
 
         #region Properties
 
+        public string WindowTitleText
+        {
+            get => string.IsNullOrEmpty(WindowTitle) ? "指定なし" : WindowTitle;
+        }
+
         public string WindowTitle
         {
             get
@@ -125,6 +130,10 @@ namespace Panels.ViewModel
             }
         }
 
+        public string WindowClassNameText
+        {
+            get => string.IsNullOrEmpty(WindowClassName) ? "指定なし" : WindowClassName;
+        }
 
         public string WindowClassName
         {
@@ -688,7 +697,9 @@ namespace Panels.ViewModel
             // 設定値
             OnPropertyChanged(nameof(SelectedItemType));
             OnPropertyChanged(nameof(WindowTitle));
+            OnPropertyChanged(nameof(WindowTitleText));
             OnPropertyChanged(nameof(WindowClassName));
+            OnPropertyChanged(nameof(WindowClassNameText));
             OnPropertyChanged(nameof(ImagePath));
             OnPropertyChanged(nameof(Threshold));
             OnPropertyChanged(nameof(SearchColor));

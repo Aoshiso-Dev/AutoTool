@@ -31,6 +31,10 @@
             <Setter Property="Margin" Value="1"/>
             <Setter Property="Width" Value="100"/>
         </Style>
+        <Style TargetType="Slider">
+            <Setter Property="Margin" Value="1"/>
+            <Setter Property="Width" Value="100"/>
+        </Style>
         <Style TargetType="Image">
             <Setter Property="Margin" Value="1"/>
             <Setter Property="Width" Value="150"/>
@@ -58,12 +62,16 @@
                     <!-- 対象ウィンドウの設定 -->
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="対象ウィンドウ:"/>
-                            <TextBox Text="{Binding WindowTitle, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="ウィンドウクラス:"/>
-                            <TextBox Text="{Binding WindowClassName, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="対象ウィンドウ:"/>
+                                    <TextBox Text="{Binding WindowTitleText, Mode=OneWay}" IsReadOnly="True" Width="300"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="ウィンドウクラス:"/>
+                                    <TextBox Text="{Binding WindowClassNameText, Mode=OneWay}" IsReadOnly="True" Width="300"/>
+                                </StackPanel>
+                            </StackPanel>
                             <Button Content="取得" Command="{Binding GetWindowInfoCommand}" />
                             <Button Content="クリア" Command="{Binding ClearWindowInfoCommand}"/>
                         </StackPanel>
@@ -82,7 +90,7 @@
                     <!-- 画像パスの設定 -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="画像パス:"/>
-                        <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
+                        <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="300"/>
                         <Button Content="参照" Command="{Binding BrowseCommand}"/>
                         <Button Content="取得" Command="{Binding CaptureCommand}"/>
                         <StackPanel.Visibility>
@@ -98,8 +106,8 @@
                     <!-- しきい値の設定 -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="しきい値:"/>
-                        <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(0.01～1.00)"/>
+                        <Slider Value="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Minimum="0.01" Maximum="1.00" SmallChange="0.01" LargeChange="0.1" TickFrequency="0.01" IsSnapToTickEnabled="True" />
+                        <TextBox Text="{Binding Threshold, StringFormat=F2}" IsReadOnly="True" Width="50"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsWaitImageItem"/>
@@ -113,7 +121,7 @@
                     <!-- 検索色指定の設定 -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="強調検索色:"/>
-                        <TextBox Text="{Binding SearchColorText, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" Foreground="{Binding SearchColorTextColor}" Background="{Binding SearchColorBrush}"/>
+                        <TextBox Text="{Binding SearchColorText, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Foreground="{Binding SearchColorTextColor}" Background="{Binding SearchColorBrush}"/>
                         <Button Content="取得" Command="{Binding PickSearchColorCommand}"/>
                         <Button Content="クリア" Command="{Binding ClearSearchColorCommand}"/>
                         <StackPanel.Visibility>
@@ -130,7 +138,7 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="タイムアウト:"/>
                         <TextBox Text="{Binding Timeout, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(ms)"/>
+                        <TextBlock Text="ミリ秒"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsWaitImageItem"/>
@@ -145,7 +153,7 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="実行間隔:"/>
                         <TextBox Text="{Binding Interval, UpdateSourceTrigger=PropertyChanged}"/>
-                        <TextBlock Text="(ms)"/>
+                        <TextBlock Text="ミリ秒"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsWaitImageItem"/>
@@ -159,13 +167,17 @@
                     <!-- XY座標の設定 -->
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="X座標:"/>
-                            <TextBox Text="{Binding X, UpdateSourceTrigger=PropertyChanged}"/>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="X座標:"/>
+                                    <TextBox Text="{Binding X, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="50"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Y座標:"/>
+                                    <TextBox Text="{Binding Y, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="50"/>
+                                </StackPanel>
+                            </StackPanel>
                             <Button Content="取得" Command="{Binding PickPointCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Y座標:"/>
-                            <TextBox Text="{Binding Y, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
