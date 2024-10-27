@@ -34,6 +34,7 @@ namespace Panels.Model.List.Interface
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
     }
 
     public interface IClickImageItem : ICommandListItem
@@ -45,6 +46,7 @@ namespace Panels.Model.List.Interface
         public int Interval { get; set; }
         public System.Windows.Input.MouseButton Button { get; set; }
         public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
     }
 
     public interface IHotkeyItem : ICommandListItem
@@ -54,6 +56,7 @@ namespace Panels.Model.List.Interface
         public bool Shift { get; set; }
         public System.Windows.Input.Key Key { get; set; }
         public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
     }
 
     public interface IClickItem : ICommandListItem
@@ -61,7 +64,8 @@ namespace Panels.Model.List.Interface
         public System.Windows.Input.MouseButton Button { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
-        public string WindowTitle { get; set; }
+        //public string WindowTitle { get; set; }
+        //public string WindowClassName { get; set; }
     }
 
     public interface IWaitItem : ICommandListItem
@@ -82,6 +86,7 @@ namespace Panels.Model.List.Interface
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
     }
 
     public interface IIfImageNotExistItem : ICommandListItem, IIfItem
@@ -92,6 +97,7 @@ namespace Panels.Model.List.Interface
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
     }
 
     public interface IEndIfItem : ICommandListItem

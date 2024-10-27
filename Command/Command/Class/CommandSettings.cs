@@ -23,6 +23,7 @@ namespace Command.Class
         public int Timeout { get; set; }
         public int Interval { get; set; }
         public string WindowTitle { get; set; } = string.Empty;
+        public string WindowClassName { get; set; } = string.Empty;
     }
 
     public class ClickImageCommandSettings : ICommandSettings, IClickImageCommandSettings
@@ -34,6 +35,7 @@ namespace Command.Class
         public int Interval { get; set; }
         public System.Windows.Input.MouseButton Button { get; set; }
         public string WindowTitle { get; set; } = string.Empty;
+        public string WindowClassName { get; set; } = string.Empty;
     }
 
     public class HotkeyCommandSettings : ICommandSettings, IHotkeyCommandSettings
@@ -43,6 +45,7 @@ namespace Command.Class
         public bool Shift { get; set; }
         public System.Windows.Input.Key Key { get; set; }
         public string WindowTitle { get; set; } = string.Empty;
+        public string WindowClassName { get; set; } = string.Empty;
 
         public HotkeyCommandSettings()
         {
@@ -55,6 +58,7 @@ namespace Command.Class
         public int X { get; set; }
         public int Y { get; set; }
         public string WindowTitle { get; set; } = string.Empty;
+        public string WindowClassName { get; set; } = string.Empty;
 
         public ClickCommandSettings()
         {

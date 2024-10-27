@@ -91,7 +91,7 @@ namespace Panels.ViewModel
                     IWaitImageItem waitImageItem => waitImageItem.WindowTitle,
                     IClickImageItem clickImageItem => clickImageItem.WindowTitle,
                     IHotkeyItem hotkeyItem => hotkeyItem.WindowTitle,
-                    IClickItem clickItem => clickItem.WindowTitle,
+                    //IClickItem clickItem => clickItem.WindowTitle,
                     IIfImageExistItem ifImageExistItem => ifImageExistItem.WindowTitle,
                     IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowTitle,
                     _ => string.Empty,
@@ -110,9 +110,9 @@ namespace Panels.ViewModel
                     case IHotkeyItem hotkeyItem:
                         hotkeyItem.WindowTitle = value;
                         break;
-                    case IClickItem clickItem:
-                        clickItem.WindowTitle = value;
-                        break;
+                    //case IClickItem clickItem:
+                    //    clickItem.WindowTitle = value;
+                    //    break;
                     case IIfImageExistItem ifImageExistItem:
                         ifImageExistItem.WindowTitle = value;
                         break;
@@ -125,7 +125,7 @@ namespace Panels.ViewModel
             }
         }
 
-        /*
+
         public string WindowClassName
         {
             get
@@ -135,7 +135,7 @@ namespace Panels.ViewModel
                     IWaitImageItem waitImageItem => waitImageItem.WindowClassName,
                     IClickImageItem clickImageItem => clickImageItem.WindowClassName,
                     IHotkeyItem hotkeyItem => hotkeyItem.WindowClassName,
-                    IClickItem clickItem => clickItem.WindowClassName,
+                    //IClickItem clickItem => clickItem.WindowClassName,
                     IIfImageExistItem ifImageExistItem => ifImageExistItem.WindowClassName,
                     IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowClassName,
                     _ => string.Empty,
@@ -154,9 +154,9 @@ namespace Panels.ViewModel
                     case IHotkeyItem hotkeyItem:
                         hotkeyItem.WindowClassName = value;
                         break;
-                    case IClickItem clickItem:
-                        clickItem.WindowClassName = value;
-                        break;
+                    //case IClickItem clickItem:
+                    //    clickItem.WindowClassName = value;
+                    //    break;
                     case IIfImageExistItem ifImageExistItem:
                         ifImageExistItem.WindowClassName = value;
                         break;
@@ -168,7 +168,6 @@ namespace Panels.ViewModel
                 UpdateProperties();
             }
         }
-        */
 
         public string ImagePath
         {
@@ -689,6 +688,7 @@ namespace Panels.ViewModel
             // 設定値
             OnPropertyChanged(nameof(SelectedItemType));
             OnPropertyChanged(nameof(WindowTitle));
+            OnPropertyChanged(nameof(WindowClassName));
             OnPropertyChanged(nameof(ImagePath));
             OnPropertyChanged(nameof(Threshold));
             OnPropertyChanged(nameof(SearchColor));
@@ -734,7 +734,15 @@ namespace Panels.ViewModel
             if (getWindowInfoWindow.ShowDialog() == true)
             {
                 WindowTitle = getWindowInfoWindow.WindowTitle;
+                WindowClassName = getWindowInfoWindow.WindowClassName;
             }
+        }
+        
+        [RelayCommand]
+        public void ClearWindowInfo()
+        {
+            WindowTitle = string.Empty;
+            WindowClassName = string.Empty;
         }
 
         [RelayCommand]

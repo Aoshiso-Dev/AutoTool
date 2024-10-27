@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Command.Interface;
-
+/*
 namespace Command.Class
 {
     public class ConditionSettings : IConditionSettings
@@ -20,3 +20,4 @@ namespace Command.Class
         public string WindowTitle { get; set; } = string.Empty;
     }
 }
+*/

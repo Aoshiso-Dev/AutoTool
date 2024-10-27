@@ -17,5 +17,6 @@ namespace Command.Interface
         int Timeout { get; set; }
         int Interval { get; set; }
         string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
     }
 }

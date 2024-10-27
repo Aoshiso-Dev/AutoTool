@@ -29,7 +29,7 @@ namespace MouseHelper
         #endregion
 
         #region Action
-        private static void PerformMouseClick(int x, int y, uint downEvent, uint upEvent, string windowTitle = "")
+        private static void PerformMouseClick(int x, int y, uint downEvent, uint upEvent, string windowTitle = "", string windowClassName = "")
         {
             var targetX = x;
             var targetY = y;
@@ -39,7 +39,7 @@ namespace MouseHelper
             IntPtr hwnd = IntPtr.Zero;
             if (!string.IsNullOrEmpty(windowTitle))
             {
-                hwnd = Window.GetHandle(windowTitle);
+                hwnd = Window.GetHandle(windowTitle, windowClassName);
                 var rect = Window.GetRect(hwnd);
                 targetX += rect.Left;
                 targetY += rect.Top;
@@ -63,7 +63,7 @@ namespace MouseHelper
             }
         }
 
-        private static void PerformMouseAction(int x, int y, uint actionEvent, int delta, string windowTitle = "")
+        private static void PerformMouseAction(int x, int y, uint actionEvent, int delta, string windowTitle = "", string windowClassName = "")
         {
             var targetX = x;
             var targetY = y;
@@ -73,7 +73,7 @@ namespace MouseHelper
             IntPtr hwnd = IntPtr.Zero;
             if (!string.IsNullOrEmpty(windowTitle))
             {
-                hwnd = Window.GetHandle(windowTitle);
+                hwnd = Window.GetHandle(windowTitle, windowClassName);
                 var rect = Window.GetRect(hwnd);
                 targetX += rect.Left;
                 targetY += rect.Top;
@@ -94,7 +94,7 @@ namespace MouseHelper
             }
         }
 
-        private static void PerformDrag(int x1, int y1, int x2, int y2, uint downEvent, uint upEvent, string windowTitle = "")
+        private static void PerformDrag(int x1, int y1, int x2, int y2, uint downEvent, uint upEvent, string windowTitle = "", string windowClassName = "")
         {
             var targetX1 = x1;
             var targetY1 = y1;
@@ -105,7 +105,7 @@ namespace MouseHelper
             IntPtr hwnd = IntPtr.Zero;
             if (!string.IsNullOrEmpty(windowTitle))
             {
-                hwnd = Window.GetHandle(windowTitle);
+                hwnd = Window.GetHandle(windowTitle, windowClassName);
                 var rect = Window.GetRect(hwnd);
                 targetX1 += rect.Left;
                 targetY1 += rect.Top;
@@ -132,36 +132,36 @@ namespace MouseHelper
             }
         }
 
-        private static void PerformMove(int x, int y, string windowTitle = "") => Cursor.SetPos(x, y, windowTitle);
+        private static void PerformMove(int x, int y, string windowTitle = "", string windowClassName = "") => Cursor.SetPos(x, y, windowTitle, windowClassName);
 
         #endregion
 
-        public static void Click(int x, int y, string windowTitle = "")
-            => PerformMouseClick(x, y, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle);
+        public static void Click(int x, int y, string windowTitle = "", string windowClassName = "")
+            => PerformMouseClick(x, y, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName);
 
-        public static void RightClick(int x, int y, string windowTitle = "")
-            => PerformMouseClick(x, y, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle);
+        public static void RightClick(int x, int y, string windowTitle = "", string windowClassName = "")
+            => PerformMouseClick(x, y, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName);
 
-        public static void MiddleClick(int x, int y, string windowTitle = "")
-            => PerformMouseClick(x, y, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle);
+        public static void MiddleClick(int x, int y, string windowTitle = "", string windowClassName = "")
+            => PerformMouseClick(x, y, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName);
 
-        public static void Wheel(int x, int y, int delta, string windowTitle = "")
-            => PerformMouseAction(x, y, MOUSEEVENTF_WHEEL, delta, windowTitle);
+        public static void Wheel(int x, int y, int delta, string windowTitle = "", string windowClassName = "")
+            => PerformMouseAction(x, y, MOUSEEVENTF_WHEEL, delta, windowTitle, windowClassName);
 
-        public static void HWheel(int x, int y, int delta, string windowTitle = "")
-            => PerformMouseAction(x, y, MOUSEEVENTF_HWHEEL, delta, windowTitle);
+        public static void HWheel(int x, int y, int delta, string windowTitle = "", string windowClassName = "")
+            => PerformMouseAction(x, y, MOUSEEVENTF_HWHEEL, delta, windowTitle, windowClassName);
 
-        public static void Move(int x, int y, string windowTitle = "")
-            => PerformMove(x, y, windowTitle);
+        public static void Move(int x, int y, string windowTitle = "", string windowClassName = "")
+            => PerformMove(x, y, windowTitle, windowClassName);
 
-        public static void Drag(int x1, int y1, int x2, int y2, string windowTitle = "")
-            => PerformDrag(x1, y1, x2, y2, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle);
+        public static void Drag(int x1, int y1, int x2, int y2, string windowTitle = "", string windowClassName = "")
+            => PerformDrag(x1, y1, x2, y2, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName);
 
-        public static void RightDrag(int x1, int y1, int x2, int y2, string windowTitle = "")
-            => PerformDrag(x1, y1, x2, y2, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle);
+        public static void RightDrag(int x1, int y1, int x2, int y2, string windowTitle = "", string windowClassName = "")
+            => PerformDrag(x1, y1, x2, y2, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName);
 
-        public static void MiddleDrag(int x1, int y1, int x2, int y2, string windowTitle = "")
-            => PerformDrag(x1, y1, x2, y2, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle);
+        public static void MiddleDrag(int x1, int y1, int x2, int y2, string windowTitle = "", string windowClassName = "")
+            => PerformDrag(x1, y1, x2, y2, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName);
     }
 
     public static class Event
@@ -429,7 +429,7 @@ namespace MouseHelper
         #endregion
 
         #region Pos
-        public static System.Drawing.Point GetPos(string windowTitle = "")
+        public static System.Drawing.Point GetPos(string windowTitle = "", string windowClassName = "")
         {
             var lpPoint = new System.Drawing.Point();
 
@@ -440,14 +440,14 @@ namespace MouseHelper
             }
             else
             {
-                var hWnd = Window.GetHandle(windowTitle);
+                var hWnd = Window.GetHandle(windowTitle, windowClassName);
                 var rect = Window.GetRect(hWnd);
                 GetCursorPos(out lpPoint);
                 return new System.Drawing.Point(lpPoint.X - rect.Left, lpPoint.Y - rect.Top);
             }
         }
 
-        public static void SetPos(int x, int y, string windowTitle = "")
+        public static void SetPos(int x, int y, string windowTitle = "", string windowClassName = "")
         {
             if (windowTitle == "")
             {
@@ -455,7 +455,7 @@ namespace MouseHelper
             }
             else
             {
-                var hWnd = Window.GetHandle(windowTitle);
+                var hWnd = Window.GetHandle(windowTitle, windowClassName);
                 var rect = Window.GetRect(hWnd);
                 SetCursorPos(rect.Left + x, rect.Top + y);
             }
@@ -498,7 +498,7 @@ namespace MouseHelper
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        public static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
 
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
@@ -539,9 +539,9 @@ namespace MouseHelper
         #endregion
 
         #region Handle
-        public static IntPtr GetHandle(string windowTitle)
+        public static IntPtr GetHandle(string windowTitle, string windowClassName)
         {
-            var hWnd = FindWindow(null, windowTitle);
+            var hWnd = FindWindow(string.IsNullOrEmpty(windowClassName) ? null : windowClassName, windowTitle);
             if (hWnd == IntPtr.Zero)
             {
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
