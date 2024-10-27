@@ -27,7 +27,7 @@ namespace OpenCVHelper
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        private static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
@@ -58,10 +58,10 @@ namespace OpenCVHelper
 
 
         // ウィンドウをキャプチャするメソッド
-        public static Mat CaptureWindowUsingBitBlt(string windowTitle)
+        public static Mat CaptureWindowUsingBitBlt(string windowTitle, string windowClassName = "")
         {
             // ウィンドウハンドルを取得
-            IntPtr hWnd = FindWindow(null, windowTitle);
+            IntPtr hWnd = FindWindow(string.IsNullOrEmpty(windowClassName) ? null : windowClassName, windowTitle);
             if (hWnd == IntPtr.Zero)
             {
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
@@ -100,9 +100,9 @@ namespace OpenCVHelper
         }
 
         // ウィンドウをキャプチャするメソッド
-        public static Mat CaptureWindow(string windowTitle)
+        public static Mat CaptureWindow(string windowTitle, string windowClassName = "")
         {
-            return CaptureWindowUsingBitBlt(windowTitle);
+            return CaptureWindowUsingBitBlt(windowTitle, windowClassName);
 
             // ※ ウィンドウ裏に隠れている部分がキャプチャできないため、BitBlt方式を使用
 
@@ -202,11 +202,14 @@ namespace OpenCVHelper
 
     public static class ImageSearchHelper
     {
-        public static async Task<OpenCvSharp.Point?> SearchImage(Mat targetMat, Mat templateMat, CancellationToken token, double threshold = 0.8, Color? searchColor = null)
+        public static async Task<OpenCvSharp.Point?> SearchImage(string imagePath, CancellationToken token, double threshold = 0.8, Color? searchColor = null, string windowTitle = "", string windowClassName = "")
         {
             return await Task.Run(() =>
             {
-                if(searchColor == null)
+                Mat targetMat = string.IsNullOrEmpty(windowTitle) ? ScreenCaptureHelper.CaptureScreen() : ScreenCaptureHelper.CaptureWindow(windowTitle, windowClassName);
+                Mat templateMat = new Mat(imagePath);
+
+                if (searchColor == null)
                 {
                     // グレースケールに変換
                     Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2GRAY);
@@ -256,44 +259,17 @@ namespace OpenCVHelper
                 return (OpenCvSharp.Point?)null;
             }, token);
         }
+
         /*
-        // 負荷が高いため非推奨
-        public static async Task<OpenCvSharp.Point?> SearchImageMultiScale(Mat targetMat, Mat templateMat, CancellationToken token, double threshold = 0.8, double minScale = 0.2, double maxScale = 2.5, double scaleStep = 0.05)
-        {
-            // スケールを調整しながらテンプレートマッチングを実行
-            for (double scale = minScale; scale <= maxScale; scale += scaleStep)
-            {
-                if(token.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                using Mat resizedTemplateMat = new Mat();
-                Cv2.Resize(templateMat, resizedTemplateMat, new OpenCvSharp.Size(templateMat.Width * scale, templateMat.Height * scale));
-
-                var matchLocation = await SearchImage(targetMat, resizedTemplateMat, token, threshold);
-
-                if (matchLocation != null)
-                {
-                    token.ThrowIfCancellationRequested();
-                    return matchLocation;
-                }
-            }
-
-            return null;
-        }
-        */
-
-        public static async Task<OpenCvSharp.Point?> SearchImageFromScreen(Mat templateMat, CancellationToken token, double threshold = 0.8, Color? searchColor = null, bool multiScale = false)
+        public static async Task<OpenCvSharp.Point?> SearchImage(Mat templateMat, CancellationToken token, double threshold = 0.8, Color? searchColor = null, string windowTitle = "", string windowClassName = "")
         {
             // スクリーンショットを取得
             using Mat screenMat = ScreenCaptureHelper.CaptureScreen();
 
-            //return false ? await SearchImageMultiScale(screenMat, templateMat, token, threshold) : await SearchImage(screenMat, templateMat, token, threshold, searchColor);
-            return await SearchImage(screenMat, templateMat, token, threshold, searchColor);
+            return await SearchImage(screenMat, templateMat, token, threshold, searchColor, windowTitle, windowClassName);
         }
 
-        public static async Task<OpenCvSharp.Point?> SearchImageFromScreen(string imagePath, CancellationToken token, double threshold = 0.8, Color? searchColor = null, bool multiScale = false)
+        public static async Task<OpenCvSharp.Point?> SearchImage(string imagePath, CancellationToken token, double threshold = 0.8, Color? searchColor = null, string windowTitle = "", string windowClassName = "")
         {
             // ファイル存在確認
             if (!System.IO.File.Exists(imagePath))
@@ -303,8 +279,9 @@ namespace OpenCVHelper
 
             var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
 
-            return await SearchImageFromScreen(new Mat(imagePath), cts.Token, threshold, searchColor, multiScale);
+            return await SearchImage(new Mat(imagePath), cts.Token, threshold, searchColor, windowTitle, windowClassName);
         }
+        */
 
         /*
         public static async Task<OpenCvSharp.Point?> SearchImageFromWindow(string windowTitle, Mat templateMat, CancellationToken token, double threshold = 0.8, bool multiScale = false)
@@ -316,15 +293,15 @@ namespace OpenCVHelper
         }
         */
 
-
-        public static async Task<OpenCvSharp.Point?> SearchImageFromWindow(string windowTitle, string imagePath, CancellationToken token, double threshold = 0.8, Color? searchColor = null, bool multiScale = false)
+        /*
+        public static async Task<OpenCvSharp.Point?> SearchImageFromWindow(string imagePath, CancellationToken token, double threshold = 0.8, Color? searchColor = null, bool multiScale = false)
         {
             if (!System.IO.File.Exists(imagePath))
             {
                 throw new System.IO.FileNotFoundException("ファイルが見つかりません。", imagePath);
             }
 
-            using Mat windowMat = ScreenCaptureHelper.CaptureWindow(windowTitle);
+            using Mat windowMat = ScreenCaptureHelper.CaptureWindow(windowTitle, windowClassName);
             using Mat templateMat = new Mat(imagePath);
 
             var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -332,5 +309,6 @@ namespace OpenCVHelper
             //return false ? await SearchImageMultiScale(windowMat, templateMat, cts.Token, threshold) : await SearchImage(windowMat, templateMat, cts.Token, threshold);
             return await SearchImage(windowMat, templateMat, cts.Token, threshold, searchColor);
         }
+        */
     }
 }

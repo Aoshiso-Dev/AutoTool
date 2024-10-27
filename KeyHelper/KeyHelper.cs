@@ -20,7 +20,7 @@ namespace KeyHelper
         private const uint KEYEVENTF_KEYUP = 0x0002;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        public static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
@@ -61,13 +61,14 @@ namespace KeyHelper
             if (alt) KeyUp(Key.LeftAlt);
             if (shift) KeyUp(Key.LeftShift);
         }
+
         #endregion
 
         #region WindowHotkey
 
-        private static void KeyDown(string windowTitle, System.Windows.Input.Key key, bool ctrl = false, bool alt = false, bool shift = false)
+        private static void KeyDown(System.Windows.Input.Key key, bool ctrl = false, bool alt = false, bool shift = false, string windowTitle = "", string windowClassName = "")
         {
-            var hWnd = FindWindow(null, windowTitle);
+            var hWnd = FindWindow(string.IsNullOrEmpty(windowClassName) ? null : windowClassName, windowTitle);
             if (hWnd == IntPtr.Zero)
             {
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
@@ -79,9 +80,9 @@ namespace KeyHelper
 
             SendMessage(hWnd, WM_KEYDOWN, (IntPtr)KeyInterop.VirtualKeyFromKey(key), IntPtr.Zero);
         }
-        private static void KeyUp(string windowTitle, System.Windows.Input.Key key, bool ctrl = false, bool alt = false, bool shift = false)
+        private static void KeyUp(System.Windows.Input.Key key, bool ctrl = false, bool alt = false, bool shift = false, string windowTitle = "", string windowClassName = "")
         {
-            var hWnd = FindWindow(null, windowTitle);
+            var hWnd = FindWindow(string.IsNullOrEmpty(windowClassName) ? null : windowClassName, windowTitle);
             if (hWnd == IntPtr.Zero)
             {
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
@@ -94,11 +95,17 @@ namespace KeyHelper
             if (shift) SendMessage(hWnd, WM_KEYUP, VK_SHIFT, IntPtr.Zero);
         }
 
-        public static void KeyPress(string windowTitle, System.Windows.Input.Key key, bool ctrl = false, bool alt = false, bool shift = false)
+        public static void KeyPress(System.Windows.Input.Key key, bool ctrl = false, bool alt = false, bool shift = false, string windowTitle = "", string windowClassName = "")
         {
-            KeyDown(windowTitle, key, ctrl, alt, shift);
+            if(string.IsNullOrEmpty(windowTitle) && string.IsNullOrEmpty(windowClassName))
+            {
+                KeyPress(key, ctrl, alt, shift);
+                return;
+            }
+
+            KeyDown(key, ctrl, alt, shift, windowTitle, windowClassName);
             Thread.Sleep(100);
-            KeyUp(windowTitle, key, ctrl, alt, shift);
+            KeyUp(key, ctrl, alt, shift, windowTitle, windowClassName);
         }
         #endregion
     }

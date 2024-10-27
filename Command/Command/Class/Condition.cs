@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Command.Interface;
 using OpenCVHelper;
-
+/*
 namespace Command.Class
 {
     public partial class Condition : ICondition
@@ -60,9 +60,7 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < settings.Timeout)
             {
-                var point = string.IsNullOrEmpty(settings.WindowTitle)
-                    ? ImageSearchHelper.SearchImageFromScreen(settings.ImagePath, cancellationToken, settings.Threshold)
-                    : ImageSearchHelper.SearchImageFromWindow(settings.WindowTitle, settings.ImagePath, cancellationToken, settings.Threshold);
+                var point = ImageSearchHelper.SearchImage(settings.ImagePath, cancellationToken, settings.Threshold, settings. settings.WindowTitle, settings.WindowClassName);
 
                 if (point != null)
                 {
@@ -113,3 +111,4 @@ namespace Command.Class
         }
     }
 }
+*/

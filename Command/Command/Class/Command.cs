@@ -99,11 +99,7 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var isScreenCoordinate = string.IsNullOrEmpty(Settings.WindowTitle);// || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle);
-
-                var point = isScreenCoordinate
-                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, true)
-                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, true);
+                var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
 
                 if (point != null)
                 {
@@ -133,9 +129,7 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var point = string.IsNullOrEmpty(Settings.WindowTitle) // || WindowHelper.Info.IsWindowForeground(Settings.WindowTitle)
-                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, true)
-                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, true);
+                var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
 
                 if (point != null)
                 {
@@ -178,14 +172,7 @@ namespace Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(Settings.WindowTitle))
-            {
-                await Task.Run(() => KeyHelper.Input.KeyPress(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift));
-            }
-            else
-            {
-                await Task.Run(() => KeyHelper.Input.KeyPress(Settings.WindowTitle, Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift));
-            }
+            await Task.Run(() => KeyHelper.Input.KeyPress(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift, Settings.WindowTitle, Settings.WindowClassName));
 
             return true;
         }
@@ -202,13 +189,13 @@ namespace Command.Class
             switch (Settings.Button)
             {
                 case System.Windows.Input.MouseButton.Left:
-                    await Task.Run(() => MouseHelper.Input.Click(Settings.X, Settings.Y, Settings.WindowTitle));
+                    await Task.Run(() => MouseHelper.Input.Click(Settings.X, Settings.Y));
                     break;
                 case System.Windows.Input.MouseButton.Right:
-                    await Task.Run(() => MouseHelper.Input.RightClick(Settings.X, Settings.Y, Settings.WindowTitle));
+                    await Task.Run(() => MouseHelper.Input.RightClick(Settings.X, Settings.Y));
                     break;
                 case System.Windows.Input.MouseButton.Middle:
-                    await Task.Run(() => MouseHelper.Input.MiddleClick(Settings.X, Settings.Y, Settings.WindowTitle));
+                    await Task.Run(() => MouseHelper.Input.MiddleClick(Settings.X, Settings.Y));
                     break;
                 default:
                     throw new Exception("マウスボタンが不正です。");
@@ -270,10 +257,7 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-
-                var point = string.IsNullOrEmpty(Settings.WindowTitle)
-                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold)
-                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold);
+                var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
 
                 if (point != null)
                 {
@@ -333,9 +317,7 @@ namespace Command.Class
 
             while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
             {
-                var point = string.IsNullOrEmpty(Settings.WindowTitle)
-                    ? await ImageSearchHelper.SearchImageFromScreen(Settings.ImagePath, cancellationToken, Settings.Threshold)
-                    : await ImageSearchHelper.SearchImageFromWindow(Settings.WindowTitle, Settings.ImagePath, cancellationToken, Settings.Threshold);
+                var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
 
                 if (point != null)
                 {

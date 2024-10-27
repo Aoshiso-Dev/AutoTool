@@ -111,6 +111,7 @@ namespace Panels.Model.MacroFactory
                 Timeout = item.Timeout,
                 Interval = item.Interval,
                 WindowTitle = item.WindowTitle,
+                WindowClassName = item.WindowClassName,
             })
             { LineNumber = item.LineNumber };
         }
@@ -126,6 +127,7 @@ namespace Panels.Model.MacroFactory
                 Interval = item.Interval,
                 Button = item.Button,
                 WindowTitle = item.WindowTitle,
+                WindowClassName = item.WindowClassName,
             })
             { LineNumber = item.LineNumber };
         }
@@ -139,6 +141,7 @@ namespace Panels.Model.MacroFactory
                 Shift = item.Shift,
                 Key = item.Key,
                 WindowTitle = item.WindowTitle,
+                WindowClassName = item.WindowClassName,
             })
             { LineNumber = item.LineNumber };
         }
@@ -150,7 +153,8 @@ namespace Panels.Model.MacroFactory
                 Button = item.Button,
                 X = item.X,
                 Y = item.Y,
-                WindowTitle = item.WindowTitle,
+                //WindowTitle = item.WindowTitle,
+                //WindowClassName = item.WindowClassName,
             })
             { LineNumber = item.LineNumber };
         }
@@ -193,6 +197,7 @@ namespace Panels.Model.MacroFactory
                         Timeout = ifImageExistItem.Timeout,
                         Interval = ifImageExistItem.Interval,
                         WindowTitle = ifImageExistItem.WindowTitle,
+                        WindowClassName = ifImageExistItem.WindowClassName,
                     })
                     {
                         LineNumber = ifImageExistItem.LineNumber,
@@ -207,6 +212,7 @@ namespace Panels.Model.MacroFactory
                         Timeout = ifImageNotExistItem.Timeout,
                         Interval = ifImageNotExistItem.Interval,
                         WindowTitle = ifImageNotExistItem.WindowTitle,
+                        WindowClassName = ifImageNotExistItem.WindowClassName,
                     })
                     {
                         LineNumber = ifImageNotExistItem.LineNumber,
