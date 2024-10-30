@@ -1,4 +1,4 @@
-﻿<Window x:Class="Panels.View.CaptureWindow"
+﻿<Window x:Class="MacroPanels.View.CaptureWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStyle="None"

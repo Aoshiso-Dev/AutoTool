@@ -1,11 +1,11 @@
-﻿using Panels.Model.List.Interface;
+﻿using MacroPanels.Model.List.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Panels.Message
+namespace MacroPanels.Message
 {
     public class LogMessage
     {

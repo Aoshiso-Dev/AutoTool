@@ -4,10 +4,10 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows;
 using System.Diagnostics;
-using Panels.View;
+using MacroPanels.View;
 using System.Windows.Controls;
 
-namespace Panels.View.Converter
+namespace MacroPanels.View.Converter
 {
     public class BoolToVisibilityConverter : IValueConverter
     {

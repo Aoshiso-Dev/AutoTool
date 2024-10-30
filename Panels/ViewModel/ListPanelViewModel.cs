@@ -3,21 +3,21 @@ using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Panels.View;
-using Panels.List.Class;
+using MacroPanels.View;
+using MacroPanels.List.Class;
 using System.Windows.Input;
 using System.IO;
-using Panels.Model.MacroFactory;
-using Panels.Model.List.Interface;
-using Panels.Model.List.Type;
-using Panels.Message;
+using MacroPanels.Model.MacroFactory;
+using MacroPanels.Model.List.Interface;
+using MacroPanels.Model.List.Type;
+using MacroPanels.Message;
 using CommunityToolkit.Mvvm.Messaging;
-using Panels.Model;
+using MacroPanels.Model;
 using System.Windows.Data;
 using System.Security.Cryptography.X509Certificates;
 
 
-namespace Panels.ViewModel
+namespace MacroPanels.ViewModel
 {
     public partial class ListPanelViewModel : ObservableObject
     {

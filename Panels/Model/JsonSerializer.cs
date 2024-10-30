@@ -6,9 +6,9 @@ using System.Linq;
 using System.Reflection;
 using System.IO;
 using System.Windows;
-using Panels.List.Class;
-using Panels.Model.List.Interface;
-using Panels.Model.List.Type;
+using MacroPanels.List.Class;
+using MacroPanels.Model.List.Interface;
+using MacroPanels.Model.List.Type;
 
 
 public class JsonSerializerHelper

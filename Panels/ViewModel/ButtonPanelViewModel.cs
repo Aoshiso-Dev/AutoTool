@@ -6,15 +6,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
-using Panels.Message;
+using MacroPanels.Message;
 using System.Collections.ObjectModel;
-using Panels.Model.List.Type;
+using MacroPanels.Model.List.Type;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
 using System.Security.Cryptography.X509Certificates;
-using Panels.List.Class;
+using MacroPanels.List.Class;
 
-namespace Panels.ViewModel
+namespace MacroPanels.ViewModel
 {
     public partial class ButtonPanelViewModel : ObservableObject
     {
