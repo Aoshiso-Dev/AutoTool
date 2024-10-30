@@ -4,8 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AutoTool"
-        xmlns:panels="clr-namespace:Panels.View;assembly=Panels"
-        xmlns:converter="clr-namespace:Panels.View.Converter;assembly=Panels"
+        xmlns:panels="clr-namespace:MacroPanels.View;assembly=MacroPanels"
+        xmlns:converter="clr-namespace:MacroPanels.View.Converter;assembly=MacroPanels"
         xmlns:vm="MainW"
         mc:Ignorable="d"
         Height="1000" Width="1000">

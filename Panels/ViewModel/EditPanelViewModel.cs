@@ -6,15 +6,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
-using Panels.Message;
+using MacroPanels.Message;
 using System.Collections.ObjectModel;
-using Panels.Model.List.Type;
+using MacroPanels.Model.List.Type;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
 using System.Security.Cryptography.X509Certificates;
-using Panels.List.Class;
-using Panels.Model.List.Interface;
-using Panels.View;
+using MacroPanels.List.Class;
+using MacroPanels.Model.List.Interface;
+using MacroPanels.View;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
@@ -24,7 +24,7 @@ using System.Windows.Input;
 
 using ColorPickHelper;
 
-namespace Panels.ViewModel
+namespace MacroPanels.ViewModel
 {
     public partial class EditPanelViewModel : ObservableObject
     {

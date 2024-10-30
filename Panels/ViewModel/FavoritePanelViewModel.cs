@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Panels.Message;
+using MacroPanels.Message;
 using System.Collections.ObjectModel;
 
-namespace Panels.ViewModel
+namespace MacroPanels.ViewModel
 {
 
     public partial class FavoritePanelViewModel : ObservableObject

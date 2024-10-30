@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace Panels.View
+namespace MacroPanels.View
 {
     /// <summary>
     /// ButtonPanel.xaml の相互作用ロジック

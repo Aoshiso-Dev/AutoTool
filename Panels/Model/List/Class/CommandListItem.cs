@@ -4,18 +4,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Panels.List;
+using MacroPanels.List;
 using System.Windows;
-using Command.Interface;
-using Command.Class;
-using Panels.Model.List.Interface;
+using MacroPanels.Command.Interface;
+using MacroPanels.Command.Class;
+using MacroPanels.Model.List.Interface;
 using System.Windows.Controls;
 using System.Text.Json.Serialization;
 using OpenCvSharp.Features2D;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Panels.List.Class
+namespace MacroPanels.List.Class
 {
     public partial class CommandListItem : ObservableObject, ICommandListItem
     {

@@ -1,11 +1,11 @@
-﻿using Command.Interface;
-using Command.Class;
-using Panels.List.Class;
+﻿using MacroPanels.Command.Interface;
+using MacroPanels.Command.Class;
+using MacroPanels.List.Class;
 using System.Diagnostics;
-using Panels.Model.List.Interface;
+using MacroPanels.Model.List.Interface;
 using System.Windows;
 
-namespace Panels.Model.MacroFactory
+namespace MacroPanels.Model.MacroFactory
 {
     public static class MacroFactory
     {

@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Panels.Message;
+using MacroPanels.Message;
 
-namespace Panels.ViewModel
+namespace MacroPanels.ViewModel
 {
 
     public partial class LogPanelViewModel : ObservableObject
