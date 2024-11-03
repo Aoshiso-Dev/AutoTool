@@ -143,13 +143,13 @@ namespace MacroPanels.Command.Class
                     switch (Settings.Button)
                     {
                         case System.Windows.Input.MouseButton.Left:
-                            await Task.Run(() => MouseHelper.Input.Click(point.Value.X, point.Value.Y, Settings.WindowTitle));
+                            await Task.Run(() => MouseHelper.Input.Click(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName));
                             break;
                         case System.Windows.Input.MouseButton.Right:
-                            await Task.Run(() => MouseHelper.Input.RightClick(point.Value.X, point.Value.Y, Settings.WindowTitle));
+                            await Task.Run(() => MouseHelper.Input.RightClick(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName));
                             break;
                         case System.Windows.Input.MouseButton.Middle:
-                            await Task.Run(() => MouseHelper.Input.MiddleClick(point.Value.X, point.Value.Y, Settings.WindowTitle));
+                            await Task.Run(() => MouseHelper.Input.MiddleClick(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName));
                             break;
                         default:
                             throw new Exception("マウスボタンが不正です。");

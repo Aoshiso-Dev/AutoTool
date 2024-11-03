@@ -9,6 +9,8 @@ using System.Drawing;
 using System.Windows;
 using System.Diagnostics;
 using System.Net;
+using System.IO;
+using LogHelper;
 
 namespace MouseHelper
 {
@@ -63,6 +65,17 @@ namespace MouseHelper
                 Window.RestoreZOrder(hwnd);
                 Thread.Sleep(30);
             }
+
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var resultMessage = $"Click: {targetX}, {targetY}";
+            if (hwnd !=  IntPtr.Zero)
+            {
+                resultMessage += $" ({windowTitle}[{windowClassName}] {x},{y})";
+            }
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
 
         private static void PerformMouseAction(int x, int y, uint actionEvent, int delta, string windowTitle = "", string windowClassName = "")
@@ -95,6 +108,16 @@ namespace MouseHelper
                 Window.RestoreZOrder(hwnd);
                 Thread.Sleep(30);
             }
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var resultMessage = $"Wheel: {targetX}, {targetY}";
+            if (hwnd != IntPtr.Zero)
+            {
+                resultMessage += $" ({windowTitle}[{windowClassName}] {x},{y})";
+            }
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
 
         private static void PerformDrag(int x1, int y1, int x2, int y2, uint downEvent, uint upEvent, string windowTitle = "", string windowClassName = "")
@@ -134,6 +157,16 @@ namespace MouseHelper
                 Window.RestoreZOrder(hwnd);
                 Thread.Sleep(30);
             }
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var resultMessage = $"Drag: {targetX1}, {targetY1} -> {targetX2}, {targetY2}";
+            if (hwnd != IntPtr.Zero)
+            {
+                resultMessage += $" ({windowTitle}[{windowClassName}] {x1},{y1} -> {x2},{y2})";
+            }
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
 
         private static void PerformMove(int x, int y, string windowTitle = "", string windowClassName = "") => Cursor.SetPos(x, y, windowTitle, windowClassName);
@@ -437,18 +470,25 @@ namespace MouseHelper
         {
             var lpPoint = new System.Drawing.Point();
 
-            if (windowTitle == "")
+            if(windowTitle == "")
             {
                 GetCursorPos(out lpPoint);
-                return lpPoint;
             }
             else
             {
                 var hWnd = Window.GetHandle(windowTitle, windowClassName);
                 var rect = Window.GetRect(hWnd);
                 GetCursorPos(out lpPoint);
-                return new System.Drawing.Point(lpPoint.X - rect.Left, lpPoint.Y - rect.Top);
+                lpPoint = new System.Drawing.Point(lpPoint.X - rect.Left, lpPoint.Y - rect.Top);
             }
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var resultMessage = $"GetPos: {lpPoint.X}, {lpPoint.Y} ({windowTitle}[{windowClassName}])";
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
+
+            return lpPoint;
         }
 
         public static void SetPos(int x, int y, string windowTitle = "", string windowClassName = "")
@@ -463,6 +503,14 @@ namespace MouseHelper
                 var rect = Window.GetRect(hWnd);
                 SetCursorPos(rect.Left + x, rect.Top + y);
             }
+
+            // ログ出力
+            /*
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var resultMessage = $"SetPos: {x}, {y} ({windowTitle}[{windowClassName}])";
+            GlobalLogger.Instance.Write($"{projectName} {methodName} {resultMessage}");
+            */
         }
         #endregion
 
@@ -479,12 +527,26 @@ namespace MouseHelper
                     SetPos(x, y);
                 }
             });
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var resultMessage = $"Lock: {x}, {y}";
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
+
             mouseMoveThread.Start();
+
         }
 
         public static void Unlock()
         {
             isLocked = false;
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var resultMessage = $"Unlock";
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
         #endregion
     }

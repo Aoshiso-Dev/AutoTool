@@ -15,7 +15,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <!-- ボタン -->
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
             <Button Command="{Binding RunCommand}" Width="100" Margin="2" Foreground="White">

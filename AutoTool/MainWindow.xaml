@@ -10,7 +10,8 @@
         mc:Ignorable="d"
         xmlns:converters="clr-namespace:AutoTool.View.Converters"
         Title="{Binding AutoToolTitle}"
-        SizeToContent="WidthAndHeight">
+        Width="800" Height="600">
+    <!-- SizeToContentを削除 -->
 
     <Window.DataContext>
         <local:MainWindowViewModel/>
@@ -20,17 +21,17 @@
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
     </Window.Resources>
 
-    <Grid>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
+
         <Menu Grid.Row="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
             <MenuItem DockPanel.Dock="Left" Header="ファイル">
-                <MenuItem Header="開く"  Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
+                <MenuItem Header="開く" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
                 <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFile, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOpened}"/>
-                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFileAs, RelativeSource={RelativeSource AncestorType=Window}}"  Command="{Binding DataContext.SaveFileAsCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
+                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFileAs, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileAsCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
                 <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}" IsEnabled="{Binding IsFileOperationEnable}">
                     <MenuItem.ItemTemplate>
                         <DataTemplate>
@@ -39,19 +40,22 @@
                     </MenuItem.ItemTemplate>
                 </MenuItem>
             </MenuItem>
-            <MenuItem DockPanel.Dock="Right" Header="バージョン情報" Command="{Binding VersionInfoCommand}" HorizontalAlignment="Right"/>
+            <MenuItem DockPanel.Dock="Right" Header="ヘルプ" HorizontalAlignment="Right">
+                <MenuItem Header="アプリのフォルダを開く" Command="{Binding OpenAppDirCommand}"/>
+                <MenuItem Header="バージョン情報" Command="{Binding VersionInfoCommand}"/>
+            </MenuItem>
         </Menu>
-        
-        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}">
+
+        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <TabItem Header="マクロ">
-                <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}" Margin="2"/>
+                <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </TabItem>
             <!--
             <TabItem Header="モニタリング">
-                <panel:MonitoringPanel  DataContext="{Binding MacroPanelViewModel}" Margin="2"/>
+                <panel:MonitoringPanel DataContext="{Binding MacroPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </TabItem>
             -->
         </TabControl>
-        
+
     </Grid>
 </Window>

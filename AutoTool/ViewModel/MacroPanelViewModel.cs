@@ -25,6 +25,8 @@ using MacroPanels.Message;
 using MacroPanels.Model.MacroFactory;
 using MacroPanels.Model.List.Interface;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using LogHelper;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace AutoTool.ViewModel
 {
@@ -155,16 +157,16 @@ namespace AutoTool.ViewModel
                 var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
                 var commandName = command.GetType().ToString().Split('.').Last().Replace("Command", "").PadRight(20, ' ');
 
-                //var logString = $"[{DateTime.Now}] [{lineNumber}] {commandName} -----開始-----" ;
-                //LogPanelViewModel.WriteLog(logString);
-
                 var settingDict = command.Settings.GetType().GetProperties().ToDictionary(x => x.Name, x => x.GetValue(command.Settings, null));
-                var logString2 = $"[{DateTime.Now}] [{lineNumber}] {commandName} 開始 >> ";
+                var logString = string.Empty;
                 foreach (var setting in settingDict)
                 {
-                    logString2 += $"({setting.Key} = {setting.Value}), ";
+                    logString += $"({setting.Key} = {setting.Value}), ";
                 }
-                LogPanelViewModel.WriteLog(logString2);
+
+                LogPanelViewModel.WriteLog(lineNumber, commandName, logString);
+
+                GlobalLogger.Instance.Write(lineNumber, commandName, logString);
 
                 var commandItem = ListPanelViewModel.GetItem(command.LineNumber);
 
@@ -177,12 +179,6 @@ namespace AutoTool.ViewModel
             WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (sender, message) =>
             {
                 var command = (message as FinishCommandMessage).Command;
-                //var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
-                //var commandName = command.GetType().ToString().Split('.').Last().Replace("Command", "").PadRight(20, ' ');
-
-                //var logString = $"[{DateTime.Now}] [{lineNumber}] {commandName} -----終了-----";
-                //LogPanelViewModel.WriteLog(logString);
-
                 var commandItem = ListPanelViewModel.GetItem(command.LineNumber);
 
                 if (commandItem != null)
@@ -197,8 +193,9 @@ namespace AutoTool.ViewModel
                 var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
                 var commandName = command.GetType().ToString().Split('.').Last().Replace("Command", "").PadRight(20, ' ');
                 var detail = (message as DoingCommandMessage).Detail;
-                var logString = $"[{DateTime.Now}] [{lineNumber}] {commandName} {detail}";
-                LogPanelViewModel.WriteLog(logString);
+                LogPanelViewModel.WriteLog(lineNumber, commandName, detail);
+
+                GlobalLogger.Instance.Write(lineNumber, commandName, detail);
             });
             WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (sender, message) =>
             {
@@ -217,6 +214,8 @@ namespace AutoTool.ViewModel
             WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>
             {
                 LogPanelViewModel.WriteLog((message as LogMessage).Text);
+
+                GlobalLogger.Instance.Write((message as LogMessage).Text);
             });
         }
 

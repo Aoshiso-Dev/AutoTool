@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\LogHelper\LogHelper.csproj" />
     <ProjectReference Include="..\Panels\MacroPanels.csproj" />
     <ProjectReference Include="..\XmlSerializer\XmlSerializer.csproj" />
   </ItemGroup>

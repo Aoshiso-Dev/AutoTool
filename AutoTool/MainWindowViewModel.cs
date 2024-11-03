@@ -154,6 +154,20 @@ namespace AutoTool
         }
 
         [RelayCommand]
+        private void OpenAppDir()
+        {
+            var appDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            if (appDir != null)
+            {
+                System.Diagnostics.Process.Start("EXPLORER.EXE", appDir);
+            }
+            else
+            {
+                MessageBox.Show("アプリケーションのディレクトリが見つかりませんでした。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
         private void OpenFile(string filePath)
         {
             _fileManagers[SelectedTabIndex].OpenFile(filePath);

@@ -42,7 +42,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Border BorderBrush="LightGray" BorderThickness="1">
             <DockPanel LastChildFill="True" Margin="10"
                        IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"

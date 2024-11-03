@@ -10,6 +10,8 @@ using OpenCvSharp.Extensions;
 using System.Windows.Media;
 using System.Drawing;
 
+using LogHelper;
+
 using Color = System.Windows.Media.Color;
 
 namespace OpenCVHelper
@@ -206,7 +208,7 @@ namespace OpenCVHelper
         {
             return await Task.Run(() =>
             {
-                Mat targetMat = string.IsNullOrEmpty(windowTitle) ? ScreenCaptureHelper.CaptureScreen() : ScreenCaptureHelper.CaptureWindow(windowTitle, windowClassName);
+                Mat targetMat = string.IsNullOrEmpty(windowTitle) && string.IsNullOrEmpty(windowClassName) ? ScreenCaptureHelper.CaptureScreen() : ScreenCaptureHelper.CaptureWindow(windowTitle, windowClassName);
                 Mat templateMat = new Mat(imagePath);
 
                 if (searchColor == null)
@@ -253,6 +255,17 @@ namespace OpenCVHelper
                 {
                     // 対象画像の中心座標を計算して返す
                     OpenCvSharp.Point center = new OpenCvSharp.Point(maxLoc.X + templateMat.Width / 2, maxLoc.Y + templateMat.Height / 2);
+
+                    // ログ出力
+                    var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                    var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+                    var resultMessage = $"マッチング成功: {center.X}, {center.Y}";
+                    if (!(string.IsNullOrEmpty(windowTitle) && string.IsNullOrEmpty(windowClassName)))
+                    {
+                        resultMessage += $" ({windowTitle}[{windowClassName}])";
+                    }
+                    GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
+
                     return center;
                 }
 

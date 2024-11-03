@@ -8,7 +8,7 @@
              FontFamily="MS Gothic"
              d:DesignHeight="150" d:DesignWidth="1000">
 
-    <Grid>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <TextBox Text="{Binding Log}" TextChanged="LogTextBox_TextChanged" Name="LogTextBox" IsReadOnly="True" Width="Auto" Height="200" VerticalScrollBarVisibility="Visible"/>
     </Grid>
 </UserControl>
