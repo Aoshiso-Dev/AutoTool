@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Input;
 using System.Drawing;
 using System.Windows;
+using LogHelper;
 
 
 namespace KeyHelper
@@ -36,11 +37,23 @@ namespace KeyHelper
         private static void KeyDown(System.Windows.Input.Key key)
         {
             keybd_event((byte)KeyInterop.VirtualKeyFromKey(key), 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var resultMessage = $"KeyDown: {key}";
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
 
         private static void KeyUp(System.Windows.Input.Key key)
         {
             keybd_event((byte)KeyInterop.VirtualKeyFromKey(key), 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var resultMessage = $"KeyUp: {key}";
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
 
         public static void KeyPress(System.Windows.Input.Key key)
@@ -79,6 +92,17 @@ namespace KeyHelper
             if (shift) SendMessage(hWnd, WM_KEYDOWN, VK_SHIFT, IntPtr.Zero);
 
             SendMessage(hWnd, WM_KEYDOWN, (IntPtr)KeyInterop.VirtualKeyFromKey(key), IntPtr.Zero);
+
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var keys = new List<string>();
+            if (ctrl) keys.Add("Ctrl");
+            if (alt) keys.Add("Alt");
+            if (shift) keys.Add("Shift");
+            var resultMessage = $"{string.Join("+", keys)}+{key}";
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
         private static void KeyUp(System.Windows.Input.Key key, bool ctrl = false, bool alt = false, bool shift = false, string windowTitle = "", string windowClassName = "")
         {
@@ -93,6 +117,16 @@ namespace KeyHelper
             if (ctrl) SendMessage(hWnd, WM_KEYUP, VK_CONTROL, IntPtr.Zero);
             if (alt) SendMessage(hWnd, WM_KEYUP, VK_MENU, IntPtr.Zero);
             if (shift) SendMessage(hWnd, WM_KEYUP, VK_SHIFT, IntPtr.Zero);
+
+            // ログ出力
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var keys = new List<string>();
+            if (ctrl) keys.Add("Ctrl");
+            if (alt) keys.Add("Alt");
+            if (shift) keys.Add("Shift");
+            var resultMessage = $"{string.Join("+", keys)}+{key}";
+            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
 
         public static void KeyPress(System.Windows.Input.Key key, bool ctrl = false, bool alt = false, bool shift = false, string windowTitle = "", string windowClassName = "")

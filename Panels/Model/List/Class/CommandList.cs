@@ -6,10 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Win32;
-using Panels.Model.List.Interface;
-using Panels.Model.List.Type;
+using MacroPanels.Model.List.Interface;
+using MacroPanels.Model.List.Type;
 
-namespace Panels.List.Class
+namespace MacroPanels.List.Class
 {
     public partial class CommandList : ObservableObject, ICommandList
     {

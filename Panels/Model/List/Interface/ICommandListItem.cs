@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows.Media;
 
-namespace Panels.Model.List.Interface
+namespace MacroPanels.Model.List.Interface
 {
     public interface ICommandListItem
     {

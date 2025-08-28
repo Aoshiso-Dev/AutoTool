@@ -5,24 +5,28 @@ using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
-using Panels.ViewModel;
-using Panels.Message;
 using CommunityToolkit.Mvvm.Input;
-using Panels.List.Class;
-using Panels.Model.MacroFactory;
+using MacroPanels.List.Class;
 using System.Windows;
-using Command.Class;
-using Command.Interface;
-using Command.Message;
+using MacroPanels.Command.Class;
+using MacroPanels.Command.Interface;
+using MacroPanels.Command.Message;
 using System.Windows.Controls;
 using System.Windows.Data;
-using Panels.Model.List.Interface;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Xml.Serialization;
 using System.Windows.Shapes;
 using System.Security.Policy;
+
+using MacroPanels.ViewModel;
+using MacroPanels.Message;
+using MacroPanels.Model.MacroFactory;
+using MacroPanels.Model.List.Interface;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using LogHelper;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace AutoTool.ViewModel
 {
@@ -150,9 +154,19 @@ namespace AutoTool.ViewModel
             WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (sender, message) =>
             {
                 var command = (message as StartCommandMessage).Command;
+                var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
+                var commandName = command.GetType().ToString().Split('.').Last().Replace("Command", "").PadRight(20, ' ');
 
-                var logString = $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Started";
-                LogPanelViewModel.WriteLog(logString);
+                var settingDict = command.Settings.GetType().GetProperties().ToDictionary(x => x.Name, x => x.GetValue(command.Settings, null));
+                var logString = string.Empty;
+                foreach (var setting in settingDict)
+                {
+                    logString += $"({setting.Key} = {setting.Value}), ";
+                }
+
+                LogPanelViewModel.WriteLog(lineNumber, commandName, logString);
+
+                GlobalLogger.Instance.Write(lineNumber, commandName, logString);
 
                 var commandItem = ListPanelViewModel.GetItem(command.LineNumber);
 
@@ -165,10 +179,6 @@ namespace AutoTool.ViewModel
             WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (sender, message) =>
             {
                 var command = (message as FinishCommandMessage).Command;
-
-                var logString = $"[{DateTime.Now}] {command.LineNumber} : {command.GetType()} Finished";
-                LogPanelViewModel.WriteLog(logString);
-
                 var commandItem = ListPanelViewModel.GetItem(command.LineNumber);
 
                 if (commandItem != null)
@@ -176,6 +186,16 @@ namespace AutoTool.ViewModel
                     commandItem.Progress = 0;
                     commandItem.IsRunning = false;
                 }
+            });
+            WeakReferenceMessenger.Default.Register<DoingCommandMessage>(this, (sender, message) =>
+            {
+                var command = (message as DoingCommandMessage).Command;
+                var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
+                var commandName = command.GetType().ToString().Split('.').Last().Replace("Command", "").PadRight(20, ' ');
+                var detail = (message as DoingCommandMessage).Detail;
+                LogPanelViewModel.WriteLog(lineNumber, commandName, detail);
+
+                GlobalLogger.Instance.Write(lineNumber, commandName, detail);
             });
             WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (sender, message) =>
             {
@@ -194,6 +214,8 @@ namespace AutoTool.ViewModel
             WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>
             {
                 LogPanelViewModel.WriteLog((message as LogMessage).Text);
+
+                GlobalLogger.Instance.Write((message as LogMessage).Text);
             });
         }
 

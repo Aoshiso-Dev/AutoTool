@@ -1,12 +1,12 @@
-﻿<UserControl x:Class="Panels.View.EditPanel"
+﻿<UserControl x:Class="MacroPanels.View.EditPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:vm="clr-namespace:Panels.ViewModel"
-             xmlns:converter="clr-namespace:Panels.View.Converter"
+             xmlns:vm="clr-namespace:MacroPanels.ViewModel"
+             xmlns:converter="clr-namespace:MacroPanels.View.Converter"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-             xmlns:item="clr-namespace:Panels.List.Class"
+             xmlns:item="clr-namespace:MacroPanels.List.Class"
              mc:Ignorable="d"
              d:DesignHeight="1000" d:DesignWidth="300">
 
@@ -42,7 +42,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Border BorderBrush="LightGray" BorderThickness="1">
             <DockPanel LastChildFill="True" Margin="10"
                        IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"

@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Documents;
 
-namespace Panels.Model.List.Interface
+namespace MacroPanels.Model.List.Interface
 {
     internal interface ICommandList
     {

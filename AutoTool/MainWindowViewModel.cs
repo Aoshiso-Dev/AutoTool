@@ -1,28 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Messaging;
-using Panels.ViewModel;
-using Panels.Message;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Panels.List.Class;
-using Panels.Model.MacroFactory;
 using System.Windows;
-using Command.Class;
-using Command.Interface;
-using Command.Message;
-using System.Windows.Controls;
-using System.Windows.Data;
-using Panels.Model.List.Interface;
-using Microsoft.Win32;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Xml.Serialization;
-using System.Windows.Shapes;
-using System.Security.Policy;
 using AutoTool.ViewModel;
 using AutoTool.Model;
 using static AutoTool.Model.FileManager;
@@ -64,8 +43,6 @@ namespace AutoTool
             set
             {
                 SetProperty(ref _selectedTabIndex, value);
-
-                MessageBox.Show($"TabIndex: {SelectedTabIndex}");
 
                 UpdateProperties();
             }
@@ -174,6 +151,20 @@ namespace AutoTool
             var versionString = $"{version.Major}.{version.Minor}.{version.Build}";
 
             MessageBox.Show($"{appName}\nVer.{versionString}\n{githubUrl}", "バージョン情報", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        [RelayCommand]
+        private void OpenAppDir()
+        {
+            var appDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            if (appDir != null)
+            {
+                System.Diagnostics.Process.Start("EXPLORER.EXE", appDir);
+            }
+            else
+            {
+                MessageBox.Show("アプリケーションのディレクトリが見つかりませんでした。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         [RelayCommand]

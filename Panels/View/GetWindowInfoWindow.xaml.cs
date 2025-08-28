@@ -9,7 +9,7 @@ using System.Drawing;
 using WindowHelper;
 using MouseHelper;
 
-namespace Panels.View
+namespace MacroPanels.View
 {
     public partial class GetWindowInfoWindow : Window
     {

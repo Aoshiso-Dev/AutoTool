@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Panels.Model.List.Type
+namespace MacroPanels.Model.List.Type
 {
     public class ItemType
     {

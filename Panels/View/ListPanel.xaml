@@ -1,10 +1,10 @@
-﻿<UserControl x:Class="Panels.View.ListPanel"
+﻿<UserControl x:Class="MacroPanels.View.ListPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:vm="clr-namespace:Panels.ViewModel"
-             xmlns:converter="clr-namespace:Panels.View.Converter"
+             xmlns:vm="clr-namespace:MacroPanels.ViewModel"
+             xmlns:converter="clr-namespace:MacroPanels.View.Converter"
              mc:Ignorable="d"
              d:DesignHeight="1000" d:DesignWidth="1000">
 
@@ -17,13 +17,14 @@
         <converter:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter" />
     </UserControl.Resources>
 
-    <Grid>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 
     <!-- DataGrid -->
         <DataGrid DockPanel.Dock="Top"
                   ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding DataContext.SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                   SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-                  ScrollViewer.VerticalScrollBarVisibility="Visible"
+                  VerticalScrollBarVisibility="Visible"
+                  HorizontalScrollBarVisibility="Auto"
                   >
 
             <DataGrid.Resources>

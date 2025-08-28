@@ -4,18 +4,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Panels.List;
+using MacroPanels.List;
 using System.Windows;
-using Command.Interface;
-using Command.Class;
-using Panels.Model.List.Interface;
+using MacroPanels.Command.Interface;
+using MacroPanels.Command.Class;
+using MacroPanels.Model.List.Interface;
 using System.Windows.Controls;
 using System.Text.Json.Serialization;
 using OpenCvSharp.Features2D;
 using System.Windows.Input;
 using System.Windows.Media;
+using MacroPanels.Model.MacroFactory;
 
-namespace Panels.List.Class
+namespace MacroPanels.List.Class
 {
     public partial class CommandListItem : ObservableObject, ICommandListItem
     {
@@ -26,6 +27,7 @@ namespace Panels.List.Class
         [ObservableProperty]
         protected bool _isSelected = false;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         protected int _lineNumber = 0;
         [ObservableProperty]
         protected string _itemType = "None";
@@ -64,24 +66,32 @@ namespace Panels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(WaitImageCommand), typeof(IWaitImageCommandSettings))]
     public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _imagePath = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private double _threshold = 0.8;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private Color? _searchColor = null;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _timeout = 5000;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _interval = 500;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
 
-        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public WaitImageItem() { }
 
@@ -105,26 +115,35 @@ namespace Panels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(ClickImageCommand), typeof(IClickImageCommandSettings))]
     public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickImageCommandSettings
     {
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _imagePath = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private double _threshold = 0.8;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private Color? _searchColor = null;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _timeout = 5000;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _interval = 500;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
 
-        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
+        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
 
         public ClickImageItem() { }
 
@@ -149,19 +168,26 @@ namespace Panels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(HotkeyCommand), typeof(IHotkeyCommandSettings))]
     public partial class HotkeyItem : CommandListItem, IHotkeyItem, IHotkeyCommandSettings
     {
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private bool _ctrl = false;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private bool _alt = false;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private bool _shift = false;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private System.Windows.Input.Key _key = System.Windows.Input.Key.Escape;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
 
         new public string Description
@@ -176,8 +202,6 @@ namespace Panels.List.Class
                 if (Alt) keys.Add("Alt");
                 if (Shift) keys.Add("Shift");
                 keys.Add(Key.ToString());
-
-                
 
                 return $"対象：{target} / キー：{string.Join(" + ", keys)}";
             }
@@ -204,13 +228,17 @@ namespace Panels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(ClickCommand), typeof(IClickCommandSettings))]
     public partial class ClickItem : CommandListItem, IClickItem, IClickCommandSettings
     {
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _x = 0;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _y = 0;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
         //[ObservableProperty]
         //private string _windowTitle = string.Empty;
@@ -241,9 +269,11 @@ namespace Panels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(WaitCommand), typeof(IWaitCommandSettings))]
     public partial class WaitItem : CommandListItem, IWaitItem, IWaitCommandSettings
     {
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _wait = 5000;
 
         new public string Description => $"待機時間:{Wait}ms";
@@ -286,24 +316,32 @@ namespace Panels.List.Class
         }
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _imagePath = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private double _threshold = 0.8;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private Color? _searchColor = null;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _timeout = 5000;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _interval = 500;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public IfImageExistItem() { }
 
@@ -351,23 +389,31 @@ namespace Panels.List.Class
         }
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _imagePath = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private double _threshold = 0.8;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private Color? _searchColor = null;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _timeout = 5000;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _interval = 500;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public IfImageNotExistItem() { }
 
@@ -415,6 +461,7 @@ namespace Panels.List.Class
         }
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
 
@@ -452,8 +499,10 @@ namespace Panels.List.Class
         }
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _loopCount = 2;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
         new public string Description => $"{LineNumber}->{Pair?.LineNumber} / ループ回数:{LoopCount}";
@@ -498,6 +547,7 @@ namespace Panels.List.Class
         }
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
         new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
