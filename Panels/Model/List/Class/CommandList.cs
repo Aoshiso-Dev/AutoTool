@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Win32;
 using MacroPanels.Model.List.Interface;
 using MacroPanels.Model.List.Type;
+using System.IO;
 
 namespace MacroPanels.List.Class
 {
@@ -253,43 +254,82 @@ namespace MacroPanels.List.Class
                     switch(item.ItemType)
                     {
                         case nameof(ItemType.WaitImage):
-                            Add(new WaitImageItem(item as WaitImageItem));
+                            if (item is WaitImageItem)
+                                Add(new WaitImageItem(item as WaitImageItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を WaitImageItem にキャストできません。");
                             break;
                         case nameof(ItemType.ClickImage):
-                            Add(new ClickImageItem(item as ClickImageItem));
+                            if (item is ClickImageItem)
+                                Add(new ClickImageItem(item as ClickImageItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を ClickImageItem にキャストできません。");
                             break;
                         case nameof(ItemType.Click):
-                            Add(new ClickItem(item as ClickItem));
+                            if (item is ClickItem)
+                                Add(new ClickItem(item as ClickItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を ClickItem にキャストできません。");
                             break;
                         case nameof(ItemType.Hotkey):
-                            Add(new HotkeyItem(item as HotkeyItem));
+                            if (item is HotkeyItem)
+                                Add(new HotkeyItem(item as HotkeyItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を HotkeyItem にキャストできません。");
                             break;
                         case nameof(ItemType.Wait):
-                            Add(new WaitItem(item as WaitItem));
+                            if (item is WaitItem)
+                                Add(new WaitItem(item as WaitItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を WaitItem にキャストできません。");
                             break;
                         case nameof(ItemType.Loop):
-                            Add(new LoopItem(item as LoopItem));
+                            if (item is LoopItem)
+                                Add(new LoopItem(item as LoopItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を LoopItem にキャストできません。");
                             break;
                         case nameof(ItemType.EndLoop):
-                            Add(new EndLoopItem(item as EndLoopItem));
+                            if (item is EndLoopItem)
+                                Add(new EndLoopItem(item as EndLoopItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を EndLoopItem にキャストできません。");
                             break;
                         case nameof(ItemType.Break):
-                            Add(new BreakItem(item as BreakItem));
+                            if (item is BreakItem)
+                                Add(new BreakItem(item as BreakItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を BreakItem にキャストできません。");
                             break;
                         case nameof(ItemType.IfImageExist):
-                            Add(new IfImageExistItem(item as IfImageExistItem));
+                            if (item is IfImageExistItem)
+                                Add(new IfImageExistItem(item as IfImageExistItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfImageExistItem にキャストできません。");
                             break;
                         case nameof(ItemType.IfImageNotExist):
-                            Add(new IfImageNotExistItem(item as IfImageNotExistItem));
+                            if (item is IfImageNotExistItem)
+                                Add(new IfImageNotExistItem(item as IfImageNotExistItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfImageNotExistItem にキャストできません。");
                             break;
                         case nameof(ItemType.EndIf):
-                            Add(new EndIfItem(item as EndIfItem));
+                            if (item is EndIfItem)
+                                Add(new EndIfItem(item as EndIfItem));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を EndIfItem にキャストできません。");
                             break;
                         case nameof(ItemType.IfImageExistAI):
-                            Add(new IfImageExistAIItem(item as IfImageExistAIItem));
+                            if (item is IfImageExistAIItem iea)
+                                Add(new IfImageExistAIItem(iea));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfImageExistAIItem にキャストできません。");
                             break;
                         case nameof(ItemType.IfImageNotExistAI):
-                            Add(new IfImageNotExistAIItem(item as IfImageNotExistAIItem));
+                            if (item is IfImageNotExistAIItem ina)
+                                Add(new IfImageNotExistAIItem(ina));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfImageNotExistAIItem にキャストできません。");
                             break;
                     }
 

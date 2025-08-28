@@ -72,8 +72,7 @@ namespace MacroPanels.Command.Class
     public class AIImageDetectCommandSettings : ICommandSettings, IIfImageExistAISettings
     {
         public string ModelPath { get; set; } = string.Empty;
-        public string NamesFilePath { get; set; } = string.Empty;
-        public string TargetLabel { get; set; } = string.Empty;
+        public int ClassID { get; set; } = 0;
         public string WindowTitle { get; set; } = string.Empty;
         public string WindowClassName { get; set; } = string.Empty;
         public double ConfThreshold { get; set; }

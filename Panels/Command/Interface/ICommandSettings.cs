@@ -73,8 +73,7 @@ namespace MacroPanels.Command.Interface
     public interface IIfImageExistAISettings : ICommandSettings
     {
         string ModelPath { get; set; }
-        string NamesFilePath { get; set; }
-        string TargetLabel { get; set; }
+        int ClassID { get; set; }
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
         double ConfThreshold { get; set; }

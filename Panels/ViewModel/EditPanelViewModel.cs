@@ -588,15 +588,15 @@ namespace MacroPanels.ViewModel
             }
         }
 
-        public string NamesFilePath
+        public int ClassID
         {
             get
             {
                 return Item switch
                 {
-                    IfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.NamesFilePath,
-                    IfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.NamesFilePath,
-                    _ => string.Empty,
+                    IfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.ClassID,
+                    IfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.ClassID,
+                    _ => 0,
                 };
             }
             set
@@ -604,36 +604,10 @@ namespace MacroPanels.ViewModel
                 switch (Item)
                 {
                     case IfImageExistAIItem ifImageExistAIItem:
-                        ifImageExistAIItem.NamesFilePath = value;
+                        ifImageExistAIItem.ClassID = value;
                         break;
                     case IfImageNotExistAIItem ifImageNotExistAIItem:
-                        ifImageNotExistAIItem.NamesFilePath = value;
-                        break;
-                }
-                UpdateProperties();
-            }
-        }
-
-        public string TargetLabel
-        {
-            get
-            {
-                return Item switch
-                {
-                    IfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.TargetLabel,
-                    IfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.TargetLabel,
-                    _ => string.Empty,
-                };
-            }
-            set
-            {
-                switch (Item)
-                {
-                    case IfImageExistAIItem ifImageExistAIItem:
-                        ifImageExistAIItem.TargetLabel = value;
-                        break;
-                    case IfImageNotExistAIItem ifImageNotExistAIItem:
-                        ifImageNotExistAIItem.TargetLabel = value;
+                        ifImageNotExistAIItem.ClassID = value;
                         break;
                 }
                 UpdateProperties();
@@ -834,6 +808,29 @@ namespace MacroPanels.ViewModel
             {
                 _isUpdating = true;
 
+                OnPropertyChanged(nameof(WindowTitle));
+                OnPropertyChanged(nameof(WindowTitleText));
+                OnPropertyChanged(nameof(WindowClassName));
+                OnPropertyChanged(nameof(WindowClassNameText));
+                OnPropertyChanged(nameof(ImagePath));
+                OnPropertyChanged(nameof(Threshold));
+                OnPropertyChanged(nameof(SearchColor));
+                OnPropertyChanged(nameof(Timeout));
+                OnPropertyChanged(nameof(Interval));
+                OnPropertyChanged(nameof(MouseButton));
+                OnPropertyChanged(nameof(Ctrl));
+                OnPropertyChanged(nameof(Alt));
+                OnPropertyChanged(nameof(Shift));
+                OnPropertyChanged(nameof(Key));
+                OnPropertyChanged(nameof(X));
+                OnPropertyChanged(nameof(Y));
+                OnPropertyChanged(nameof(Wait));
+                OnPropertyChanged(nameof(LoopCount));
+                OnPropertyChanged(nameof(ModelPath));
+                OnPropertyChanged(nameof(ClassID));
+                OnPropertyChanged(nameof(SelectedItemType));
+                OnPropertyChanged(nameof(SelectedMouseButton));
+
                 // 設定画面表示用
                 OnPropertyChanged(nameof(SearchColorBrush));
                 OnPropertyChanged(nameof(SearchColorText));
@@ -977,30 +974,6 @@ namespace MacroPanels.ViewModel
                 UpdateProperties();
             }
         }
-
-        [RelayCommand]
-        public void BrowseNamesFile()
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "Names Files (*.*)|*.*|All Files (*.*)|*.*",
-                FilterIndex = 1,
-                Multiselect = false,
-            };
-            if (dialog.ShowDialog() == true)
-            {
-                if (Item is IfImageExistAIItem ifImageExistAIItem)
-                {
-                    ifImageExistAIItem.NamesFilePath = dialog.FileName;
-                }
-                else if (Item is IfImageNotExistAIItem ifImageNotExistAIItem)
-                {
-                    ifImageNotExistAIItem.NamesFilePath = dialog.FileName;
-                }
-                UpdateProperties();
-            }
-        }
-
         #endregion
 
         #region Call from MainWindowViewModel

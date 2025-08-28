@@ -149,23 +149,10 @@
                         </StackPanel.Visibility>
                     </StackPanel>
                     
-                    <!-- NamesFilePathの設定 -->
+                    <!-- ClassIDの設定 -->
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Namesファイル:"/>
-                        <TextBox Text="{Binding NamesFilePath, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="300"/>
-                        <Button Content="参照" Command="{Binding BrowseNamesFileCommand}"/>
-                        <StackPanel.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsIfImageExistAIItem"/>
-                                <Binding Path="IsIfImageNotExistAIItem"/>
-                            </MultiBinding>
-                        </StackPanel.Visibility>
-                    </StackPanel>
-                    
-                    <!-- TargetLabelの設定 -->
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="ラベル:"/>
-                        <TextBox Text="{Binding TargetLabel, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                        <TextBlock Text="クラスID:"/>
+                        <TextBox Text="{Binding ClassID, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsIfImageExistAIItem"/>

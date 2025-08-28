@@ -125,8 +125,7 @@ namespace MacroPanels.Model.List.Interface
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
         string ModelPath { get; set; }
-        string NamesFilePath { get; set; }
-        string TargetLabel { get; set; }
+        int ClassID { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
         int Timeout { get; set; }
@@ -137,8 +136,7 @@ namespace MacroPanels.Model.List.Interface
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
         string ModelPath { get; set; }
-        string NamesFilePath { get; set; }
-        string TargetLabel { get; set; }
+        int ClassID { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
         int Timeout { get; set; }

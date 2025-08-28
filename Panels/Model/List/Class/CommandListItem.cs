@@ -589,9 +589,7 @@ namespace MacroPanels.List.Class
         [ObservableProperty]
         private string _modelPath = string.Empty;
         [ObservableProperty]
-        private string _namesFilePath = string.Empty;
-        [ObservableProperty]
-        private string _targetLabel = string.Empty;
+        private int _classID = 0;
         [ObservableProperty]
         private double _confThreshold = 0.5f;
         [ObservableProperty]
@@ -606,7 +604,7 @@ namespace MacroPanels.List.Class
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-             $"{LineNumber}->{Pair?.LineNumber} 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / ラベル:{string.Join(",", TargetLabel)} / 閾値:{ConfThreshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+             $"{LineNumber}->{Pair?.LineNumber} 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public IfImageExistAIItem() { }
 
@@ -617,8 +615,7 @@ namespace MacroPanels.List.Class
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
                 ModelPath = item.ModelPath;
-                NamesFilePath = item.NamesFilePath;
-                TargetLabel = item.TargetLabel;
+                ClassID = item.ClassID;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
                 Timeout = item.Timeout;
@@ -633,7 +630,7 @@ namespace MacroPanels.List.Class
         }
     }
 
-    public partial class IfImageNotExistAIItem : CommandListItem, IIfImageNotExistAIItem, IIfImageExistAISettings
+    public partial class IfImageNotExistAIItem : CommandListItem, IIfItem, IIfImageNotExistAIItem, IIfImageExistAISettings
     {
         [ObservableProperty]
         private string _windowTitle = string.Empty;
@@ -642,9 +639,7 @@ namespace MacroPanels.List.Class
         [ObservableProperty]
         private string _modelPath = string.Empty;
         [ObservableProperty]
-        private string _namesFilePath = string.Empty;
-        [ObservableProperty]
-        private string _targetLabel = string.Empty;
+        private int _classID = 0;
         [ObservableProperty]
         private double _confThreshold = 0.45f;
         [ObservableProperty]
@@ -657,7 +652,7 @@ namespace MacroPanels.List.Class
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / ラベル:{TargetLabel} / 閾値:{ConfThreshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
         public IfImageNotExistAIItem() { }
         public IfImageNotExistAIItem(IfImageNotExistAIItem? item = null) : base(item)
         {
@@ -666,8 +661,7 @@ namespace MacroPanels.List.Class
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
                 ModelPath = item.ModelPath;
-                NamesFilePath = item.NamesFilePath;
-                TargetLabel = item.TargetLabel;
+                ClassID = item.ClassID;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
                 Timeout = item.Timeout;

@@ -20,6 +20,7 @@
     <ProjectReference Include="..\LogHelper\LogHelper.csproj" />
     <ProjectReference Include="..\OpenCVHelper\OpenCVHelper.csproj" />
     <ProjectReference Include="..\WindowInfoHelper\WindowHelper.csproj" />
+    <ProjectReference Include="..\YoloV8DetectHelper\YoLoWinLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -15,6 +15,7 @@ using System.Net.Mail;
 using KeyHelper;
 using MouseHelper;
 using System.IO;
+using YoloWinLib;
 
 namespace MacroPanels.Command.Class
 {
@@ -59,7 +60,7 @@ namespace MacroPanels.Command.Class
 
             return result;
         }
-        
+
         protected abstract Task<bool> DoExecuteAsync(CancellationToken cancellationToken);
 
         public bool CanExecute() => true;
@@ -238,7 +239,7 @@ namespace MacroPanels.Command.Class
     {
         new public IClickCommandSettings Settings => (IClickCommandSettings)base.Settings;
 
-        public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings){ }
+        public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
@@ -256,7 +257,7 @@ namespace MacroPanels.Command.Class
                 default:
                     throw new Exception("マウスボタンが不正です。");
             }
-            
+
             OnDoingCommand?.Invoke(this, $"クリックしました。({Settings.X}, {Settings.Y})");
 
             return true;
@@ -391,6 +392,19 @@ namespace MacroPanels.Command.Class
         }
     }
 
+    public class EndIfCommand : BaseCommand, ICommand
+    {
+        public EndIfCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            return await Task.Run(() =>
+            {
+                ResetChildrenProgress();
+                return true;
+            });
+        }
+    }
+
     public class LoopCommand : BaseCommand, ICommand, ILoopCommand
     {
         new public ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings;
@@ -401,7 +415,7 @@ namespace MacroPanels.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            if ( Children == null || !Children.Any())
+            if (Children == null || !Children.Any())
             {
                 throw new Exception("ループ内に要素がありません。");
             }
@@ -459,6 +473,70 @@ namespace MacroPanels.Command.Class
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             return await Task.Run(() => false);
+        }
+    }
+
+    public class IfImageExistAICommand : BaseCommand, ICommand, IIfImageExistAICommand
+    {
+        new public IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings;
+
+        public IfImageExistAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
+        {
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            if (Children == null || !Children.Any())
+            {
+                throw new Exception("If内に要素がありません。");
+            }
+
+            //string[] labels = {"small", "medium", "large" }; // TODO: 設定で変更できるようにする
+            YoloWin.Init(Settings.ModelPath, 640, true);
+
+            var stopwatch = Stopwatch.StartNew();
+
+            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
+            {
+                var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle).Detections;
+
+                if (det.Count > 0)
+                {
+                    var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
+
+                    if (best.ClassId == Settings.ClassID)
+                    {
+                        OnDoingCommand?.Invoke(this, $"画像が見つかりました。({best.Rect.X}, {best.Rect.Y})");
+
+                        return await ExecuteChildrenAsync(cancellationToken);
+                    }
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
+
+                await Task.Delay(Settings.Interval, cancellationToken);
+            }
+
+            OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
+
+            return true;
+        }
+    }
+
+    public class IfImageNotExistAICommand : BaseCommand, ICommand, IIfImageExistAICommand
+    {
+        new public IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings;
+        public IfImageNotExistAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
+        {
+        }
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            return true;
         }
     }
 }

@@ -37,7 +37,8 @@ namespace MacroPanels.Model.MacroFactory
             {
                 IfImageExistItem exist => CreateIfCommand(parent, exist, items),
                 IfImageNotExistItem notExist => CreateIfCommand(parent, notExist, items),
-                //IfImageExistAIItem aiExist => CreateIfCommand(parent, aiExist, items), // TODO: implement AI command
+                IfImageExistAIItem aiExist => CreateIfCommand(parent, aiExist, items),
+                IfImageNotExistAIItem aiNotExist => CreateIfCommand(parent, aiNotExist, items),
                 LoopItem loop => CreateLoopComand(parent, loop, items),
                 EndLoopItem => null,
                 _ => throw new ArgumentOutOfRangeException()
@@ -52,26 +53,10 @@ namespace MacroPanels.Model.MacroFactory
 
             IIfCommand ifCommand = ifItem switch
             {
-                IfImageExistItem exist => new IfImageExistCommand(parent, new WaitImageCommandSettings()
-                {
-                    ImagePath = exist.ImagePath,
-                    Threshold = exist.Threshold,
-                    SearchColor = exist.SearchColor,
-                    Timeout = exist.Timeout,
-                    Interval = exist.Interval,
-                    WindowTitle = exist.WindowTitle,
-                    WindowClassName = exist.WindowClassName,
-                }) { LineNumber = exist.LineNumber, IsEnabled = exist.IsEnable },
-                IfImageNotExistItem notExist => new IfImageNotExistCommand(parent, new WaitImageCommandSettings()
-                {
-                    ImagePath = notExist.ImagePath,
-                    Threshold = notExist.Threshold,
-                    SearchColor = notExist.SearchColor,
-                    Timeout = notExist.Timeout,
-                    Interval = notExist.Interval,
-                    WindowTitle = notExist.WindowTitle,
-                    WindowClassName = notExist.WindowClassName,
-                }) { LineNumber = notExist.LineNumber, IsEnabled = notExist.IsEnable },
+                IfImageExistItem exist => new IfImageExistCommand(parent, exist) { LineNumber = exist.LineNumber, IsEnabled = exist.IsEnable },
+                IfImageNotExistItem notExist => new IfImageNotExistCommand(parent, notExist){ LineNumber = notExist.LineNumber, IsEnabled = notExist.IsEnable },
+                IfImageExistAIItem existAI => new IfImageExistAICommand(parent, existAI) { LineNumber = existAI.LineNumber, IsEnabled = existAI.IsEnable },
+                IfImageNotExistAIItem notExistAI => new IfImageNotExistAICommand(parent, notExistAI) { LineNumber = notExistAI.LineNumber, IsEnabled = notExistAI.IsEnable },
                 _ => throw new ArgumentOutOfRangeException()
             };
 
