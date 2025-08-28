@@ -4,12 +4,13 @@ using MacroPanels.List.Class;
 using MacroPanels.Model.List.Interface;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace MacroPanels.Model.MacroFactory
 {
     /// <summary>
     /// シンプル（子やペア解決が不要）なコマンドの生成を型登録で管理するレジストリ。
-    /// 新規コマンドは RegisterDefaults に1行追加するだけで対応可能。
+    /// 新規コマンドは RegisterDefaults に1行追加、または Attribute による自動登録が可能。
     /// </summary>
     public static class CommandRegistry
     {
@@ -19,6 +20,8 @@ namespace MacroPanels.Model.MacroFactory
         static CommandRegistry()
         {
             RegisterDefaults();
+            // 属性による自動登録（同一キーは上書き）
+            RegisterFromAssembly(typeof(WaitItem).Assembly);
         }
 
         /// <summary>
@@ -46,6 +49,33 @@ namespace MacroPanels.Model.MacroFactory
 
             command = null;
             return false;
+        }
+
+        /// <summary>
+        /// Attribute に基づき、アセンブリから単純コマンドを自動登録する。
+        /// </summary>
+        public static void RegisterFromAssembly(Assembly assembly)
+        {
+            foreach (var type in assembly.GetTypes())
+            {
+                if (!typeof(ICommandListItem).IsAssignableFrom(type)) continue;
+
+                var attr = type.GetCustomAttribute<SimpleCommandBindingAttribute>();
+                if (attr == null) continue;
+
+                var itemType = type;
+                var commandCtor = attr.CommandType.GetConstructor(new[] { typeof(ICommand), typeof(ICommandSettings) })
+                                  ?? throw new InvalidOperationException($"コマンド型 {attr.CommandType.Name} に (ICommand, ICommandSettings) コンストラクタがありません。");
+
+                s_simpleMap[itemType] = (parent, item) =>
+                {
+                    if (!attr.SettingsInterfaceType.IsInstanceOfType(item))
+                    {
+                        throw new InvalidOperationException($"{item.GetType().Name} は {attr.SettingsInterfaceType.Name} を実装していません。");
+                    }
+                    return (ICommand)commandCtor.Invoke(new object[] { parent, (ICommandSettings)item });
+                };
+            }
         }
 
         private static void RegisterDefaults()

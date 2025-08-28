@@ -14,6 +14,7 @@ using System.Text.Json.Serialization;
 using OpenCvSharp.Features2D;
 using System.Windows.Input;
 using System.Windows.Media;
+using MacroPanels.Model.MacroFactory;
 
 namespace MacroPanels.List.Class
 {
@@ -65,6 +66,7 @@ namespace MacroPanels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(WaitImageCommand), typeof(IWaitImageCommandSettings))]
     public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
@@ -113,6 +115,7 @@ namespace MacroPanels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(ClickImageCommand), typeof(IClickImageCommandSettings))]
     public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickImageCommandSettings
     {
         [ObservableProperty]
@@ -165,6 +168,7 @@ namespace MacroPanels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(HotkeyCommand), typeof(IHotkeyCommandSettings))]
     public partial class HotkeyItem : CommandListItem, IHotkeyItem, IHotkeyCommandSettings
     {
         [ObservableProperty]
@@ -224,6 +228,7 @@ namespace MacroPanels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(ClickCommand), typeof(IClickCommandSettings))]
     public partial class ClickItem : CommandListItem, IClickItem, IClickCommandSettings
     {
         [ObservableProperty]
@@ -264,6 +269,7 @@ namespace MacroPanels.List.Class
         }
     }
 
+    [SimpleCommandBinding(typeof(WaitCommand), typeof(IWaitCommandSettings))]
     public partial class WaitItem : CommandListItem, IWaitItem, IWaitCommandSettings
     {
         [ObservableProperty]
