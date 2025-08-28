@@ -130,6 +130,7 @@ namespace MacroPanels.ViewModel
                 nameof(ItemType.EndIf) => new EndIfItem(),
                 nameof(ItemType.IfImageExistAI) => new IfImageExistAIItem(),
                 nameof(ItemType.IfImageNotExistAI) => new IfImageNotExistAIItem(),
+                nameof(ItemType.ExecuteProgram) => new ExecuteProgramItem(),
                 _ => null
             };
 

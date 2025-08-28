@@ -278,6 +278,42 @@
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
+
+                    <!-- プログラムパスの設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="プログラムパス:"/>
+                        <TextBox Text="{Binding ProgramPath, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="300"/>
+                        <Button Content="参照" Command="{Binding BrowseProgramCommand}"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsExecuteProgramItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+
+                    <!-- 引数の設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="引数:"/>
+                        <TextBox Text="{Binding Arguments, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsExecuteProgramItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+                    
+                    <!-- ワーキングディレクトリの設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="ワーキングディレクトリ:"/>
+                        <TextBox Text="{Binding WorkingDirectory, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="300"/>
+                        <Button Content="参照" Command="{Binding BrowseWorkingDirectoryCommand}"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsExecuteProgramItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+
                 </StackPanel>
                 
                 <!-- 画像のプレビュー -->

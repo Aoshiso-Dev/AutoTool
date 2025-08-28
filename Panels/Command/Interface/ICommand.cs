@@ -37,4 +37,5 @@ namespace MacroPanels.Command.Interface
     public interface IEndLoopCommand : ICommand { new IEndLoopCommandSettings Settings { get; } }
     public interface IBreakCommand : ICommand { }
     public interface IIfImageExistAICommand : ICommand, IIfCommand { new IIfImageExistAISettings Settings { get; } }
+    public interface IExecuteProgramCommand : ICommand { new IExecuteProgramCommandSettings Settings { get; } }
 }

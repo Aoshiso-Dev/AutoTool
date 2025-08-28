@@ -539,4 +539,34 @@ namespace MacroPanels.Command.Class
             return true;
         }
     }
+
+    public class ExecuteProgramCommand : BaseCommand, ICommand, IExecuteProgramCommand
+    {
+        new public IExecuteProgramCommandSettings Settings => (IExecuteProgramCommandSettings)base.Settings;
+        public ExecuteProgramCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = Settings.ProgramPath,
+                    Arguments = Settings.Arguments,
+                    WorkingDirectory = Settings.WorkingDirectory,
+                    UseShellExecute = true,
+                };
+                await Task.Run(() =>
+                {
+                    Process.Start(startInfo);
+                    OnDoingCommand?.Invoke(this, $"プログラムを実行しました。");
+                });
+            }
+            catch (Exception ex)
+            {
+                OnDoingCommand?.Invoke(this, $"プログラムの実行に失敗しました: {ex.Message}");
+                return false;
+            }
+            return await Task.FromResult(true);
+        }
+    }
 }

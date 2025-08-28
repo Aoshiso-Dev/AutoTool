@@ -675,4 +675,36 @@ namespace MacroPanels.List.Class
         }
     }
 
+    public partial class ExecuteProgramItem : CommandListItem, IExecuteProgramItem, IExecuteProgramCommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _programPath = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _arguments = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _workingDirectory = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private bool _waitForExit = false;
+
+        new public string Description => $"ファイルパス:{System.IO.Path.GetFileName(ProgramPath)} / 引数:{Arguments} / 作業フォルダ:{WorkingDirectory}";
+        public ExecuteProgramItem() { }
+        public ExecuteProgramItem(ExecuteProgramItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                ProgramPath = item.ProgramPath;
+                Arguments = item.Arguments;
+                WorkingDirectory = item.WorkingDirectory;
+                WaitForExit = item.WaitForExit;
+            }
+        }
+        public new ICommandListItem Clone()
+        {
+            return new ExecuteProgramItem(this);
+        }
+    }
 }

@@ -142,4 +142,12 @@ namespace MacroPanels.Model.List.Interface
         int Timeout { get; set; }
         int Interval { get; set; }
     }
+
+    public interface IExecuteProgramItem : ICommandListItem
+    {
+        public string ProgramPath { get; set; }
+        public string Arguments { get; set; }
+        public string WorkingDirectory { get; set; }
+        public bool WaitForExit { get; set; }
+    }
 }

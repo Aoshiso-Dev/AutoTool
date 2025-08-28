@@ -86,7 +86,7 @@ namespace MacroPanels.ViewModel
         public bool IsIfImageExistAIItem => Item is IfImageExistAIItem;
         public bool IsIfImageNotExistAIItem => Item is IfImageNotExistAIItem;
         public bool IsEndIfItem => Item is EndIfItem;
-
+        public bool IsExecuteProgramItem => Item is ExecuteProgramItem;
         #endregion
 
         #region Properties
@@ -614,9 +614,72 @@ namespace MacroPanels.ViewModel
             }
         }
 
+        public string ProgramPath
+        {
+            get
+            {
+                return Item is ExecuteProgramItem executeProgramItem ? executeProgramItem.ProgramPath : string.Empty;
+            }
+            set
+            {
+                if (Item is ExecuteProgramItem executeProgramItem)
+                {
+                    executeProgramItem.ProgramPath = value;
+                }
+                UpdateProperties();
+            }
+        }
+
+        public string Arguments
+        {
+            get
+            {
+                return Item is ExecuteProgramItem executeProgramItem ? executeProgramItem.Arguments : string.Empty;
+            }
+            set
+            {
+                if (Item is ExecuteProgramItem executeProgramItem)
+                {
+                    executeProgramItem.Arguments = value;
+                }
+                UpdateProperties();
+            }
+        }
+
+        public string WorkingDirectory
+        {
+            get
+            {
+                return Item is ExecuteProgramItem executeProgramItem ? executeProgramItem.WorkingDirectory : string.Empty;
+            }
+            set
+            {
+                if (Item is ExecuteProgramItem executeProgramItem)
+                {
+                    executeProgramItem.WorkingDirectory = value;
+                }
+                UpdateProperties();
+            }
+        }
+
+        public bool WaitForExit
+        {
+            get
+            {
+                return Item is ExecuteProgramItem executeProgramItem ? executeProgramItem.WaitForExit : false;
+            }
+            set
+            {
+                if (Item is ExecuteProgramItem executeProgramItem)
+                {
+                    executeProgramItem.WaitForExit = value;
+                }
+                UpdateProperties();
+            }
+        }
         #endregion
 
-            #region ColorPicker
+        #region ColorPicker
 
         public Brush SearchColorBrush
         {
@@ -795,6 +858,7 @@ namespace MacroPanels.ViewModel
             OnPropertyChanged(nameof(IsEndIfItem));
             OnPropertyChanged(nameof(IsIfImageExistAIItem));
             OnPropertyChanged(nameof(IsIfImageNotExistAIItem));
+            OnPropertyChanged(nameof(IsExecuteProgramItem));
         }
 
         void UpdateProperties()
@@ -830,6 +894,10 @@ namespace MacroPanels.ViewModel
                 OnPropertyChanged(nameof(ClassID));
                 OnPropertyChanged(nameof(SelectedItemType));
                 OnPropertyChanged(nameof(SelectedMouseButton));
+                OnPropertyChanged(nameof(ProgramPath));
+                OnPropertyChanged(nameof(Arguments));
+                OnPropertyChanged(nameof(WorkingDirectory));
+                OnPropertyChanged(nameof(WaitForExit));
 
                 // 設定画面表示用
                 OnPropertyChanged(nameof(SearchColorBrush));
@@ -970,6 +1038,40 @@ namespace MacroPanels.ViewModel
                 else if (Item is IfImageNotExistAIItem ifImageNotExistAIItem)
                 {
                     ifImageNotExistAIItem.ModelPath = dialog.FileName;
+                }
+                UpdateProperties();
+            }
+        }
+
+        [RelayCommand]
+        public void BrowseProgram()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Executable Files (*.exe;*.bat;*.cmd)|*.exe;*.bat;*.cmd|All Files (*.*)|*.*",
+                FilterIndex = 1,
+                Multiselect = false,
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                if (Item is ExecuteProgramItem executeProgramItem)
+                {
+                    executeProgramItem.ProgramPath = dialog.FileName;
+                }
+                UpdateProperties();
+            }
+        }
+
+        [RelayCommand]
+        public void BrowseWorkingDirectory()
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog() { Multiselect = false };
+
+            if (dialog.ShowDialog() == true)
+            {
+                if (Item is ExecuteProgramItem executeProgramItem)
+                {
+                    executeProgramItem.WorkingDirectory = dialog.FolderName;
                 }
                 UpdateProperties();
             }

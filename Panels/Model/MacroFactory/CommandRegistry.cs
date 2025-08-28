@@ -88,6 +88,7 @@ namespace MacroPanels.Model.MacroFactory
             RegisterSimple<WaitItem>((p, it) => new WaitCommand(p, (IWaitCommandSettings)it));
             RegisterSimple<BreakItem>((p, it) => new BreakCommand(p, new CommandSettings()));
             RegisterSimple<EndIfItem>((p, it) => new EndIfCommand(p, new CommandSettings()));
+            RegisterSimple<ExecuteProgramItem>((p, it) => new ExecuteProgramCommand(p, (IExecuteProgramCommandSettings)it));
         }
     }
 }

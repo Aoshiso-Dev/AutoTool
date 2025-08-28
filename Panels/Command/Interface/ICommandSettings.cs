@@ -69,7 +69,6 @@ namespace MacroPanels.Command.Interface
         ICommand? Pair { get; set; }
     }
 
-    // Added for YOLO based image exist AI command
     public interface IIfImageExistAISettings : ICommandSettings
     {
         string ModelPath { get; set; }
@@ -80,5 +79,12 @@ namespace MacroPanels.Command.Interface
         double IoUThreshold { get; set; }
         int Timeout { get; set; }
         int Interval { get; set; }
+    }
+
+    public interface IExecuteProgramCommandSettings : ICommandSettings
+    {
+        string ProgramPath { get; set; }
+        string Arguments { get; set; }
+        string WorkingDirectory { get; set; }
     }
 }
