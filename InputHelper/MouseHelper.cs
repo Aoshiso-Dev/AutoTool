@@ -49,6 +49,7 @@ namespace MouseHelper
             }
 
             Cursor.Lock(targetX, targetY);
+            Thread.Sleep(300);
             mouse_event(downEvent, 0, 0, 0, 0);
             Thread.Sleep(30);
             mouse_event(upEvent, 0, 0, 0, 0);
@@ -477,6 +478,7 @@ namespace MouseHelper
                 while (isLocked)
                 {
                     SetPos(x, y);
+                    Thread.Sleep(10);
                 }
             });
             mouseMoveThread.Start();

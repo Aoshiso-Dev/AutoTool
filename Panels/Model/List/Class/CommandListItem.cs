@@ -530,4 +530,105 @@ namespace Panels.List.Class
         }
     }
 
+    public partial class IfImageExistAIItem : CommandListItem, IIfItem, IIfImageExistAIItem, IIfImageExistAISettings
+    {
+        [ObservableProperty]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
+        private string _windowClassName = string.Empty;
+        [ObservableProperty]
+        private string _modelPath = string.Empty;
+        [ObservableProperty]
+        private string _namesFilePath = string.Empty;
+        [ObservableProperty]
+        private string _targetLabel = string.Empty;
+        [ObservableProperty]
+        private double _confThreshold = 0.5f;
+        [ObservableProperty]
+        private double _ioUThreshold = 0.25f;
+        [ObservableProperty]
+        private string[] _targetLabels = Array.Empty<string>();
+        [ObservableProperty]
+        private int _timeout = 5000;
+        [ObservableProperty]
+        private int _interval = 500;
+        [ObservableProperty]
+        private ICommandListItem? _pair = null;
+
+        new public string Description =>
+             $"{LineNumber}->{Pair?.LineNumber} 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / ラベル:{string.Join(",", TargetLabel)} / 閾値:{ConfThreshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+
+        public IfImageExistAIItem() { }
+
+        public IfImageExistAIItem(IfImageExistAIItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                WindowTitle = item.WindowTitle;
+                WindowClassName = item.WindowClassName;
+                ModelPath = item.ModelPath;
+                NamesFilePath = item.NamesFilePath;
+                TargetLabel = item.TargetLabel;
+                ConfThreshold = item.ConfThreshold;
+                IoUThreshold = item.IoUThreshold;
+                Timeout = item.Timeout;
+                Interval = item.Interval;
+                Pair = item.Pair;
+            }
+        }
+
+        public new ICommandListItem Clone()
+        {
+            return new IfImageExistAIItem(this);
+        }
+    }
+
+    public partial class IfImageNotExistAIItem : CommandListItem, IIfImageNotExistAIItem, IIfImageExistAISettings
+    {
+        [ObservableProperty]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
+        private string _windowClassName = string.Empty;
+        [ObservableProperty]
+        private string _modelPath = string.Empty;
+        [ObservableProperty]
+        private string _namesFilePath = string.Empty;
+        [ObservableProperty]
+        private string _targetLabel = string.Empty;
+        [ObservableProperty]
+        private double _confThreshold = 0.45f;
+        [ObservableProperty]
+        private double _ioUThreshold = 0.25f;
+        [ObservableProperty]
+        private int _timeout = 5000;
+        [ObservableProperty]
+        private int _interval = 500;
+        [ObservableProperty]
+        private ICommandListItem? _pair = null;
+
+        new public string Description =>
+            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / ラベル:{TargetLabel} / 閾値:{ConfThreshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        public IfImageNotExistAIItem() { }
+        public IfImageNotExistAIItem(IfImageNotExistAIItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                WindowTitle = item.WindowTitle;
+                WindowClassName = item.WindowClassName;
+                ModelPath = item.ModelPath;
+                NamesFilePath = item.NamesFilePath;
+                TargetLabel = item.TargetLabel;
+                ConfThreshold = item.ConfThreshold;
+                IoUThreshold = item.IoUThreshold;
+                Timeout = item.Timeout;
+                Interval = item.Interval;
+                Pair = item.Pair;
+            }
+        }
+        public new ICommandListItem Clone()
+        {
+            return new IfImageNotExistAIItem(this);
+        }
+    }
+
 }

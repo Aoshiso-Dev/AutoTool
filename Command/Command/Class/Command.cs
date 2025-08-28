@@ -14,6 +14,7 @@ using Command.Message;
 using System.Net.Mail;
 using KeyHelper;
 using MouseHelper;
+using YoloWinLib;
 
 namespace Command.Class
 {
@@ -422,6 +423,88 @@ namespace Command.Class
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             return await Task.Run(() => false);
+        }
+    }
+
+    public class IfImageExistAICommand : BaseCommand, IIfImageExistAICommand
+    {
+        new public IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings;
+
+        public IfImageExistAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            string[] labels = { "small", "midium", "large" };
+            YoloWin.Init(Settings.ModelPath, inputSize: 640, useDirectML: false, labels: labels);
+
+            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
+            {
+                var result = YoloWin.DetectFromWindowTitle(Settings.WindowTitle, 0.25f, 0.45f, draw: true);
+                result.Detections.ToList().ForEach(d =>
+                {
+                    Debug.WriteLine($"Id: {d.ClassId}, Score: {d.Score}, Rect: {d.Rect}");
+                });
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
+
+                await Task.Delay(Settings.Interval, cancellationToken);
+
+
+
+                // 画面キャプチャ
+                //var mat = ScreenCaptureHelper.CaptureWindow(Settings.WindowTitle, Settings.WindowClassName);
+
+                /*
+                // AI画像検出
+                var point = await YoloOnnxDetector.SearchObjectOnnx(
+                    token: cancellationToken,
+                    onnxPath: Settings.ModelPath,
+                    namesFilePath: Settings.NamesFilePath,
+                    targetClassName: Settings.TargetLabel,
+                    windowTitle: Settings.WindowTitle,
+                    windowClassName: Settings.WindowClassName
+                );
+
+                // 対象ラベルが検出されたか判定
+                if (point is OpenCvSharp.Point p)
+                {
+                    foreach (var command in Children)
+                    {
+                        WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
+                    }
+
+                    foreach (var command in Children)
+                    {
+                        if (!await command.Execute(cancellationToken))
+                        {
+                            return false;
+                        }
+
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
+
+                await Task.Delay(Settings.Interval, cancellationToken);
+            }
+
+            return false;
+            */
+
+            }
+            return true;
         }
     }
 }

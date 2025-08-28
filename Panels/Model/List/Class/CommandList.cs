@@ -153,12 +153,20 @@ namespace Panels.List.Class
                 {
                     nestLevel++;
                 }
+                if (item.ItemType == ItemType.IfImageExistAI)
+                {
+                    nestLevel++;
+                }
+                if (item.ItemType == ItemType.IfImageNotExistAI)
+                {
+                    nestLevel++;
+                }
             }
         }
 
         public void PairIfItems()
         {
-            var ifItems = Items.OfType<IIfItem>().Where(x => x.ItemType == ItemType.IfImageExist || x.ItemType == ItemType.IfImageNotExist).OrderBy(x => x.LineNumber).ToList();
+            var ifItems = Items.OfType<IIfItem>().Where(x => x.ItemType == ItemType.IfImageExist || x.ItemType == ItemType.IfImageNotExist || x.ItemType == ItemType.IfImageExistAI || x.ItemType == ItemType.IfImageNotExistAI).OrderBy(x => x.LineNumber).ToList();
             var endIfItems = Items.OfType<IEndIfItem>().Where(x => x.ItemType == ItemType.EndIf).OrderBy(x => x.LineNumber).ToList();
 
             foreach (var ifItem in ifItems)
@@ -276,6 +284,12 @@ namespace Panels.List.Class
                             break;
                         case nameof(ItemType.EndIf):
                             Add(new EndIfItem(item as EndIfItem));
+                            break;
+                        case nameof(ItemType.IfImageExistAI):
+                            Add(new IfImageExistAIItem(item as IfImageExistAIItem));
+                            break;
+                        case nameof(ItemType.IfImageNotExistAI):
+                            Add(new IfImageNotExistAIItem(item as IfImageNotExistAIItem));
                             break;
                     }
 

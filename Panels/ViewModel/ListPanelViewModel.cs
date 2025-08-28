@@ -47,13 +47,21 @@ namespace Panels.ViewModel
             }
             set
             {
+                if (value == null)
+                {
+                    return;
+                }
+
                 var existingItem = CommandList.Items.FirstOrDefault(x => x.IsSelected == true);
 
-                var index = CommandList.Items.IndexOf(existingItem);
+                if (existingItem != null)
+                {
+                    var index = CommandList.Items.IndexOf(existingItem);
 
-                CommandList.Override(index, value);
+                    CommandList.Override(index, value);
 
-                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+                    CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+                }
             }
         }
 
@@ -120,6 +128,8 @@ namespace Panels.ViewModel
                 nameof(ItemType.IfImageExist) => new IfImageExistItem(),
                 nameof(ItemType.IfImageNotExist) => new IfImageNotExistItem(),
                 nameof(ItemType.EndIf) => new EndIfItem(),
+                nameof(ItemType.IfImageExistAI) => new IfImageExistAIItem(),
+                nameof(ItemType.IfImageNotExistAI) => new IfImageNotExistAIItem(),
                 _ => null
             };
 

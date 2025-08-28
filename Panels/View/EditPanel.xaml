@@ -83,6 +83,8 @@
                                 <Binding Path="IsHotkeyItem"/>
                                 <Binding Path="IsIfImageExistItem"/>
                                 <Binding Path="IsIfImageNotExistItem"/>
+                                <Binding Path="IsIfImageExistAIItem"/>
+                                <Binding Path="IsIfImageNotExistAIItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
@@ -133,6 +135,44 @@
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
+                    
+                    <!-- ONNXモデルの設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="ONNXモデル:"/>
+                        <TextBox Text="{Binding ModelPath, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="300"/>
+                        <Button Content="参照" Command="{Binding BrowseModelCommand}"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsIfImageExistAIItem"/>
+                                <Binding Path="IsIfImageNotExistAIItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+                    
+                    <!-- NamesFilePathの設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Namesファイル:"/>
+                        <TextBox Text="{Binding NamesFilePath, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="300"/>
+                        <Button Content="参照" Command="{Binding BrowseNamesFileCommand}"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsIfImageExistAIItem"/>
+                                <Binding Path="IsIfImageNotExistAIItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+                    
+                    <!-- TargetLabelの設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="ラベル:"/>
+                        <TextBox Text="{Binding TargetLabel, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsIfImageExistAIItem"/>
+                                <Binding Path="IsIfImageNotExistAIItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
 
                     <!-- タイムアウトの設定 -->
                     <StackPanel Orientation="Horizontal">
@@ -145,6 +185,8 @@
                                 <Binding Path="IsClickImageItem"/>
                                 <Binding Path="IsIfImageExistItem"/>
                                 <Binding Path="IsIfImageNotExistItem"/>
+                                <Binding Path="IsIfImageExistAIItem"/>
+                                <Binding Path="IsIfImageNotExistAIItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
@@ -160,6 +202,8 @@
                                 <Binding Path="IsClickImageItem"/>
                                 <Binding Path="IsIfImageExistItem"/>
                                 <Binding Path="IsIfImageNotExistItem"/>
+                                <Binding Path="IsIfImageExistAIItem"/>
+                                <Binding Path="IsIfImageNotExistAIItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>

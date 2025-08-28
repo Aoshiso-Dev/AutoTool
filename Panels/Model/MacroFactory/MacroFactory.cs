@@ -94,6 +94,9 @@ namespace Panels.Model.MacroFactory
                 case BreakItem breakItem:
                     command = new BreakCommand(parent, new CommandSettings());
                     break;
+                case IfImageExistAIItem aiImageDetectItem:
+                    command = CreateIfCommand(parent, aiImageDetectItem, items);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -216,6 +219,21 @@ namespace Panels.Model.MacroFactory
                     })
                     {
                         LineNumber = ifImageNotExistItem.LineNumber,
+                    };
+                    break;
+                case IfImageExistAIItem ifImageExistAIItem:
+                    ifCommand = new IfImageExistAICommand(parent, new AIImageDetectCommandSettings()
+                    {
+                        ModelPath = ifImageExistAIItem.ModelPath,
+                        NamesFilePath = ifImageExistAIItem.NamesFilePath,
+                        TargetLabel = ifImageExistAIItem.TargetLabel,
+                        Timeout = ifImageExistAIItem.Timeout,
+                        Interval = ifImageExistAIItem.Interval,
+                        WindowTitle = ifImageExistAIItem.WindowTitle,
+                        WindowClassName = ifImageExistAIItem.WindowClassName,
+                    })
+                    {
+                        LineNumber = ifImageExistAIItem.LineNumber,
                     };
                     break;
                 default:

@@ -80,4 +80,14 @@ namespace Command.Interface
     public interface IBreakCommand : ICommand
     {
     }
+
+    public interface IIfImageExistAICommand : ICommand, IIfCommand
+    {
+        new IIfImageExistAISettings Settings { get; }
+    }
+
+    public interface IIfImageNotExistAICommand : ICommand, IIfCommand
+    {
+        new IIfImageExistAISettings Settings { get; }
+    }
 }

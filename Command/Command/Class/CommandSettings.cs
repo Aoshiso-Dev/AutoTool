@@ -93,4 +93,17 @@ namespace Command.Class
         {
         }
     }
+
+    public class AIImageDetectCommandSettings : CommandSettings, IIfImageExistAISettings
+    {
+        public string ModelPath { get; set; } = "";
+        public string NamesFilePath { get; set; } = "";
+        public string TargetLabel { get; set; } = "";
+        public double ConfThreshold { get; set; } = 0.45f;
+        public double IoUThreshold { get; set; } = 0.25f;
+        public string WindowTitle { get; set; } = "";
+        public string WindowClassName { get; set; } = "";
+        public int Timeout { get; set; } = 5000;
+        public int Interval { get; set; } = 500;
+    }
 }

@@ -119,4 +119,29 @@ namespace Panels.Model.List.Interface
     public interface IBreakItem : ICommandListItem
     {
     }
+
+    public interface IIfImageExistAIItem : ICommandListItem
+    {
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        string ModelPath { get; set; }
+        string NamesFilePath { get; set; }
+        string TargetLabel { get; set; }
+        double ConfThreshold { get; set; }
+        double IoUThreshold { get; set; }
+        int Timeout { get; set; }
+        int Interval { get; set; }
+    }
+    public interface IIfImageNotExistAIItem : ICommandListItem
+    {
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        string ModelPath { get; set; }
+        string NamesFilePath { get; set; }
+        string TargetLabel { get; set; }
+        double ConfThreshold { get; set; }
+        double IoUThreshold { get; set; }
+        int Timeout { get; set; }
+        int Interval { get; set; }
+    }
 }

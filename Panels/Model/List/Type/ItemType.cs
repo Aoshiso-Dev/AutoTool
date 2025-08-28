@@ -19,6 +19,8 @@ namespace Panels.Model.List.Type
         public static readonly string Break = "Break";
         public static readonly string IfImageExist = "IfImageExist";
         public static readonly string IfImageNotExist = "IfImageNotExist";
+        public static readonly string IfImageExistAI = "IfImageExistAI";
+        public static readonly string IfImageNotExistAI = "IfImageNotExistAI";
         public static readonly string EndIf = "EndIf";
 
         public static IEnumerable<string> GetTypes()
@@ -35,6 +37,8 @@ namespace Panels.Model.List.Type
                 Break,
                 IfImageExist,
                 IfImageNotExist,
+                IfImageExistAI,
+                IfImageNotExistAI,
                 EndIf
             };
         }

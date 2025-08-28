@@ -76,6 +76,8 @@ namespace Panels.ViewModel
         public bool IsBreakItem => Item is BreakItem;
         public bool IsIfImageExistItem => Item is IfImageExistItem;
         public bool IsIfImageNotExistItem => Item is IfImageNotExistItem;
+        public bool IsIfImageExistAIItem => Item is IfImageExistAIItem;
+        public bool IsIfImageNotExistAIItem => Item is IfImageNotExistAIItem;
         public bool IsEndIfItem => Item is EndIfItem;
 
         #endregion
@@ -99,6 +101,8 @@ namespace Panels.ViewModel
                     //IClickItem clickItem => clickItem.WindowTitle,
                     IIfImageExistItem ifImageExistItem => ifImageExistItem.WindowTitle,
                     IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowTitle,
+                    IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.WindowTitle,
+                    IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.WindowTitle,
                     _ => string.Empty,
                 };
             }
@@ -124,6 +128,12 @@ namespace Panels.ViewModel
                     case IIfImageNotExistItem ifImageNotExistItem:
                         ifImageNotExistItem.WindowTitle = value;
                         break;
+                    case IIfImageExistAIItem ifImageExistAIItem:
+                        ifImageExistAIItem.WindowTitle = value;
+                        break;
+                    case IIfImageNotExistAIItem ifImageNotExistAIItem:
+                        ifImageNotExistAIItem.WindowTitle = value;
+                        break;
                 }
 
                 UpdateProperties();
@@ -147,6 +157,8 @@ namespace Panels.ViewModel
                     //IClickItem clickItem => clickItem.WindowClassName,
                     IIfImageExistItem ifImageExistItem => ifImageExistItem.WindowClassName,
                     IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowClassName,
+                    IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.WindowClassName,
+                    IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.WindowClassName,
                     _ => string.Empty,
                 };
             }
@@ -171,6 +183,12 @@ namespace Panels.ViewModel
                         break;
                     case IIfImageNotExistItem ifImageNotExistItem:
                         ifImageNotExistItem.WindowClassName = value;
+                        break;
+                    case IIfImageExistAIItem ifImageExistAIItem:
+                        ifImageExistAIItem.WindowClassName = value;
+                        break;
+                    case IIfImageNotExistAIItem ifImageNotExistAIItem:
+                        ifImageNotExistAIItem.WindowClassName = value;
                         break;
                 }
 
@@ -297,6 +315,8 @@ namespace Panels.ViewModel
                     IClickImageItem clickImageItem => clickImageItem.Timeout,
                     IIfImageExistItem ifImageExistItem => ifImageExistItem.Timeout,
                     IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.Timeout,
+                    IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.Timeout,
+                    IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.Timeout,
                     _ => 0,
                 };
             }
@@ -316,6 +336,12 @@ namespace Panels.ViewModel
                     case IIfImageNotExistItem ifImageNotExistItem:
                         ifImageNotExistItem.Timeout = value;
                         break;
+                    case IIfImageExistAIItem ifImageExistAIItem:
+                        ifImageExistAIItem.Timeout = value;
+                        break;
+                    case IIfImageNotExistAIItem ifImageNotExistAIItem:
+                        ifImageNotExistAIItem.Timeout = value;
+                        break;
                 }
 
                 UpdateProperties();
@@ -332,6 +358,8 @@ namespace Panels.ViewModel
                     IClickImageItem clickImageItem => clickImageItem.Interval,
                     IIfImageExistItem ifImageExistItem => ifImageExistItem.Interval,
                     IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.Interval,
+                    IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.Interval,
+                    IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.Interval,
                     _ => 0,
                 };
             }
@@ -350,6 +378,12 @@ namespace Panels.ViewModel
                         break;
                     case IIfImageNotExistItem ifImageNotExistItem:
                         ifImageNotExistItem.Interval = value;
+                        break;
+                    case IIfImageExistAIItem ifImageExistAIItem:
+                        ifImageExistAIItem.Interval = value;
+                        break;
+                    case IIfImageNotExistAIItem ifImageNotExistAIItem:
+                        ifImageNotExistAIItem.Interval = value;
                         break;
                 }
 
@@ -521,9 +555,87 @@ namespace Panels.ViewModel
             }
         }
 
+        public string ModelPath
+        {
+            get
+            {
+                return Item switch
+                {
+                    IfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.ModelPath,
+                    IfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.ModelPath,
+                    _ => string.Empty,
+                };
+            }
+            set
+            {
+                switch (Item)
+                {
+                    case IfImageExistAIItem ifImageExistAIItem:
+                        ifImageExistAIItem.ModelPath = value;
+                        break;
+                    case IfImageNotExistAIItem ifImageNotExistAIItem:
+                        ifImageNotExistAIItem.ModelPath = value;
+                        break;
+                }
+                UpdateProperties();
+            }
+        }
+
+        public string NamesFilePath
+        {
+            get
+            {
+                return Item switch
+                {
+                    IfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.NamesFilePath,
+                    IfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.NamesFilePath,
+                    _ => string.Empty,
+                };
+            }
+            set
+            {
+                switch (Item)
+                {
+                    case IfImageExistAIItem ifImageExistAIItem:
+                        ifImageExistAIItem.NamesFilePath = value;
+                        break;
+                    case IfImageNotExistAIItem ifImageNotExistAIItem:
+                        ifImageNotExistAIItem.NamesFilePath = value;
+                        break;
+                }
+                UpdateProperties();
+            }
+        }
+
+        public string TargetLabel
+        {
+            get
+            {
+                return Item switch
+                {
+                    IfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.TargetLabel,
+                    IfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.TargetLabel,
+                    _ => string.Empty,
+                };
+            }
+            set
+            {
+                switch (Item)
+                {
+                    case IfImageExistAIItem ifImageExistAIItem:
+                        ifImageExistAIItem.TargetLabel = value;
+                        break;
+                    case IfImageNotExistAIItem ifImageNotExistAIItem:
+                        ifImageNotExistAIItem.TargetLabel = value;
+                        break;
+                }
+                UpdateProperties();
+            }
+        }
+
         #endregion
 
-        #region ColorPicker
+            #region ColorPicker
 
         public Brush SearchColorBrush
         {
@@ -658,6 +770,12 @@ namespace Panels.ViewModel
                 case nameof(ItemType.EndIf):
                     Item = new EndIfItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.EndIf) };
                     break;
+                case nameof(ItemType.IfImageExistAI):
+                    Item = new IfImageExistAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfImageExistAI) };
+                    break;
+                case nameof(ItemType.IfImageNotExistAI):
+                    Item = new IfImageNotExistAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfImageNotExistAI) };
+                    break;
             }
 
             UpdateProperties();
@@ -683,6 +801,8 @@ namespace Panels.ViewModel
             OnPropertyChanged(nameof(IsIfImageExistItem));
             OnPropertyChanged(nameof(IsIfImageNotExistItem));
             OnPropertyChanged(nameof(IsEndIfItem));
+            OnPropertyChanged(nameof(IsIfImageExistAIItem));
+            OnPropertyChanged(nameof(IsIfImageNotExistAIItem));
         }
 
         void UpdateProperties()
@@ -714,6 +834,9 @@ namespace Panels.ViewModel
             OnPropertyChanged(nameof(Y));
             OnPropertyChanged(nameof(Wait));
             OnPropertyChanged(nameof(LoopCount));
+            OnPropertyChanged(nameof(ModelPath));
+            OnPropertyChanged(nameof(NamesFilePath));
+            OnPropertyChanged(nameof(TargetLabel));
 
             // 設定画面表示用
             OnPropertyChanged(nameof(SearchColorBrush));
@@ -830,6 +953,53 @@ namespace Panels.ViewModel
                 Y = (int)captureWindow.SelectedPoint.Y;
             }
         }
+
+        [RelayCommand]
+        public void BrowseModel()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "ONNX Files (*.onnx)|*.onnx|All Files (*.*)|*.*",
+                FilterIndex = 1,
+                Multiselect = false,
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                if (Item is IfImageExistAIItem ifImageExistAIItem)
+                {
+                    ifImageExistAIItem.ModelPath = dialog.FileName;
+                }
+                else if (Item is IfImageNotExistAIItem ifImageNotExistAIItem)
+                {
+                    ifImageNotExistAIItem.ModelPath = dialog.FileName;
+                }
+                UpdateProperties();
+            }
+        }
+
+        [RelayCommand]
+        public void BrowseNamesFile()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Names Files (*.*)|*.*|All Files (*.*)|*.*",
+                FilterIndex = 1,
+                Multiselect = false,
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                if (Item is IfImageExistAIItem ifImageExistAIItem)
+                {
+                    ifImageExistAIItem.NamesFilePath = dialog.FileName;
+                }
+                else if (Item is IfImageNotExistAIItem ifImageNotExistAIItem)
+                {
+                    ifImageNotExistAIItem.NamesFilePath = dialog.FileName;
+                }
+                UpdateProperties();
+            }
+        }
+
         #endregion
 
         #region Call from MainWindowViewModel

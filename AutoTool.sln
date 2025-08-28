@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KeyHelper", "KeyHelper\KeyH
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorPickHelper", "ColorPickHelper\ColorPickHelper.csproj", "{7173F7E1-A083-4E98-9F72-3085535A2846}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YoLoWinLib", "YoloV8DetectHelper\YoLoWinLib.csproj", "{D8BC19B1-5ABD-4660-8E73-E85848BF169F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,9 +73,16 @@ Global
 		{7173F7E1-A083-4E98-9F72-3085535A2846}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7173F7E1-A083-4E98-9F72-3085535A2846}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7173F7E1-A083-4E98-9F72-3085535A2846}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8BC19B1-5ABD-4660-8E73-E85848BF169F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8BC19B1-5ABD-4660-8E73-E85848BF169F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8BC19B1-5ABD-4660-8E73-E85848BF169F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8BC19B1-5ABD-4660-8E73-E85848BF169F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D8BC19B1-5ABD-4660-8E73-E85848BF169F} = {7CBB2EAB-8CB7-4BAC-AFA7-68D653938EDD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E755CF2E-3F80-4FDE-8B54-42B81EFAC900}
