@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Drawing;
 
 using LogHelper;
+using System.IO;
 
 using Color = System.Windows.Media.Color;
 
@@ -105,52 +106,6 @@ namespace OpenCVHelper
         public static Mat CaptureWindow(string windowTitle, string windowClassName = "")
         {
             return CaptureWindowUsingBitBlt(windowTitle, windowClassName);
-
-            // ※ ウィンドウ裏に隠れている部分がキャプチャできないため、BitBlt方式を使用
-
-            /*
-            // ウィンドウハンドルを取得
-            IntPtr hWnd = FindWindow(null, windowTitle);
-            if (hWnd == IntPtr.Zero)
-            {
-                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-            }
-
-            // ウィンドウの位置とサイズを取得
-            RECT rect;
-            if (!GetWindowRect(hWnd, out rect))
-            {
-                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-            }
-
-            int width = rect.Right - rect.Left;
-            int height = rect.Bottom - rect.Top;
-
-            // スクリーンショットを格納するためのBitmapを作成
-            using (Bitmap bmp = new Bitmap(width, height))
-            {
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    // グラフィックスハンドルを取得
-                    IntPtr hdc = g.GetHdc();
-
-                    // PrintWindowを使用してウィンドウの内容をキャプチャ
-                    //if (!PrintWindow(hWnd, hdc, 0))
-                    {
-                        throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-
-                    }
-
-                    // BitmapをMat形式に変換
-                    Mat mat = BitmapConverter.ToMat(bmp);
-
-                    // ハンドルを解放
-                    g.ReleaseHdc(hdc);
-
-                    return mat;
-                }
-            }
-            */
         }
 
         // スクリーン全体をキャプチャするメソッド
@@ -208,34 +163,39 @@ namespace OpenCVHelper
         {
             return await Task.Run(() =>
             {
-                Mat targetMat = string.IsNullOrEmpty(windowTitle) && string.IsNullOrEmpty(windowClassName) ? ScreenCaptureHelper.CaptureScreen() : ScreenCaptureHelper.CaptureWindow(windowTitle, windowClassName);
-                Mat templateMat = new Mat(imagePath);
+                // 画像存在チェック
+                if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
+                {
+                    return (OpenCvSharp.Point?)null;
+                }
+
+                using var targetMat = string.IsNullOrEmpty(windowTitle) && string.IsNullOrEmpty(windowClassName)
+                    ? ScreenCaptureHelper.CaptureScreen()
+                    : ScreenCaptureHelper.CaptureWindow(windowTitle, windowClassName);
+
+                using var templateMat = new Mat(imagePath);
 
                 if (searchColor == null)
                 {
-                    // グレースケールに変換
                     Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2GRAY);
                     Cv2.CvtColor(templateMat, templateMat, ColorConversionCodes.BGRA2GRAY);
                 }
                 else
                 {
-                    // 色空間を揃える
                     Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2BGR);
                     Cv2.CvtColor(templateMat, templateMat, ColorConversionCodes.BGRA2BGR);
 
-                    // 指定した色に近い色のみ検出
+                    var lowerR = Math.Max(searchColor.Value.R - 20, 0);
+                    var lowerG = Math.Max(searchColor.Value.G - 20, 0);
+                    var lowerB = Math.Max(searchColor.Value.B - 20, 0);
+                    var lower = new Scalar(lowerR, lowerG, lowerB);
 
-                    var lowerR = searchColor.Value.R - 20; if (lowerR < 0) lowerR = 0;
-                    var lowerG = searchColor.Value.G - 20; if (lowerG < 0) lowerG = 0;
-                    var lowerB = searchColor.Value.B - 20; if (lowerB < 0) lowerB = 0;
-                    var lower = new Scalar(lowerR, lowerG, lowerR);
-
-                    var upperR = searchColor.Value.R + 20; if (upperR > 255) upperR = 255;
-                    var upperG = searchColor.Value.G + 20; if (upperG > 255) upperG = 255;
-                    var upperB = searchColor.Value.B + 20; if (upperB > 255) upperB = 255;
+                    var upperR = Math.Min(searchColor.Value.R + 20, 255);
+                    var upperG = Math.Min(searchColor.Value.G + 20, 255);
+                    var upperB = Math.Min(searchColor.Value.B + 20, 255);
                     var upper = new Scalar(upperR, upperG, upperB);
 
-                    using Mat mask = new Mat();
+                    using var mask = new Mat();
 
                     Cv2.InRange(targetMat, lower, upper, mask);
                     Cv2.BitwiseAnd(targetMat, targetMat, targetMat, mask);
@@ -244,19 +204,15 @@ namespace OpenCVHelper
                     Cv2.BitwiseAnd(templateMat, templateMat, templateMat, mask);
                 }
 
-                // マッチングを実行
-                using Mat result = new Mat();
+                using var result = new Mat();
                 Cv2.MatchTemplate(targetMat, templateMat, result, TemplateMatchModes.CCoeffNormed);
 
-                // マッチング結果から最大値とその位置を取得
                 Cv2.MinMaxLoc(result, out _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
 
                 if (maxVal >= threshold)
                 {
-                    // 対象画像の中心座標を計算して返す
-                    OpenCvSharp.Point center = new OpenCvSharp.Point(maxLoc.X + templateMat.Width / 2, maxLoc.Y + templateMat.Height / 2);
+                    var center = new OpenCvSharp.Point(maxLoc.X + templateMat.Width / 2, maxLoc.Y + templateMat.Height / 2);
 
-                    // ログ出力
                     var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
                     var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
                     var resultMessage = $"マッチング成功: {center.X}, {center.Y}";
@@ -272,56 +228,5 @@ namespace OpenCVHelper
                 return (OpenCvSharp.Point?)null;
             }, token);
         }
-
-        /*
-        public static async Task<OpenCvSharp.Point?> SearchImage(Mat templateMat, CancellationToken token, double threshold = 0.8, Color? searchColor = null, string windowTitle = "", string windowClassName = "")
-        {
-            // スクリーンショットを取得
-            using Mat screenMat = ScreenCaptureHelper.CaptureScreen();
-
-            return await SearchImage(screenMat, templateMat, token, threshold, searchColor, windowTitle, windowClassName);
-        }
-
-        public static async Task<OpenCvSharp.Point?> SearchImage(string imagePath, CancellationToken token, double threshold = 0.8, Color? searchColor = null, string windowTitle = "", string windowClassName = "")
-        {
-            // ファイル存在確認
-            if (!System.IO.File.Exists(imagePath))
-            {
-                throw new System.IO.FileNotFoundException("ファイルが見つかりません。", imagePath);
-            }
-
-            var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
-
-            return await SearchImage(new Mat(imagePath), cts.Token, threshold, searchColor, windowTitle, windowClassName);
-        }
-        */
-
-        /*
-        public static async Task<OpenCvSharp.Point?> SearchImageFromWindow(string windowTitle, Mat templateMat, CancellationToken token, double threshold = 0.8, bool multiScale = false)
-        {
-            // ウィンドウキャプチャ
-            using Mat windowMat = ScreenCaptureHelper.CaptureWindow(windowTitle);
-
-            return multiScale ? await SearchImageMultiScale(windowMat, templateMat, token, threshold) : await SearchImage(windowMat, templateMat, token, threshold);
-        }
-        */
-
-        /*
-        public static async Task<OpenCvSharp.Point?> SearchImageFromWindow(string imagePath, CancellationToken token, double threshold = 0.8, Color? searchColor = null, bool multiScale = false)
-        {
-            if (!System.IO.File.Exists(imagePath))
-            {
-                throw new System.IO.FileNotFoundException("ファイルが見つかりません。", imagePath);
-            }
-
-            using Mat windowMat = ScreenCaptureHelper.CaptureWindow(windowTitle, windowClassName);
-            using Mat templateMat = new Mat(imagePath);
-
-            var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
-
-            //return false ? await SearchImageMultiScale(windowMat, templateMat, cts.Token, threshold) : await SearchImage(windowMat, templateMat, cts.Token, threshold);
-            return await SearchImage(windowMat, templateMat, cts.Token, threshold, searchColor);
-        }
-        */
     }
 }

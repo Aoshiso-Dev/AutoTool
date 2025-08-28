@@ -21,6 +21,7 @@ using System.Windows.Controls;
 using System.Collections;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 using ColorPickHelper;
 
@@ -32,6 +33,12 @@ namespace MacroPanels.ViewModel
         private bool _isRunning = false;
 
         private bool _isUpdating;
+
+        // RefreshList のデバウンス用
+        private readonly DispatcherTimer _refreshTimer = new()
+        {
+            Interval = TimeSpan.FromMilliseconds(120)
+        };
 
         #region Item
         private ICommandListItem? _item = null;
@@ -565,10 +572,14 @@ namespace MacroPanels.ViewModel
                     return;
                 }
 
+                if (Item.ItemType == value)
+                {
+                    return;
+                }
+
                 Item.ItemType = value;
                 OnSelectedItemTypeChanged();
-
-                WeakReferenceMessenger.Default.Send(new RefreshListViewMessage());
+                // RefreshListViewMessage は UpdateProperties 内でデバウンス送信
             }
         }
 
@@ -577,7 +588,7 @@ namespace MacroPanels.ViewModel
         public System.Windows.Input.MouseButton SelectedMouseButton
         {
             get
-        {
+            {
                 if (Item is IClickImageItem clickImageItem)
                 {
                     return clickImageItem.Button;
@@ -597,8 +608,9 @@ namespace MacroPanels.ViewModel
                 else if (Item is IClickItem clickItem)
                 {
                     clickItem.Button = value;
-
                 }
+
+                UpdateProperties();
             }
         }
         #endregion
@@ -606,6 +618,12 @@ namespace MacroPanels.ViewModel
 
         public EditPanelViewModel()
         {
+            _refreshTimer.Tick += (s, e) =>
+            {
+                _refreshTimer.Stop();
+                WeakReferenceMessenger.Default.Send(new RefreshListViewMessage());
+            };
+
             foreach(var type in ItemType.GetTypes())
             {
                 ItemTypes.Add(type);
@@ -694,35 +712,43 @@ namespace MacroPanels.ViewModel
 
             _isUpdating = true;
 
-            // 設定値
-            OnPropertyChanged(nameof(SelectedItemType));
-            OnPropertyChanged(nameof(WindowTitle));
-            OnPropertyChanged(nameof(WindowTitleText));
-            OnPropertyChanged(nameof(WindowClassName));
-            OnPropertyChanged(nameof(WindowClassNameText));
-            OnPropertyChanged(nameof(ImagePath));
-            OnPropertyChanged(nameof(Threshold));
-            OnPropertyChanged(nameof(SearchColor));
-            OnPropertyChanged(nameof(Timeout));
-            OnPropertyChanged(nameof(Interval));
-            OnPropertyChanged(nameof(MouseButton));
-            OnPropertyChanged(nameof(Ctrl));
-            OnPropertyChanged(nameof(Alt));
-            OnPropertyChanged(nameof(Shift));
-            OnPropertyChanged(nameof(Key));
-            OnPropertyChanged(nameof(X));
-            OnPropertyChanged(nameof(Y));
-            OnPropertyChanged(nameof(Wait));
-            OnPropertyChanged(nameof(LoopCount));
+            try
+            {
+                // 設定値
+                OnPropertyChanged(nameof(SelectedItemType));
+                OnPropertyChanged(nameof(WindowTitle));
+                OnPropertyChanged(nameof(WindowTitleText));
+                OnPropertyChanged(nameof(WindowClassName));
+                OnPropertyChanged(nameof(WindowClassNameText));
+                OnPropertyChanged(nameof(ImagePath));
+                OnPropertyChanged(nameof(Threshold));
+                OnPropertyChanged(nameof(SearchColor));
+                OnPropertyChanged(nameof(Timeout));
+                OnPropertyChanged(nameof(Interval));
+                OnPropertyChanged(nameof(MouseButton));
+                OnPropertyChanged(nameof(SelectedMouseButton));
+                OnPropertyChanged(nameof(Ctrl));
+                OnPropertyChanged(nameof(Alt));
+                OnPropertyChanged(nameof(Shift));
+                OnPropertyChanged(nameof(Key));
+                OnPropertyChanged(nameof(X));
+                OnPropertyChanged(nameof(Y));
+                OnPropertyChanged(nameof(Wait));
+                OnPropertyChanged(nameof(LoopCount));
 
-            // 設定画面表示用
-            OnPropertyChanged(nameof(SearchColorBrush));
-            OnPropertyChanged(nameof(SearchColorText));
-            OnPropertyChanged(nameof(SearchColorTextColor));
+                // 設定画面表示用
+                OnPropertyChanged(nameof(SearchColorBrush));
+                OnPropertyChanged(nameof(SearchColorText));
+                OnPropertyChanged(nameof(SearchColorTextColor));
 
-            WeakReferenceMessenger.Default.Send(new RefreshListViewMessage());
-
-            _isUpdating = false;
+                // デバウンス送信
+                _refreshTimer.Stop();
+                _refreshTimer.Start();
+            }
+            finally
+            {
+                _isUpdating = false;
+            }
         }
         #endregion
 

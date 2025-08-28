@@ -66,8 +66,52 @@ namespace MacroPanels.Command.Class
 
         protected void ReportProgress(double elapsedMilliseconds, double totalMilliseconds)
         {
-            int progress = (int)((elapsedMilliseconds / totalMilliseconds) * 100);
+            int progress;
+            if (totalMilliseconds <= 0)
+            {
+                progress = 100;
+            }
+            else
+            {
+                progress = (int)Math.Round((elapsedMilliseconds / totalMilliseconds) * 100);
+                if (progress < 0) progress = 0;
+                if (progress > 100) progress = 100;
+            }
             WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(this, progress));
+        }
+
+        protected void ResetChildrenProgress()
+        {
+            foreach (var command in Children)
+            {
+                WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
+            }
+        }
+
+        protected async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
+        {
+            // Children は常にリストで初期化される想定
+            if (Children == null || !Children.Any())
+            {
+                throw new Exception("子要素がありません。");
+            }
+
+            ResetChildrenProgress();
+
+            foreach (var command in Children)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
+
+                if (!await command.Execute(cancellationToken))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 
@@ -265,7 +309,7 @@ namespace MacroPanels.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            if (Children == null)
+            if (Children == null || !Children.Any())
             {
                 throw new Exception("If内に要素がありません。");
             }
@@ -280,25 +324,7 @@ namespace MacroPanels.Command.Class
                 {
                     OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
 
-                    foreach (var command in Children)
-                    {
-                        WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
-                    }
-
-                    foreach (var command in Children)
-                    {
-                        if (!await command.Execute(cancellationToken))
-                        {
-                            return false;
-                        }
-
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
+                    return await ExecuteChildrenAsync(cancellationToken);
                 }
 
                 if (cancellationToken.IsCancellationRequested)
@@ -329,7 +355,7 @@ namespace MacroPanels.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            if (Children == null)
+            if (Children == null || !Children.Any())
             {
                 throw new Exception("If内に要素がありません。");
             }
@@ -340,11 +366,15 @@ namespace MacroPanels.Command.Class
             {
                 var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
 
-                if (point != null)
+                // 画像が「存在しない」ことを検知したら即子コマンドを実行
+                if (point == null)
                 {
-                    OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
-                    return true;
+                    OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
+                    return await ExecuteChildrenAsync(cancellationToken);
                 }
+
+                // 画像が見つかった場合は条件不成立
+                OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
 
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -356,23 +386,7 @@ namespace MacroPanels.Command.Class
                 await Task.Delay(Settings.Interval, cancellationToken);
             }
 
-            OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
-
-            foreach (var command in Children)
-            {
-                if (!await command.Execute(cancellationToken))
-                {
-                    return false;
-                }
-
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return false;
-                }
-            }
-
-            OnFinishCommand?.Invoke(this, new EventArgs());
-
+            // タイムアウトまで「存在しない」状態にならなかった場合は子を実行せずスキップ
             return true;
         }
     }
@@ -387,7 +401,7 @@ namespace MacroPanels.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            if ( Children == null)
+            if ( Children == null || !Children.Any())
             {
                 throw new Exception("ループ内に要素がありません。");
             }
@@ -396,10 +410,7 @@ namespace MacroPanels.Command.Class
 
             for (int i = 0; i < Settings.LoopCount; i++)
             {
-                foreach (var command in Children)
-                {
-                    WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
-                }
+                ResetChildrenProgress();
 
                 foreach (var command in Children)
                 {
@@ -414,7 +425,8 @@ namespace MacroPanels.Command.Class
                     }
                 }
 
-                ReportProgress(i, Settings.LoopCount);
+                // 1-origin で進捗を報告して 100% に届くようにする
+                ReportProgress(i + 1, Settings.LoopCount);
             }
 
             OnDoingCommand?.Invoke(this, $"ループを終了します。");
@@ -433,10 +445,7 @@ namespace MacroPanels.Command.Class
         {
             return await Task.Run(() =>
             {
-                foreach (var command in Children)
-                {
-                    WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
-                }
+                ResetChildrenProgress();
 
                 return true;
             });
