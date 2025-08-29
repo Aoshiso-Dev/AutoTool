@@ -157,10 +157,21 @@ namespace MacroPanels.Model.List.Interface
         public string Value { get; set; }
     }
 
+    public interface ISetVariableAIItem : ICommandListItem
+    {
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        string ModelPath { get; set; }
+        double ConfThreshold { get; set; }
+        double IoUThreshold { get; set; }
+        public string Name { get; set; }
+    }
+
     public interface IIfVariableItem : ICommandListItem, IIfItem
     {
         public string Name { get; set; }
         public string Operator { get; set; }
         public string Value { get; set; }
     }
+
 }

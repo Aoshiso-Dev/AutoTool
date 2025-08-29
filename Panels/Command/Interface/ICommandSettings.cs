@@ -96,4 +96,16 @@ namespace MacroPanels.Command.Interface
         string Operator { get; set; }
         string Value { get; set; }
     }
+
+    public interface ISetVariableAICommandSettings
+    {
+        string ModelPath { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        double ConfThreshold { get; set; }
+        double IoUThreshold { get; set; }
+        int Timeout { get; set; }
+        int Interval { get; set; }
+        string Name { get; set; }
+    }
 }

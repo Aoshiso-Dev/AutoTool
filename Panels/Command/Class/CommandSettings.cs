@@ -80,4 +80,31 @@ namespace MacroPanels.Command.Class
         public int Timeout { get; set; }
         public int Interval { get; set; }
     }
+
+    public class ExecuteProgramCommandSettings : ICommandSettings, IExecuteProgramCommandSettings
+    {
+        public string ProgramPath { get; set; } = string.Empty;
+        public string Arguments { get; set; } = string.Empty;
+        public string WorkingDirectory { get; set; } = string.Empty;
+        public bool WaitForExit { get; set; }
+    }
+
+    public class SetVariableCommandSettings : ICommandSettings, ISetVariableCommandSettings
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+    }
+
+    public class SetVariableAISettings : ICommandSettings, ISetVariableAICommandSettings
+    {
+        public string Name { get; set; } = string.Empty;
+        public string ModelPath { get; set; } = string.Empty;
+        public int ClassID { get; set; } = 0;
+        public string WindowTitle { get; set; } = string.Empty;
+        public string WindowClassName { get; set; } = string.Empty;
+        public double ConfThreshold { get; set; }
+        public double IoUThreshold { get; set; }
+        public int Timeout { get; set; }
+        public int Interval { get; set; }
+    }
 }

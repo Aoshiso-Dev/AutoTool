@@ -85,6 +85,7 @@
                                 <Binding Path="IsIfImageNotExistItem"/>
                                 <Binding Path="IsIfImageExistAIItem"/>
                                 <Binding Path="IsIfImageNotExistAIItem"/>
+                                <Binding Path="IsSetVariableAIItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
@@ -145,6 +146,7 @@
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsIfImageExistAIItem"/>
                                 <Binding Path="IsIfImageNotExistAIItem"/>
+                                <Binding Path="IsSetVariableAIItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
@@ -322,6 +324,7 @@
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsSetVariableItem"/>
                                 <Binding Path="IsIfVariableItem"/>
+                                <Binding Path="IsSetVariableAIItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>

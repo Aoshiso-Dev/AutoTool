@@ -492,7 +492,6 @@ namespace MacroPanels.Command.Class
                 throw new Exception("If内に要素がありません。");
             }
 
-            //string[] labels = {"small", "medium", "large" }; // TODO: 設定で変更できるようにする
             YoloWin.Init(Settings.ModelPath, 640, true);
 
             var stopwatch = Stopwatch.StartNew();
@@ -591,7 +590,6 @@ namespace MacroPanels.Command.Class
         public static void Clear() => s_vars.Clear();
     }
 
-    // 変数セット
     public class SetVariableCommand : BaseCommand, ICommand, ISetVariableCommand
     {
         new public ISetVariableCommandSettings Settings => (ISetVariableCommandSettings)base.Settings;
@@ -605,7 +603,34 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    // 変数If
+    public class SetVariableAICommand : BaseCommand, ICommand, ISetVariableAICommand
+    {
+        new public ISetVariableAICommandSettings Settings => (ISetVariableAICommandSettings)base.Settings;
+        public SetVariableAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            YoloWin.Init(Settings.ModelPath, 640, true);
+
+            var stopwatch = Stopwatch.StartNew();
+
+            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle).Detections;
+
+            if(det.Count == 0)
+            {
+                VariableStore.Set(Settings.Name, "-1");
+                OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。{Settings.Name}に-1をセットしました。");
+            }
+            else
+            {
+                var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
+                VariableStore.Set(Settings.Name, best.ClassId.ToString());
+                OnDoingCommand?.Invoke(this, $"画像が見つかりました。{Settings.Name}に{best.ClassId}をセットしました。");
+            }
+
+            return Task.FromResult(true);
+        }
+    }
+
     public class IfVariableCommand : BaseCommand, ICommand, IIfVariableCommand
     {
         new public IIfVariableCommandSettings Settings => (IIfVariableCommandSettings)base.Settings;

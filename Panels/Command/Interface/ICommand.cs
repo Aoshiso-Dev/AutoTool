@@ -39,5 +39,6 @@ namespace MacroPanels.Command.Interface
     public interface IIfImageExistAICommand : ICommand, IIfCommand { new IIfImageExistAISettings Settings { get; } }
     public interface IExecuteProgramCommand : ICommand { new IExecuteProgramCommandSettings Settings { get; } }
     public interface ISetVariableCommand : ICommand { new ISetVariableCommandSettings Settings { get; } }
+    public interface ISetVariableAICommand : ICommand { new ISetVariableAICommandSettings Settings { get; } }
     public interface IIfVariableCommand : ICommand, IIfCommand { new IIfVariableCommandSettings Settings { get; } }
 }

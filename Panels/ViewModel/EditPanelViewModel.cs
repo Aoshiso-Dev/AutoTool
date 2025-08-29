@@ -85,6 +85,7 @@ namespace MacroPanels.ViewModel
         public bool IsEndIfItem => Item is EndIfItem;
         public bool IsExecuteProgramItem => Item is ExecuteProgramItem;
         public bool IsSetVariableItem => Item is SetVariableItem;
+        public bool IsSetVariableAIItem => Item is SetVariableAIItem;
         public bool IsIfVariableItem => Item is IfVariableItem;
         #endregion
 
@@ -109,6 +110,7 @@ namespace MacroPanels.ViewModel
                     IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowTitle,
                     IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.WindowTitle,
                     IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.WindowTitle,
+                    ISetVariableAIItem setVariableAIItem => setVariableAIItem.WindowTitle,
                     _ => string.Empty,
                 };
             }
@@ -140,6 +142,9 @@ namespace MacroPanels.ViewModel
                     case IIfImageNotExistAIItem ifImageNotExistAIItem:
                         ifImageNotExistAIItem.WindowTitle = value;
                         break;
+                    case ISetVariableAIItem setVariableAIItem:
+                        setVariableAIItem.WindowTitle = value;
+                        break;
                 }
 
                 UpdateProperties();
@@ -165,6 +170,7 @@ namespace MacroPanels.ViewModel
                     IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowClassName,
                     IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.WindowClassName,
                     IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.WindowClassName,
+                    ISetVariableAIItem setVariableAIItem => setVariableAIItem.WindowClassName,
                     _ => string.Empty,
                 };
             }
@@ -195,6 +201,9 @@ namespace MacroPanels.ViewModel
                         break;
                     case IIfImageNotExistAIItem ifImageNotExistAIItem:
                         ifImageNotExistAIItem.WindowClassName = value;
+                        break;
+                    case ISetVariableAIItem setVariableAIItem:
+                        setVariableAIItem.WindowClassName = value;
                         break;
                 }
 
@@ -569,6 +578,7 @@ namespace MacroPanels.ViewModel
                 {
                     IfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.ModelPath,
                     IfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.ModelPath,
+                    SetVariableAIItem setVariableAIItem => setVariableAIItem.ModelPath,
                     _ => string.Empty,
                 };
             }
@@ -581,6 +591,9 @@ namespace MacroPanels.ViewModel
                         break;
                     case IfImageNotExistAIItem ifImageNotExistAIItem:
                         ifImageNotExistAIItem.ModelPath = value;
+                        break;
+                    case SetVariableAIItem setVariableAIItem:
+                        setVariableAIItem.ModelPath = value;
                         break;
                 }
                 UpdateProperties();
@@ -685,6 +698,7 @@ namespace MacroPanels.ViewModel
                 {
                     SetVariableItem setVariableItem => setVariableItem.Name,
                     IfVariableItem ifVariableItem => ifVariableItem.Name,
+                    SetVariableAIItem setVariableAIItem => setVariableAIItem.Name,
                     _ => string.Empty,
                 };
             }
@@ -697,6 +711,9 @@ namespace MacroPanels.ViewModel
                         break;
                     case IfVariableItem ifVariableItem:
                         ifVariableItem.Name = value;
+                        break;
+                    case SetVariableAIItem setVariableAIItem:
+                        setVariableAIItem.Name = value;
                         break;
                 }
                 UpdateProperties();
@@ -942,6 +959,9 @@ namespace MacroPanels.ViewModel
                 case nameof(ItemType.SetVariable):
                     Item = new SetVariableItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariable) };
                     break;
+                case nameof(ItemType.SetVariableAI):
+                    Item = new SetVariableAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariableAI) };
+                    break;
                 case nameof(ItemType.IfVariable):
                     Item = new IfVariableItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfVariable) };
                     break;
@@ -974,6 +994,7 @@ namespace MacroPanels.ViewModel
             OnPropertyChanged(nameof(IsIfImageNotExistAIItem));
             OnPropertyChanged(nameof(IsExecuteProgramItem));
             OnPropertyChanged(nameof(IsSetVariableItem));
+            OnPropertyChanged(nameof(IsSetVariableAIItem));
             OnPropertyChanged(nameof(IsIfVariableItem));
         }
 
@@ -1013,12 +1034,17 @@ namespace MacroPanels.ViewModel
                 OnPropertyChanged(nameof(VariableValue));
                 OnPropertyChanged(nameof(CompareOperator));
                 OnPropertyChanged(nameof(CompareValue));
+                OnPropertyChanged(nameof(ModelPath));
+                OnPropertyChanged(nameof(ClassID));
+                OnPropertyChanged(nameof(ProgramPath));
+                OnPropertyChanged(nameof(Arguments));
+                OnPropertyChanged(nameof(WorkingDirectory));
+                OnPropertyChanged(nameof(WaitForExit));
 
                 // 設定画面表示用
                 OnPropertyChanged(nameof(SearchColorBrush));
                 OnPropertyChanged(nameof(SearchColorText));
                 OnPropertyChanged(nameof(SearchColorTextColor));
-
 
                 // デバウンス送信
                 _refreshTimer.Stop();
@@ -1154,6 +1180,10 @@ namespace MacroPanels.ViewModel
                 else if (Item is IfImageNotExistAIItem ifImageNotExistAIItem)
                 {
                     ifImageNotExistAIItem.ModelPath = dialog.FileName;
+                }
+                else if (Item is SetVariableAIItem setVariableAIItem)
+                { 
+                    setVariableAIItem.ModelPath = dialog.FileName;
                 }
                 UpdateProperties();
             }

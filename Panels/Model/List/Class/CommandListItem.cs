@@ -734,6 +734,49 @@ namespace MacroPanels.List.Class
         public new ICommandListItem Clone() => new SetVariableItem(this);
     }
 
+    [SimpleCommandBinding(typeof(SetVariableAICommand), typeof(ISetVariableAICommandSettings))]
+    public partial class SetVariableAIItem : CommandListItem, ISetVariableAIItem, ISetVariableAICommandSettings
+    {
+        [ObservableProperty]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
+        private string _windowClassName = string.Empty;
+        [ObservableProperty]
+        private string _modelPath = string.Empty;
+        [ObservableProperty]
+        private double _confThreshold = 0.45f;
+        [ObservableProperty]
+        private double _ioUThreshold = 0.25f;
+        [ObservableProperty]
+        private int _timeout = 5000;
+        [ObservableProperty]
+        private int _interval = 500;
+        [ObservableProperty]
+        private string _name = string.Empty;
+        new public string Description =>
+            $"変数:{Name} / モデル:{System.IO.Path.GetFileName(ModelPath)} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        public SetVariableAIItem() { }
+        public SetVariableAIItem(SetVariableAIItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                WindowTitle = item.WindowTitle;
+                WindowClassName = item.WindowClassName;
+                ModelPath = item.ModelPath;
+                ConfThreshold = item.ConfThreshold;
+                IoUThreshold = item.IoUThreshold;
+                Timeout = item.Timeout;
+                Interval = item.Interval;
+                Name = item.Name;
+            }
+        }
+        public new ICommandListItem Clone()
+        {
+            return new SetVariableAIItem(this);
+        }
+    }
+
+
     public partial class IfVariableItem : CommandListItem, IIfVariableItem, IIfVariableCommandSettings, IIfItem
     {
         [ObservableProperty]

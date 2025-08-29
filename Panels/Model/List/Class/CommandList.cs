@@ -335,6 +335,30 @@ namespace MacroPanels.List.Class
                             else
                                 throw new InvalidDataException($"型不一致: {item.ItemType} を IfImageNotExistAIItem にキャストできません。");
                             break;
+                        case nameof(ItemType.ExecuteProgram):
+                            if (item is ExecuteProgramItem ep)
+                                Add(new ExecuteProgramItem(ep));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を ExecuteProgramItem にキャストできません。");
+                            break;
+                        case nameof(ItemType.SetVariable):
+                            if (item is SetVariableItem sv)
+                                Add(new SetVariableItem(sv));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を SetVariableItem にキャストできません。");
+                            break;
+                        case nameof(ItemType.SetVariableAI):
+                            if (item is SetVariableAIItem sva)
+                                Add(new SetVariableAIItem(sva));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を SetVariableAIItem にキャストできません。");
+                            break;
+                        case nameof(ItemType.IfVariable):
+                            if (item is IfVariableItem iv)
+                                Add(new IfVariableItem(iv));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfVariableItem にキャストできません。");
+                            break;
                     }
 
                 }
