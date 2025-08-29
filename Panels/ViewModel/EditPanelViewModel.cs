@@ -20,13 +20,15 @@ using System.Collections;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Threading;
-
+using MacroPanels.ViewModel.Helpers;
 using ColorPickHelper;
 
 namespace MacroPanels.ViewModel
 {
     public partial class EditPanelViewModel : ObservableObject
     {
+        private readonly EditPanelPropertyManager _propertyManager = new();
+
         [ObservableProperty]
         private bool _isRunning = false;
 
@@ -45,7 +47,6 @@ namespace MacroPanels.ViewModel
             set
             {
                 SetProperty(ref _item, value);
-
                 UpdateProperties();
                 UpdateIsProperties();
             }
@@ -60,7 +61,6 @@ namespace MacroPanels.ViewModel
             set
             {
                 SetProperty(ref _listCount, value);
-
                 UpdateIsProperties();
                 UpdateProperties();
             }
@@ -89,808 +89,343 @@ namespace MacroPanels.ViewModel
         public bool IsScreenshotItem => Item is ScreenshotItem;
         #endregion
 
-        #region Properties
-
-        public string WindowTitleText
-        {
-            get => string.IsNullOrEmpty(WindowTitle) ? "指定なし" : WindowTitle;
-        }
-
+        #region Properties - Refactored using PropertyManager
+        
+        // ウィンドウ関連
+        public string WindowTitleText => string.IsNullOrEmpty(WindowTitle) ? "指定なし" : WindowTitle;
         public string WindowTitle
         {
-            get
-            {
-                return Item switch
-                {
-                    IWaitImageItem waitImageItem => waitImageItem.WindowTitle,
-                    IClickImageItem clickImageItem => clickImageItem.WindowTitle,
-                    IHotkeyItem hotkeyItem => hotkeyItem.WindowTitle,
-                    //IClickItem clickItem => clickItem.WindowTitle,
-                    IIfImageExistItem ifImageExistItem => ifImageExistItem.WindowTitle,
-                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowTitle,
-                    IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.WindowTitle,
-                    IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.WindowTitle,
-                    ISetVariableAIItem setVariableAIItem => setVariableAIItem.WindowTitle,
-                    IScreenshotItem screenshotItem => screenshotItem.WindowTitle,
-                    _ => string.Empty,
-                };
-            }
+            get => _propertyManager.WindowTitle.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IWaitImageItem waitImageItem:
-                        waitImageItem.WindowTitle = value;
-                        break;
-                    case IClickImageItem clickImageItem:
-                        clickImageItem.WindowTitle = value;
-                        break;
-                    case IHotkeyItem hotkeyItem:
-                        hotkeyItem.WindowTitle = value;
-                        break;
-                    //case IClickItem clickItem:
-                    //    clickItem.WindowTitle = value;
-                    //    break;
-                    case IIfImageExistItem ifImageExistItem:
-                        ifImageExistItem.WindowTitle = value;
-                        break;
-                    case IIfImageNotExistItem ifImageNotExistItem:
-                        ifImageNotExistItem.WindowTitle = value;
-                        break;
-                    case IIfImageExistAIItem ifImageExistAIItem:
-                        ifImageExistAIItem.WindowTitle = value;
-                        break;
-                    case IIfImageNotExistAIItem ifImageNotExistAIItem:
-                        ifImageNotExistAIItem.WindowTitle = value;
-                        break;
-                    case ISetVariableAIItem setVariableAIItem:
-                        setVariableAIItem.WindowTitle = value;
-                        break;
-                    case IScreenshotItem screenshotItem:
-                        screenshotItem.WindowTitle = value;
-                        break;
-                }
-
+                _propertyManager.WindowTitle.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
-        public string WindowClassNameText
-        {
-            get => string.IsNullOrEmpty(WindowClassName) ? "指定なし" : WindowClassName;
-        }
-
+        public string WindowClassNameText => string.IsNullOrEmpty(WindowClassName) ? "指定なし" : WindowClassName;
         public string WindowClassName
         {
-            get
-            {
-                return Item switch
-                {
-                    IWaitImageItem waitImageItem => waitImageItem.WindowClassName,
-                    IClickImageItem clickImageItem => clickImageItem.WindowClassName,
-                    IHotkeyItem hotkeyItem => hotkeyItem.WindowClassName,
-                    //IClickItem clickItem => clickItem.WindowClassName,
-                    IIfImageExistItem ifImageExistItem => ifImageExistItem.WindowClassName,
-                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.WindowClassName,
-                    IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.WindowClassName,
-                    IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.WindowClassName,
-                    ISetVariableAIItem setVariableAIItem => setVariableAIItem.WindowClassName,
-                    IScreenshotItem screenshotItem => screenshotItem.WindowClassName,
-                    _ => string.Empty,
-                };
-            }
+            get => _propertyManager.WindowClassName.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IWaitImageItem waitImageItem:
-                        waitImageItem.WindowClassName = value;
-                        break;
-                    case IClickImageItem clickImageItem:
-                        clickImageItem.WindowClassName = value;
-                        break;
-                    case IHotkeyItem hotkeyItem:
-                        hotkeyItem.WindowClassName = value;
-                        break;
-                    //case IClickItem clickItem:
-                    //    clickItem.WindowClassName = value;
-                    //    break;
-                    case IIfImageExistItem ifImageExistItem:
-                        ifImageExistItem.WindowClassName = value;
-                        break;
-                    case IIfImageNotExistItem ifImageNotExistItem:
-                        ifImageNotExistItem.WindowClassName = value;
-                        break;
-                    case IIfImageExistAIItem ifImageExistAIItem:
-                        ifImageExistAIItem.WindowClassName = value;
-                        break;
-                    case IIfImageNotExistAIItem ifImageNotExistAIItem:
-                        ifImageNotExistAIItem.WindowClassName = value;
-                        break;
-                    case ISetVariableAIItem setVariableAIItem:
-                        setVariableAIItem.WindowClassName = value;
-                        break;
-                    case IScreenshotItem screenshotItem:
-                        screenshotItem.WindowClassName = value;
-                        break;
-                }
-
+                _propertyManager.WindowClassName.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
+        // 画像関連
         public string ImagePath
         {
-            get
-            {
-                return Item switch
-                {
-                    IWaitImageItem waitImageItem => waitImageItem.ImagePath,
-                    IClickImageItem clickImageItem => clickImageItem.ImagePath,
-                    IIfImageExistItem ifImageExistItem => ifImageExistItem.ImagePath,
-                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.ImagePath,
-                    _ => string.Empty,
-                };
-            }
+            get => _propertyManager.ImagePath.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IWaitImageItem waitImageItem:
-                        waitImageItem.ImagePath = value;
-                        break;
-                    case IClickImageItem clickImageItem:
-                        clickImageItem.ImagePath = value;
-                        break;
-                    case IIfImageExistItem ifImageExistItem:
-                        ifImageExistItem.ImagePath = value;
-                        break;
-                    case IIfImageNotExistItem ifImageNotExistItem:
-                        ifImageNotExistItem.ImagePath = value;
-                        break;
-                }
-
+                _propertyManager.ImagePath.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public double Threshold
         {
-            get
-            {
-                return Item switch
-                {
-                    IWaitImageItem waitImageItem => waitImageItem.Threshold,
-                    IClickImageItem clickImageItem => clickImageItem.Threshold,
-                    IIfImageExistItem ifImageExistItem => ifImageExistItem.Threshold,
-                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.Threshold,
-                    _ => 0,
-                };
-            }
+            get => _propertyManager.Threshold.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IWaitImageItem waitImageItem:
-                        waitImageItem.Threshold = value;
-                        break;
-                    case IClickImageItem clickImageItem:
-                        clickImageItem.Threshold = value;
-                        break;
-                    case IIfImageExistItem ifImageExistItem:
-                        ifImageExistItem.Threshold = value;
-                        break;
-                    case IIfImageNotExistItem ifImageNotExistItem:
-                        ifImageNotExistItem.Threshold = value;
-                        break;
-                }
-
+                _propertyManager.Threshold.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public Color? SearchColor
         {
-            get
-            {
-                return Item switch
-                {
-                    IWaitImageItem waitImageItem => waitImageItem.SearchColor,
-                    IClickImageItem clickImageItem => clickImageItem.SearchColor,
-                    IIfImageExistItem ifImageExistItem => ifImageExistItem.SearchColor,
-                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.SearchColor,
-                    _ => null,
-                };
-            }
+            get => _propertyManager.SearchColor.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IWaitImageItem waitImageItem:
-                        waitImageItem.SearchColor = value;
-                        break;
-                    case IClickImageItem clickImageItem:
-                        clickImageItem.SearchColor = value;
-                        break;
-                    case IIfImageExistItem ifImageExistItem:
-                        ifImageExistItem.SearchColor = value;
-                        break;
-                    case IIfImageNotExistItem ifImageNotExistItem:
-                        ifImageNotExistItem.SearchColor = value;
-                        break;
-                }
-
+                _propertyManager.SearchColor.SetValue(Item, value);
                 UpdateProperties();
-
                 OnPropertyChanged(nameof(SearchColorBrush));
                 OnPropertyChanged(nameof(SearchColorText));
                 OnPropertyChanged(nameof(SearchColorTextColor));
             }
         }
 
+        // タイミング関連
         public int Timeout
         {
-            get
-            {
-                return Item switch
-                {
-                    IWaitImageItem waitImageItem => waitImageItem.Timeout,
-                    IClickImageItem clickImageItem => clickImageItem.Timeout,
-                    IIfImageExistItem ifImageExistItem => ifImageExistItem.Timeout,
-                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.Timeout,
-                    IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.Timeout,
-                    IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.Timeout,
-                    _ => 0,
-                };
-            }
+            get => _propertyManager.Timeout.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IWaitImageItem waitImageItem:
-                        waitImageItem.Timeout = value;
-                        break;
-                    case IClickImageItem clickImageItem:
-                        clickImageItem.Timeout = value;
-                        break;
-                    case IIfImageExistItem ifImageExistItem:
-                        ifImageExistItem.Timeout = value;
-                        break;
-                    case IIfImageNotExistItem ifImageNotExistItem:
-                        ifImageNotExistItem.Timeout = value;
-                        break;
-                    case IIfImageExistAIItem ifImageExistAIItem:
-                        ifImageExistAIItem.Timeout = value;
-                        break;
-                    case IIfImageNotExistAIItem ifImageNotExistAIItem:
-                        ifImageNotExistAIItem.Timeout = value;
-                        break;
-                }
-
+                _propertyManager.Timeout.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public int Interval
         {
-            get
-            {
-                return Item switch
-                {
-                    IWaitImageItem waitImageItem => waitImageItem.Interval,
-                    IClickImageItem clickImageItem => clickImageItem.Interval,
-                    IIfImageExistItem ifImageExistItem => ifImageExistItem.Interval,
-                    IIfImageNotExistItem ifImageNotExistItem => ifImageNotExistItem.Interval,
-                    IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.Interval,
-                    IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.Interval,
-                    _ => 0,
-                };
-            }
+            get => _propertyManager.Interval.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IWaitImageItem waitImageItem:
-                        waitImageItem.Interval = value;
-                        break;
-                    case IClickImageItem clickImageItem:
-                        clickImageItem.Interval = value;
-                        break;
-                    case IIfImageExistItem ifImageExistItem:
-                        ifImageExistItem.Interval = value;
-                        break;
-                    case IIfImageNotExistItem ifImageNotExistItem:
-                        ifImageNotExistItem.Interval = value;
-                        break;
-                    case IIfImageExistAIItem ifImageExistAIItem:
-                        ifImageExistAIItem.Interval = value;
-                        break;
-                    case IIfImageNotExistAIItem ifImageNotExistAIItem:
-                        ifImageNotExistAIItem.Interval = value;
-                        break;
-                }
-
+                _propertyManager.Interval.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
+        // マウス・キーボード関連
         public System.Windows.Input.MouseButton MouseButton
         {
-            get
-            {
-                return Item switch
-                {
-                    IClickImageItem clickImageItem => clickImageItem.Button,
-                    IClickItem clickItem => clickItem.Button,
-                    _ => System.Windows.Input.MouseButton.Left,
-                };
-            }
+            get => _propertyManager.MouseButton.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IClickImageItem clickImageItem:
-                        clickImageItem.Button = value;
-                        break;
-                    case IClickItem clickItem:
-                        clickItem.Button = value;
-                        break;
-                }
-
+                _propertyManager.MouseButton.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public bool Ctrl
         {
-            get
-            {
-                return Item is IHotkeyItem hotkeyItem ? hotkeyItem.Ctrl : false;
-            }
+            get => _propertyManager.Ctrl.GetValue(Item);
             set
             {
-                if (Item is IHotkeyItem hotkeyItem)
-                {
-                    hotkeyItem.Ctrl = value;
-                }
-
+                _propertyManager.Ctrl.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public bool Alt
         {
-            get
-            {
-                return Item is IHotkeyItem hotkeyItem ? hotkeyItem.Alt : false;
-            }
+            get => _propertyManager.Alt.GetValue(Item);
             set
             {
-                if (Item is IHotkeyItem hotkeyItem)
-                {
-                    hotkeyItem.Alt = value;
-                }
-
+                _propertyManager.Alt.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public bool Shift
         {
-            get
-            {
-                return Item is IHotkeyItem hotkeyItem ? hotkeyItem.Shift : false;
-            }
+            get => _propertyManager.Shift.GetValue(Item);
             set
             {
-                if (Item is IHotkeyItem hotkeyItem)
-                {
-                    hotkeyItem.Shift = value;
-                }
-
+                _propertyManager.Shift.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public System.Windows.Input.Key Key
         {
-            get
-            {
-                return Item is IHotkeyItem hotkeyItem ? hotkeyItem.Key : System.Windows.Input.Key.Escape;
-            }
+            get => _propertyManager.Key.GetValue(Item);
             set
             {
-                if (Item is IHotkeyItem hotkeyItem)
-                {
-                    hotkeyItem.Key = value;
-                }
-
+                _propertyManager.Key.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
+        // 座標関連
         public int X
         {
-            get
-            {
-                return Item is IClickItem clickItem ? clickItem.X : 0;
-            }
+            get => _propertyManager.X.GetValue(Item);
             set
             {
-                if (Item is IClickItem clickItem)
-                {
-                    clickItem.X = value;
-                }
-
+                _propertyManager.X.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public int Y
         {
-            get
-            {
-                return Item is IClickItem clickItem ? clickItem.Y : 0;
-            }
+            get => _propertyManager.Y.GetValue(Item);
             set
             {
-                if (Item is IClickItem clickItem)
-                {
-                    clickItem.Y = value;
-                }
-
+                _propertyManager.Y.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
+        // 待機・ループ関連
         public int Wait
         {
-            get
-            {
-                return Item is IWaitItem waitItem ? waitItem.Wait : 0;
-            }
+            get => _propertyManager.Wait.GetValue(Item);
             set
             {
-                if (Item is IWaitItem waitItem)
-                {
-                    waitItem.Wait = value;
-                }
-
+                _propertyManager.Wait.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public int LoopCount
         {
-            get
-            {
-                return Item is ILoopItem loopItem ? loopItem.LoopCount : 0;
-
-            }
+            get => _propertyManager.LoopCount.GetValue(Item);
             set
             {
-                if (Item is ILoopItem loopItem)
-                {
-                    loopItem.LoopCount = value;
-                }
-
+                _propertyManager.LoopCount.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
+        // AI関連
         public string ModelPath
         {
-            get
-            {
-                return Item switch
-                {
-                    IfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.ModelPath,
-                    IfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.ModelPath,
-                    SetVariableAIItem setVariableAIItem => setVariableAIItem.ModelPath,
-                    _ => string.Empty,
-                };
-            }
+            get => _propertyManager.ModelPath.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IfImageExistAIItem ifImageExistAIItem:
-                        ifImageExistAIItem.ModelPath = value;
-                        break;
-                    case IfImageNotExistAIItem ifImageNotExistAIItem:
-                        ifImageNotExistAIItem.ModelPath = value;
-                        break;
-                    case SetVariableAIItem setVariableAIItem:
-                        setVariableAIItem.ModelPath = value;
-                        break;
-                }
+                _propertyManager.ModelPath.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public int ClassID
         {
-            get
-            {
-                return Item switch
-                {
-                    IfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.ClassID,
-                    IfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.ClassID,
-                    _ => 0,
-                };
-            }
+            get => _propertyManager.ClassID.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case IfImageExistAIItem ifImageExistAIItem:
-                        ifImageExistAIItem.ClassID = value;
-                        break;
-                    case IfImageNotExistAIItem ifImageNotExistAIItem:
-                        ifImageNotExistAIItem.ClassID = value;
-                        break;
-                }
+                _propertyManager.ClassID.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
+        // プログラム実行関連
         public string ProgramPath
         {
-            get
-            {
-                return Item is ExecuteItem executeProgramItem ? executeProgramItem.ProgramPath : string.Empty;
-            }
+            get => _propertyManager.ProgramPath.GetValue(Item);
             set
             {
-                if (Item is ExecuteItem executeProgramItem)
-                {
-                    executeProgramItem.ProgramPath = value;
-                }
+                _propertyManager.ProgramPath.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public string Arguments
         {
-            get
-            {
-                return Item is ExecuteItem executeProgramItem ? executeProgramItem.Arguments : string.Empty;
-            }
+            get => _propertyManager.Arguments.GetValue(Item);
             set
             {
-                if (Item is ExecuteItem executeProgramItem)
-                {
-                    executeProgramItem.Arguments = value;
-                }
+                _propertyManager.Arguments.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public string WorkingDirectory
         {
-            get
-            {
-                return Item is ExecuteItem executeProgramItem ? executeProgramItem.WorkingDirectory : string.Empty;
-            }
+            get => _propertyManager.WorkingDirectory.GetValue(Item);
             set
             {
-                if (Item is ExecuteItem executeProgramItem)
-                {
-                    executeProgramItem.WorkingDirectory = value;
-                }
+                _propertyManager.WorkingDirectory.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public bool WaitForExit
         {
-            get
-            {
-                return Item is ExecuteItem executeProgramItem ? executeProgramItem.WaitForExit : false;
-            }
+            get => _propertyManager.WaitForExit.GetValue(Item);
             set
             {
-                if (Item is ExecuteItem executeProgramItem)
-                {
-                    executeProgramItem.WaitForExit = value;
-                }
+                _propertyManager.WaitForExit.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
+        // 変数関連
         public string VariableName
         {
-            get
-            {
-                return Item switch
-                {
-                    SetVariableItem setVariableItem => setVariableItem.Name,
-                    IfVariableItem ifVariableItem => ifVariableItem.Name,
-                    SetVariableAIItem setVariableAIItem => setVariableAIItem.Name,
-                    _ => string.Empty,
-                };
-            }
+            get => _propertyManager.VariableName.GetValue(Item);
             set
             {
-                switch (Item)
-                {
-                    case SetVariableItem setVariableItem:
-                        setVariableItem.Name = value;
-                        break;
-                    case IfVariableItem ifVariableItem:
-                        ifVariableItem.Name = value;
-                        break;
-                    case SetVariableAIItem setVariableAIItem:
-                        setVariableAIItem.Name = value;
-                        break;
-                }
+                _propertyManager.VariableName.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public string VariableValue
         {
-            get
-            {
-                return Item is SetVariableItem setVariableItem ? setVariableItem.Value : string.Empty;
-            }
+            get => _propertyManager.VariableValue.GetValue(Item);
             set
             {
-                if (Item is SetVariableItem setVariableItem)
-                {
-                    setVariableItem.Value = value;
-                }
+                _propertyManager.VariableValue.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public string CompareOperator
         {
-            get
-            {
-                return Item is IfVariableItem ifVariableItem ? ifVariableItem.Operator : "==";
-            }
+            get => _propertyManager.CompareOperator.GetValue(Item);
             set
             {
-                if (Item is IfVariableItem ifVariableItem)
-                {
-                    ifVariableItem.Operator = value;
-                }
+                _propertyManager.CompareOperator.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
         public string CompareValue
         {
-            get
-            {
-                return Item is IfVariableItem ifVariableItem ? ifVariableItem.Value : string.Empty;
-            }
+            get => _propertyManager.CompareValue.GetValue(Item);
             set
             {
-                if (Item is IfVariableItem ifVariableItem)
-                {
-                    ifVariableItem.Value = value;
-                }
+                _propertyManager.CompareValue.SetValue(Item, value);
                 UpdateProperties();
             }
         }
 
+        // スクリーンショット関連
         public string SaveDirectory
         {
-            get
-            {
-                return Item is ScreenshotItem screenshotItem ? screenshotItem.SaveDirectory : string.Empty;
-            }
+            get => _propertyManager.SaveDirectory.GetValue(Item);
             set
             {
-                if (Item is ScreenshotItem screenshotItem)
-                {
-                    screenshotItem.SaveDirectory = value;
-                }
+                _propertyManager.SaveDirectory.SetValue(Item, value);
                 UpdateProperties();
             }
         }
         #endregion
 
         #region ColorPicker
+        public Brush SearchColorBrush => new SolidColorBrush(SearchColor ?? Color.FromArgb(0, 0, 0, 0));
 
-        public Brush SearchColorBrush
-        {
-            get
-            {
-                return new SolidColorBrush(SearchColor ?? Color.FromArgb(0, 0, 0, 0));
-            }
-        }
+        public string SearchColorText => SearchColor != null 
+            ? $"R:{SearchColor.Value.R:D3} G:{SearchColor.Value.G:D3} B:{SearchColor.Value.B:D3}" 
+            : "指定なし";
 
-        public string SearchColorText
-        {
-            get
-            {
-                // RGBの文字列を返す
-                return SearchColor != null ? $"R:{SearchColor.Value.R:D3} G:{SearchColor.Value.G:D3} B:{SearchColor.Value.B:D3}" : "指定なし";
-            }
-        }
-
-        public Brush SearchColorTextColor
-        {
-            get
-            {
-                // 色が指定されている場合は、その色の反転色を返す
-                return SearchColor != null ? new SolidColorBrush(Color.FromArgb(255, (byte)(255 - SearchColor.Value.R), (byte)(255 - SearchColor.Value.G), (byte)(255 - SearchColor.Value.B))) : new SolidColorBrush(Colors.Black);
-            }
-        }
+        public Brush SearchColorTextColor => SearchColor != null 
+            ? new SolidColorBrush(Color.FromArgb(255, (byte)(255 - SearchColor.Value.R), (byte)(255 - SearchColor.Value.G), (byte)(255 - SearchColor.Value.B))) 
+            : new SolidColorBrush(Colors.Black);
         #endregion
 
         #region ComboBox
         [ObservableProperty]
         private ObservableCollection<string> _itemTypes = new();
+        
         public string SelectedItemType
         {
-            get { return Item != null ? Item.ItemType : "None"; }
+            get => Item?.ItemType ?? "None";
             set
             {
-                if (Item == null)
-                {
-                    return;
-                }
-
-                if (Item.ItemType == value)
-                {
-                    return;
-                }
-
+                if (Item == null || Item.ItemType == value) return;
                 Item.ItemType = value;
                 OnSelectedItemTypeChanged();
-                // RefreshListViewMessage は UpdateProperties 内でデバウンス送信
             }
         }
 
         [ObservableProperty]
         private ObservableCollection<System.Windows.Input.MouseButton> _mouseButtons = new();
+        
         public System.Windows.Input.MouseButton SelectedMouseButton
         {
-            get
-            {
-                if (Item is IClickImageItem clickImageItem)
-                {
-                    return clickImageItem.Button;
-                }
-                else if (Item is IClickItem clickItem)
-                {
-                    return clickItem.Button;
-                }
-                return System.Windows.Input.MouseButton.Left;
-            }
+            get => MouseButton;
             set
             {
-                if (Item is IClickImageItem clickImageItem)
-                {
-                    clickImageItem.Button = value;
-                }
-                else if (Item is IClickItem clickItem)
-                {
-                    clickItem.Button = value;
-                }
-
+                MouseButton = value;
                 UpdateProperties();
             }
         }
 
         [ObservableProperty]
         private ObservableCollection<string> _operators = new();
+        
         public string SelectedOperator
         {
-            get
-            {
-                return Item is IfVariableItem ifVariableItem ? ifVariableItem.Operator : "==";
-            }
+            get => CompareOperator;
             set
             {
-                if (Item is IfVariableItem ifVariableItem)
-                {
-                    ifVariableItem.Operator = value;
-                }
+                CompareOperator = value;
                 UpdateProperties();
             }
         }
@@ -915,18 +450,22 @@ namespace MacroPanels.ViewModel
                 MouseButtons.Add(button);
             }
 
-            Operators.Add("==");
-            Operators.Add("!=");
-            Operators.Add(">");
-            Operators.Add("<");
-            Operators.Add(">=");
-            Operators.Add("<=");
-            Operators.Add("Contains");
-            Operators.Add("NotContains");
-            Operators.Add("StartsWith");
-            Operators.Add("EndsWith");
-            Operators.Add("IsEmpty");
-            Operators.Add("IsNotEmpty");
+            InitializeOperators();
+        }
+
+        private void InitializeOperators()
+        {
+            var operators = new[]
+            {
+                "==", "!=", ">", "<", ">=", "<=",
+                "Contains", "NotContains", "StartsWith", "EndsWith",
+                "IsEmpty", "IsNotEmpty"
+            };
+
+            foreach (var op in operators)
+            {
+                Operators.Add(op);
+            }
         }
 
         #region OnChanged
@@ -935,7 +474,7 @@ namespace MacroPanels.ViewModel
             var lineNumber = Item?.LineNumber ?? 0;
             var isSelected = Item?.IsSelected ?? false;
 
-            Item = (SelectedItemType) switch
+            Item = SelectedItemType switch
             {
                 nameof(ItemType.Click) => new ClickItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Click) },
                 nameof(ItemType.Click_Image) => new ClickImageItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Click_Image) },
@@ -954,13 +493,12 @@ namespace MacroPanels.ViewModel
                 nameof(ItemType.IF_End) => new IfEndItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_End) },
                 nameof(ItemType.SetVariable) => new SetVariableItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariable) },
                 nameof(ItemType.SetVariable_AI) => new SetVariableAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariable_AI) },
-                _ => throw new Exception("Unknown ItemType")
+                nameof(ItemType.IF_Variable) => new IfVariableItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_Variable) },
+                _ => throw new ArgumentException($"Unknown ItemType: {SelectedItemType}")
             };
-
 
             UpdateProperties();
             UpdateIsProperties();
-
             WeakReferenceMessenger.Default.Send(new EditCommandMessage(Item));
         }
         #endregion
@@ -968,77 +506,50 @@ namespace MacroPanels.ViewModel
         #region Update
         private void UpdateIsProperties()
         {
-            OnPropertyChanged(nameof(IsListNotEmpty));
-            OnPropertyChanged(nameof(IsNotNullItem));
-            OnPropertyChanged(nameof(IsWaitImageItem));
-            OnPropertyChanged(nameof(IsClickImageItem));
-            OnPropertyChanged(nameof(IsHotkeyItem));
-            OnPropertyChanged(nameof(IsClickItem));
-            OnPropertyChanged(nameof(IsWaitItem));
-            OnPropertyChanged(nameof(IsLoopItem));
-            OnPropertyChanged(nameof(IsEndLoopItem));
-            OnPropertyChanged(nameof(IsBreakItem));
-            OnPropertyChanged(nameof(IsIfImageExistItem));
-            OnPropertyChanged(nameof(IsIfImageNotExistItem));
-            OnPropertyChanged(nameof(IsEndIfItem));
-            OnPropertyChanged(nameof(IsIfImageExistAIItem));
-            OnPropertyChanged(nameof(IsIfImageNotExistAIItem));
-            OnPropertyChanged(nameof(IsExecuteProgramItem));
-            OnPropertyChanged(nameof(IsSetVariableItem));
-            OnPropertyChanged(nameof(IsIfVariableItem));
-            OnPropertyChanged(nameof(IsScreenshotItem));
+            var propertyNames = new[]
+            {
+                nameof(IsListNotEmpty), nameof(IsNotNullItem), nameof(IsWaitImageItem),
+                nameof(IsClickImageItem), nameof(IsHotkeyItem), nameof(IsClickItem),
+                nameof(IsWaitItem), nameof(IsLoopItem), nameof(IsEndLoopItem),
+                nameof(IsBreakItem), nameof(IsIfImageExistItem), nameof(IsIfImageNotExistItem),
+                nameof(IsEndIfItem), nameof(IsIfImageExistAIItem), nameof(IsIfImageNotExistAIItem),
+                nameof(IsExecuteProgramItem), nameof(IsSetVariableItem), nameof(IsIfVariableItem),
+                nameof(IsScreenshotItem)
+            };
+
+            foreach (var propertyName in propertyNames)
+            {
+                OnPropertyChanged(propertyName);
+            }
         }
 
         void UpdateProperties()
         {
-            if(_isUpdating)
-            {
-                return;
-            }
+            if (_isUpdating) return;
 
             try
             {
                 _isUpdating = true;
 
-                OnPropertyChanged(nameof(SelectedItemType));
-                OnPropertyChanged(nameof(WindowTitle));
-                OnPropertyChanged(nameof(WindowTitleText));
-                OnPropertyChanged(nameof(WindowClassName));
-                OnPropertyChanged(nameof(WindowClassNameText));
-                OnPropertyChanged(nameof(ImagePath));
-                OnPropertyChanged(nameof(Threshold));
-                OnPropertyChanged(nameof(SearchColor));
-                OnPropertyChanged(nameof(Timeout));
-                OnPropertyChanged(nameof(Interval));
-                OnPropertyChanged(nameof(MouseButton));
-                OnPropertyChanged(nameof(SelectedMouseButton));
-                OnPropertyChanged(nameof(Ctrl));
-                OnPropertyChanged(nameof(Alt));
-                OnPropertyChanged(nameof(Shift));
-                OnPropertyChanged(nameof(Key));
-                OnPropertyChanged(nameof(X));
-                OnPropertyChanged(nameof(Y));
-                OnPropertyChanged(nameof(Wait));
-                OnPropertyChanged(nameof(LoopCount));
-                OnPropertyChanged(nameof(SelectedOperator));
-                OnPropertyChanged(nameof(VariableName));
-                OnPropertyChanged(nameof(VariableValue));
-                OnPropertyChanged(nameof(CompareOperator));
-                OnPropertyChanged(nameof(CompareValue));
-                OnPropertyChanged(nameof(ModelPath));
-                OnPropertyChanged(nameof(ClassID));
-                OnPropertyChanged(nameof(ProgramPath));
-                OnPropertyChanged(nameof(Arguments));
-                OnPropertyChanged(nameof(WorkingDirectory));
-                OnPropertyChanged(nameof(WaitForExit));
-                OnPropertyChanged(nameof(SaveDirectory));
+                var propertiesToUpdate = new[]
+                {
+                    nameof(SelectedItemType), nameof(WindowTitle), nameof(WindowTitleText),
+                    nameof(WindowClassName), nameof(WindowClassNameText), nameof(ImagePath),
+                    nameof(Threshold), nameof(SearchColor), nameof(Timeout), nameof(Interval),
+                    nameof(MouseButton), nameof(SelectedMouseButton), nameof(Ctrl), nameof(Alt),
+                    nameof(Shift), nameof(Key), nameof(X), nameof(Y), nameof(Wait),
+                    nameof(LoopCount), nameof(SelectedOperator), nameof(VariableName),
+                    nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue),
+                    nameof(ModelPath), nameof(ClassID), nameof(ProgramPath), nameof(Arguments),
+                    nameof(WorkingDirectory), nameof(WaitForExit), nameof(SaveDirectory),
+                    nameof(SearchColorBrush), nameof(SearchColorText), nameof(SearchColorTextColor)
+                };
 
-                // 設定画面表示用
-                OnPropertyChanged(nameof(SearchColorBrush));
-                OnPropertyChanged(nameof(SearchColorText));
-                OnPropertyChanged(nameof(SearchColorTextColor));
+                foreach (var property in propertiesToUpdate)
+                {
+                    OnPropertyChanged(property);
+                }
 
-                // デバウンス送信
                 _refreshTimer.Stop();
                 _refreshTimer.Start();
             }
@@ -1053,7 +564,6 @@ namespace MacroPanels.ViewModel
         [RelayCommand]
         private void Enter(KeyEventArgs e)
         {
-            // エンターキーが押されたときのみ処理を行う
             if (e.Key == Key.Enter)
             {
                 UpdateProperties();
@@ -1064,7 +574,6 @@ namespace MacroPanels.ViewModel
         public void GetWindowInfo()
         {
             var getWindowInfoWindow = new GetWindowInfoWindow();
-
             if (getWindowInfoWindow.ShowDialog() == true)
             {
                 WindowTitle = getWindowInfoWindow.WindowTitle;
@@ -1082,46 +591,22 @@ namespace MacroPanels.ViewModel
         [RelayCommand]
         public void Browse()
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog
+            var fileName = DialogHelper.SelectImageFile();
+            if (fileName != null)
             {
-                Filter = "Image Files (*.png;*.jpg;*.bmp)|*.png;*.jpg;*.bmp|All Files (*.*)|*.*",
-                FilterIndex = 1,
-                Multiselect = false,
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                ImagePath = dialog.FileName;
+                ImagePath = fileName;
             }
         }
 
         [RelayCommand]
         public void Capture()
         {
-            // キャプチャウィンドウを表示
-            var captureWindow = new CaptureWindow
-            {
-                Mode = 0 // 選択領域モード
-            };
-
+            var captureWindow = new CaptureWindow { Mode = 0 };
             if (captureWindow.ShowDialog() == true)
             {
-                // キャプチャ保存先ディレクトリの存在確認と作成
-                var captureDirectory = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Capture");
-                if (!Directory.Exists(captureDirectory))
-                {
-                    Directory.CreateDirectory(captureDirectory);
-                }
-
-                // 現在時間をファイル名として指定する
-                var capturePath = System.IO.Path.Combine(captureDirectory, $"{DateTime.Now:yyyyMMddHHmmss}.png");
-
-                // 選択領域をキャプチャ
+                var capturePath = DialogHelper.CreateCaptureFilePath();
                 var capturedMat = OpenCVHelper.ScreenCaptureHelper.CaptureRegion(captureWindow.SelectedRegion);
-
-                // 指定されたファイル名で保存
                 OpenCVHelper.ScreenCaptureHelper.SaveCapture(capturedMat, capturePath);
-
                 ImagePath = capturePath;
             }
         }
@@ -1143,10 +628,7 @@ namespace MacroPanels.ViewModel
         [RelayCommand]
         public void PickPoint()
         {
-            // キャプチャウィンドウを表示
-            var captureWindow = new CaptureWindow();
-            captureWindow.Mode = 1; // ポイント選択モード
-
+            var captureWindow = new CaptureWindow { Mode = 1 };
             if (captureWindow.ShowDialog() == true)
             {
                 X = (int)captureWindow.SelectedPoint.X;
@@ -1157,104 +639,50 @@ namespace MacroPanels.ViewModel
         [RelayCommand]
         public void BrowseModel()
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog
+            var fileName = DialogHelper.SelectModelFile();
+            if (fileName != null)
             {
-                Filter = "ONNX Files (*.onnx)|*.onnx|All Files (*.*)|*.*",
-                FilterIndex = 1,
-                Multiselect = false,
-            };
-            if (dialog.ShowDialog() == true)
-            {
-                if (Item is IfImageExistAIItem ifImageExistAIItem)
-                {
-                    ifImageExistAIItem.ModelPath = dialog.FileName;
-                }
-                else if (Item is IfImageNotExistAIItem ifImageNotExistAIItem)
-                {
-                    ifImageNotExistAIItem.ModelPath = dialog.FileName;
-                }
-                else if (Item is SetVariableAIItem setVariableAIItem)
-                { 
-                    setVariableAIItem.ModelPath = dialog.FileName;
-                }
-                UpdateProperties();
+                ModelPath = fileName;
             }
         }
 
         [RelayCommand]
         public void BrowseProgram()
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog
+            var fileName = DialogHelper.SelectExecutableFile();
+            if (fileName != null)
             {
-                Filter = "Executable Files (*.exe;*.bat;*.cmd)|*.exe;*.bat;*.cmd|All Files (*.*)|*.*",
-                FilterIndex = 1,
-                Multiselect = false,
-            };
-            if (dialog.ShowDialog() == true)
-            {
-                if (Item is ExecuteItem executeProgramItem)
-                {
-                    executeProgramItem.ProgramPath = dialog.FileName;
-                }
-                UpdateProperties();
+                ProgramPath = fileName;
             }
         }
 
         [RelayCommand]
         public void BrowseWorkingDirectory()
         {
-            var dialog = new Microsoft.Win32.OpenFolderDialog() { Multiselect = false };
-
-            if (dialog.ShowDialog() == true)
+            var folderName = DialogHelper.SelectFolder();
+            if (folderName != null)
             {
-                if (Item is ExecuteItem executeProgramItem)
-                {
-                    executeProgramItem.WorkingDirectory = dialog.FolderName;
-                }
-                UpdateProperties();
+                WorkingDirectory = folderName;
             }
         }
 
         [RelayCommand]
         public void BrowseSaveDirectory()
         {
-            var dialog = new Microsoft.Win32.OpenFolderDialog() { Multiselect = false };
-            if (dialog.ShowDialog() == true)
+            var folderName = DialogHelper.SelectFolder();
+            if (folderName != null)
             {
-                if (Item is ScreenshotItem screenshotItem)
-                {
-                    screenshotItem.SaveDirectory = dialog.FolderName;
-                }
-                UpdateProperties();
+                SaveDirectory = folderName;
             }
         }
         #endregion
 
         #region Call from MainWindowViewModel
-        public ICommandListItem? GetItem()
-        {
-            return Item;
-        }
-
-        public void SetItem(ICommandListItem? item)
-        {
-            Item = item;
-        }
-
-        public void SetListCount(int listCount)
-        {
-            ListCount = listCount;
-        }
-
-        public void SetRunningState(bool isRunning)
-        {
-            IsRunning = isRunning;
-        }
-
-        public void Prepare()
-        {
-        }
-
+        public ICommandListItem? GetItem() => Item;
+        public void SetItem(ICommandListItem? item) => Item = item;
+        public void SetListCount(int listCount) => ListCount = listCount;
+        public void SetRunningState(bool isRunning) => IsRunning = isRunning;
+        public void Prepare() { }
         #endregion
     }
 }
