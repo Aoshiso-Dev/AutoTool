@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -34,11 +35,12 @@ namespace MacroPanels.Command.Interface
     public interface IIfImageExistCommand : ICommand, IIfCommand { new IWaitImageCommandSettings Settings { get; } }
     public interface IIfImageNotExistCommand : ICommand, IIfCommand { new IWaitImageCommandSettings Settings { get; } }
     public interface ILoopCommand : ICommand { new ILoopCommandSettings Settings { get; } }
-    public interface IEndLoopCommand : ICommand { new IEndLoopCommandSettings Settings { get; } }
-    public interface IBreakCommand : ICommand { }
+    public interface IEndLoopCommand : ICommand { new ILoopEndCommandSettings Settings { get; } }
+    public interface ILoopBreakCommand : ICommand { }
     public interface IIfImageExistAICommand : ICommand, IIfCommand { new IIfImageExistAISettings Settings { get; } }
-    public interface IExecuteProgramCommand : ICommand { new IExecuteProgramCommandSettings Settings { get; } }
+    public interface IExecuteCommand : ICommand { new IExecuteCommandSettings Settings { get; } }
     public interface ISetVariableCommand : ICommand { new ISetVariableCommandSettings Settings { get; } }
     public interface ISetVariableAICommand : ICommand { new ISetVariableAICommandSettings Settings { get; } }
     public interface IIfVariableCommand : ICommand, IIfCommand { new IIfVariableCommandSettings Settings { get; } }
+    public interface IScreenshotCommand : ICommand { new IScreenshotCommandSettings Settings { get; } }
 }

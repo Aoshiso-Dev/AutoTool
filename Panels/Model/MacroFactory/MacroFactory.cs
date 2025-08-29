@@ -41,7 +41,6 @@ namespace MacroPanels.Model.MacroFactory
                 IfImageNotExistAIItem aiNotExist => CreateIfCommand(parent, aiNotExist, items),
                 IfVariableItem ifVar => CreateIfCommand(parent, ifVar, items),
                 LoopItem loop => CreateLoopComand(parent, loop, items),
-                EndLoopItem => null,
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
@@ -72,7 +71,7 @@ namespace MacroPanels.Model.MacroFactory
             var endLoopItem = loopItem.Pair as ICommandListItem ?? throw new Exception("対になるEndLoopが見つかりません。");
             var childrenListItems = items.Where(x => x.LineNumber > loopItem.LineNumber && x.LineNumber < endLoopItem.LineNumber).ToList();
             if (childrenListItems.Count == 0) throw new Exception("Loopの中に要素がありません。");
-            var endLoopCommand = parent.Children.FirstOrDefault(x => x.LineNumber == loopItem.Pair?.LineNumber) as EndLoopCommand;
+            var endLoopCommand = parent.Children.FirstOrDefault(x => x.LineNumber == loopItem.Pair?.LineNumber) as LoopEndCommand;
             var loopCommand = new LoopCommand(parent, new LoopCommandSettings() { LoopCount = loopItem.LoopCount, Pair = endLoopCommand })
             {
                 LineNumber = loopItem.LineNumber,

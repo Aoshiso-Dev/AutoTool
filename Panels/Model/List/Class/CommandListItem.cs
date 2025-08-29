@@ -438,7 +438,9 @@ namespace MacroPanels.List.Class
         }
     }
 
-    public partial class EndIfItem : CommandListItem, IEndIfItem
+
+    [SimpleCommandBinding(typeof(IfEndCommand), typeof(ICommandSettings))]
+    public partial class IfEndItem : CommandListItem, IIfEndItem, ICommandSettings
     {
         new public bool IsEnable
         {
@@ -467,12 +469,12 @@ namespace MacroPanels.List.Class
 
         new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
 
-        public EndIfItem() { }
-        public EndIfItem(EndIfItem? item = null) : base(item) { }
+        public IfEndItem() { }
+        public IfEndItem(IfEndItem? item = null) : base(item) { }
 
         public new ICommandListItem Clone()
         {
-            return new EndIfItem(this);
+            return new IfEndItem(this);
         }
     }
 
@@ -524,7 +526,8 @@ namespace MacroPanels.List.Class
         }
     }
 
-    public partial class EndLoopItem : CommandListItem, IEndLoopItem
+    [SimpleCommandBinding(typeof(LoopEndCommand), typeof(ICommandSettings))]
+    public partial class LoopEndItem : CommandListItem, ILoopEndItem, ICommandSettings
     {
         new public bool IsEnable
         {
@@ -552,9 +555,9 @@ namespace MacroPanels.List.Class
 
         new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
 
-        public EndLoopItem() { }
+        public LoopEndItem() { }
 
-        public EndLoopItem(EndLoopItem? item = null) : base(item)
+        public LoopEndItem(LoopEndItem? item = null) : base(item)
         {
             if (item != null)
             {
@@ -564,19 +567,20 @@ namespace MacroPanels.List.Class
 
         public new ICommandListItem Clone()
         {
-            return new EndLoopItem(this);
+            return new LoopEndItem(this);
         }
     }
 
-    public partial class BreakItem : CommandListItem, IBreakItem
+    [SimpleCommandBinding(typeof(LoopBreakCommand), typeof(ICommandSettings))]
+    public partial class LoopBreakItem : CommandListItem, ILoopBreakItem, ICommandSettings
     {
-        public BreakItem() { }
+        public LoopBreakItem() { }
 
-        public BreakItem(BreakItem? item = null) : base(item) { }
+        public LoopBreakItem(LoopBreakItem? item = null) : base(item) { }
 
         public new ICommandListItem Clone()
         {
-            return new BreakItem(this);
+            return new LoopBreakItem(this);
         }
     }
 
@@ -675,7 +679,8 @@ namespace MacroPanels.List.Class
         }
     }
 
-    public partial class ExecuteProgramItem : CommandListItem, IExecuteProgramItem, IExecuteProgramCommandSettings
+    [SimpleCommandBinding(typeof(ExecuteCommand), typeof(IExecuteCommandSettings))]
+    public partial class ExecuteItem : CommandListItem, IExecuteItem, IExecuteCommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -691,8 +696,8 @@ namespace MacroPanels.List.Class
         private bool _waitForExit = false;
 
         new public string Description => $"ファイルパス:{System.IO.Path.GetFileName(ProgramPath)} / 引数:{Arguments} / 作業フォルダ:{WorkingDirectory}";
-        public ExecuteProgramItem() { }
-        public ExecuteProgramItem(ExecuteProgramItem? item = null) : base(item)
+        public ExecuteItem() { }
+        public ExecuteItem(ExecuteItem? item = null) : base(item)
         {
             if (item != null)
             {
@@ -704,7 +709,7 @@ namespace MacroPanels.List.Class
         }
         public new ICommandListItem Clone()
         {
-            return new ExecuteProgramItem(this);
+            return new ExecuteItem(this);
         }
     }
 
@@ -810,5 +815,37 @@ namespace MacroPanels.List.Class
         }
 
         public new ICommandListItem Clone() => new IfVariableItem(this);
+    }
+
+    [SimpleCommandBinding(typeof(ScreenshotCommand), typeof(IScreenshotCommandSettings))]
+    public partial class ScreenshotItem : CommandListItem, IScreenshotItem, IScreenshotCommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _saveDirectory = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowTitle = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowClassName = string.Empty;
+
+        new public string Description =>
+            $"対象：{(string.IsNullOrEmpty(_windowTitle) && string.IsNullOrEmpty(_windowClassName) ? "全画面" : $"{_windowTitle}[{_windowClassName}]")} / 保存先:{(string.IsNullOrEmpty(_saveDirectory) ? "(./Screenshots)" : _saveDirectory)}";
+
+        public ScreenshotItem() { }
+        public ScreenshotItem(ScreenshotItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                _saveDirectory = item._saveDirectory;
+                _windowTitle = item._windowTitle;
+                _windowClassName = item._windowClassName;
+            }
+        }
+
+        public new ICommandListItem Clone() => new ScreenshotItem(this);
     }
 }

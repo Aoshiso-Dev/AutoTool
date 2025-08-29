@@ -76,17 +76,17 @@ namespace MacroPanels.ViewModel
         public bool IsClickItem => Item is ClickItem;
         public bool IsWaitItem => Item is WaitItem;
         public bool IsLoopItem => Item is LoopItem;
-        public bool IsEndLoopItem => Item is EndLoopItem;
-        public bool IsBreakItem => Item is BreakItem;
+        public bool IsEndLoopItem => Item is LoopEndItem;
+        public bool IsBreakItem => Item is LoopBreakItem;
         public bool IsIfImageExistItem => Item is IfImageExistItem;
         public bool IsIfImageNotExistItem => Item is IfImageNotExistItem;
         public bool IsIfImageExistAIItem => Item is IfImageExistAIItem;
         public bool IsIfImageNotExistAIItem => Item is IfImageNotExistAIItem;
-        public bool IsEndIfItem => Item is EndIfItem;
-        public bool IsExecuteProgramItem => Item is ExecuteProgramItem;
+        public bool IsEndIfItem => Item is IfEndItem;
+        public bool IsExecuteProgramItem => Item is ExecuteItem;
         public bool IsSetVariableItem => Item is SetVariableItem;
-        public bool IsSetVariableAIItem => Item is SetVariableAIItem;
         public bool IsIfVariableItem => Item is IfVariableItem;
+        public bool IsScreenshotItem => Item is ScreenshotItem;
         #endregion
 
         #region Properties
@@ -111,6 +111,7 @@ namespace MacroPanels.ViewModel
                     IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.WindowTitle,
                     IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.WindowTitle,
                     ISetVariableAIItem setVariableAIItem => setVariableAIItem.WindowTitle,
+                    IScreenshotItem screenshotItem => screenshotItem.WindowTitle,
                     _ => string.Empty,
                 };
             }
@@ -145,6 +146,9 @@ namespace MacroPanels.ViewModel
                     case ISetVariableAIItem setVariableAIItem:
                         setVariableAIItem.WindowTitle = value;
                         break;
+                    case IScreenshotItem screenshotItem:
+                        screenshotItem.WindowTitle = value;
+                        break;
                 }
 
                 UpdateProperties();
@@ -171,6 +175,7 @@ namespace MacroPanels.ViewModel
                     IIfImageExistAIItem ifImageExistAIItem => ifImageExistAIItem.WindowClassName,
                     IIfImageNotExistAIItem ifImageNotExistAIItem => ifImageNotExistAIItem.WindowClassName,
                     ISetVariableAIItem setVariableAIItem => setVariableAIItem.WindowClassName,
+                    IScreenshotItem screenshotItem => screenshotItem.WindowClassName,
                     _ => string.Empty,
                 };
             }
@@ -204,6 +209,9 @@ namespace MacroPanels.ViewModel
                         break;
                     case ISetVariableAIItem setVariableAIItem:
                         setVariableAIItem.WindowClassName = value;
+                        break;
+                    case IScreenshotItem screenshotItem:
+                        screenshotItem.WindowClassName = value;
                         break;
                 }
 
@@ -630,11 +638,11 @@ namespace MacroPanels.ViewModel
         {
             get
             {
-                return Item is ExecuteProgramItem executeProgramItem ? executeProgramItem.ProgramPath : string.Empty;
+                return Item is ExecuteItem executeProgramItem ? executeProgramItem.ProgramPath : string.Empty;
             }
             set
             {
-                if (Item is ExecuteProgramItem executeProgramItem)
+                if (Item is ExecuteItem executeProgramItem)
                 {
                     executeProgramItem.ProgramPath = value;
                 }
@@ -646,11 +654,11 @@ namespace MacroPanels.ViewModel
         {
             get
             {
-                return Item is ExecuteProgramItem executeProgramItem ? executeProgramItem.Arguments : string.Empty;
+                return Item is ExecuteItem executeProgramItem ? executeProgramItem.Arguments : string.Empty;
             }
             set
             {
-                if (Item is ExecuteProgramItem executeProgramItem)
+                if (Item is ExecuteItem executeProgramItem)
                 {
                     executeProgramItem.Arguments = value;
                 }
@@ -662,11 +670,11 @@ namespace MacroPanels.ViewModel
         {
             get
             {
-                return Item is ExecuteProgramItem executeProgramItem ? executeProgramItem.WorkingDirectory : string.Empty;
+                return Item is ExecuteItem executeProgramItem ? executeProgramItem.WorkingDirectory : string.Empty;
             }
             set
             {
-                if (Item is ExecuteProgramItem executeProgramItem)
+                if (Item is ExecuteItem executeProgramItem)
                 {
                     executeProgramItem.WorkingDirectory = value;
                 }
@@ -678,11 +686,11 @@ namespace MacroPanels.ViewModel
         {
             get
             {
-                return Item is ExecuteProgramItem executeProgramItem ? executeProgramItem.WaitForExit : false;
+                return Item is ExecuteItem executeProgramItem ? executeProgramItem.WaitForExit : false;
             }
             set
             {
-                if (Item is ExecuteProgramItem executeProgramItem)
+                if (Item is ExecuteItem executeProgramItem)
                 {
                     executeProgramItem.WaitForExit = value;
                 }
@@ -763,6 +771,22 @@ namespace MacroPanels.ViewModel
                 if (Item is IfVariableItem ifVariableItem)
                 {
                     ifVariableItem.Value = value;
+                }
+                UpdateProperties();
+            }
+        }
+
+        public string SaveDirectory
+        {
+            get
+            {
+                return Item is ScreenshotItem screenshotItem ? screenshotItem.SaveDirectory : string.Empty;
+            }
+            set
+            {
+                if (Item is ScreenshotItem screenshotItem)
+                {
+                    screenshotItem.SaveDirectory = value;
                 }
                 UpdateProperties();
             }
@@ -870,7 +894,6 @@ namespace MacroPanels.ViewModel
                 UpdateProperties();
             }
         }
-
         #endregion
 
 
@@ -912,60 +935,28 @@ namespace MacroPanels.ViewModel
             var lineNumber = Item?.LineNumber ?? 0;
             var isSelected = Item?.IsSelected ?? false;
 
-            switch (SelectedItemType)
+            Item = (SelectedItemType) switch
             {
-                case nameof(ItemType.WaitImage):
-                    Item = new WaitImageItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.WaitImage) };
-                    break;
-                case nameof(ItemType.ClickImage):
-                    Item = new ClickImageItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.ClickImage) };
-                    break;
-                case nameof(ItemType.Hotkey):
-                    Item = new HotkeyItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Hotkey) };
-                    break;
-                case nameof(ItemType.Click):
-                    Item = new ClickItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Click) };
-                    break;
-                case nameof(ItemType.Wait):
-                    Item = new WaitItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Wait) };
-                    break;
-                case nameof(ItemType.Loop):
-                    Item = new LoopItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Loop) };
-                    break;
-                case nameof(ItemType.EndLoop):
-                    Item = new EndLoopItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.EndLoop) };
-                    break;
-                case nameof(ItemType.Break):
-                    Item = new BreakItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Break) };
-                    break;
-                case nameof(ItemType.IfImageExist):
-                    Item = new IfImageExistItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfImageExist) };
-                    break;
-                case nameof(ItemType.IfImageNotExist):
-                    Item = new IfImageNotExistItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfImageNotExist) };
-                    break;
-                case nameof(ItemType.EndIf):
-                    Item = new EndIfItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.EndIf) };
-                    break;
-                case nameof(ItemType.IfImageExistAI):
-                    Item = new IfImageExistAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfImageExistAI) };
-                    break;
-                case nameof(ItemType.IfImageNotExistAI):
-                    Item = new IfImageNotExistAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfImageNotExistAI) };
-                    break;
-                case nameof(ItemType.ExecuteProgram):
-                    Item = new ExecuteProgramItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.ExecuteProgram) };
-                    break;
-                case nameof(ItemType.SetVariable):
-                    Item = new SetVariableItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariable) };
-                    break;
-                case nameof(ItemType.SetVariableAI):
-                    Item = new SetVariableAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariableAI) };
-                    break;
-                case nameof(ItemType.IfVariable):
-                    Item = new IfVariableItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfVariable) };
-                    break;
-            }
+                nameof(ItemType.Click) => new ClickItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Click) },
+                nameof(ItemType.Click_Image) => new ClickImageItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Click_Image) },
+                nameof(ItemType.Hotkey) => new HotkeyItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Hotkey) },
+                nameof(ItemType.Execute) => new ExecuteItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Execute) },
+                nameof(ItemType.Screenshot) => new ScreenshotItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Screenshot) },
+                nameof(ItemType.Wait) => new WaitItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Wait) },
+                nameof(ItemType.Wait_Image) => new WaitImageItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Wait_Image) },
+                nameof(ItemType.Loop) => new LoopItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Loop) },
+                nameof(ItemType.Loop_End) => new LoopEndItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Loop_End) },
+                nameof(ItemType.Loop_Break) => new LoopBreakItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Loop_Break) },
+                nameof(ItemType.IF_ImageExist) => new IfImageExistItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_ImageExist) },
+                nameof(ItemType.IF_ImageNotExist) => new IfImageNotExistItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_ImageNotExist) },
+                nameof(ItemType.IF_ImageExist_AI) => new IfImageExistAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_ImageExist_AI) },
+                nameof(ItemType.IF_ImageNotExist_AI) => new IfImageNotExistAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_ImageNotExist_AI) },
+                nameof(ItemType.IF_End) => new IfEndItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_End) },
+                nameof(ItemType.SetVariable) => new SetVariableItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariable) },
+                nameof(ItemType.SetVariable_AI) => new SetVariableAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariable_AI) },
+                _ => throw new Exception("Unknown ItemType")
+            };
+
 
             UpdateProperties();
             UpdateIsProperties();
@@ -994,8 +985,8 @@ namespace MacroPanels.ViewModel
             OnPropertyChanged(nameof(IsIfImageNotExistAIItem));
             OnPropertyChanged(nameof(IsExecuteProgramItem));
             OnPropertyChanged(nameof(IsSetVariableItem));
-            OnPropertyChanged(nameof(IsSetVariableAIItem));
             OnPropertyChanged(nameof(IsIfVariableItem));
+            OnPropertyChanged(nameof(IsScreenshotItem));
         }
 
         void UpdateProperties()
@@ -1040,6 +1031,7 @@ namespace MacroPanels.ViewModel
                 OnPropertyChanged(nameof(Arguments));
                 OnPropertyChanged(nameof(WorkingDirectory));
                 OnPropertyChanged(nameof(WaitForExit));
+                OnPropertyChanged(nameof(SaveDirectory));
 
                 // 設定画面表示用
                 OnPropertyChanged(nameof(SearchColorBrush));
@@ -1200,7 +1192,7 @@ namespace MacroPanels.ViewModel
             };
             if (dialog.ShowDialog() == true)
             {
-                if (Item is ExecuteProgramItem executeProgramItem)
+                if (Item is ExecuteItem executeProgramItem)
                 {
                     executeProgramItem.ProgramPath = dialog.FileName;
                 }
@@ -1215,9 +1207,23 @@ namespace MacroPanels.ViewModel
 
             if (dialog.ShowDialog() == true)
             {
-                if (Item is ExecuteProgramItem executeProgramItem)
+                if (Item is ExecuteItem executeProgramItem)
                 {
                     executeProgramItem.WorkingDirectory = dialog.FolderName;
+                }
+                UpdateProperties();
+            }
+        }
+
+        [RelayCommand]
+        public void BrowseSaveDirectory()
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog() { Multiselect = false };
+            if (dialog.ShowDialog() == true)
+            {
+                if (Item is ScreenshotItem screenshotItem)
+                {
+                    screenshotItem.SaveDirectory = dialog.FolderName;
                 }
                 UpdateProperties();
             }

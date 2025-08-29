@@ -51,7 +51,7 @@
                     <!-- コマンドスタックパネル -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="コマンド:"/>
-                        <ComboBox ItemsSource="{Binding ItemTypes, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedItemType}"/>
+                        <ComboBox ItemsSource="{Binding ItemTypes, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedItemType}" Width="300"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsNotNullItem"/>
@@ -86,6 +86,7 @@
                                 <Binding Path="IsIfImageExistAIItem"/>
                                 <Binding Path="IsIfImageNotExistAIItem"/>
                                 <Binding Path="IsSetVariableAIItem"/>
+                                <Binding Path="IsScreenshotItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
@@ -361,8 +362,24 @@
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
+                    
+                    <!-- スクリーンショット保存先ディレクトリの設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="保存先ディレクトリ:"/>
+                        <TextBox Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="300"/>
+                        <Button Content="参照" Command="{Binding BrowseSaveDirectoryCommand}"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsScreenshotItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+                    
+                    
 
                 </StackPanel>
+                
+                
                 
                 <!-- 画像のプレビュー -->
                 <GroupBox Header="プレビュー">

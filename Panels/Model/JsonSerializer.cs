@@ -58,21 +58,24 @@ internal class CommandListItemConverter : JsonConverter<ICommandListItem>
     {
         _itemTypeMapping = new Dictionary<string, Type>
         {
-            { nameof(ItemType.WaitImage), typeof(WaitImageItem) },
-            { nameof(ItemType.ClickImage), typeof(ClickImageItem) },
             { nameof(ItemType.Click), typeof(ClickItem) },
+            { nameof(ItemType.Click_Image), typeof(ClickImageItem) },
             { nameof(ItemType.Hotkey), typeof(HotkeyItem) },
             { nameof(ItemType.Wait), typeof(WaitItem) },
+            { nameof(ItemType.Wait_Image), typeof(WaitImageItem) },
+            { nameof(ItemType.Execute), typeof(ExecuteItem) },
+            { nameof(ItemType.Screenshot), typeof(ScreenshotItem) },
             { nameof(ItemType.Loop), typeof(LoopItem) },
-            { nameof(ItemType.EndLoop), typeof(EndLoopItem) },
-            { nameof(ItemType.Break), typeof(BreakItem) },
-            { nameof(ItemType.IfImageExist), typeof(IfImageExistItem) },
-            { nameof(ItemType.IfImageNotExist), typeof(IfImageNotExistItem) },
-            { nameof(ItemType.EndIf), typeof(EndIfItem) },
-            { nameof(ItemType.IfImageExistAI), typeof(IfImageExistAIItem) },
-            { nameof(ItemType.IfImageNotExistAI), typeof(IfImageNotExistAIItem) },
+            { nameof(ItemType.Loop_End), typeof(LoopEndItem) },
+            { nameof(ItemType.Loop_Break), typeof(LoopBreakItem) },
+            { nameof(ItemType.IF_ImageExist), typeof(IfImageExistItem) },
+            { nameof(ItemType.IF_ImageNotExist), typeof(IfImageNotExistItem) },
+            { nameof(ItemType.IF_ImageExist_AI), typeof(IfImageExistAIItem) },
+            { nameof(ItemType.IF_ImageNotExist_AI), typeof(IfImageNotExistAIItem) },
+            { nameof(ItemType.IF_Variable), typeof(IfVariableItem) },
+            { nameof(ItemType.IF_End), typeof(IfEndItem) },
             { nameof(ItemType.SetVariable), typeof(SetVariableItem) },
-            { nameof(ItemType.IfVariable), typeof(IfVariableItem) },
+            { nameof(ItemType.SetVariable_AI), typeof(SetVariableAIItem) }
         };
     }
 
@@ -104,7 +107,7 @@ internal class CommandListItemConverter : JsonConverter<ICommandListItem>
         {
             ifItem.Pair = null;
         }
-        else if (value is IEndIfItem endIfItem)
+        else if (value is IIfEndItem endIfItem)
         {
             endIfItem.Pair = null;
         }
@@ -112,7 +115,7 @@ internal class CommandListItemConverter : JsonConverter<ICommandListItem>
         {
             loopItem.Pair = null;
         }
-        else if (value is IEndLoopItem endLoopItem)
+        else if (value is ILoopEndItem endLoopItem)
         {
             endLoopItem.Pair = null;
         }

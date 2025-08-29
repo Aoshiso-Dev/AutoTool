@@ -63,7 +63,7 @@ namespace MacroPanels.Command.Class
         public ICommand? Pair { get; set; }
     }
 
-    public class EndLoopCommandSettings : ICommandSettings, IEndLoopCommandSettings
+    public class LoopEndCommandSettings : ICommandSettings, ILoopEndCommandSettings
     {
         public int LoopCount { get; set; }
         public ICommand? Pair { get; set; }
@@ -81,7 +81,7 @@ namespace MacroPanels.Command.Class
         public int Interval { get; set; }
     }
 
-    public class ExecuteProgramCommandSettings : ICommandSettings, IExecuteProgramCommandSettings
+    public class ExecuteCommandSettings : ICommandSettings, IExecuteCommandSettings
     {
         public string ProgramPath { get; set; } = string.Empty;
         public string Arguments { get; set; } = string.Empty;

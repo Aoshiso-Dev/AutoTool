@@ -300,7 +300,7 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    public class IfImageExistCommand : BaseCommand, ICommand, IIfImageExistCommand
+    public class IfImageExistCommand : BaseCommand, ICommand, IIfCommand, IIfImageExistCommand
     {
         new public IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings;
 
@@ -346,7 +346,7 @@ namespace MacroPanels.Command.Class
 
     }
 
-    public class IfImageNotExistCommand : BaseCommand, ICommand, IIfImageNotExistCommand
+    public class IfImageNotExistCommand : BaseCommand, ICommand, IIfCommand, IIfImageNotExistCommand
     {
         new public IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings;
 
@@ -393,9 +393,9 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    public class EndIfCommand : BaseCommand, ICommand
+    public class IfEndCommand : BaseCommand, ICommand
     {
-        public EndIfCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        public IfEndCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             return await Task.Run(() =>
@@ -450,11 +450,11 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    public class EndLoopCommand : BaseCommand, ICommand, IEndLoopCommand
+    public class LoopEndCommand : BaseCommand, ICommand, IEndLoopCommand
     {
-        new public IEndLoopCommandSettings Settings => (IEndLoopCommandSettings)base.Settings;
+        new public ILoopEndCommandSettings Settings => (ILoopEndCommandSettings)base.Settings;
 
-        public EndLoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        public LoopEndCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
@@ -467,9 +467,9 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    public class BreakCommand : BaseCommand, ICommand, IBreakCommand
+    public class LoopBreakCommand : BaseCommand, ICommand, ILoopBreakCommand
     {
-        public BreakCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        public LoopBreakCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
@@ -477,7 +477,7 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    public class IfImageExistAICommand : BaseCommand, ICommand, IIfImageExistAICommand
+    public class IfImageExistAICommand : BaseCommand, ICommand, IIfCommand, IIfImageExistAICommand
     {
         new public IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings;
 
@@ -528,7 +528,7 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    public class IfImageNotExistAICommand : BaseCommand, ICommand, IIfImageExistAICommand
+    public class IfImageNotExistAICommand : BaseCommand, ICommand, IIfCommand, IIfImageExistAICommand
     {
         new public IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings;
         public IfImageNotExistAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
@@ -540,10 +540,10 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    public class ExecuteProgramCommand : BaseCommand, ICommand, IExecuteProgramCommand
+    public class ExecuteCommand : BaseCommand, ICommand, IExecuteCommand
     {
-        new public IExecuteProgramCommandSettings Settings => (IExecuteProgramCommandSettings)base.Settings;
-        public ExecuteProgramCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        new public IExecuteCommandSettings Settings => (IExecuteCommandSettings)base.Settings;
+        public ExecuteCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             try
@@ -686,6 +686,43 @@ namespace MacroPanels.Command.Class
                     "IsNotEmpty" => !string.IsNullOrEmpty(lhs),
                     _ => throw new Exception($"不明な文字列比較演算子です: {op}"),
                 };
+            }
+        }
+    }
+
+    public class ScreenshotCommand : BaseCommand, ICommand, IScreenshotCommand
+    {
+        new public IScreenshotCommandSettings Settings => (IScreenshotCommandSettings)base.Settings;
+        public ScreenshotCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var dir = string.IsNullOrWhiteSpace(Settings.SaveDirectory)
+                    ? Path.Combine(Environment.CurrentDirectory, "Screenshots")
+                    : Settings.SaveDirectory;
+
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                var file = $"{DateTime.Now:yyyyMMdd_HHmmssfff}.png";
+                var fullPath = Path.Combine(dir, file);
+
+                using var mat = (string.IsNullOrEmpty(Settings.WindowTitle) && string.IsNullOrEmpty(Settings.WindowClassName))
+                    ? ScreenCaptureHelper.CaptureScreen()
+                    : ScreenCaptureHelper.CaptureWindow(Settings.WindowTitle, Settings.WindowClassName);
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ScreenCaptureHelper.SaveCapture(mat, fullPath);
+
+                OnDoingCommand?.Invoke(this, $"スクリーンショットを保存しました: {fullPath}");
+                return await Task.FromResult(true);
+            }
+            catch (Exception ex)
+            {
+                OnDoingCommand?.Invoke(this, $"スクリーンショットの保存に失敗しました: {ex.Message}");
+                return false;
             }
         }
     }

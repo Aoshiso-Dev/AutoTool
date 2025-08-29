@@ -9,8 +9,7 @@ using System.Reflection;
 namespace MacroPanels.Model.MacroFactory
 {
     /// <summary>
-    /// シンプル（子やペア解決が不要）なコマンドの生成を型登録で管理するレジストリ。
-    /// 新規コマンドは RegisterDefaults に1行追加、または Attribute による自動登録が可能。
+    /// シンプル（子やペア解決が不要）なコマンドの生成を、属性ベースで自動登録するレジストリ。
     /// </summary>
     public static class CommandRegistry
     {
@@ -19,18 +18,8 @@ namespace MacroPanels.Model.MacroFactory
 
         static CommandRegistry()
         {
-            RegisterDefaults();
-            // 属性による自動登録（同一キーは上書き）
-            RegisterFromAssembly(typeof(WaitItem).Assembly);
-        }
-
-        /// <summary>
-        /// 単純コマンドを登録する。
-        /// </summary>
-        public static void RegisterSimple<TItem>(Func<ICommand, TItem, ICommand> factory)
-            where TItem : ICommandListItem
-        {
-            s_simpleMap[typeof(TItem)] = (parent, item) => factory(parent, (TItem)item);
+            // 現在のアセンブリ内の Item を属性から一括登録
+            RegisterFromAssembly(typeof(CommandRegistry).Assembly);
         }
 
         /// <summary>
@@ -63,11 +52,10 @@ namespace MacroPanels.Model.MacroFactory
                 var attr = type.GetCustomAttribute<SimpleCommandBindingAttribute>();
                 if (attr == null) continue;
 
-                var itemType = type;
                 var commandCtor = attr.CommandType.GetConstructor(new[] { typeof(ICommand), typeof(ICommandSettings) })
                                   ?? throw new InvalidOperationException($"コマンド型 {attr.CommandType.Name} に (ICommand, ICommandSettings) コンストラクタがありません。");
 
-                s_simpleMap[itemType] = (parent, item) =>
+                s_simpleMap[type] = (parent, item) =>
                 {
                     if (!attr.SettingsInterfaceType.IsInstanceOfType(item))
                     {
@@ -76,20 +64,6 @@ namespace MacroPanels.Model.MacroFactory
                     return (ICommand)commandCtor.Invoke(new object[] { parent, (ICommandSettings)item });
                 };
             }
-        }
-
-        private static void RegisterDefaults()
-        {
-            // ListItem(= Settings 実装) をそのまま Command へ渡す
-            RegisterSimple<WaitImageItem>((p, it) => new WaitImageCommand(p, (IWaitImageCommandSettings)it));
-            RegisterSimple<ClickImageItem>((p, it) => new ClickImageCommand(p, (IClickImageCommandSettings)it));
-            RegisterSimple<HotkeyItem>((p, it) => new HotkeyCommand(p, (IHotkeyCommandSettings)it));
-            RegisterSimple<ClickItem>((p, it) => new ClickCommand(p, (IClickCommandSettings)it));
-            RegisterSimple<WaitItem>((p, it) => new WaitCommand(p, (IWaitCommandSettings)it));
-            RegisterSimple<BreakItem>((p, it) => new BreakCommand(p, new CommandSettings()));
-            RegisterSimple<EndIfItem>((p, it) => new EndIfCommand(p, new CommandSettings()));
-            RegisterSimple<ExecuteProgramItem>((p, it) => new ExecuteProgramCommand(p, (IExecuteProgramCommandSettings)it));
-            RegisterSimple<SetVariableItem>((p, it) => new SetVariableCommand(p, (ISetVariableCommandSettings)it));
         }
     }
 }

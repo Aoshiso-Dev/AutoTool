@@ -117,23 +117,24 @@ namespace MacroPanels.ViewModel
         {
             ICommandListItem? item = itemType switch
             {
-                nameof(ItemType.WaitImage) => new WaitImageItem(),
-                nameof(ItemType.ClickImage) => new ClickImageItem(),
                 nameof(ItemType.Click) => new ClickItem(),
+                nameof(ItemType.Click_Image) => new ClickImageItem(),
                 nameof(ItemType.Hotkey) => new HotkeyItem(),
                 nameof(ItemType.Wait) => new WaitItem(),
+                nameof(ItemType.Wait_Image) => new WaitImageItem(),
+                nameof(ItemType.Execute) => new ExecuteItem(),
+                nameof(ItemType.Screenshot) => new ScreenshotItem(),
                 nameof(ItemType.Loop) => new LoopItem(),
-                nameof(ItemType.EndLoop) => new EndLoopItem(),
-                nameof(ItemType.Break) => new BreakItem(),
-                nameof(ItemType.IfImageExist) => new IfImageExistItem(),
-                nameof(ItemType.IfImageNotExist) => new IfImageNotExistItem(),
-                nameof(ItemType.EndIf) => new EndIfItem(),
-                nameof(ItemType.IfImageExistAI) => new IfImageExistAIItem(),
-                nameof(ItemType.IfImageNotExistAI) => new IfImageNotExistAIItem(),
-                nameof(ItemType.ExecuteProgram) => new ExecuteProgramItem(),
+                nameof(ItemType.Loop_End) => new LoopEndItem(),
+                nameof(ItemType.Loop_Break) => new LoopBreakItem(),
+                nameof(ItemType.IF_ImageExist) => new IfImageExistItem(),
+                nameof(ItemType.IF_ImageNotExist) => new IfImageNotExistItem(),
+                nameof(ItemType.IF_ImageExist_AI) => new IfImageExistAIItem(),
+                nameof(ItemType.IF_ImageNotExist_AI) => new IfImageNotExistAIItem(),
+                nameof(ItemType.IF_Variable) => new IfVariableItem(),
+                nameof(ItemType.IF_End) => new IfEndItem(),
                 nameof(ItemType.SetVariable) => new SetVariableItem(),
-                nameof(ItemType.SetVariableAI) => new SetVariableAIItem(),
-                nameof(ItemType.IfVariable) => new IfVariableItem(),
+                nameof(ItemType.SetVariable_AI) => new SetVariableAIItem(),
                 _ => null
             };
 

@@ -58,25 +58,26 @@ namespace MacroPanels.Command.Interface
         ICommand? Pair { get; set; }
     }
 
-    public interface IEndLoopCommandSettings : ICommandSettings
+    public interface ILoopEndCommandSettings : ICommandSettings
     {
         int LoopCount { get; set; }
         ICommand? Pair { get; set; }
     }
 
+    // Align to actual usage in Items/Commands (YOLO by ClassId)
     public interface IIfImageExistAISettings : ICommandSettings
     {
         string ModelPath { get; set; }
-        int ClassID { get; set; }
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
+        int ClassID { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
         int Timeout { get; set; }
         int Interval { get; set; }
     }
 
-    public interface IExecuteProgramCommandSettings : ICommandSettings
+    public interface IExecuteCommandSettings : ICommandSettings
     {
         string ProgramPath { get; set; }
         string Arguments { get; set; }
@@ -84,6 +85,7 @@ namespace MacroPanels.Command.Interface
         bool WaitForExit { get; set; }
     }
 
+    // Variable commands
     public interface ISetVariableCommandSettings : ICommandSettings
     {
         string Name { get; set; }
@@ -97,15 +99,24 @@ namespace MacroPanels.Command.Interface
         string Value { get; set; }
     }
 
-    public interface ISetVariableAICommandSettings
+    // AI variable set command
+    public interface ISetVariableAICommandSettings : ICommandSettings
     {
-        string ModelPath { get; set; }
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
+        string ModelPath { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
         int Timeout { get; set; }
         int Interval { get; set; }
         string Name { get; set; }
+    }
+
+    // Screenshot command
+    public interface IScreenshotCommandSettings : ICommandSettings
+    {
+        string SaveDirectory { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
     }
 }

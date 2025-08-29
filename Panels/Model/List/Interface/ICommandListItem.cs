@@ -100,7 +100,7 @@ namespace MacroPanels.Model.List.Interface
         public string WindowClassName { get; set; }
     }
 
-    public interface IEndIfItem : ICommandListItem
+    public interface IIfEndItem : ICommandListItem
     {
         public ICommandListItem? Pair { get; set; }
     }
@@ -111,12 +111,12 @@ namespace MacroPanels.Model.List.Interface
         public ICommandListItem? Pair { get; set; }
     }
 
-    public interface IEndLoopItem : ICommandListItem
+    public interface ILoopEndItem : ICommandListItem
     {
         public ICommandListItem? Pair { get; set; }
     }
 
-    public interface IBreakItem : ICommandListItem
+    public interface ILoopBreakItem : ICommandListItem
     {
     }
 
@@ -143,7 +143,7 @@ namespace MacroPanels.Model.List.Interface
         int Interval { get; set; }
     }
 
-    public interface IExecuteProgramItem : ICommandListItem
+    public interface IExecuteItem : ICommandListItem
     {
         public string ProgramPath { get; set; }
         public string Arguments { get; set; }
@@ -174,4 +174,11 @@ namespace MacroPanels.Model.List.Interface
         public string Value { get; set; }
     }
 
+    // Screenshot item interface for panel editing
+    public interface IScreenshotItem : ICommandListItem
+    {
+        string SaveDirectory { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+    }
 }
