@@ -11,12 +11,10 @@ using System.Collections.ObjectModel;
 using MacroPanels.Model.List.Type;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
-using System.Security.Cryptography.X509Certificates;
 using MacroPanels.List.Class;
 using MacroPanels.Model.List.Interface;
 using MacroPanels.View;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 using System.Collections;
 using System.Windows.Data;
@@ -34,7 +32,6 @@ namespace MacroPanels.ViewModel
 
         private bool _isUpdating;
 
-        // RefreshList のデバウンス用
         private readonly DispatcherTimer _refreshTimer = new()
         {
             Interval = TimeSpan.FromMilliseconds(120)
@@ -87,6 +84,8 @@ namespace MacroPanels.ViewModel
         public bool IsIfImageNotExistAIItem => Item is IfImageNotExistAIItem;
         public bool IsEndIfItem => Item is EndIfItem;
         public bool IsExecuteProgramItem => Item is ExecuteProgramItem;
+        public bool IsSetVariableItem => Item is SetVariableItem;
+        public bool IsIfVariableItem => Item is IfVariableItem;
         #endregion
 
         #region Properties
@@ -677,6 +676,80 @@ namespace MacroPanels.ViewModel
                 UpdateProperties();
             }
         }
+
+        public string VariableName
+        {
+            get
+            {
+                return Item switch
+                {
+                    SetVariableItem setVariableItem => setVariableItem.Name,
+                    IfVariableItem ifVariableItem => ifVariableItem.Name,
+                    _ => string.Empty,
+                };
+            }
+            set
+            {
+                switch (Item)
+                {
+                    case SetVariableItem setVariableItem:
+                        setVariableItem.Name = value;
+                        break;
+                    case IfVariableItem ifVariableItem:
+                        ifVariableItem.Name = value;
+                        break;
+                }
+                UpdateProperties();
+            }
+        }
+
+        public string VariableValue
+        {
+            get
+            {
+                return Item is SetVariableItem setVariableItem ? setVariableItem.Value : string.Empty;
+            }
+            set
+            {
+                if (Item is SetVariableItem setVariableItem)
+                {
+                    setVariableItem.Value = value;
+                }
+                UpdateProperties();
+            }
+        }
+
+        public string CompareOperator
+        {
+            get
+            {
+                return Item is IfVariableItem ifVariableItem ? ifVariableItem.Operator : "==";
+            }
+            set
+            {
+                if (Item is IfVariableItem ifVariableItem)
+                {
+                    ifVariableItem.Operator = value;
+                }
+                UpdateProperties();
+            }
+        }
+
+        public string CompareValue
+        {
+            get
+            {
+                return Item is IfVariableItem ifVariableItem ? ifVariableItem.Value : string.Empty;
+            }
+            set
+            {
+                if (Item is IfVariableItem ifVariableItem)
+                {
+                    ifVariableItem.Value = value;
+                }
+                UpdateProperties();
+            }
+        }
         #endregion
 
         #region ColorPicker
@@ -762,6 +835,25 @@ namespace MacroPanels.ViewModel
                 UpdateProperties();
             }
         }
+
+        [ObservableProperty]
+        private ObservableCollection<string> _operators = new();
+        public string SelectedOperator
+        {
+            get
+            {
+                return Item is IfVariableItem ifVariableItem ? ifVariableItem.Operator : "==";
+            }
+            set
+            {
+                if (Item is IfVariableItem ifVariableItem)
+                {
+                    ifVariableItem.Operator = value;
+                }
+                UpdateProperties();
+            }
+        }
+
         #endregion
 
 
@@ -782,6 +874,19 @@ namespace MacroPanels.ViewModel
             {
                 MouseButtons.Add(button);
             }
+
+            Operators.Add("==");
+            Operators.Add("!=");
+            Operators.Add(">");
+            Operators.Add("<");
+            Operators.Add(">=");
+            Operators.Add("<=");
+            Operators.Add("Contains");
+            Operators.Add("NotContains");
+            Operators.Add("StartsWith");
+            Operators.Add("EndsWith");
+            Operators.Add("IsEmpty");
+            Operators.Add("IsNotEmpty");
         }
 
         #region OnChanged
@@ -831,6 +936,15 @@ namespace MacroPanels.ViewModel
                 case nameof(ItemType.IfImageNotExistAI):
                     Item = new IfImageNotExistAIItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfImageNotExistAI) };
                     break;
+                case nameof(ItemType.ExecuteProgram):
+                    Item = new ExecuteProgramItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.ExecuteProgram) };
+                    break;
+                case nameof(ItemType.SetVariable):
+                    Item = new SetVariableItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariable) };
+                    break;
+                case nameof(ItemType.IfVariable):
+                    Item = new IfVariableItem() { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IfVariable) };
+                    break;
             }
 
             UpdateProperties();
@@ -859,6 +973,8 @@ namespace MacroPanels.ViewModel
             OnPropertyChanged(nameof(IsIfImageExistAIItem));
             OnPropertyChanged(nameof(IsIfImageNotExistAIItem));
             OnPropertyChanged(nameof(IsExecuteProgramItem));
+            OnPropertyChanged(nameof(IsSetVariableItem));
+            OnPropertyChanged(nameof(IsIfVariableItem));
         }
 
         void UpdateProperties()
@@ -872,6 +988,7 @@ namespace MacroPanels.ViewModel
             {
                 _isUpdating = true;
 
+                OnPropertyChanged(nameof(SelectedItemType));
                 OnPropertyChanged(nameof(WindowTitle));
                 OnPropertyChanged(nameof(WindowTitleText));
                 OnPropertyChanged(nameof(WindowClassName));
@@ -882,6 +999,7 @@ namespace MacroPanels.ViewModel
                 OnPropertyChanged(nameof(Timeout));
                 OnPropertyChanged(nameof(Interval));
                 OnPropertyChanged(nameof(MouseButton));
+                OnPropertyChanged(nameof(SelectedMouseButton));
                 OnPropertyChanged(nameof(Ctrl));
                 OnPropertyChanged(nameof(Alt));
                 OnPropertyChanged(nameof(Shift));
@@ -890,19 +1008,17 @@ namespace MacroPanels.ViewModel
                 OnPropertyChanged(nameof(Y));
                 OnPropertyChanged(nameof(Wait));
                 OnPropertyChanged(nameof(LoopCount));
-                OnPropertyChanged(nameof(ModelPath));
-                OnPropertyChanged(nameof(ClassID));
-                OnPropertyChanged(nameof(SelectedItemType));
-                OnPropertyChanged(nameof(SelectedMouseButton));
-                OnPropertyChanged(nameof(ProgramPath));
-                OnPropertyChanged(nameof(Arguments));
-                OnPropertyChanged(nameof(WorkingDirectory));
-                OnPropertyChanged(nameof(WaitForExit));
+                OnPropertyChanged(nameof(SelectedOperator));
+                OnPropertyChanged(nameof(VariableName));
+                OnPropertyChanged(nameof(VariableValue));
+                OnPropertyChanged(nameof(CompareOperator));
+                OnPropertyChanged(nameof(CompareValue));
 
                 // 設定画面表示用
                 OnPropertyChanged(nameof(SearchColorBrush));
                 OnPropertyChanged(nameof(SearchColorText));
                 OnPropertyChanged(nameof(SearchColorTextColor));
+
 
                 // デバウンス送信
                 _refreshTimer.Stop();

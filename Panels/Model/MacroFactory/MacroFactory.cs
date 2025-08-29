@@ -39,6 +39,7 @@ namespace MacroPanels.Model.MacroFactory
                 IfImageNotExistItem notExist => CreateIfCommand(parent, notExist, items),
                 IfImageExistAIItem aiExist => CreateIfCommand(parent, aiExist, items),
                 IfImageNotExistAIItem aiNotExist => CreateIfCommand(parent, aiNotExist, items),
+                IfVariableItem ifVar => CreateIfCommand(parent, ifVar, items),
                 LoopItem loop => CreateLoopComand(parent, loop, items),
                 EndLoopItem => null,
                 _ => throw new ArgumentOutOfRangeException()
@@ -57,6 +58,7 @@ namespace MacroPanels.Model.MacroFactory
                 IfImageNotExistItem notExist => new IfImageNotExistCommand(parent, notExist){ LineNumber = notExist.LineNumber, IsEnabled = notExist.IsEnable },
                 IfImageExistAIItem existAI => new IfImageExistAICommand(parent, existAI) { LineNumber = existAI.LineNumber, IsEnabled = existAI.IsEnable },
                 IfImageNotExistAIItem notExistAI => new IfImageNotExistAICommand(parent, notExistAI) { LineNumber = notExistAI.LineNumber, IsEnabled = notExistAI.IsEnable },
+                IfVariableItem ifVar => new IfVariableCommand(parent, ifVar) { LineNumber = ifVar.LineNumber, IsEnabled = ifVar.IsEnable },
                 _ => throw new ArgumentOutOfRangeException()
             };
 
@@ -79,18 +81,6 @@ namespace MacroPanels.Model.MacroFactory
             loopCommand.Children = ListItemToCommand(loopCommand, childrenListItems);
             childrenListItems.Where(x => x.NestLevel == loopItem.NestLevel + 1).ToList().ForEach(x => x.IsInLoop = true);
             return loopCommand;
-        }
-
-        private static EndLoopCommand CreateEndLoopCommand(ICommand parent, IEndLoopItem endLoopItem, IEnumerable<ICommandListItem> items)
-        {
-            var loopItem = endLoopItem.Pair as LoopItem ?? throw new Exception("対になるLoopが見つかりません。");
-            var loopCommand = parent.Children.FirstOrDefault(x => x.LineNumber == loopItem.LineNumber) ?? throw new Exception("対になるLoopCommandが見つかりません。");
-            return new EndLoopCommand(parent, new EndLoopCommandSettings() { Pair = loopCommand })
-            {
-                LineNumber = endLoopItem.LineNumber,
-                Children = loopCommand.Children,
-                IsEnabled = endLoopItem.IsEnable,
-            };
         }
     }
 }

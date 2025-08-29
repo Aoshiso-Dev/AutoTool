@@ -313,6 +313,51 @@
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
+                    
+                    <!-- 変数名の設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="変数名:"/>
+                        <TextBox Text="{Binding VariableName, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsSetVariableItem"/>
+                                <Binding Path="IsIfVariableItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+                    
+                    <!-- 変数値の設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="変数値:"/>
+                        <TextBox Text="{Binding VariableValue, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsSetVariableItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+                    
+                    <!-- 比較演算子の設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="比較演算子:"/>
+                        <ComboBox ItemsSource="{Binding Operators, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedOperator}"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsIfVariableItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+
+                    <!-- 比較値の設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="比較値:"/>
+                        <TextBox Text="{Binding CompareValue, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsIfVariableItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
 
                 </StackPanel>
                 

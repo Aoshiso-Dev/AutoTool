@@ -150,4 +150,17 @@ namespace MacroPanels.Model.List.Interface
         public string WorkingDirectory { get; set; }
         public bool WaitForExit { get; set; }
     }
+
+    public interface ISetVariableItem : ICommandListItem
+    {
+        public string Name { get; set; }
+        public string Value { get; set; }
+    }
+
+    public interface IIfVariableItem : ICommandListItem, IIfItem
+    {
+        public string Name { get; set; }
+        public string Operator { get; set; }
+        public string Value { get; set; }
+    }
 }

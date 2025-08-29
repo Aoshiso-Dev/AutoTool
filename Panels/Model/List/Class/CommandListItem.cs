@@ -707,4 +707,65 @@ namespace MacroPanels.List.Class
             return new ExecuteProgramItem(this);
         }
     }
+
+    [SimpleCommandBinding(typeof(SetVariableCommand), typeof(ISetVariableCommandSettings))]
+    public partial class SetVariableItem : CommandListItem, ISetVariableItem, ISetVariableCommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _name = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _value = string.Empty;
+
+        new public string Description => $"変数:{Name} = \"{Value}\"";
+
+        public SetVariableItem() { }
+        public SetVariableItem(SetVariableItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                Name = item.Name;
+                Value = item.Value;
+            }
+        }
+
+        public new ICommandListItem Clone() => new SetVariableItem(this);
+    }
+
+    public partial class IfVariableItem : CommandListItem, IIfVariableItem, IIfVariableCommandSettings, IIfItem
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _name = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _operator = "==";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _value = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private ICommandListItem? _pair = null;
+
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / If {Name} {Operator} \"{Value}\"";
+
+        public IfVariableItem() { }
+        public IfVariableItem(IfVariableItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                Name = item.Name;
+                Operator = item.Operator;
+                Value = item.Value;
+                Pair = item.Pair;
+            }
+        }
+
+        public new ICommandListItem Clone() => new IfVariableItem(this);
+    }
 }

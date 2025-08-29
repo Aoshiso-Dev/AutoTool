@@ -1,17 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace MacroPanels.Command.Interface
 {
-    public interface ICommandSettings
-    {
-    }
+    public interface ICommandSettings { }
 
     public interface IWaitImageCommandSettings : ICommandSettings
     {
@@ -35,6 +29,7 @@ namespace MacroPanels.Command.Interface
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
     }
+
     public interface IHotkeyCommandSettings : ICommandSettings
     {
         bool Ctrl { get; set; }
@@ -86,5 +81,19 @@ namespace MacroPanels.Command.Interface
         string ProgramPath { get; set; }
         string Arguments { get; set; }
         string WorkingDirectory { get; set; }
+        bool WaitForExit { get; set; }
+    }
+
+    public interface ISetVariableCommandSettings : ICommandSettings
+    {
+        string Name { get; set; }
+        string Value { get; set; }
+    }
+
+    public interface IIfVariableCommandSettings : ICommandSettings
+    {
+        string Name { get; set; }
+        string Operator { get; set; }
+        string Value { get; set; }
     }
 }

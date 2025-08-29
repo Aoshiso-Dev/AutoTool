@@ -23,6 +23,8 @@ namespace MacroPanels.Model.List.Type
         public static readonly string IfImageNotExistAI = "IfImageNotExistAI";
         public static readonly string EndIf = "EndIf";
         public static readonly string ExecuteProgram = "ExecuteProgram";
+        public static readonly string SetVariable = "SetVariable";
+        public static readonly string IfVariable = "IfVariable";
 
         public static IEnumerable<string> GetTypes()
         {
@@ -42,6 +44,8 @@ namespace MacroPanels.Model.List.Type
                 IfImageNotExistAI,
                 EndIf,
                 ExecuteProgram,
+                SetVariable,
+                IfVariable,
             };
         }
     }

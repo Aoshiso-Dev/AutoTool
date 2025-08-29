@@ -71,6 +71,8 @@ internal class CommandListItemConverter : JsonConverter<ICommandListItem>
             { nameof(ItemType.EndIf), typeof(EndIfItem) },
             { nameof(ItemType.IfImageExistAI), typeof(IfImageExistAIItem) },
             { nameof(ItemType.IfImageNotExistAI), typeof(IfImageNotExistAIItem) },
+            { nameof(ItemType.SetVariable), typeof(SetVariableItem) },
+            { nameof(ItemType.IfVariable), typeof(IfVariableItem) },
         };
     }
 

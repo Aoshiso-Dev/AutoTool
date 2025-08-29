@@ -16,6 +16,7 @@ using KeyHelper;
 using MouseHelper;
 using System.IO;
 using YoloWinLib;
+using System.Collections.Concurrent;
 
 namespace MacroPanels.Command.Class
 {
@@ -567,6 +568,100 @@ namespace MacroPanels.Command.Class
                 return false;
             }
             return await Task.FromResult(true);
+        }
+    }
+
+    // 共有変数ストア
+    internal static class VariableStore
+    {
+        private static readonly ConcurrentDictionary<string, string> s_vars = new(StringComparer.OrdinalIgnoreCase);
+
+        public static void Set(string name, string value)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+            s_vars[name] = value ?? string.Empty;
+        }
+
+        public static string? Get(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            return s_vars.TryGetValue(name, out var v) ? v : null;
+        }
+
+        public static void Clear() => s_vars.Clear();
+    }
+
+    // 変数セット
+    public class SetVariableCommand : BaseCommand, ICommand, ISetVariableCommand
+    {
+        new public ISetVariableCommandSettings Settings => (ISetVariableCommandSettings)base.Settings;
+        public SetVariableCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            VariableStore.Set(Settings.Name, Settings.Value);
+            OnDoingCommand?.Invoke(this, $"変数を設定しました。{Settings.Name} = \"{Settings.Value}\"");
+            return Task.FromResult(true);
+        }
+    }
+
+    // 変数If
+    public class IfVariableCommand : BaseCommand, ICommand, IIfVariableCommand
+    {
+        new public IIfVariableCommandSettings Settings => (IIfVariableCommandSettings)base.Settings;
+        public IfVariableCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            if (Children == null || !Children.Any())
+            {
+                throw new Exception("If内に要素がありません。");
+            }
+
+            var lhs = VariableStore.Get(Settings.Name) ?? string.Empty;
+            var rhs = Settings.Value ?? string.Empty;
+
+            bool result = Evaluate(lhs, rhs, Settings.Operator);
+            OnDoingCommand?.Invoke(this, $"IfVariable: {Settings.Name}({lhs}) {Settings.Operator} {rhs} => {result}");
+
+            if (result)
+            {
+                return await ExecuteChildrenAsync(cancellationToken);
+            }
+
+            return true;
+        }
+
+        private static bool Evaluate(string lhs, string rhs, string op)
+        {
+            op = (op ?? "").Trim();
+            if (double.TryParse(lhs, out var lnum) && double.TryParse(rhs, out var rnum))
+            {
+                return op switch
+                {
+                    "==" => lnum == rnum,
+                    "!=" => lnum != rnum,
+                    ">" => lnum > rnum,
+                    "<" => lnum < rnum,
+                    ">=" => lnum >= rnum,
+                    "<=" => lnum <= rnum,
+                    _ => throw new Exception($"不明な数値比較演算子です: {op}"),
+                };
+            }
+            else
+            {
+                return op switch
+                {
+                    "==" => string.Equals(lhs, rhs, StringComparison.Ordinal),
+                    "!=" => !string.Equals(lhs, rhs, StringComparison.Ordinal),
+                    "Contains" => lhs.Contains(rhs, StringComparison.Ordinal),
+                    "StartsWith" => lhs.StartsWith(rhs, StringComparison.Ordinal),
+                    "EndsWith" => lhs.EndsWith(rhs, StringComparison.Ordinal),
+                    "IsEmpty" => string.IsNullOrEmpty(lhs),
+                    "IsNotEmpty" => !string.IsNullOrEmpty(lhs),
+                    _ => throw new Exception($"不明な文字列比較演算子です: {op}"),
+                };
+            }
         }
     }
 }

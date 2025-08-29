@@ -162,12 +162,16 @@ namespace MacroPanels.List.Class
                 {
                     nestLevel++;
                 }
+                if(item.ItemType == ItemType.IfVariable)
+                {
+                    nestLevel++;
+                }
             }
         }
 
         public void PairIfItems()
         {
-            var ifItems = Items.OfType<IIfItem>().Where(x => x.ItemType == ItemType.IfImageExist || x.ItemType == ItemType.IfImageNotExist || x.ItemType == ItemType.IfImageExistAI || x.ItemType == ItemType.IfImageNotExistAI).OrderBy(x => x.LineNumber).ToList();
+            var ifItems = Items.OfType<IIfItem>().Where(x => x.ItemType == ItemType.IfImageExist || x.ItemType == ItemType.IfImageNotExist || x.ItemType == ItemType.IfImageExistAI || x.ItemType == ItemType.IfImageNotExistAI || x.ItemType == ItemType.IfVariable).OrderBy(x => x.LineNumber).ToList();
             var endIfItems = Items.OfType<IEndIfItem>().Where(x => x.ItemType == ItemType.EndIf).OrderBy(x => x.LineNumber).ToList();
 
             foreach (var ifItem in ifItems)
