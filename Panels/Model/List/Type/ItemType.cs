@@ -21,12 +21,12 @@ namespace MacroPanels.Model.List.Type
         public static readonly string Loop_Break = "Loop_Break";
         public static readonly string IF_ImageExist = "IF_ImageExist";
         public static readonly string IF_ImageNotExist = "IF_ImageNotExist";
-        public static readonly string IF_ImageExist_AI = "IF_ImageExistAI";
-        public static readonly string IF_ImageNotExist_AI = "IF_ImageNotExistAI";
+        public static readonly string IF_ImageExist_AI = "IF_ImageExist_AI";
+        public static readonly string IF_ImageNotExist_AI = "IF_ImageNotExist_AI";
         public static readonly string IF_Variable = "IF_Variable";
         public static readonly string IF_End = "IF_End";
         public static readonly string SetVariable = "SetVariable";
-        public static readonly string SetVariable_AI = "SetVariableAI";
+        public static readonly string SetVariable_AI = "SetVariable_AI";
 
         public static IEnumerable<string> GetTypes()
         {

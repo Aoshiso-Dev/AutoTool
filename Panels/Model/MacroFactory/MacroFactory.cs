@@ -10,7 +10,7 @@ namespace MacroPanels.Model.MacroFactory
     {
         public static ICommand CreateMacro(IEnumerable<ICommandListItem> items)
         {
-            var cloneItems = (IEnumerable<ICommandListItem>)items.Select(x => x.Clone()).ToList();
+            var cloneItems = items.Select(x => x.Clone()).ToList();
             var root = new LoopCommand(new RootCommand(), new LoopCommandSettings() { LoopCount = 1 });
             root.Children = ListItemToCommand(root, cloneItems);
             return root;
@@ -23,8 +23,17 @@ namespace MacroPanels.Model.MacroFactory
             {
                 if (!item.IsEnable) continue;
                 Debug.WriteLine($"Create: {item.LineNumber}, {item.ItemType}");
-                var command = CreateCommand(parent, item, items);
-                if (command != null) commands.Add(command);
+                
+                try
+                {
+                    var command = CreateCommand(parent, item, items);
+                    if (command != null) commands.Add(command);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error creating command for {item.ItemType} at line {item.LineNumber}: {ex.Message}");
+                    throw new InvalidOperationException($"コマンド '{item.ItemType}' (行 {item.LineNumber}) の生成に失敗しました", ex);
+                }
             }
             return commands;
         }
@@ -32,53 +41,111 @@ namespace MacroPanels.Model.MacroFactory
         private static ICommand? CreateCommand(ICommand parent, ICommandListItem item, IEnumerable<ICommandListItem> items)
         {
             if (item.IsInLoop || item.IsInIf) return null;
-            if (CommandRegistry.TryCreateSimple(parent, item, out var simple)) return simple;
+            
+            // 属性ベースの単純コマンドを優先
+            if (CommandRegistry.TryCreateSimple(parent, item, out var simple)) 
+                return simple;
+
+            // 複合コマンド（条件分岐・ループ）の処理
             return item switch
             {
-                IfImageExistItem exist => CreateIfCommand(parent, exist, items),
-                IfImageNotExistItem notExist => CreateIfCommand(parent, notExist, items),
-                IfImageExistAIItem aiExist => CreateIfCommand(parent, aiExist, items),
-                IfImageNotExistAIItem aiNotExist => CreateIfCommand(parent, aiNotExist, items),
-                IfVariableItem ifVar => CreateIfCommand(parent, ifVar, items),
-                LoopItem loop => CreateLoopComand(parent, loop, items),
-                _ => throw new ArgumentOutOfRangeException()
+                IIfItem ifItem => CreateIfCommand(parent, ifItem, items),
+                ILoopItem loopItem => CreateLoopCommand(parent, loopItem, items),
+                _ => throw new NotSupportedException($"未対応のアイテム型です: {item.GetType().Name}")
             };
         }
 
         private static ICommand CreateIfCommand(ICommand parent, IIfItem ifItem, IEnumerable<ICommandListItem> items)
         {
-            var endIfItem = ifItem.Pair as ICommandListItem ?? throw new Exception("ifItem.Pair is null");
-            var childrenListItems = items.Where(x => x.LineNumber > ifItem.LineNumber && x.LineNumber < endIfItem.LineNumber).ToList();
-            if (childrenListItems.Count == 0) throw new Exception("childrenListItems.Count is 0");
+            if (ifItem.Pair == null)
+                throw new InvalidOperationException($"If文 (行 {ifItem.LineNumber}) に対応するEndIfがありません");
 
-            IIfCommand ifCommand = ifItem switch
-            {
-                IfImageExistItem exist => new IfImageExistCommand(parent, exist) { LineNumber = exist.LineNumber, IsEnabled = exist.IsEnable },
-                IfImageNotExistItem notExist => new IfImageNotExistCommand(parent, notExist){ LineNumber = notExist.LineNumber, IsEnabled = notExist.IsEnable },
-                IfImageExistAIItem existAI => new IfImageExistAICommand(parent, existAI) { LineNumber = existAI.LineNumber, IsEnabled = existAI.IsEnable },
-                IfImageNotExistAIItem notExistAI => new IfImageNotExistAICommand(parent, notExistAI) { LineNumber = notExistAI.LineNumber, IsEnabled = notExistAI.IsEnable },
-                IfVariableItem ifVar => new IfVariableCommand(parent, ifVar) { LineNumber = ifVar.LineNumber, IsEnabled = ifVar.IsEnable },
-                _ => throw new ArgumentOutOfRangeException()
-            };
+            var endIfItem = ifItem.Pair;
+            var childrenListItems = items
+                .Where(x => x.LineNumber > ifItem.LineNumber && x.LineNumber < endIfItem.LineNumber)
+                .ToList();
 
+            if (childrenListItems.Count == 0)
+                throw new InvalidOperationException($"If文 (行 {ifItem.LineNumber}) 内にコマンドがありません");
+
+            var ifCommand = CreateIfCommandInstance(parent, ifItem);
             ifCommand.Children = ListItemToCommand(ifCommand, childrenListItems);
-            childrenListItems.Where(x => x.NestLevel == ifItem.NestLevel + 1).ToList().ForEach(x => x.IsInIf = true);
+            
+            // 子要素のフラグを設定
+            foreach (var child in childrenListItems.Where(x => x.NestLevel == ifItem.NestLevel + 1))
+            {
+                child.IsInIf = true;
+            }
+            
             return ifCommand;
         }
 
-        private static LoopCommand CreateLoopComand(ICommand parent, ILoopItem loopItem, IEnumerable<ICommandListItem> items)
+        private static IIfCommand CreateIfCommandInstance(ICommand parent, IIfItem ifItem)
         {
-            var endLoopItem = loopItem.Pair as ICommandListItem ?? throw new Exception("対になるEndLoopが見つかりません。");
-            var childrenListItems = items.Where(x => x.LineNumber > loopItem.LineNumber && x.LineNumber < endLoopItem.LineNumber).ToList();
-            if (childrenListItems.Count == 0) throw new Exception("Loopの中に要素がありません。");
-            var endLoopCommand = parent.Children.FirstOrDefault(x => x.LineNumber == loopItem.Pair?.LineNumber) as LoopEndCommand;
-            var loopCommand = new LoopCommand(parent, new LoopCommandSettings() { LoopCount = loopItem.LoopCount, Pair = endLoopCommand })
+            return ifItem switch
+            {
+                IfImageExistItem exist => new IfImageExistCommand(parent, exist) 
+                { 
+                    LineNumber = exist.LineNumber, 
+                    IsEnabled = exist.IsEnable 
+                },
+                IfImageNotExistItem notExist => new IfImageNotExistCommand(parent, notExist) 
+                { 
+                    LineNumber = notExist.LineNumber, 
+                    IsEnabled = notExist.IsEnable 
+                },
+                IfImageExistAIItem existAI => new IfImageExistAICommand(parent, existAI) 
+                { 
+                    LineNumber = existAI.LineNumber, 
+                    IsEnabled = existAI.IsEnable 
+                },
+                IfImageNotExistAIItem notExistAI => new IfImageNotExistAICommand(parent, notExistAI) 
+                { 
+                    LineNumber = notExistAI.LineNumber, 
+                    IsEnabled = notExistAI.IsEnable 
+                },
+                IfVariableItem ifVar => new IfVariableCommand(parent, ifVar) 
+                { 
+                    LineNumber = ifVar.LineNumber, 
+                    IsEnabled = ifVar.IsEnable 
+                },
+                _ => throw new NotSupportedException($"未対応のIf文型です: {ifItem.GetType().Name}")
+            };
+        }
+
+        private static LoopCommand CreateLoopCommand(ICommand parent, ILoopItem loopItem, IEnumerable<ICommandListItem> items)
+        {
+            if (loopItem.Pair == null)
+                throw new InvalidOperationException($"ループ (行 {loopItem.LineNumber}) に対応するEndLoopがありません");
+
+            var endLoopItem = loopItem.Pair;
+            var childrenListItems = items
+                .Where(x => x.LineNumber > loopItem.LineNumber && x.LineNumber < endLoopItem.LineNumber)
+                .ToList();
+
+            if (childrenListItems.Count == 0)
+                throw new InvalidOperationException($"ループ (行 {loopItem.LineNumber}) 内にコマンドがありません");
+
+            var endLoopCommand = parent.Children.FirstOrDefault(x => x.LineNumber == endLoopItem.LineNumber) as LoopEndCommand;
+            
+            var loopCommand = new LoopCommand(parent, new LoopCommandSettings() 
+            { 
+                LoopCount = loopItem.LoopCount, 
+                Pair = endLoopCommand 
+            })
             {
                 LineNumber = loopItem.LineNumber,
                 IsEnabled = loopItem.IsEnable,
             };
+
             loopCommand.Children = ListItemToCommand(loopCommand, childrenListItems);
-            childrenListItems.Where(x => x.NestLevel == loopItem.NestLevel + 1).ToList().ForEach(x => x.IsInLoop = true);
+            
+            // 子要素のフラグを設定
+            foreach (var child in childrenListItems.Where(x => x.NestLevel == loopItem.NestLevel + 1))
+            {
+                child.IsInLoop = true;
+            }
+            
             return loopCommand;
         }
     }
