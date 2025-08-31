@@ -137,18 +137,17 @@ namespace Command.Class
                     switch (Settings.Button)
                     {
                         case System.Windows.Input.MouseButton.Left:
-                            await Task.Run(() => MouseHelper.Input.Click(point.Value.X, point.Value.Y, Settings.WindowTitle));
+                            await MouseHelper.Input.ClickAsync(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
                             break;
                         case System.Windows.Input.MouseButton.Right:
-                            await Task.Run(() => MouseHelper.Input.RightClick(point.Value.X, point.Value.Y, Settings.WindowTitle));
+                            await MouseHelper.Input.RightClickAsync(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
                             break;
                         case System.Windows.Input.MouseButton.Middle:
-                            await Task.Run(() => MouseHelper.Input.MiddleClick(point.Value.X, point.Value.Y, Settings.WindowTitle));
+                            await MouseHelper.Input.MiddleClickAsync(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
                             break;
                         default:
                             throw new Exception("マウスボタンが不正です。");
                     }
-
 
                     return true;
                 }
@@ -190,13 +189,13 @@ namespace Command.Class
             switch (Settings.Button)
             {
                 case System.Windows.Input.MouseButton.Left:
-                    await Task.Run(() => MouseHelper.Input.Click(Settings.X, Settings.Y));
+                    await MouseHelper.Input.ClickAsync(Settings.X, Settings.Y, Settings.WindowTitle, Settings.WindowClassName);
                     break;
                 case System.Windows.Input.MouseButton.Right:
-                    await Task.Run(() => MouseHelper.Input.RightClick(Settings.X, Settings.Y));
+                    await MouseHelper.Input.RightClickAsync(Settings.X, Settings.Y, Settings.WindowTitle, Settings.WindowClassName);
                     break;
                 case System.Windows.Input.MouseButton.Middle:
-                    await Task.Run(() => MouseHelper.Input.MiddleClick(Settings.X, Settings.Y));
+                    await MouseHelper.Input.MiddleClickAsync(Settings.X, Settings.Y, Settings.WindowTitle, Settings.WindowClassName);
                     break;
                 default:
                     throw new Exception("マウスボタンが不正です。");

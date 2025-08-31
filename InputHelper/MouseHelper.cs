@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Net;
 using System.IO;
 using LogHelper;
+using System.Collections.Concurrent;
 
 namespace MouseHelper
 {
@@ -31,88 +32,135 @@ namespace MouseHelper
         #endregion
 
         #region Action
-        private static void PerformMouseClick(int x, int y, uint downEvent, uint upEvent, string windowTitle = "", string windowClassName = "")
+        private static async Task PerformMouseClickAsync(int x, int y, uint downEvent, uint upEvent, string windowTitle = "", string windowClassName = "")
         {
             var targetX = x;
             var targetY = y;
-
             var orgPos = Cursor.GetPos();
 
             IntPtr hwnd = IntPtr.Zero;
-            if (!string.IsNullOrEmpty(windowTitle))
+            WindowZOrderInfo? zOrderInfo = null;
+
+            try
             {
-                hwnd = Window.GetHandle(windowTitle, windowClassName);
-                var rect = Window.GetRect(hwnd);
-                targetX += rect.Left;
-                targetY += rect.Top;
-                Window.SaveZOrder(hwnd);
-                Window.BringToFront(hwnd);
-                Thread.Sleep(30);
+                if (!string.IsNullOrEmpty(windowTitle))
+                {
+                    hwnd = Window.GetHandle(windowTitle, windowClassName);
+                    var rect = Window.GetRect(hwnd);
+                    targetX += rect.Left;
+                    targetY += rect.Top;
+                    
+                    // Zオーダー情報を保存
+                    zOrderInfo = Window.SaveZOrder(hwnd);
+                    Window.BringToFront(hwnd);
+                    await Task.Delay(30); // 非同期待機
+                }
+
+                Cursor.Lock(targetX, targetY);
+                await Task.Delay(300);
+                
+                mouse_event(downEvent, 0, 0, 0, 0);
+                await Task.Delay(30);
+                mouse_event(upEvent, 0, 0, 0, 0);
+                await Task.Delay(30);
+                
+                Cursor.Unlock();
+                await Task.Delay(30);
+
+                Cursor.SetPos(orgPos.X, orgPos.Y);
+
+                // Zオーダーを復元
+                if (hwnd != IntPtr.Zero && zOrderInfo != null)
+                {
+                    Window.RestoreZOrder(hwnd, zOrderInfo);
+                    await Task.Delay(30);
+                }
             }
-
-            Cursor.Lock(targetX, targetY);
-            Thread.Sleep(300);
-            mouse_event(downEvent, 0, 0, 0, 0);
-            Thread.Sleep(30);
-            mouse_event(upEvent, 0, 0, 0, 0);
-            Thread.Sleep(30);
-            Cursor.Unlock();
-            Thread.Sleep(30);
-
-            Cursor.SetPos(orgPos.X, orgPos.Y);
-
-            if (hwnd != IntPtr.Zero)
+            catch (Exception ex)
             {
-                Window.RestoreZOrder(hwnd);
-                Thread.Sleep(30);
+                GlobalLogger.Instance.Write("MouseHelper", "PerformMouseClick", $"Error: {ex.Message}");
+                
+                // エラー時もカーソルとZオーダーを復元
+                try
+                {
+                    Cursor.Unlock();
+                    Cursor.SetPos(orgPos.X, orgPos.Y);
+                    if (hwnd != IntPtr.Zero && zOrderInfo != null)
+                    {
+                        Window.RestoreZOrder(hwnd, zOrderInfo);
+                    }
+                }
+                catch { /* 復元エラーは無視 */ }
+                
+                throw;
             }
-
 
             // ログ出力
             var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"Click: {targetX}, {targetY}";
-            if (hwnd !=  IntPtr.Zero)
+            if (hwnd != IntPtr.Zero)
             {
                 resultMessage += $" ({windowTitle}[{windowClassName}] {x},{y})";
             }
             GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
 
-        private static void PerformMouseAction(int x, int y, uint actionEvent, int delta, string windowTitle = "", string windowClassName = "")
+        private static async Task PerformMouseActionAsync(int x, int y, uint actionEvent, int delta, string windowTitle = "", string windowClassName = "")
         {
             var targetX = x;
             var targetY = y;
-
             var orgPos = Cursor.GetPos();
 
             IntPtr hwnd = IntPtr.Zero;
-            if (!string.IsNullOrEmpty(windowTitle))
+            WindowZOrderInfo? zOrderInfo = null;
+
+            try
             {
-                hwnd = Window.GetHandle(windowTitle, windowClassName);
-                var rect = Window.GetRect(hwnd);
-                targetX += rect.Left;
-                targetY += rect.Top;
-                Window.SaveZOrder(hwnd);
-                Window.BringToFront(hwnd);
-                Thread.Sleep(30);
+                if (!string.IsNullOrEmpty(windowTitle))
+                {
+                    hwnd = Window.GetHandle(windowTitle, windowClassName);
+                    var rect = Window.GetRect(hwnd);
+                    targetX += rect.Left;
+                    targetY += rect.Top;
+                    zOrderInfo = Window.SaveZOrder(hwnd);
+                    Window.BringToFront(hwnd);
+                    await Task.Delay(30);
+                }
+
+                Cursor.Lock(targetX, targetY);
+                mouse_event(actionEvent, 0, 0, (uint)delta, 0);
+                Cursor.Unlock();
+
+                Cursor.SetPos(orgPos.X, orgPos.Y);
+
+                if (hwnd != IntPtr.Zero && zOrderInfo != null)
+                {
+                    Window.RestoreZOrder(hwnd, zOrderInfo);
+                    await Task.Delay(30);
+                }
             }
-
-            Cursor.Lock(targetX, targetY);
-            mouse_event(actionEvent, 0, 0, (uint)delta, 0);
-            Cursor.Unlock();
-
-            Cursor.SetPos(orgPos.X, orgPos.Y);
-
-            if (hwnd != IntPtr.Zero)
+            catch (Exception ex)
             {
-                Window.RestoreZOrder(hwnd);
-                Thread.Sleep(30);
+                GlobalLogger.Instance.Write("MouseHelper", "PerformMouseAction", $"Error: {ex.Message}");
+                
+                try
+                {
+                    Cursor.Unlock();
+                    Cursor.SetPos(orgPos.X, orgPos.Y);
+                    if (hwnd != IntPtr.Zero && zOrderInfo != null)
+                    {
+                        Window.RestoreZOrder(hwnd, zOrderInfo);
+                    }
+                }
+                catch { }
+                
+                throw;
             }
 
             // ログ出力
             var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"Wheel: {targetX}, {targetY}";
             if (hwnd != IntPtr.Zero)
             {
@@ -121,7 +169,7 @@ namespace MouseHelper
             GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
 
-        private static void PerformDrag(int x1, int y1, int x2, int y2, uint downEvent, uint upEvent, string windowTitle = "", string windowClassName = "")
+        private static async Task PerformDragAsync(int x1, int y1, int x2, int y2, uint downEvent, uint upEvent, string windowTitle = "", string windowClassName = "")
         {
             var targetX1 = x1;
             var targetY1 = y1;
@@ -130,38 +178,61 @@ namespace MouseHelper
             var orgPos = Cursor.GetPos();
 
             IntPtr hwnd = IntPtr.Zero;
-            if (!string.IsNullOrEmpty(windowTitle))
+            WindowZOrderInfo? zOrderInfo = null;
+
+            try
             {
-                hwnd = Window.GetHandle(windowTitle, windowClassName);
-                var rect = Window.GetRect(hwnd);
-                targetX1 += rect.Left;
-                targetY1 += rect.Top;
-                targetX2 += rect.Left;
-                targetY2 += rect.Top;
-                Window.SaveZOrder(hwnd);
-                Window.BringToFront(hwnd);
-                Thread.Sleep(30);
+                if (!string.IsNullOrEmpty(windowTitle))
+                {
+                    hwnd = Window.GetHandle(windowTitle, windowClassName);
+                    var rect = Window.GetRect(hwnd);
+                    targetX1 += rect.Left;
+                    targetY1 += rect.Top;
+                    targetX2 += rect.Left;
+                    targetY2 += rect.Top;
+                    zOrderInfo = Window.SaveZOrder(hwnd);
+                    Window.BringToFront(hwnd);
+                    await Task.Delay(30);
+                }
+
+                Cursor.Lock(targetX1, targetY1);
+                mouse_event(downEvent, 0, 0, 0, 0);
+                Cursor.Unlock();
+                await Task.Delay(30);
+                
+                Cursor.Lock(targetX2, targetY2);
+                mouse_event(upEvent, 0, 0, 0, 0);
+                Cursor.Unlock();
+
+                Cursor.SetPos(orgPos.X, orgPos.Y);
+
+                if (hwnd != IntPtr.Zero && zOrderInfo != null)
+                {
+                    Window.RestoreZOrder(hwnd, zOrderInfo);
+                    await Task.Delay(30);
+                }
             }
-
-            Cursor.Lock(targetX1, targetY1);
-            mouse_event(downEvent, 0, 0, 0, 0);
-            Cursor.Unlock();
-            Thread.Sleep(30);
-            Cursor.Lock(targetX2, targetY2);
-            mouse_event(upEvent, 0, 0, 0, 0);
-            Cursor.Unlock();
-
-            Cursor.SetPos(orgPos.X, orgPos.Y);
-
-            if (hwnd != IntPtr.Zero)
+            catch (Exception ex)
             {
-                Window.RestoreZOrder(hwnd);
-                Thread.Sleep(30);
+                GlobalLogger.Instance.Write("MouseHelper", "PerformDrag", $"Error: {ex.Message}");
+                
+                try
+                {
+                    Cursor.Unlock();
+                    Cursor.SetPos(orgPos.X, orgPos.Y);
+                    if (hwnd != IntPtr.Zero && zOrderInfo != null)
+                    {
+                        Window.RestoreZOrder(hwnd, zOrderInfo);
+                    }
+                }
+                catch { }
+                
+                throw;
             }
 
             // ログ出力
             var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"Drag: {targetX1}, {targetY1} -> {targetX2}, {targetY2}";
             if (hwnd != IntPtr.Zero)
             {
@@ -170,36 +241,63 @@ namespace MouseHelper
             GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
 
-        private static void PerformMove(int x, int y, string windowTitle = "", string windowClassName = "") => Cursor.SetPos(x, y, windowTitle, windowClassName);
+        private static void PerformMove(int x, int y, string windowTitle = "", string windowClassName = "") 
+            => Cursor.SetPos(x, y, windowTitle, windowClassName);
 
         #endregion
 
+        // 同期メソッド（後方互換性のため）
         public static void Click(int x, int y, string windowTitle = "", string windowClassName = "")
-            => PerformMouseClick(x, y, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName);
+            => PerformMouseClickAsync(x, y, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName).Wait();
 
         public static void RightClick(int x, int y, string windowTitle = "", string windowClassName = "")
-            => PerformMouseClick(x, y, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName);
+            => PerformMouseClickAsync(x, y, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName).Wait();
 
         public static void MiddleClick(int x, int y, string windowTitle = "", string windowClassName = "")
-            => PerformMouseClick(x, y, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName);
+            => PerformMouseClickAsync(x, y, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName).Wait();
 
         public static void Wheel(int x, int y, int delta, string windowTitle = "", string windowClassName = "")
-            => PerformMouseAction(x, y, MOUSEEVENTF_WHEEL, delta, windowTitle, windowClassName);
+            => PerformMouseActionAsync(x, y, MOUSEEVENTF_WHEEL, delta, windowTitle, windowClassName).Wait();
 
         public static void HWheel(int x, int y, int delta, string windowTitle = "", string windowClassName = "")
-            => PerformMouseAction(x, y, MOUSEEVENTF_HWHEEL, delta, windowTitle, windowClassName);
+            => PerformMouseActionAsync(x, y, MOUSEEVENTF_HWHEEL, delta, windowTitle, windowClassName).Wait();
 
         public static void Move(int x, int y, string windowTitle = "", string windowClassName = "")
             => PerformMove(x, y, windowTitle, windowClassName);
 
         public static void Drag(int x1, int y1, int x2, int y2, string windowTitle = "", string windowClassName = "")
-            => PerformDrag(x1, y1, x2, y2, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName);
+            => PerformDragAsync(x1, y1, x2, y2, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName).Wait();
 
         public static void RightDrag(int x1, int y1, int x2, int y2, string windowTitle = "", string windowClassName = "")
-            => PerformDrag(x1, y1, x2, y2, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName);
+            => PerformDragAsync(x1, y1, x2, y2, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName).Wait();
 
         public static void MiddleDrag(int x1, int y1, int x2, int y2, string windowTitle = "", string windowClassName = "")
-            => PerformDrag(x1, y1, x2, y2, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName);
+            => PerformDragAsync(x1, y1, x2, y2, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName).Wait();
+
+        // 非同期メソッド（推奨）
+        public static Task ClickAsync(int x, int y, string windowTitle = "", string windowClassName = "")
+            => PerformMouseClickAsync(x, y, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName);
+
+        public static Task RightClickAsync(int x, int y, string windowTitle = "", string windowClassName = "")
+            => PerformMouseClickAsync(x, y, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName);
+
+        public static Task MiddleClickAsync(int x, int y, string windowTitle = "", string windowClassName = "")
+            => PerformMouseClickAsync(x, y, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName);
+
+        public static Task WheelAsync(int x, int y, int delta, string windowTitle = "", string windowClassName = "")
+            => PerformMouseActionAsync(x, y, MOUSEEVENTF_WHEEL, delta, windowTitle, windowClassName);
+
+        public static Task HWheelAsync(int x, int y, int delta, string windowTitle = "", string windowClassName = "")
+            => PerformMouseActionAsync(x, y, MOUSEEVENTF_HWHEEL, delta, windowTitle, windowClassName);
+
+        public static Task DragAsync(int x1, int y1, int x2, int y2, string windowTitle = "", string windowClassName = "")
+            => PerformDragAsync(x1, y1, x2, y2, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName);
+
+        public static Task RightDragAsync(int x1, int y1, int x2, int y2, string windowTitle = "", string windowClassName = "")
+            => PerformDragAsync(x1, y1, x2, y2, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName);
+
+        public static Task MiddleDragAsync(int x1, int y1, int x2, int y2, string windowTitle = "", string windowClassName = "")
+            => PerformDragAsync(x1, y1, x2, y2, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName);
     }
 
     public static class Event
@@ -430,20 +528,6 @@ namespace MouseHelper
             if (nCode >= 0)
             {
                 return IntPtr.Zero;
-                /*
-            switch ((int)wParam)
-            {
-                case WM_LBUTTONDOWN: return IntPtr.Zero;
-                case WM_LBUTTONUP: return IntPtr.Zero;
-                case WM_RBUTTONDOWN: return IntPtr.Zero;
-                case WM_RBUTTONUP: return IntPtr.Zero;
-                case WM_MBUTTONDOWN: return IntPtr.Zero;
-                case WM_MBUTTONUP: return IntPtr.Zero;
-                case WM_MOUSEWHEEL: return IntPtr.Zero;
-                case WM_MOUSEHWHEEL: return IntPtr.Zero;
-                case WM_MOUSEMOVE: return IntPtr.Zero;
-                }
-                */
             }
 
             // 次のフックに処理を渡す
@@ -485,7 +569,7 @@ namespace MouseHelper
 
             // ログ出力
             var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"GetPos: {lpPoint.X}, {lpPoint.Y} ({windowTitle}[{windowClassName}])";
             GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
 
@@ -504,53 +588,78 @@ namespace MouseHelper
                 var rect = Window.GetRect(hWnd);
                 SetCursorPos(rect.Left + x, rect.Top + y);
             }
-
-            // ログ出力
-            /*
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
-            var resultMessage = $"SetPos: {x}, {y} ({windowTitle}[{windowClassName}])";
-            GlobalLogger.Instance.Write($"{projectName} {methodName} {resultMessage}");
-            */
         }
         #endregion
 
         #region Locker
-        private static bool isLocked = true;
+        private static volatile bool isLocked = false;
+        private static readonly object lockObject = new object();
 
         public static void Lock(int x, int y)
         {
-            isLocked = true;
-            Thread mouseMoveThread = new Thread(() =>
+            lock (lockObject)
             {
-                while (isLocked)
+                isLocked = true;
+                
+                Task.Run(async () =>
                 {
-                    SetPos(x, y);
-                    Thread.Sleep(10);
-                }
-            });
+                    while (isLocked)
+                    {
+                        SetPos(x, y);
+                        await Task.Delay(10);
+                    }
+                });
 
-            // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
-            var resultMessage = $"Lock: {x}, {y}";
-            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
-
-            mouseMoveThread.Start();
-
+                // ログ出力
+                var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
+                var resultMessage = $"Lock: {x}, {y}";
+                GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
+            }
         }
 
         public static void Unlock()
         {
-            isLocked = false;
+            lock (lockObject)
+            {
+                isLocked = false;
 
-            // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
-            var resultMessage = $"Unlock";
-            GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
+                // ログ出力
+                var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
+                var resultMessage = $"Unlock";
+                GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
+            }
         }
         #endregion
+    }
+
+    /// <summary>
+    /// ウィンドウのZオーダー情報
+    /// </summary>
+    public sealed class WindowZOrderInfo
+    {
+        public IntPtr WindowHandle { get; }
+        public IntPtr NextWindow { get; }
+        public IntPtr PrevWindow { get; }
+        public IntPtr ForegroundWindow { get; }
+        public DateTime CreatedAt { get; }
+
+        public WindowZOrderInfo(IntPtr windowHandle, IntPtr nextWindow, IntPtr prevWindow, IntPtr foregroundWindow)
+        {
+            WindowHandle = windowHandle;
+            NextWindow = nextWindow;
+            PrevWindow = prevWindow;
+            ForegroundWindow = foregroundWindow;
+            CreatedAt = DateTime.Now;
+        }
+
+        public bool IsValid()
+        {
+            // 5秒以内の情報のみ有効とする
+            return DateTime.Now - CreatedAt < TimeSpan.FromSeconds(5) && 
+                   WindowHandle != IntPtr.Zero;
+        }
     }
 
     internal static class Window
@@ -592,12 +701,16 @@ namespace MouseHelper
         [DllImport("user32.dll", SetLastError = true)]
         private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
+        [DllImport("user32.dll")]
+        private static extern bool IsWindow(IntPtr hWnd);
+
         private const uint GW_HWNDPREV = 3;
         private const uint GW_HWNDNEXT = 2;
         private const uint SWP_NOMOVE = 0x0002;
         private const uint SWP_NOSIZE = 0x0001;
         private const uint SWP_NOREDRAW = 0x0008;
         private const uint SWP_NOACTIVATE = 0x0010;
+        private const uint SWP_NOZORDER = 0x0004;
 
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
@@ -612,7 +725,8 @@ namespace MouseHelper
             var hWnd = FindWindow(string.IsNullOrEmpty(windowClassName) ? null : windowClassName, windowTitle);
             if (hWnd == IntPtr.Zero)
             {
-                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), 
+                    $"Window not found: '{windowTitle}' [{windowClassName}]");
             }
             return hWnd;
         }
@@ -630,60 +744,105 @@ namespace MouseHelper
         #endregion
 
         #region ZOrder
-        private static IntPtr originalNextWindow = IntPtr.Zero;
-        private static IntPtr originalPrevWindow = IntPtr.Zero;
-
-        public static void SaveZOrder(IntPtr targetWindow)
+        /// <summary>
+        /// ウィンドウのZオーダー情報を保存
+        /// </summary>
+        public static WindowZOrderInfo SaveZOrder(IntPtr targetWindow)
         {
-            originalNextWindow = GetWindow(targetWindow, GW_HWNDNEXT);
-            originalPrevWindow = GetWindow(targetWindow, GW_HWNDPREV);
+            if (!IsWindow(targetWindow))
+                throw new ArgumentException("Invalid window handle", nameof(targetWindow));
+
+            var nextWindow = GetWindow(targetWindow, GW_HWNDNEXT);
+            var prevWindow = GetWindow(targetWindow, GW_HWNDPREV);
+            var foregroundWindow = GetForegroundWindow();
+
+            return new WindowZOrderInfo(targetWindow, nextWindow, prevWindow, foregroundWindow);
         }
 
-        // 特定ウィンドウをフォアグラウンドに設定
+        /// <summary>
+        /// 特定ウィンドウをフォアグラウンドに設定
+        /// </summary>
         public static void BringToFront(IntPtr targetWindow)
         {
-            IntPtr foregroundWindow = GetForegroundWindow();
-            uint targetThreadId = GetWindowThreadProcessId(targetWindow, out _);
-            uint foregroundThreadId = GetWindowThreadProcessId(foregroundWindow, out _);
-
-            if (targetThreadId != foregroundThreadId)
+            if (!IsWindow(targetWindow))
             {
-                // フォーカスを同期
-                AttachThreadInput(foregroundThreadId, targetThreadId, true);
+                GlobalLogger.Instance.Write("MouseHelper", "BringToFront", "Invalid window handle");
+                return;
             }
 
-            // ウィンドウを一時的にTopMostに設定してから解除
-            SetWindowPos(targetWindow, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-            SetWindowPos(targetWindow, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-            SetForegroundWindow(targetWindow);
-            SetWindowPos(targetWindow, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-
-            if (targetThreadId != foregroundThreadId)
+            try
             {
-                AttachThreadInput(foregroundThreadId, targetThreadId, false);
+                IntPtr foregroundWindow = GetForegroundWindow();
+                uint targetThreadId = GetWindowThreadProcessId(targetWindow, out _);
+                uint foregroundThreadId = GetWindowThreadProcessId(foregroundWindow, out _);
+
+                if (targetThreadId != foregroundThreadId)
+                {
+                    // フォーカスを同期
+                    AttachThreadInput(foregroundThreadId, targetThreadId, true);
+                }
+
+                // ウィンドウを一時的にTopMostに設定してから解除
+                SetWindowPos(targetWindow, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+                SetWindowPos(targetWindow, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+                SetForegroundWindow(targetWindow);
+                SetWindowPos(targetWindow, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+
+                if (targetThreadId != foregroundThreadId)
+                {
+                    AttachThreadInput(foregroundThreadId, targetThreadId, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                GlobalLogger.Instance.Write("MouseHelper", "BringToFront", $"Error: {ex.Message}");
             }
         }
 
-        // 特定ウィンドウを元のZオーダーに復元
-        public static void RestoreZOrder(IntPtr targetWindow)
+        /// <summary>
+        /// ウィンドウを元のZオーダーに復元
+        /// </summary>
+        public static void RestoreZOrder(IntPtr targetWindow, WindowZOrderInfo zOrderInfo)
         {
-            if (originalNextWindow != IntPtr.Zero)
+            if (!IsWindow(targetWindow) || !zOrderInfo.IsValid())
             {
-                // 元の次のウィンドウの後に配置
-                SetWindowPos(targetWindow, originalNextWindow, 0, 0, 0, 0,
-                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                GlobalLogger.Instance.Write("MouseHelper", "RestoreZOrder", "Invalid window or expired Z-order info");
+                return;
             }
-            else if (originalPrevWindow != IntPtr.Zero)
+
+            try
             {
-                // 元の前のウィンドウの前に配置
-                SetWindowPos(targetWindow, originalPrevWindow, 0, 0, 0, 0,
-                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                // 元のフォアグラウンドウィンドウを復元
+                if (zOrderInfo.ForegroundWindow != IntPtr.Zero && 
+                    IsWindow(zOrderInfo.ForegroundWindow) && 
+                    zOrderInfo.ForegroundWindow != targetWindow)
+                {
+                    SetForegroundWindow(zOrderInfo.ForegroundWindow);
+                }
+
+                // Zオーダーを復元
+                if (zOrderInfo.NextWindow != IntPtr.Zero && IsWindow(zOrderInfo.NextWindow))
+                {
+                    // 元の次のウィンドウの後に配置
+                    SetWindowPos(targetWindow, zOrderInfo.NextWindow, 0, 0, 0, 0,
+                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                }
+                else if (zOrderInfo.PrevWindow != IntPtr.Zero && IsWindow(zOrderInfo.PrevWindow))
+                {
+                    // 元の前のウィンドウの前に配置
+                    SetWindowPos(zOrderInfo.PrevWindow, targetWindow, 0, 0, 0, 0,
+                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                }
+                else
+                {
+                    // 前後の情報がない場合は最背面に配置
+                    SetWindowPos(targetWindow, HWND_BOTTOM, 0, 0, 0, 0,
+                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                // 前後の情報がない場合はトップに配置
-                SetWindowPos(targetWindow, HWND_TOP, 0, 0, 0, 0,
-                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                GlobalLogger.Instance.Write("MouseHelper", "RestoreZOrder", $"Error: {ex.Message}");
             }
         }
         #endregion
