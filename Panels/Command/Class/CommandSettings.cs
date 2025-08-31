@@ -21,6 +21,25 @@ namespace MacroPanels.Command.Class
         public string WindowClassName { get; set; } = string.Empty;
     }
 
+    // IF系画像コマンド用の設定クラス（TimeoutとIntervalを削除）
+    public class IfImageCommandSettings : ICommandSettings, IIfImageCommandSettings
+    {
+        public string ImagePath { get; set; } = string.Empty;
+        public double Threshold { get; set; } = 0.8;
+        public Color? SearchColor { get; set; } = null;
+        public string WindowTitle { get; set; } = string.Empty;
+        public string WindowClassName { get; set; } = string.Empty;
+        
+        // バリデーション追加
+        public void Validate()
+        {
+            if (string.IsNullOrEmpty(ImagePath))
+                throw new ArgumentException("画像パスは必須です", nameof(ImagePath));
+            if (Threshold < 0 || Threshold > 1)
+                throw new ArgumentOutOfRangeException(nameof(Threshold), "閾値は0-1の範囲である必要があります");
+        }
+    }
+
     public class ClickImageCommandSettings : ICommandSettings, IClickImageCommandSettings
     {
         public string ImagePath { get; set; } = string.Empty;

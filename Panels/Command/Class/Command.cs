@@ -189,13 +189,13 @@ namespace MacroPanels.Command.Class
                     switch (Settings.Button)
                     {
                         case System.Windows.Input.MouseButton.Left:
-                            await Task.Run(() => MouseHelper.Input.Click(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName));
+                            await MouseHelper.Input.ClickAsync(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
                             break;
                         case System.Windows.Input.MouseButton.Right:
-                            await Task.Run(() => MouseHelper.Input.RightClick(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName));
+                            await MouseHelper.Input.RightClickAsync(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
                             break;
                         case System.Windows.Input.MouseButton.Middle:
-                            await Task.Run(() => MouseHelper.Input.MiddleClick(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName));
+                            await MouseHelper.Input.MiddleClickAsync(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
                             break;
                         default:
                             throw new Exception("マウスボタンが不正です。");
@@ -247,19 +247,22 @@ namespace MacroPanels.Command.Class
             switch (Settings.Button)
             {
                 case System.Windows.Input.MouseButton.Left:
-                    await Task.Run(() => MouseHelper.Input.Click(Settings.X, Settings.Y));
+                    await MouseHelper.Input.ClickAsync(Settings.X, Settings.Y, Settings.WindowTitle, Settings.WindowClassName);
                     break;
                 case System.Windows.Input.MouseButton.Right:
-                    await Task.Run(() => MouseHelper.Input.RightClick(Settings.X, Settings.Y));
+                    await MouseHelper.Input.RightClickAsync(Settings.X, Settings.Y, Settings.WindowTitle, Settings.WindowClassName);
                     break;
                 case System.Windows.Input.MouseButton.Middle:
-                    await Task.Run(() => MouseHelper.Input.MiddleClick(Settings.X, Settings.Y));
+                    await MouseHelper.Input.MiddleClickAsync(Settings.X, Settings.Y, Settings.WindowTitle, Settings.WindowClassName);
                     break;
                 default:
                     throw new Exception("マウスボタンが不正です。");
             }
 
-            OnDoingCommand?.Invoke(this, $"クリックしました。({Settings.X}, {Settings.Y})");
+            var targetDescription = string.IsNullOrEmpty(Settings.WindowTitle) && string.IsNullOrEmpty(Settings.WindowClassName) 
+                ? "グローバル" 
+                : $"{Settings.WindowTitle}[{Settings.WindowClassName}]";
+            OnDoingCommand?.Invoke(this, $"クリックしました。対象: {targetDescription} ({Settings.X}, {Settings.Y})");
 
             return true;
         }
@@ -302,8 +305,7 @@ namespace MacroPanels.Command.Class
 
     public class IfImageExistCommand : BaseCommand, ICommand, IIfCommand, IIfImageExistCommand
     {
-        new public IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings;
-
+        new public IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings;
 
         public IfImageExistCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
         {
@@ -316,40 +318,23 @@ namespace MacroPanels.Command.Class
                 throw new Exception("If内に要素がありません。");
             }
 
-            var stopwatch = Stopwatch.StartNew();
+            // タイムアウトなしで即座に判定
+            var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
 
-            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
+            if (point != null)
             {
-                var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
-
-                if (point != null)
-                {
-                    OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
-
-                    return await ExecuteChildrenAsync(cancellationToken);
-                }
-
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return false;
-                }
-
-                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
-
-                await Task.Delay(Settings.Interval, cancellationToken);
+                OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+                return await ExecuteChildrenAsync(cancellationToken);
             }
 
             OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
-
             return true;
         }
-
     }
 
     public class IfImageNotExistCommand : BaseCommand, ICommand, IIfCommand, IIfImageNotExistCommand
     {
-        new public IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings;
-
+        new public IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings;
 
         public IfImageNotExistCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
         {
@@ -362,33 +347,18 @@ namespace MacroPanels.Command.Class
                 throw new Exception("If内に要素がありません。");
             }
 
-            var stopwatch = Stopwatch.StartNew();
+            // タイムアウトなしで即座に判定
+            var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
 
-            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
+            // 画像が「存在しない」ことを検知したら即座に子コマンドを実行
+            if (point == null)
             {
-                var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
-
-                // 画像が「存在しない」ことを検知したら即子コマンドを実行
-                if (point == null)
-                {
-                    OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
-                    return await ExecuteChildrenAsync(cancellationToken);
-                }
-
-                // 画像が見つかった場合は条件不成立
-                OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
-
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return false;
-                }
-
-                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
-
-                await Task.Delay(Settings.Interval, cancellationToken);
+                OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
+                return await ExecuteChildrenAsync(cancellationToken);
             }
 
-            // タイムアウトまで「存在しない」状態にならなかった場合は子を実行せずスキップ
+            // 画像が見つかった場合は条件不成立
+            OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
             return true;
         }
     }
@@ -779,17 +749,17 @@ namespace MacroPanels.Command.Class
                 int centerX = (int)(best.Rect.X + best.Rect.Width / 2);
                 int centerY = (int)(best.Rect.Y + best.Rect.Height / 2);
 
-                // マウスクリックを実行
+                // マウスクリックを実行（非同期）
                 switch (Settings.Button)
                 {
                     case System.Windows.Input.MouseButton.Left:
-                        await Task.Run(() => MouseHelper.Input.Click(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName));
+                        await MouseHelper.Input.ClickAsync(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName);
                         break;
                     case System.Windows.Input.MouseButton.Right:
-                        await Task.Run(() => MouseHelper.Input.RightClick(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName));
+                        await MouseHelper.Input.RightClickAsync(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName);
                         break;
                     case System.Windows.Input.MouseButton.Middle:
-                        await Task.Run(() => MouseHelper.Input.MiddleClick(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName));
+                        await MouseHelper.Input.MiddleClickAsync(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName);
                         break;
                     default:
                         throw new Exception("マウスボタンが不正です。");

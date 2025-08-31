@@ -8,8 +8,7 @@ using System.IO;
 using System.Windows;
 using MacroPanels.List.Class;
 using MacroPanels.Model.List.Interface;
-using MacroPanels.Model.List.Type;
-
+using MacroPanels.Model.CommandDefinition;
 
 public class JsonSerializerHelper
 {
@@ -52,51 +51,27 @@ public class JsonSerializerHelper
 
 internal class CommandListItemConverter : JsonConverter<ICommandListItem>
 {
-    private readonly Dictionary<string, Type> _itemTypeMapping;
-
-    public CommandListItemConverter()
-    {
-        _itemTypeMapping = new Dictionary<string, Type>
-        {
-            { nameof(ItemType.Click), typeof(ClickItem) },
-            { nameof(ItemType.Click_Image), typeof(ClickImageItem) },
-            { nameof(ItemType.Hotkey), typeof(HotkeyItem) },
-            { nameof(ItemType.Wait), typeof(WaitItem) },
-            { nameof(ItemType.Wait_Image), typeof(WaitImageItem) },
-            { nameof(ItemType.Execute), typeof(ExecuteItem) },
-            { nameof(ItemType.Screenshot), typeof(ScreenshotItem) },
-            { nameof(ItemType.Loop), typeof(LoopItem) },
-            { nameof(ItemType.Loop_End), typeof(LoopEndItem) },
-            { nameof(ItemType.Loop_Break), typeof(LoopBreakItem) },
-            { nameof(ItemType.IF_ImageExist), typeof(IfImageExistItem) },
-            { nameof(ItemType.IF_ImageNotExist), typeof(IfImageNotExistItem) },
-            { nameof(ItemType.IF_ImageExist_AI), typeof(IfImageExistAIItem) },
-            { nameof(ItemType.IF_ImageNotExist_AI), typeof(IfImageNotExistAIItem) },
-            { nameof(ItemType.IF_Variable), typeof(IfVariableItem) },
-            { nameof(ItemType.IF_End), typeof(IfEndItem) },
-            { nameof(ItemType.SetVariable), typeof(SetVariableItem) },
-            { nameof(ItemType.SetVariable_AI), typeof(SetVariableAIItem) }
-        };
-    }
-
     public override ICommandListItem Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using (JsonDocument doc = JsonDocument.ParseValue(ref reader))
         {
             var jsonObject = doc.RootElement;
-            var type = jsonObject.GetProperty("ItemType").GetString();
+            var typeName = jsonObject.GetProperty("ItemType").GetString();
 
-            if(type == null)
+            if (string.IsNullOrEmpty(typeName))
             {
                 throw new JsonException("ItemType is not found");
             }
 
-            if (_itemTypeMapping.TryGetValue(type, out Type? targetType))
+            // CommandRegistryを使用して動的に型を取得
+            var targetType = CommandRegistry.GetItemType(typeName);
+            if (targetType != null)
             {
                 return (ICommandListItem?)JsonSerializer.Deserialize(jsonObject.GetRawText(), targetType, options)
-                       ?? throw new JsonException($"Failed to deserialize {type}");
+                       ?? throw new JsonException($"Failed to deserialize {typeName}");
             }
-            throw new NotSupportedException($"Type {type} is not supported");
+            
+            throw new NotSupportedException($"Type {typeName} is not supported");
         }
     }
 

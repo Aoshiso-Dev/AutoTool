@@ -80,7 +80,7 @@
                                 <Binding Path="IsWaitImageItem"/>
                                 <Binding Path="IsClickImageItem"/>
                                 <Binding Path="IsClickImageAIItem"/>
-                                <!--<Binding Path="IsClickItem"/>-->
+                                <Binding Path="IsClickItem"/>
                                 <Binding Path="IsHotkeyItem"/>
                                 <Binding Path="IsIfImageExistItem"/>
                                 <Binding Path="IsIfImageNotExistItem"/>

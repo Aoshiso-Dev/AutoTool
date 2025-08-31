@@ -18,6 +18,15 @@ namespace MacroPanels.Command.Interface
         string WindowClassName { get; set; }
     }
 
+    public interface IIfImageCommandSettings : ICommandSettings
+    {
+        string ImagePath { get; set; }
+        double Threshold { get; set; }
+        Color? SearchColor { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+    }
+
     public interface IClickImageCommandSettings : ICommandSettings
     {
         string ImagePath { get; set; }
@@ -45,6 +54,8 @@ namespace MacroPanels.Command.Interface
         MouseButton Button { get; set; }
         int X { get; set; }
         int Y { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
     }
 
     public interface IWaitCommandSettings : ICommandSettings

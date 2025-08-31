@@ -3,6 +3,7 @@ using System.Data;
 using System.Windows;
 using System.Windows.Threading;
 using LogHelper;
+using MacroPanels.Model.CommandDefinition;
 
 namespace AutoTool
 {
@@ -14,7 +15,10 @@ namespace AutoTool
         public static Log Logger { get; private set; } = new Log();
 
         protected override void OnStartup(StartupEventArgs e)
-      {
+        {
+            // コマンドレジストリを初期化
+            CommandRegistry.Initialize();
+            
             base.OnStartup(e);
 
             // UIスレッドで発生した未処理の例外をキャッチ
