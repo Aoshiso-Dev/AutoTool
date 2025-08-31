@@ -22,6 +22,7 @@ using ColorPickHelper;
 using MacroPanels.ViewModel.Helpers;
 using MacroPanels.Model.CommandDefinition;
 using MacroPanels.ViewModel.Shared;
+using MacroPanels.Helpers;
 
 namespace MacroPanels.ViewModel
 {
@@ -106,7 +107,23 @@ namespace MacroPanels.ViewModel
         public string WindowTitle { get => _propertyManager.WindowTitle.GetValue(Item); set { _propertyManager.WindowTitle.SetValue(Item, value); UpdateProperties(); } }
         public string WindowClassNameText => string.IsNullOrEmpty(WindowClassName) ? "指定なし" : WindowClassName;
         public string WindowClassName { get => _propertyManager.WindowClassName.GetValue(Item); set { _propertyManager.WindowClassName.SetValue(Item, value); UpdateProperties(); } }
-        public string ImagePath { get => _propertyManager.ImagePath.GetValue(Item); set { _propertyManager.ImagePath.SetValue(Item, value); UpdateProperties(); } }
+        
+        // 画像パスは表示用は絶対パス、保存時は相対パス
+        public string ImagePath 
+        { 
+            get 
+            {
+                var relativePath = _propertyManager.ImagePath.GetValue(Item);
+                return string.IsNullOrEmpty(relativePath) ? relativePath : PathHelper.ToAbsolutePath(relativePath);
+            } 
+            set 
+            { 
+                var relativePath = string.IsNullOrEmpty(value) ? value : PathHelper.ToRelativePath(value);
+                _propertyManager.ImagePath.SetValue(Item, relativePath); 
+                UpdateProperties(); 
+            } 
+        }
+        
         public double Threshold { get => _propertyManager.Threshold.GetValue(Item); set { _propertyManager.Threshold.SetValue(Item, value); UpdateProperties(); } }
         public Color? SearchColor { get => _propertyManager.SearchColor.GetValue(Item); set { _propertyManager.SearchColor.SetValue(Item, value); UpdateProperties(); OnPropertyChanged(nameof(SearchColorBrush)); OnPropertyChanged(nameof(SearchColorText)); OnPropertyChanged(nameof(SearchColorTextColor)); } }
         public int Timeout { get => _propertyManager.Timeout.GetValue(Item); set { _propertyManager.Timeout.SetValue(Item, value); UpdateProperties(); } }
@@ -120,18 +137,82 @@ namespace MacroPanels.ViewModel
         public int Y { get => _propertyManager.Y.GetValue(Item); set { _propertyManager.Y.SetValue(Item, value); UpdateProperties(); } }
         public int Wait { get => _propertyManager.Wait.GetValue(Item); set { _propertyManager.Wait.SetValue(Item, value); UpdateProperties(); } }
         public int LoopCount { get => _propertyManager.LoopCount.GetValue(Item); set { _propertyManager.LoopCount.SetValue(Item, value); UpdateProperties(); } }
-        public string ModelPath { get => _propertyManager.ModelPath.GetValue(Item); set { _propertyManager.ModelPath.SetValue(Item, value); UpdateProperties(); } }
+        
+        // ONNXモデルパスも相対パス対応
+        public string ModelPath 
+        { 
+            get 
+            {
+                var relativePath = _propertyManager.ModelPath.GetValue(Item);
+                return string.IsNullOrEmpty(relativePath) ? relativePath : PathHelper.ToAbsolutePath(relativePath);
+            } 
+            set 
+            { 
+                var relativePath = string.IsNullOrEmpty(value) ? value : PathHelper.ToRelativePath(value);
+                _propertyManager.ModelPath.SetValue(Item, relativePath); 
+                UpdateProperties(); 
+            } 
+        }
+        
         public int ClassID { get => _propertyManager.ClassID.GetValue(Item); set { _propertyManager.ClassID.SetValue(Item, value); UpdateProperties(); } }
         public string AIDetectMode { get => _propertyManager.Mode.GetValue(Item); set { _propertyManager.Mode.SetValue(Item, value); UpdateProperties(); } }
-        public string ProgramPath { get => _propertyManager.ProgramPath.GetValue(Item); set { _propertyManager.ProgramPath.SetValue(Item, value); UpdateProperties(); } }
+        
+        // プログラムパスも相対パス対応
+        public string ProgramPath 
+        { 
+            get 
+            {
+                var relativePath = _propertyManager.ProgramPath.GetValue(Item);
+                return string.IsNullOrEmpty(relativePath) ? relativePath : PathHelper.ToAbsolutePath(relativePath);
+            } 
+            set 
+            { 
+                var relativePath = string.IsNullOrEmpty(value) ? value : PathHelper.ToRelativePath(value);
+                _propertyManager.ProgramPath.SetValue(Item, relativePath); 
+                UpdateProperties(); 
+            } 
+        }
+        
         public string Arguments { get => _propertyManager.Arguments.GetValue(Item); set { _propertyManager.Arguments.SetValue(Item, value); UpdateProperties(); } }
-        public string WorkingDirectory { get => _propertyManager.WorkingDirectory.GetValue(Item); set { _propertyManager.WorkingDirectory.SetValue(Item, value); UpdateProperties(); } }
+        
+        // ワーキングディレクトリも相対パス対応
+        public string WorkingDirectory 
+        { 
+            get 
+            {
+                var relativePath = _propertyManager.WorkingDirectory.GetValue(Item);
+                return string.IsNullOrEmpty(relativePath) ? relativePath : PathHelper.ToAbsolutePath(relativePath);
+            } 
+            set 
+            { 
+                var relativePath = string.IsNullOrEmpty(value) ? value : PathHelper.ToRelativePath(value);
+                _propertyManager.WorkingDirectory.SetValue(Item, relativePath); 
+                UpdateProperties(); 
+            } 
+        }
+        
         public bool WaitForExit { get => _propertyManager.WaitForExit.GetValue(Item); set { _propertyManager.WaitForExit.SetValue(Item, value); UpdateProperties(); } }
         public string VariableName { get => _propertyManager.VariableName.GetValue(Item); set { _propertyManager.VariableName.SetValue(Item, value); UpdateProperties(); } }
         public string VariableValue { get => _propertyManager.VariableValue.GetValue(Item); set { _propertyManager.VariableValue.SetValue(Item, value); UpdateProperties(); } }
         public string CompareOperator { get => _propertyManager.CompareOperator.GetValue(Item); set { _propertyManager.CompareOperator.SetValue(Item, value); UpdateProperties(); } }
         public string CompareValue { get => _propertyManager.CompareValue.GetValue(Item); set { _propertyManager.CompareValue.SetValue(Item, value); UpdateProperties(); } }
-        public string SaveDirectory { get => _propertyManager.SaveDirectory.GetValue(Item); set { _propertyManager.SaveDirectory.SetValue(Item, value); UpdateProperties(); } }
+        
+        // 保存先ディレクトリも相対パス対応
+        public string SaveDirectory 
+        { 
+            get 
+            {
+                var relativePath = _propertyManager.SaveDirectory.GetValue(Item);
+                return string.IsNullOrEmpty(relativePath) ? relativePath : PathHelper.ToAbsolutePath(relativePath);
+            } 
+            set 
+            { 
+                var relativePath = string.IsNullOrEmpty(value) ? value : PathHelper.ToRelativePath(value);
+                _propertyManager.SaveDirectory.SetValue(Item, relativePath); 
+                UpdateProperties(); 
+            } 
+        }
+        
         public double ConfThreshold { get => _propertyManager.ConfThreshold.GetValue(Item); set { _propertyManager.ConfThreshold.SetValue(Item, value); UpdateProperties(); } }
         public double IoUThreshold { get => _propertyManager.IoUThreshold.GetValue(Item); set { _propertyManager.IoUThreshold.SetValue(Item, value); UpdateProperties(); } }
         
@@ -375,8 +456,32 @@ namespace MacroPanels.ViewModel
         [RelayCommand] private void Enter(KeyEventArgs e) { if (e.Key == Key.Enter) UpdateProperties(); }
         [RelayCommand] public void GetWindowInfo() { var w = new GetWindowInfoWindow(); if (w.ShowDialog() == true) { WindowTitle = w.WindowTitle; WindowClassName = w.WindowClassName; } }
         [RelayCommand] public void ClearWindowInfo() { WindowTitle = string.Empty; WindowClassName = string.Empty; }
-        [RelayCommand] public void Browse() { var f = DialogHelper.SelectImageFile(); if (f != null) ImagePath = f; }
-        [RelayCommand] public void Capture() { var cw = new CaptureWindow { Mode = 0 }; if (cw.ShowDialog() == true) { var path = DialogHelper.CreateCaptureFilePath(); var mat = OpenCVHelper.ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion); OpenCVHelper.ScreenCaptureHelper.SaveCapture(mat, path); ImagePath = path; } }
+        
+        [RelayCommand] 
+        public void Browse() 
+        { 
+            var f = DialogHelper.SelectImageFile(); 
+            if (f != null) 
+            {
+                ImagePath = f; // 相対パス変換は ImagePath プロパティで自動的に処理される
+                System.Diagnostics.Debug.WriteLine($"画像ファイル選択: 絶対パス={f}, 相対パス={PathHelper.ToRelativePath(f)}");
+            }
+        }
+        
+        [RelayCommand] 
+        public void Capture() 
+        { 
+            var cw = new CaptureWindow { Mode = 0 }; 
+            if (cw.ShowDialog() == true) 
+            { 
+                var path = DialogHelper.CreateCaptureFilePath(); 
+                var mat = OpenCVHelper.ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion); 
+                OpenCVHelper.ScreenCaptureHelper.SaveCapture(mat, path); 
+                ImagePath = path; // 相対パス変換は ImagePath プロパティで自動的に処理される
+                System.Diagnostics.Debug.WriteLine($"画像キャプチャ: 絶対パス={path}, 相対パス={PathHelper.ToRelativePath(path)}");
+            } 
+        }
+        
         [RelayCommand] public void PickSearchColor() { var w = new ColorPickWindow(); w.ShowDialog(); SearchColor = w.Color; }
         [RelayCommand] public void ClearSearchColor() { SearchColor = null; }
         [RelayCommand] 
@@ -446,10 +551,50 @@ namespace MacroPanels.ViewModel
                 }
             } 
         }
-        [RelayCommand] public void BrowseModel() { var f = DialogHelper.SelectModelFile(); if (f != null) ModelPath = f; }
-        [RelayCommand] public void BrowseProgram() { var f = DialogHelper.SelectExecutableFile(); if (f != null) ProgramPath = f; }
-        [RelayCommand] public void BrowseWorkingDirectory() { var d = DialogHelper.SelectFolder(); if (d != null) WorkingDirectory = d; }
-        [RelayCommand] public void BrowseSaveDirectory() { var d = DialogHelper.SelectFolder(); if (d != null) SaveDirectory = d; }
+        
+        [RelayCommand] 
+        public void BrowseModel() 
+        { 
+            var f = DialogHelper.SelectModelFile(); 
+            if (f != null) 
+            {
+                ModelPath = f; // 相対パス変換は ModelPath プロパティで自動的に処理される
+                System.Diagnostics.Debug.WriteLine($"ONNXモデル選択: 絶対パス={f}, 相対パス={PathHelper.ToRelativePath(f)}");
+            }
+        }
+        
+        [RelayCommand] 
+        public void BrowseProgram() 
+        { 
+            var f = DialogHelper.SelectExecutableFile(); 
+            if (f != null) 
+            {
+                ProgramPath = f; // 相対パス変換は ProgramPath プロパティで自動的に処理される
+                System.Diagnostics.Debug.WriteLine($"プログラム選択: 絶対パス={f}, 相対パス={PathHelper.ToRelativePath(f)}");
+            }
+        }
+        
+        [RelayCommand] 
+        public void BrowseWorkingDirectory() 
+        { 
+            var d = DialogHelper.SelectFolder(); 
+            if (d != null) 
+            {
+                WorkingDirectory = d; // 相対パス変換は WorkingDirectory プロパティで自動的に処理される
+                System.Diagnostics.Debug.WriteLine($"ワーキングディレクトリ選択: 絶対パス={d}, 相対パス={PathHelper.ToRelativePath(d)}");
+            }
+        }
+        
+        [RelayCommand] 
+        public void BrowseSaveDirectory() 
+        { 
+            var d = DialogHelper.SelectFolder(); 
+            if (d != null) 
+            {
+                SaveDirectory = d; // 相対パス変換は SaveDirectory プロパティで自動的に処理される
+                System.Diagnostics.Debug.WriteLine($"保存先ディレクトリ選択: 絶対パス={d}, 相対パス={PathHelper.ToRelativePath(d)}");
+            }
+        }
         #endregion
 
         #region Windows API Helper Methods

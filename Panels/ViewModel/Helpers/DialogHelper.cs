@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Microsoft.Win32;
+using MacroPanels.Helpers;
 
 namespace MacroPanels.ViewModel.Helpers
 {
@@ -64,17 +65,25 @@ namespace MacroPanels.ViewModel.Helpers
         }
 
         /// <summary>
-        /// キャプチャ保存パスの生成
+        /// キャプチャ保存パスの生成（相対パス対応）
         /// </summary>
         public static string CreateCaptureFilePath()
         {
-            var captureDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Capture");
+            // AutoTool.exeからの相対パスでCaptureフォルダを作成
+            var appDirectory = PathHelper.GetApplicationDirectory();
+            var captureDirectory = Path.Combine(appDirectory, "Capture");
+            
             if (!Directory.Exists(captureDirectory))
             {
                 Directory.CreateDirectory(captureDirectory);
+                System.Diagnostics.Debug.WriteLine($"キャプチャディレクトリを作成: {captureDirectory}");
             }
 
-            return Path.Combine(captureDirectory, $"{DateTime.Now:yyyyMMddHHmmss}.png");
+            var fileName = $"{DateTime.Now:yyyyMMddHHmmss}.png";
+            var fullPath = Path.Combine(captureDirectory, fileName);
+            
+            System.Diagnostics.Debug.WriteLine($"キャプチャファイルパス生成: {fullPath}");
+            return fullPath;
         }
     }
 }

@@ -472,11 +472,53 @@
                 
                 <!-- 画像のプレビュー（右側、サイズ制限あり） -->
                 <GroupBox Grid.Column="2" Header="プレビュー" Margin="10">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                        <Image Source="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" 
-                               MaxWidth="400" MaxHeight="600"
-                               Stretch="Uniform"/>
-                    </ScrollViewer>
+                    <Grid>
+                        <!-- 画像が存在しない場合のメッセージ -->
+                        <TextBlock Text="画像ファイルが見つかりません" 
+                                   HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center"
+                                   Foreground="Gray"
+                                   FontSize="14">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ImagePath}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ImagePath}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        
+                        <!-- 画像プレビュー -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                            <Image MaxWidth="400" MaxHeight="600" Stretch="Uniform">
+                                <Image.Source>
+                                    <Binding Path="ImagePath" UpdateSourceTrigger="PropertyChanged">
+                                        <Binding.TargetNullValue>
+                                            <x:Null/>
+                                        </Binding.TargetNullValue>
+                                    </Binding>
+                                </Image.Source>
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ImagePath}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ImagePath}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+                        </ScrollViewer>
+                    </Grid>
                     <GroupBox.Visibility>
                         <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                             <Binding Path="IsWaitImageItem"/>
