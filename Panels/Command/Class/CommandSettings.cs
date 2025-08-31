@@ -84,6 +84,11 @@ namespace MacroPanels.Command.Class
         public string WindowClassName { get; set; } = string.Empty;
         public double ConfThreshold { get; set; } = 0.5; // デフォルト値を設定
         public double IoUThreshold { get; set; } = 0.25;
+<<<<<<< HEAD
+=======
+        public int Timeout { get; set; } = 5000;
+        public int Interval { get; set; } = 500;
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
         
         // バリデーション追加
         public void Validate()
@@ -95,6 +100,7 @@ namespace MacroPanels.Command.Class
             if (IoUThreshold < 0 || IoUThreshold > 1)
                 throw new ArgumentOutOfRangeException(nameof(IoUThreshold), "IoU閾値は0-1の範囲である必要があります");
         }
+<<<<<<< HEAD
     }
 
     public class AIImageNotDetectCommandSettings : ICommandSettings, IIfImageNotExistAISettings
@@ -115,6 +121,8 @@ namespace MacroPanels.Command.Class
             if (IoUThreshold < 0 || IoUThreshold > 1)
                 throw new ArgumentOutOfRangeException(nameof(IoUThreshold), "IoU閾値は0-1の範囲である必要があります");
         }
+=======
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
     }
 
     public class ExecuteCommandSettings : ICommandSettings, IExecuteCommandSettings
@@ -180,17 +188,29 @@ namespace MacroPanels.Command.Class
         public string WindowClassName { get; set; } = string.Empty;
         public double ConfThreshold { get; set; } = 0.5;
         public double IoUThreshold { get; set; } = 0.25;
+<<<<<<< HEAD
         public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
+=======
+        public int Timeout { get; set; } = 5000;
+        public int Interval { get; set; } = 500;
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
         
         // バリデーション追加
         public void Validate()
         {
+<<<<<<< HEAD
             if (string.IsNullOrEmpty(ModelPath))
                 throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
             if (ConfThreshold < 0 || ConfThreshold > 1)
                 throw new ArgumentOutOfRangeException(nameof(ConfThreshold), "信頼度閾値は0-1の範囲である必要があります");
             if (IoUThreshold < 0 || IoUThreshold > 1)
                 throw new ArgumentOutOfRangeException(nameof(IoUThreshold), "IoU閾値は0-1の範囲である必要があります");
+=======
+            if (string.IsNullOrWhiteSpace(Name))
+                throw new ArgumentException("変数名は必須です", nameof(Name));
+            if (string.IsNullOrEmpty(ModelPath))
+                throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
         }
     }
 }

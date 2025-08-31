@@ -42,7 +42,10 @@ namespace MacroPanels.ViewModel.Helpers
         // AI関連
         public MultiInterfacePropertyAccessor<string> ModelPath { get; }
         public MultiInterfacePropertyAccessor<int> ClassID { get; }
+<<<<<<< HEAD
         public PropertyAccessor<SetVariableAIItem, string> Mode { get; }
+=======
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
 
         // プログラム実行関連
         public PropertyAccessor<ExecuteItem, string> ProgramPath { get; }
@@ -58,9 +61,12 @@ namespace MacroPanels.ViewModel.Helpers
 
         // スクリーンショット関連
         public PropertyAccessor<ScreenshotItem, string> SaveDirectory { get; }
+<<<<<<< HEAD
         // New AI thresholds
         public MultiInterfacePropertyAccessor<double> ConfThreshold { get; }
         public MultiInterfacePropertyAccessor<double> IoUThreshold { get; }
+=======
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
 
         public EditPanelPropertyManager()
         {
@@ -74,7 +80,10 @@ namespace MacroPanels.ViewModel.Helpers
                 .AddInterface<IIfImageExistAIItem>(x => x.WindowTitle)
                 .AddInterface<IIfImageNotExistAIItem>(x => x.WindowTitle)
                 .AddInterface<ISetVariableAIItem>(x => x.WindowTitle)
+<<<<<<< HEAD
                 .AddInterface<IClickImageAIItem>(x => x.WindowTitle)
+=======
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
                 .AddInterface<IScreenshotItem>(x => x.WindowTitle);
 
             WindowClassName = new MultiInterfacePropertyAccessor<string>(string.Empty)
@@ -86,7 +95,10 @@ namespace MacroPanels.ViewModel.Helpers
                 .AddInterface<IIfImageExistAIItem>(x => x.WindowClassName)
                 .AddInterface<IIfImageNotExistAIItem>(x => x.WindowClassName)
                 .AddInterface<ISetVariableAIItem>(x => x.WindowClassName)
+<<<<<<< HEAD
                 .AddInterface<IClickImageAIItem>(x => x.WindowClassName)
+=======
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
                 .AddInterface<IScreenshotItem>(x => x.WindowClassName);
 
             // 画像関連の初期化
@@ -111,17 +123,37 @@ namespace MacroPanels.ViewModel.Helpers
             // タイミング関連の初期化
             Timeout = new MultiInterfacePropertyAccessor<int>(5000)
                 .AddInterface<IWaitImageItem>(x => x.Timeout)
+<<<<<<< HEAD
                 .AddInterface<IClickImageItem>(x => x.Timeout);
 
             Interval = new MultiInterfacePropertyAccessor<int>(500)
                 .AddInterface<IWaitImageItem>(x => x.Interval)
                 .AddInterface<IClickImageItem>(x => x.Interval);
+=======
+                .AddInterface<IClickImageItem>(x => x.Timeout)
+                .AddInterface<IIfImageExistItem>(x => x.Timeout)
+                .AddInterface<IIfImageNotExistItem>(x => x.Timeout)
+                .AddInterface<IIfImageExistAIItem>(x => x.Timeout)
+                .AddInterface<IIfImageNotExistAIItem>(x => x.Timeout);
+
+            Interval = new MultiInterfacePropertyAccessor<int>(500)
+                .AddInterface<IWaitImageItem>(x => x.Interval)
+                .AddInterface<IClickImageItem>(x => x.Interval)
+                .AddInterface<IIfImageExistItem>(x => x.Interval)
+                .AddInterface<IIfImageNotExistItem>(x => x.Interval)
+                .AddInterface<IIfImageExistAIItem>(x => x.Interval)
+                .AddInterface<IIfImageNotExistAIItem>(x => x.Interval);
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
 
             // マウス・キーボード関連の初期化
             MouseButton = new MultiInterfacePropertyAccessor<MouseButton>(System.Windows.Input.MouseButton.Left)
                 .AddInterface<IClickImageItem>(x => x.Button)
+<<<<<<< HEAD
                 .AddInterface<IClickItem>(x => x.Button)
                 .AddInterface<IClickImageAIItem>(x => x.Button);
+=======
+                .AddInterface<IClickItem>(x => x.Button);
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
 
             Ctrl = new PropertyAccessor<IHotkeyItem, bool>(x => x.Ctrl, false);
             Alt = new PropertyAccessor<IHotkeyItem, bool>(x => x.Alt, false);
@@ -140,6 +172,7 @@ namespace MacroPanels.ViewModel.Helpers
             ModelPath = new MultiInterfacePropertyAccessor<string>(string.Empty)
                 .AddInterface<IfImageExistAIItem>(x => x.ModelPath)
                 .AddInterface<IfImageNotExistAIItem>(x => x.ModelPath)
+<<<<<<< HEAD
                 .AddInterface<SetVariableAIItem>(x => x.ModelPath)
                 .AddInterface<ClickImageAIItem>(x => x.ModelPath);
 
@@ -149,6 +182,13 @@ namespace MacroPanels.ViewModel.Helpers
                 .AddInterface<ClickImageAIItem>(x => x.ClassID);
 
             Mode = new PropertyAccessor<SetVariableAIItem, string>(x => x.AIDetectMode, "Class");
+=======
+                .AddInterface<SetVariableAIItem>(x => x.ModelPath);
+
+            ClassID = new MultiInterfacePropertyAccessor<int>(0)
+                .AddInterface<IfImageExistAIItem>(x => x.ClassID)
+                .AddInterface<IfImageNotExistAIItem>(x => x.ClassID);
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
 
             // プログラム実行関連の初期化
             ProgramPath = new PropertyAccessor<ExecuteItem, string>(x => x.ProgramPath, string.Empty);
@@ -168,6 +208,7 @@ namespace MacroPanels.ViewModel.Helpers
 
             // スクリーンショット関連の初期化
             SaveDirectory = new PropertyAccessor<ScreenshotItem, string>(x => x.SaveDirectory, string.Empty);
+<<<<<<< HEAD
 
             ConfThreshold = new MultiInterfacePropertyAccessor<double>(0.5)
                 .AddInterface<IfImageExistAIItem>(x => x.ConfThreshold)
@@ -180,6 +221,8 @@ namespace MacroPanels.ViewModel.Helpers
                 .AddInterface<IfImageNotExistAIItem>(x => x.IoUThreshold)
                 .AddInterface<SetVariableAIItem>(x => x.IoUThreshold)
                 .AddInterface<ClickImageAIItem>(x => x.IoUThreshold);
+=======
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
         }
     }
 }
