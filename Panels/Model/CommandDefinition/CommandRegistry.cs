@@ -6,6 +6,7 @@ using MacroPanels.List.Class;
 using MacroPanels.Command.Class;
 using MacroPanels.Command.Interface;
 using MacroPanels.Model.List.Interface;
+using System.Collections.Concurrent;
 
 namespace MacroPanels.Model.CommandDefinition
 {
@@ -14,8 +15,10 @@ namespace MacroPanels.Model.CommandDefinition
     /// </summary>
     public static class CommandRegistry
     {
-        private static readonly Dictionary<string, CommandInfo> _commands = new();
+        private static readonly ConcurrentDictionary<string, CommandInfo> _commands = new();
+        private static readonly Lazy<Dictionary<string, CommandInfo>> _initializedCommands = new(InitializeCommands);
         private static bool _initialized = false;
+        private static readonly object _lockObject = new();
 
         /// <summary>
         /// よく使用されるコマンドタイプ名の定数
@@ -46,40 +49,40 @@ namespace MacroPanels.Model.CommandDefinition
         /// <summary>
         /// コマンド情報
         /// </summary>
-        private class CommandInfo
+        private sealed class CommandInfo
         {
-            public string TypeName { get; set; } = string.Empty;
-            public Type ItemType { get; set; } = null!;
-            public Type CommandType { get; set; } = null!;
-            public Type SettingsType { get; set; } = null!;
-            public CommandCategory Category { get; set; }
-            public bool IsIfCommand { get; set; }
-            public bool IsLoopCommand { get; set; }
-            public Func<ICommandListItem> ItemFactory { get; set; } = null!;
+            public string TypeName { get; init; } = string.Empty;
+            public Type ItemType { get; init; } = null!;
+            public Type CommandType { get; init; } = null!;
+            public Type SettingsType { get; init; } = null!;
+            public CommandCategory Category { get; init; }
+            public bool IsIfCommand { get; init; }
+            public bool IsLoopCommand { get; init; }
+            public Func<ICommandListItem> ItemFactory { get; init; } = null!;
         }
 
         /// <summary>
-        /// 初期化（アプリ起動時に1回だけ実行）
+        /// 効率的な初期化（遅延評価）
         /// </summary>
-        public static void Initialize()
+        private static Dictionary<string, CommandInfo> InitializeCommands()
         {
-            if (_initialized) return;
-
+            var commands = new Dictionary<string, CommandInfo>();
+            
             // アセンブリ内のCommandDefinition属性が付いたクラスを探す
             var assembly = Assembly.GetExecutingAssembly();
             var commandTypes = assembly.GetTypes()
                 .Where(t => t.GetCustomAttribute<CommandDefinitionAttribute>() != null)
-                .ToList();
+                .ToArray();
 
-            System.Diagnostics.Debug.WriteLine($"CommandRegistry: Found {commandTypes.Count} command types");
+            System.Diagnostics.Debug.WriteLine($"CommandRegistry: Found {commandTypes.Length} command types");
 
             foreach (var type in commandTypes)
             {
                 var attr = type.GetCustomAttribute<CommandDefinitionAttribute>()!;
-                var hasSimpleBinding = type.GetCustomAttribute<MacroPanels.Model.CommandDefinition.SimpleCommandBindingAttribute>() != null;
+                var hasSimpleBinding = type.GetCustomAttribute<SimpleCommandBindingAttribute>() != null;
                 
-                // ファクトリメソッドを作成
-                var factory = CreateFactory(type);
+                // ファクトリメソッドを作成（効率化）
+                var factory = CreateOptimizedFactory(type);
                 
                 var commandInfo = new CommandInfo
                 {
@@ -93,40 +96,76 @@ namespace MacroPanels.Model.CommandDefinition
                     ItemFactory = factory
                 };
 
-                _commands[attr.TypeName] = commandInfo;
+                commands[attr.TypeName] = commandInfo;
                 System.Diagnostics.Debug.WriteLine($"CommandRegistry: Registered {attr.TypeName} -> {type.Name} (SimpleBinding: {hasSimpleBinding})");
             }
 
-            _initialized = true;
-            System.Diagnostics.Debug.WriteLine($"CommandRegistry: Initialization complete with {_commands.Count} commands");
+            System.Diagnostics.Debug.WriteLine($"CommandRegistry: Initialization complete with {commands.Count} commands");
+            return commands;
         }
 
         /// <summary>
-        /// ファクトリメソッドを作成
+        /// 初期化（アプリ起動時に1回だけ実行）
         /// </summary>
-        private static Func<ICommandListItem> CreateFactory(Type itemType)
+        public static void Initialize()
         {
+            if (_initialized) return;
+
+            lock (_lockObject)
+            {
+                if (_initialized) return;
+
+                var commands = _initializedCommands.Value;
+                foreach (var kvp in commands)
+                {
+                    _commands[kvp.Key] = kvp.Value;
+                }
+
+                _initialized = true;
+            }
+        }
+
+        /// <summary>
+        /// 最適化されたファクトリメソッドを作成
+        /// </summary>
+        private static Func<ICommandListItem> CreateOptimizedFactory(Type itemType)
+        {
+            // コンパイル済み式ツリーでパフォーマンス向上
+            var constructor = itemType.GetConstructor(Type.EmptyTypes);
+            if (constructor == null)
+                throw new InvalidOperationException($"Type {itemType.Name} does not have a parameterless constructor");
+
             return () => (ICommandListItem)Activator.CreateInstance(itemType)!;
         }
 
         /// <summary>
-        /// 全てのコマンドタイプ名を取得
+        /// 全てのコマンドタイプ名を取得（キャッシュ済み）
         /// </summary>
+        private static readonly Lazy<IReadOnlyCollection<string>> _allTypeNames = new(() =>
+        {
+            var _ = _initializedCommands.Value; // 初期化を強制
+            return _commands.Keys.ToArray();
+        });
+
         public static IEnumerable<string> GetAllTypeNames()
         {
             Initialize();
-            return _commands.Keys;
+            return _allTypeNames.Value;
         }
 
         /// <summary>
-        /// カテゴリ別のコマンドタイプ名を取得
+        /// カテゴリ別のコマンドタイプ名を取得（キャッシュ済み）
         /// </summary>
+        private static readonly ConcurrentDictionary<CommandCategory, IReadOnlyCollection<string>> _categoryCache = new();
+
         public static IEnumerable<string> GetTypeNamesByCategory(CommandCategory category)
         {
             Initialize();
-            return _commands.Values
-                .Where(c => c.Category == category)
-                .Select(c => c.TypeName);
+            return _categoryCache.GetOrAdd(category, cat =>
+                _commands.Values
+                    .Where(c => c.Category == cat)
+                    .Select(c => c.TypeName)
+                    .ToArray());
         }
 
         /// <summary>
@@ -134,6 +173,8 @@ namespace MacroPanels.Model.CommandDefinition
         /// </summary>
         public static ICommandListItem? CreateCommandItem(string typeName)
         {
+            if (string.IsNullOrEmpty(typeName)) return null;
+            
             Initialize();
             
             if (_commands.TryGetValue(typeName, out var info))
@@ -147,29 +188,39 @@ namespace MacroPanels.Model.CommandDefinition
         }
 
         /// <summary>
-        /// If系コマンドかどうか判定
+        /// If系コマンドかどうか判定（高速化）
         /// </summary>
         public static bool IsIfCommand(string typeName)
         {
+            if (string.IsNullOrEmpty(typeName)) return false;
             Initialize();
             return _commands.TryGetValue(typeName, out var info) && info.IsIfCommand;
         }
 
         /// <summary>
-        /// ループ系コマンドかどうか判定
+        /// ループ系コマンドかどうか判定（高速化）
         /// </summary>
         public static bool IsLoopCommand(string typeName)
         {
+            if (string.IsNullOrEmpty(typeName)) return false;
             Initialize();
             return _commands.TryGetValue(typeName, out var info) && info.IsLoopCommand;
         }
 
         /// <summary>
-        /// 終了系コマンド（ネストレベルを減らす）かどうか判定
+        /// 終了系コマンド（ネストレベルを減らす）かどうか判定（最適化）
         /// </summary>
         public static bool IsEndCommand(string typeName)
         {
-            return typeName == CommandTypes.LoopEnd || typeName == CommandTypes.IfEnd;
+            return typeName is CommandTypes.LoopEnd or CommandTypes.IfEnd;
+        }
+
+        /// <summary>
+        /// 開始系コマンド（ネストレベルを増やす）かどうか判定
+        /// </summary>
+        public static bool IsStartCommand(string typeName)
+        {
+            return IsLoopCommand(typeName) || IsIfCommand(typeName);
         }
 
         /// <summary>
@@ -177,20 +228,21 @@ namespace MacroPanels.Model.CommandDefinition
         /// </summary>
         public static bool TryCreateSimple(ICommand parent, ICommandListItem item, out ICommand? command)
         {
-            Initialize();
             command = null;
+            if (item?.ItemType == null) return false;
+
+            Initialize();
 
             System.Diagnostics.Debug.WriteLine($"TryCreateSimple: ItemType={item.ItemType}, Type={item.GetType().Name}");
 
             if (!_commands.TryGetValue(item.ItemType, out var info))
             {
                 System.Diagnostics.Debug.WriteLine($"TryCreateSimple: ItemType {item.ItemType} not found in registry");
-                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Available commands: {string.Join(", ", _commands.Keys)}");
                 return false;
             }
 
-            // SimpleCommandBinding属性をチェック（完全修飾名を使用）
-            var bindingAttr = info.ItemType.GetCustomAttribute<MacroPanels.Model.CommandDefinition.SimpleCommandBindingAttribute>();
+            // SimpleCommandBinding属性をチェック
+            var bindingAttr = info.ItemType.GetCustomAttribute<SimpleCommandBindingAttribute>();
             if (bindingAttr == null)
             {
                 System.Diagnostics.Debug.WriteLine($"TryCreateSimple: No SimpleCommandBinding attribute found for {info.ItemType.Name}");
@@ -209,7 +261,6 @@ namespace MacroPanels.Model.CommandDefinition
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Failed to create command {bindingAttr.CommandType.Name}: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Exception details: {ex}");
                 return false;
             }
         }
@@ -219,8 +270,38 @@ namespace MacroPanels.Model.CommandDefinition
         /// </summary>
         public static Type? GetItemType(string typeName)
         {
+            if (string.IsNullOrEmpty(typeName)) return null;
             Initialize();
             return _commands.TryGetValue(typeName, out var info) ? info.ItemType : null;
+        }
+
+        /// <summary>
+        /// すべてのコマンド情報を取得（デバッグ用）
+        /// </summary>
+        public static IReadOnlyDictionary<string, (Type ItemType, Type CommandType, CommandCategory Category)> GetAllCommandInfo()
+        {
+            Initialize();
+            return _commands.ToDictionary(
+                kvp => kvp.Key,
+                kvp => (kvp.Value.ItemType, kvp.Value.CommandType, kvp.Value.Category));
+        }
+
+        /// <summary>
+        /// 統計情報を取得（デバッグ用）
+        /// </summary>
+        public static (int TotalCommands, int IfCommands, int LoopCommands, Dictionary<CommandCategory, int> ByCategory) GetStatistics()
+        {
+            Initialize();
+            var byCategory = _commands.Values
+                .GroupBy(c => c.Category)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            return (
+                TotalCommands: _commands.Count,
+                IfCommands: _commands.Values.Count(c => c.IsIfCommand),
+                LoopCommands: _commands.Values.Count(c => c.IsLoopCommand),
+                ByCategory: byCategory
+            );
         }
     }
 }

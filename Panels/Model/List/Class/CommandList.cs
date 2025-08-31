@@ -138,7 +138,7 @@ namespace MacroPanels.List.Class
                 item.NestLevel = nestLevel;
 
                 // ネストレベルを増やすコマンド（開始系）
-                if (CommandRegistry.IsLoopCommand(item.ItemType) || CommandRegistry.IsIfCommand(item.ItemType))
+                if (CommandRegistry.IsStartCommand(item.ItemType))
                 {
                     nestLevel++;
                 }
