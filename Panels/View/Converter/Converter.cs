@@ -9,148 +9,86 @@ using System.Windows.Controls;
 
 namespace MacroPanels.View.Converter
 {
-    public class BoolToVisibilityConverter : IValueConverter
+    public sealed class BoolToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? Visibility.Visible : Visibility.Collapsed;
-            }
-            return Visibility.Collapsed;
-        }
+            => value is bool boolValue ? (boolValue ? Visibility.Visible : Visibility.Collapsed) : Visibility.Collapsed;
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
     }
 
-    public class BoolToVisibilityMultiConverter : IMultiValueConverter
+    public sealed class BoolToVisibilityMultiConverter : IMultiValueConverter
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            foreach (var value in values)
-            {
-                if (value is bool boolValue && boolValue)
-                {
-                    return Visibility.Visible;
-                }
-            }
-
-            return Visibility.Collapsed;
+            // LINQ使用でより簡潔に
+            return values.OfType<bool>().Any(b => b) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
     }
 
     // ブール値を反転するコンバータ
-    public class InverseBooleanConverter : IValueConverter
+    public sealed class InverseBooleanConverter : IValueConverter
     {
         public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return !boolValue;
-            }
-            return null;
-        }
+            => value is bool boolValue ? !boolValue : null;
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
     }
 
     // ブール値を文字列に変換するコンバータ
-    public class BooleanToTextConverter : IValueConverter
+    public sealed class BooleanToTextConverter : IValueConverter
     {
         public string? TrueText { get; set; }
         public string? FalseText { get; set; }
 
         public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? TrueText : FalseText;
-            }
-            return null;
-        }
+            => value is bool boolValue ? (boolValue ? TrueText : FalseText) : null;
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
     }
 
     // 数値が一致したらTrueを返すコンバータ
-    public class NumberToBooleanConverter : IMultiValueConverter
+    public sealed class NumberToBooleanConverter : IMultiValueConverter
     {
-        public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
             if (values.Length == 2 && values[0] is int lineNumber && values[1] is int executedLineNumber)
             {
-               Debug.WriteLine($"LineNumber: {lineNumber}, ExecutedLineNumber: {executedLineNumber}");
-
+                Debug.WriteLine($"LineNumber: {lineNumber}, ExecutedLineNumber: {executedLineNumber}");
                 return lineNumber == executedLineNumber;
             }
-
             return false;
         }
 
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+            => throw new NotImplementedException();
     }
 
     // 文字列が一致したらVisibleを返すコンバータ
-    public class StringToVisibilityConverter : IValueConverter
+    public sealed class StringToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is string stringValue && parameter is string targetString)
-            {
-                return stringValue == targetString ? Visibility.Visible : Visibility.Collapsed;
-            }
-            return Visibility.Collapsed;
-        }
+            => value is string stringValue && parameter is string targetString && stringValue == targetString 
+                ? Visibility.Visible 
+                : Visibility.Collapsed;
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
     }
 
-    public class KeyToStringConverter : IValueConverter
+    public sealed class KeyToStringConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is Key key)
-            {
-                if (key == Key.None)
-                {
-                    return string.Empty;
-                }
-
-                return key.ToString();
-            }
-
-            return string.Empty;
-        }
+            => value is Key key ? (key == Key.None ? string.Empty : key.ToString()) : string.Empty;
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is string keyString && Enum.TryParse(typeof(Key), keyString, out var key))
-            {
-                return key;
-            }
-
-            return Key.None;
-        }
+            => value is string keyString && Enum.TryParse<Key>(keyString, out var key) ? key : Key.None;
     }
 
     // Keyを文字列に変換するコンバータ
@@ -186,21 +124,18 @@ namespace MacroPanels.View.Converter
         }
     }
 
-
-
     // NestLevelをマージンに変換するコンバータ
-    public class NestLevelToMarginConverter : IValueConverter
+    public sealed class NestLevelToMarginConverter : IValueConverter
     {
+        private const int IndentSize = 20; // 定数として定義
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            int nestLevel = (int)value;
-            int indentSize = 20; // インデントの幅
-            return new Thickness(nestLevel * indentSize, 0, 0, 0);
+            var nestLevel = value is int level ? level : 0;
+            return new Thickness(nestLevel * IndentSize, 0, 0, 0);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
     }
 }

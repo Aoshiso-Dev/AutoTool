@@ -204,9 +204,34 @@ namespace MacroPanels.ViewModel
         #region Update
         private void UpdateIsProperties()
         {
-            foreach (var name in new[] { nameof(IsListNotEmpty), nameof(IsNotNullItem), nameof(IsWaitImageItem), nameof(IsClickImageItem), nameof(IsClickImageAIItem), nameof(IsHotkeyItem), nameof(IsClickItem), nameof(IsWaitItem), nameof(IsLoopItem), nameof(IsEndLoopItem), nameof(IsBreakItem), nameof(IsIfImageExistItem), nameof(IsIfImageNotExistItem), nameof(IsEndIfItem), nameof(IsIfImageExistAIItem), nameof(IsIfImageNotExistAIItem), nameof(IsExecuteProgramItem), nameof(IsSetVariableItem), nameof(IsSetVariableAIItem), nameof(IsIfVariableItem), nameof(IsScreenshotItem) })
+            // 配列をstaticにしてGC圧を軽減
+            foreach (var name in IsPropertyNames)
                 OnPropertyChanged(name);
         }
+
+        private static readonly string[] IsPropertyNames = {
+            nameof(IsListNotEmpty), nameof(IsNotNullItem), nameof(IsWaitImageItem), 
+            nameof(IsClickImageItem), nameof(IsClickImageAIItem), nameof(IsHotkeyItem), 
+            nameof(IsClickItem), nameof(IsWaitItem), nameof(IsLoopItem), 
+            nameof(IsEndLoopItem), nameof(IsBreakItem), nameof(IsIfImageExistItem), 
+            nameof(IsIfImageNotExistItem), nameof(IsEndIfItem), nameof(IsIfImageExistAIItem), 
+            nameof(IsIfImageNotExistAIItem), nameof(IsExecuteProgramItem), nameof(IsSetVariableItem), 
+            nameof(IsSetVariableAIItem), nameof(IsIfVariableItem), nameof(IsScreenshotItem)
+        };
+
+        private static readonly string[] AllPropertyNames = {
+            nameof(SelectedItemType), nameof(WindowTitle), nameof(WindowTitleText), 
+            nameof(WindowClassName), nameof(WindowClassNameText), nameof(ImagePath), 
+            nameof(Threshold), nameof(SearchColor), nameof(Timeout), nameof(Interval), 
+            nameof(MouseButton), nameof(SelectedMouseButton), nameof(Ctrl), nameof(Alt), 
+            nameof(Shift), nameof(Key), nameof(X), nameof(Y), nameof(Wait), nameof(LoopCount), 
+            nameof(ConfThreshold), nameof(IoUThreshold), nameof(SearchColorBrush), 
+            nameof(SearchColorText), nameof(SearchColorTextColor), nameof(ModelPath), 
+            nameof(ClassID), nameof(AIDetectMode), nameof(ProgramPath), nameof(Arguments), 
+            nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName), 
+            nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), 
+            nameof(SaveDirectory)
+        };
 
         void UpdateProperties()
         {
@@ -215,22 +240,9 @@ namespace MacroPanels.ViewModel
             try
             {
                 _isUpdating = true;
-                var propertyNames = new[] 
-                { 
-                    nameof(SelectedItemType), nameof(WindowTitle), nameof(WindowTitleText), 
-                    nameof(WindowClassName), nameof(WindowClassNameText), nameof(ImagePath), 
-                    nameof(Threshold), nameof(SearchColor), nameof(Timeout), nameof(Interval), 
-                    nameof(MouseButton), nameof(SelectedMouseButton), nameof(Ctrl), nameof(Alt), 
-                    nameof(Shift), nameof(Key), nameof(X), nameof(Y), nameof(Wait), nameof(LoopCount), 
-                    nameof(ConfThreshold), nameof(IoUThreshold), nameof(SearchColorBrush), 
-                    nameof(SearchColorText), nameof(SearchColorTextColor), nameof(ModelPath), 
-                    nameof(ClassID), nameof(AIDetectMode), nameof(ProgramPath), nameof(Arguments), 
-                    nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName), 
-                    nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), 
-                    nameof(SaveDirectory) 
-                };
                 
-                foreach (var name in propertyNames)
+                // 配列の直接列挙でパフォーマンス向上
+                foreach (var name in AllPropertyNames)
                     OnPropertyChanged(name);
                 
                 _refreshTimer.Stop();

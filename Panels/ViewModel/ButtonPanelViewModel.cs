@@ -25,18 +25,22 @@ namespace MacroPanels.ViewModel
         private ObservableCollection<string> _itemTypes = new();
 
         [ObservableProperty]
-        private string _selectedItemType;
+        private string _selectedItemType = string.Empty;
 
         public ButtonPanelViewModel()
+        {
+            InitializeItemTypes();
+        }
+
+        private void InitializeItemTypes()
         {
             // CommandRegistryを初期化
             CommandRegistry.Initialize();
             
-            foreach(var type in CommandRegistry.GetAllTypeNames())
-            {
-                ItemTypes.Add(type);
-            }
-
+            // より効率的な一括追加
+            var types = CommandRegistry.GetAllTypeNames().ToList();
+            ItemTypes = new ObservableCollection<string>(types);
+            
             SelectedItemType = ItemTypes.FirstOrDefault() ?? string.Empty;
         }
 
@@ -54,53 +58,28 @@ namespace MacroPanels.ViewModel
         }
 
         [RelayCommand]
-        public void Save()
-        {
-            WeakReferenceMessenger.Default.Send(new SaveMessage());
-        }
+        public void Save() => WeakReferenceMessenger.Default.Send(new SaveMessage());
 
         [RelayCommand]
-        public void Load()
-        {
-            WeakReferenceMessenger.Default.Send(new LoadMessage());
-        }
+        public void Load() => WeakReferenceMessenger.Default.Send(new LoadMessage());
 
         [RelayCommand]
-        public void Clear()
-        {
-            WeakReferenceMessenger.Default.Send(new ClearMessage());
-        }
+        public void Clear() => WeakReferenceMessenger.Default.Send(new ClearMessage());
 
         [RelayCommand]
-        public void Add()
-        {
-            WeakReferenceMessenger.Default.Send(new AddMessage(SelectedItemType));
-        }
+        public void Add() => WeakReferenceMessenger.Default.Send(new AddMessage(SelectedItemType));
 
         [RelayCommand]
-        public void Up()
-        {
-            WeakReferenceMessenger.Default.Send(new UpMessage());
-        }
+        public void Up() => WeakReferenceMessenger.Default.Send(new UpMessage());
 
         [RelayCommand]
-        public void Down()
-        {
-            WeakReferenceMessenger.Default.Send(new DownMessage());
-        }
+        public void Down() => WeakReferenceMessenger.Default.Send(new DownMessage());
 
         [RelayCommand]
-        public void Delete()
-        {
-            WeakReferenceMessenger.Default.Send(new DeleteMessage());
-        }
-        public void SetRunningState(bool isRunning)
-        {
-            IsRunning = isRunning;
-        }
+        public void Delete() => WeakReferenceMessenger.Default.Send(new DeleteMessage());
 
-        public void Prepare()
-        {
-        }
+        public void SetRunningState(bool isRunning) => IsRunning = isRunning;
+
+        public void Prepare() { }
     }
 }
