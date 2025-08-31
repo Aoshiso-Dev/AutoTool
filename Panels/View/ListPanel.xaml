@@ -15,6 +15,8 @@
         <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
         <converter:KeyToStringConverter x:Key="KeyToStringConverter" />
         <converter:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter" />
+        <converter:CommandTypeToDisplayNameConverter x:Key="CommandTypeToDisplayNameConverter"/>
+        <converter:CommandTypeToCategoryColorConverter x:Key="CommandTypeToCategoryColorConverter"/>
     </UserControl.Resources>
 
     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -138,11 +140,19 @@
                 -->
 
                 <!-- コマンド -->
-                <DataGridTemplateColumn Header="コマンド" Width="150">
+                <DataGridTemplateColumn Header="コマンド" Width="200">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <!-- 行全体の内容 (通常のデータを表示) -->
-                            <TextBlock Text="{Binding ItemType}" VerticalAlignment="Center" Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}"/>
+                            <!-- DisplayNameプロパティを直接使用 -->
+                            <Border Background="{Binding ItemType, Converter={StaticResource CommandTypeToCategoryColorConverter}}" 
+                                    CornerRadius="3" 
+                                    Padding="5,2">
+                                <TextBlock Text="{Binding DisplayName}" 
+                                           VerticalAlignment="Center" 
+                                           Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}"
+                                           FontWeight="SemiBold"
+                                           Foreground="Black"/>
+                            </Border>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

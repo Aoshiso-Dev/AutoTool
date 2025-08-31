@@ -36,7 +36,13 @@
                 <Button Content="上へ" Command="{Binding UpCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
                 <Button Content="下へ" Command="{Binding DownCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
             </StackPanel>
-            <ComboBox ItemsSource="{Binding ItemTypes}" SelectedItem="{Binding SelectedItemType}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" VerticalContentAlignment="Center" Width="150" Margin="2"/>
+            <ComboBox ItemsSource="{Binding ItemTypes}" 
+                      SelectedItem="{Binding SelectedItemType}" 
+                      DisplayMemberPath="DisplayName"
+                      IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" 
+                      VerticalContentAlignment="Center" 
+                      Width="150" 
+                      Margin="2"/>
             <Button Content="追加" Command="{Binding AddCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
             <Button Content="削除" Command="{Binding DeleteCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
             <Button Content="クリア" Command="{Binding ClearCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>

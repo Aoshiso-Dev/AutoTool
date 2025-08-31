@@ -51,7 +51,10 @@
                     <!-- コマンドスタックパネル -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="コマンド:"/>
-                        <ComboBox ItemsSource="{Binding ItemTypes, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedItemType}" Width="300"/>
+                        <ComboBox ItemsSource="{Binding ItemTypes, UpdateSourceTrigger=PropertyChanged}" 
+                                  SelectedItem="{Binding SelectedItemTypeObj, UpdateSourceTrigger=PropertyChanged}" 
+                                  DisplayMemberPath="DisplayName"
+                                  Width="300"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsNotNullItem"/>
@@ -288,8 +291,7 @@
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="キー:"/>
                             <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource KeyToStringConverter}}"
-                         Margin="2"
-                              converter:KeyInputBehavior.Key="{Binding Key, Mode=TwoWay}"/>
+                                     Margin="2"/>
                         </StackPanel>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">

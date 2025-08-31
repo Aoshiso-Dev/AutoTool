@@ -128,7 +128,10 @@ namespace MacroPanels.ViewModel
 
                 SelectedLineNumber = CommandList.Items.IndexOf(item);
 
+                // 追加後にCollectionViewを更新
                 CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+                
+                System.Diagnostics.Debug.WriteLine($"Added command: {item.ItemType} -> {CommandRegistry.DisplayOrder.GetDisplayName(item.ItemType)}");
             }
         }
 
@@ -199,7 +202,27 @@ namespace MacroPanels.ViewModel
             SelectedLineNumber = 0;
             SelectedItem = CommandList.Items.FirstOrDefault();
 
+            // 読み込み後にCommandRegistryを初期化して日本語表示名が正しく表示されるようにする
+            CommandRegistry.Initialize();
+            
+            // CollectionViewを更新して日本語表示名を適用
             CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+            
+            // 各アイテムのプロパティ変更通知を発火してUI更新
+            foreach (var item in CommandList.Items)
+            {
+                if (item is System.ComponentModel.INotifyPropertyChanged notifyItem)
+                {
+                    // ItemTypeプロパティの変更を通知（コンバーターが再実行される）
+                    var propertyInfo = item.GetType().GetProperty(nameof(item.ItemType));
+                    if (propertyInfo != null)
+                    {
+                        // 現在の値を再設定してプロパティ変更通知を発火
+                        var currentValue = item.ItemType;
+                        item.ItemType = currentValue;
+                    }
+                }
+            }
         }
         #endregion
 

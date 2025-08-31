@@ -13,6 +13,7 @@ using CommunityToolkit.Mvvm.Input;
 using System.Security.Cryptography.X509Certificates;
 using MacroPanels.List.Class;
 using MacroPanels.Model.CommandDefinition;
+using MacroPanels.ViewModel.Shared;
 
 namespace MacroPanels.ViewModel
 {
@@ -22,10 +23,10 @@ namespace MacroPanels.ViewModel
         private bool _isRunning = false;
 
         [ObservableProperty]
-        private ObservableCollection<string> _itemTypes = new();
+        private ObservableCollection<CommandDisplayItem> _itemTypes = new();
 
         [ObservableProperty]
-        private string _selectedItemType = string.Empty;
+        private CommandDisplayItem? _selectedItemType;
 
         public ButtonPanelViewModel()
         {
@@ -37,11 +38,18 @@ namespace MacroPanels.ViewModel
             // CommandRegistryを初期化
             CommandRegistry.Initialize();
             
-            // より効率的な一括追加
-            var types = CommandRegistry.GetAllTypeNames().ToList();
-            ItemTypes = new ObservableCollection<string>(types);
+            // 日本語表示名付きのアイテムを作成
+            var displayItems = CommandRegistry.GetOrderedTypeNames()
+                .Select(typeName => new CommandDisplayItem
+                {
+                    TypeName = typeName,
+                    DisplayName = CommandRegistry.DisplayOrder.GetDisplayName(typeName),
+                    Category = CommandRegistry.DisplayOrder.GetCategoryName(typeName)
+                })
+                .ToList();
             
-            SelectedItemType = ItemTypes.FirstOrDefault() ?? string.Empty;
+            ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
+            SelectedItemType = ItemTypes.FirstOrDefault();
         }
 
         [RelayCommand]
@@ -67,7 +75,13 @@ namespace MacroPanels.ViewModel
         public void Clear() => WeakReferenceMessenger.Default.Send(new ClearMessage());
 
         [RelayCommand]
-        public void Add() => WeakReferenceMessenger.Default.Send(new AddMessage(SelectedItemType));
+        public void Add() 
+        {
+            if (SelectedItemType != null)
+            {
+                WeakReferenceMessenger.Default.Send(new AddMessage(SelectedItemType.TypeName));
+            }
+        }
 
         [RelayCommand]
         public void Up() => WeakReferenceMessenger.Default.Send(new UpMessage());

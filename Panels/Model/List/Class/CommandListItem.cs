@@ -31,6 +31,7 @@ namespace MacroPanels.List.Class
         [NotifyPropertyChangedFor(nameof(Description))]
         protected int _lineNumber = 0;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(DisplayName))]
         protected string _itemType = "None";
         [ObservableProperty]
         protected string _description = string.Empty;
@@ -42,6 +43,16 @@ namespace MacroPanels.List.Class
         protected bool _isInIf = false;
         [ObservableProperty]
         protected int _progress = 0;
+
+        /// <summary>
+        /// UI表示用の日本語名を取得
+        /// </summary>
+        public string DisplayName => CommandDef.CommandRegistry.DisplayOrder.GetDisplayName(ItemType);
+
+        /// <summary>
+        /// カテゴリ名を取得
+        /// </summary>
+        public string CategoryName => CommandDef.CommandRegistry.DisplayOrder.GetCategoryName(ItemType);
 
         public CommandListItem() { }
 

@@ -21,6 +21,7 @@ using Microsoft.Win32;
 using ColorPickHelper;
 using MacroPanels.ViewModel.Helpers;
 using MacroPanels.Model.CommandDefinition;
+using MacroPanels.ViewModel.Shared;
 
 namespace MacroPanels.ViewModel
 {
@@ -38,7 +39,30 @@ namespace MacroPanels.ViewModel
         public ICommandListItem? Item
         {
             get => _item;
-            set { SetProperty(ref _item, value); UpdateProperties(); UpdateIsProperties(); }
+            set 
+            { 
+                if (SetProperty(ref _item, value))
+                {
+                    // Itemが変更された時に対応するSelectedItemTypeObjを更新
+                    if (value != null)
+                    {
+                        var displayItem = ItemTypes.FirstOrDefault(x => x.TypeName == value.ItemType);
+                        if (displayItem != null && _selectedItemTypeObj != displayItem)
+                        {
+                            _selectedItemTypeObj = displayItem;
+                            OnPropertyChanged(nameof(SelectedItemTypeObj));
+                        }
+                    }
+                    else
+                    {
+                        _selectedItemTypeObj = null;
+                        OnPropertyChanged(nameof(SelectedItemTypeObj));
+                    }
+                    
+                    UpdateProperties(); 
+                    UpdateIsProperties(); 
+                }
+            }
         }
         #endregion
 
@@ -117,7 +141,24 @@ namespace MacroPanels.ViewModel
         #endregion
 
         #region ComboBox / Collections
-        [ObservableProperty] private ObservableCollection<string> _itemTypes = new();
+        [ObservableProperty] private ObservableCollection<CommandDisplayItem> _itemTypes = new();
+        
+        private CommandDisplayItem? _selectedItemTypeObj;
+        public CommandDisplayItem? SelectedItemTypeObj 
+        { 
+            get => _selectedItemTypeObj;
+            set 
+            {
+                if (SetProperty(ref _selectedItemTypeObj, value) && value != null)
+                {
+                    // CommandDisplayItemが変更された時の処理
+                    // TypeNameを使用してコマンドを作成
+                    System.Diagnostics.Debug.WriteLine($"SelectedItemTypeObj changed to: {value.DisplayName} (TypeName: {value.TypeName})");
+                    OnSelectedItemTypeChanged(value.TypeName);
+                }
+            }
+        }
+        
         public string SelectedItemType 
         { 
             get => Item?.ItemType ?? "None"; 
@@ -125,8 +166,11 @@ namespace MacroPanels.ViewModel
             { 
                 if (Item == null) return;
                 if (Item.ItemType == value) return; 
-                Item.ItemType = value; 
-                OnSelectedItemTypeChanged(); 
+                
+                System.Diagnostics.Debug.WriteLine($"SelectedItemType changed to: {value}");
+                
+                // 既存のアイテムのItemTypeを変更せず、新しいアイテムを作成
+                OnSelectedItemTypeChanged(value);
             } 
         }
         [ObservableProperty] private ObservableCollection<System.Windows.Input.MouseButton> _mouseButtons = new();
@@ -154,9 +198,24 @@ namespace MacroPanels.ViewModel
             
             _refreshTimer.Tick += (s, e) => { _refreshTimer.Stop(); WeakReferenceMessenger.Default.Send(new RefreshListViewMessage()); };
             
-            // 自動生成されたタイプを使用
-            foreach (var type in CommandRegistry.GetAllTypeNames()) 
-                ItemTypes.Add(type);
+            // 日本語表示名付きのアイテムを作成
+            var displayItems = CommandRegistry.GetOrderedTypeNames()
+                .Select(typeName => new CommandDisplayItem
+                {
+                    TypeName = typeName,
+                    DisplayName = CommandRegistry.DisplayOrder.GetDisplayName(typeName),
+                    Category = CommandRegistry.DisplayOrder.GetCategoryName(typeName)
+                })
+                .ToList();
+            
+            ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
+            
+            // 初期選択項目を設定（デバッグ用）
+            System.Diagnostics.Debug.WriteLine($"ItemTypes initialized with {ItemTypes.Count} items");
+            if (ItemTypes.Count > 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"First item: {ItemTypes[0].DisplayName} ({ItemTypes[0].TypeName})");
+            }
                 
             foreach (var button in Enum.GetValues(typeof(System.Windows.Input.MouseButton)).Cast<System.Windows.Input.MouseButton>()) 
                 MouseButtons.Add(button);
@@ -176,28 +235,66 @@ namespace MacroPanels.ViewModel
         }
 
         #region OnChanged
+        private void OnSelectedItemTypeChanged(string typeName)
+        {
+            if (string.IsNullOrEmpty(typeName) || Item == null)
+                return;
+
+            var lineNumber = Item.LineNumber;
+            var isSelected = Item.IsSelected;
+            
+            try
+            {
+                // CommandRegistryを使用して自動生成
+                var newItem = CommandRegistry.CreateCommandItem(typeName);
+                if (newItem != null)
+                {
+                    newItem.LineNumber = lineNumber;
+                    newItem.IsSelected = isSelected;
+                    newItem.ItemType = typeName;
+                    
+                    // 一時的にUpdatePropertiesを無効化してFromItemの設定
+                    _isUpdating = true;
+                    try
+                    {
+                        _item = newItem;
+                        OnPropertyChanged(nameof(Item));
+                    }
+                    finally
+                    {
+                        _isUpdating = false;
+                    }
+                    
+                    UpdateProperties();
+                    UpdateIsProperties();
+                    WeakReferenceMessenger.Default.Send(new EditCommandMessage(newItem));
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to create command item for type: {typeName}");
+                    throw new ArgumentException($"Unknown ItemType: {typeName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error creating command item: {ex.Message}");
+                MessageBox.Show($"コマンドアイテムの作成に失敗しました: {ex.Message}", "エラー", 
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // SelectedItemTypeObjが変更された時の処理を修正
         private void OnSelectedItemTypeChanged()
         {
-            var lineNumber = Item?.LineNumber ?? 0;
-            var isSelected = Item?.IsSelected ?? false;
-            
-            // CommandRegistryを使用して自動生成
-            var newItem = CommandRegistry.CreateCommandItem(SelectedItemType);
-            if (newItem != null)
+            if (SelectedItemTypeObj != null)
             {
-                newItem.LineNumber = lineNumber;
-                newItem.IsSelected = isSelected;
-                newItem.ItemType = SelectedItemType;
-                Item = newItem;
+                // 正しくTypeNameを使用
+                OnSelectedItemTypeChanged(SelectedItemTypeObj.TypeName);
             }
             else
             {
-                throw new ArgumentException($"Unknown ItemType: {SelectedItemType}");
+                OnSelectedItemTypeChanged(SelectedItemType);
             }
-            
-            UpdateProperties();
-            UpdateIsProperties();
-            WeakReferenceMessenger.Default.Send(new EditCommandMessage(Item));
         }
         #endregion
 
@@ -374,10 +471,31 @@ namespace MacroPanels.ViewModel
 
         #region External API
         public ICommandListItem? GetItem() => Item;
-        public void SetItem(ICommandListItem? item) => Item = item;
+        
+        public void SetItem(ICommandListItem? item) 
+        {
+            System.Diagnostics.Debug.WriteLine($"SetItem called with: {item?.ItemType ?? "null"}");
+            Item = item;
+        }
+        
         public void SetListCount(int listCount) => ListCount = listCount;
         public void SetRunningState(bool isRunning) => IsRunning = isRunning;
         public void Prepare() { }
+        
+        /// <summary>
+        /// デバッグ用：現在の状態を出力
+        /// </summary>
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void PrintDebugState()
+        {
+            System.Diagnostics.Debug.WriteLine("=== EditPanelViewModel Debug State ===");
+            System.Diagnostics.Debug.WriteLine($"Item: {Item?.GetType().Name ?? "null"}");
+            System.Diagnostics.Debug.WriteLine($"ItemType: {Item?.ItemType ?? "null"}");
+            System.Diagnostics.Debug.WriteLine($"SelectedItemType: {SelectedItemType}");
+            System.Diagnostics.Debug.WriteLine($"SelectedItemTypeObj: {SelectedItemTypeObj?.DisplayName ?? "null"} ({SelectedItemTypeObj?.TypeName ?? "null"})");
+            System.Diagnostics.Debug.WriteLine($"ItemTypes Count: {ItemTypes.Count}");
+            System.Diagnostics.Debug.WriteLine("=== End Debug State ===");
+        }
         #endregion
     }
 }
