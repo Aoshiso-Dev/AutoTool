@@ -96,6 +96,9 @@ namespace MacroPanels.ViewModel
                 existingItem.IsSelected = true;
                 WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(existingItem));
             }
+            
+            // 選択変更時はRefreshを呼ばない（スクロール位置保持のため）
+            // CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
         }
 
         private void OnExecutedLineNumberChanged()
@@ -105,6 +108,7 @@ namespace MacroPanels.ViewModel
             if (cmd != null)
             {
                 cmd.IsRunning = true;
+                // 実行中の表示更新は必要なのでRefreshを残す
                 CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
             }
         }

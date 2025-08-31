@@ -24,11 +24,23 @@
 
     <!-- DataGrid -->
         <DataGrid DockPanel.Dock="Top"
-                  ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" SelectedIndex="{Binding DataContext.SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
-                  SelectionMode="Single" HeadersVisibility="Column" CanUserAddRows="False" AutoGenerateColumns="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                  ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" 
+                  SelectedIndex="{Binding DataContext.SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                  SelectionMode="Single" 
+                  HeadersVisibility="Column" 
+                  CanUserAddRows="False" 
+                  AutoGenerateColumns="False" 
+                  EnableRowVirtualization="True" 
+                  EnableColumnVirtualization="True" 
+                  VerticalAlignment="Stretch" 
+                  HorizontalAlignment="Stretch"
                   VerticalScrollBarVisibility="Visible"
                   HorizontalScrollBarVisibility="Auto"
-                  >
+                  CanUserReorderColumns="False"
+                  CanUserSortColumns="False"
+                  ScrollViewer.CanContentScroll="True"
+                  VirtualizingPanel.ScrollUnit="Item"
+                  VirtualizingPanel.VirtualizationMode="Recycling">
 
             <DataGrid.Resources>
                 

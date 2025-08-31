@@ -77,6 +77,8 @@ namespace MacroPanels.ViewModel
 
         #region IsProperties
         public bool IsListNotEmpty => ListCount > 0;
+        public bool IsListEmpty => ListCount == 0;
+        public bool IsListNotEmptyButNoSelection => ListCount > 0 && Item == null;
         public bool IsNotNullItem => Item != null;
         public bool IsWaitImageItem => Item is WaitImageItem;
         public bool IsClickImageItem => Item is ClickImageItem;
@@ -323,7 +325,8 @@ namespace MacroPanels.ViewModel
         }
 
         private static readonly string[] IsPropertyNames = {
-            nameof(IsListNotEmpty), nameof(IsNotNullItem), nameof(IsWaitImageItem), 
+            nameof(IsListNotEmpty), nameof(IsListEmpty), nameof(IsListNotEmptyButNoSelection), 
+            nameof(IsNotNullItem), nameof(IsWaitImageItem), 
             nameof(IsClickImageItem), nameof(IsClickImageAIItem), nameof(IsHotkeyItem), 
             nameof(IsClickItem), nameof(IsWaitItem), nameof(IsLoopItem), 
             nameof(IsEndLoopItem), nameof(IsBreakItem), nameof(IsIfImageExistItem), 
