@@ -84,6 +84,10 @@ namespace MacroPanels.Model.MacroFactory
         {
             return ifItem switch
             {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 IfImageExistItem exist => new IfImageExistCommand(parent, new WaitImageCommandSettings 
                 { 
                     ImagePath = exist.ImagePath,
@@ -94,10 +98,20 @@ namespace MacroPanels.Model.MacroFactory
                     WindowTitle = exist.WindowTitle,
                     WindowClassName = exist.WindowClassName
                 }) 
+<<<<<<< HEAD
+=======
+=======
+                IfImageExistItem exist => new IfImageExistCommand(parent, exist) 
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 { 
                     LineNumber = exist.LineNumber, 
                     IsEnabled = exist.IsEnable 
                 },
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 IfImageNotExistItem notExist => new IfImageNotExistCommand(parent, new WaitImageCommandSettings 
                 { 
                     ImagePath = notExist.ImagePath,
@@ -108,10 +122,20 @@ namespace MacroPanels.Model.MacroFactory
                     WindowTitle = notExist.WindowTitle,
                     WindowClassName = notExist.WindowClassName
                 }) 
+<<<<<<< HEAD
+=======
+=======
+                IfImageNotExistItem notExist => new IfImageNotExistCommand(parent, notExist) 
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 { 
                     LineNumber = notExist.LineNumber, 
                     IsEnabled = notExist.IsEnable 
                 },
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 IfImageExistAIItem existAI => new IfImageExistAICommand(parent, new AIImageDetectCommandSettings 
                 { 
                     ModelPath = existAI.ModelPath,
@@ -121,10 +145,20 @@ namespace MacroPanels.Model.MacroFactory
                     WindowTitle = existAI.WindowTitle,
                     WindowClassName = existAI.WindowClassName
                 }) 
+<<<<<<< HEAD
+=======
+=======
+                IfImageExistAIItem existAI => new IfImageExistAICommand(parent, existAI) 
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 { 
                     LineNumber = existAI.LineNumber, 
                     IsEnabled = existAI.IsEnable 
                 },
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 IfImageNotExistAIItem notExistAI => new IfImageNotExistAICommand(parent, new AIImageNotDetectCommandSettings 
                 { 
                     ModelPath = notExistAI.ModelPath,
@@ -134,16 +168,32 @@ namespace MacroPanels.Model.MacroFactory
                     WindowTitle = notExistAI.WindowTitle,
                     WindowClassName = notExistAI.WindowClassName
                 }) 
+<<<<<<< HEAD
+=======
+=======
+                IfImageNotExistAIItem notExistAI => new IfImageNotExistAICommand(parent, notExistAI) 
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 { 
                     LineNumber = notExistAI.LineNumber, 
                     IsEnabled = notExistAI.IsEnable 
                 },
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 IfVariableItem ifVar => new IfVariableCommand(parent, new IfVariableCommandSettings 
                 { 
                     Name = ifVar.Name,
                     Operator = ifVar.Operator,
                     Value = ifVar.Value
                 }) 
+<<<<<<< HEAD
+=======
+=======
+                IfVariableItem ifVar => new IfVariableCommand(parent, ifVar) 
+>>>>>>> cc003b3bf020157c70eac2bd186a987bda44d224
+>>>>>>> 1b9342eba0081bf1f34c651d247e029b7e8c640a
                 { 
                     LineNumber = ifVar.LineNumber, 
                     IsEnabled = ifVar.IsEnable 
