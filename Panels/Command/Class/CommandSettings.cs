@@ -84,6 +84,8 @@ namespace MacroPanels.Command.Class
         public string WindowClassName { get; set; } = string.Empty;
         public double ConfThreshold { get; set; } = 0.5; // デフォルト値を設定
         public double IoUThreshold { get; set; } = 0.25;
+        public int Timeout { get; set; } = 5000;
+        public int Interval { get; set; } = 500;
         
         // バリデーション追加
         public void Validate()

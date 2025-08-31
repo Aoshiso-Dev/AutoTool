@@ -25,7 +25,7 @@ namespace MacroPanels.ViewModel.Helpers
         public MultiInterfacePropertyAccessor<int> Interval { get; }
 
         // マウス・キーボード関連
-        public MultiInterfacePropertyAccessor<MouseButton> MouseButton { get; }
+        public MultiInterfacePropertyAccessor<System.Windows.Input.MouseButton> MouseButton { get; }
         public PropertyAccessor<IHotkeyItem, bool> Ctrl { get; }
         public PropertyAccessor<IHotkeyItem, bool> Alt { get; }
         public PropertyAccessor<IHotkeyItem, bool> Shift { get; }
@@ -58,7 +58,8 @@ namespace MacroPanels.ViewModel.Helpers
 
         // スクリーンショット関連
         public PropertyAccessor<ScreenshotItem, string> SaveDirectory { get; }
-        // New AI thresholds
+        
+        // AI thresholds
         public MultiInterfacePropertyAccessor<double> ConfThreshold { get; }
         public MultiInterfacePropertyAccessor<double> IoUThreshold { get; }
 
@@ -118,7 +119,7 @@ namespace MacroPanels.ViewModel.Helpers
                 .AddInterface<IClickImageItem>(x => x.Interval);
 
             // マウス・キーボード関連の初期化
-            MouseButton = new MultiInterfacePropertyAccessor<MouseButton>(System.Windows.Input.MouseButton.Left)
+            MouseButton = new MultiInterfacePropertyAccessor<System.Windows.Input.MouseButton>(System.Windows.Input.MouseButton.Left)
                 .AddInterface<IClickImageItem>(x => x.Button)
                 .AddInterface<IClickItem>(x => x.Button)
                 .AddInterface<IClickImageAIItem>(x => x.Button);

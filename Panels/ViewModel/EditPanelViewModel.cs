@@ -84,7 +84,7 @@ namespace MacroPanels.ViewModel
         public Color? SearchColor { get => _propertyManager.SearchColor.GetValue(Item); set { _propertyManager.SearchColor.SetValue(Item, value); UpdateProperties(); OnPropertyChanged(nameof(SearchColorBrush)); OnPropertyChanged(nameof(SearchColorText)); OnPropertyChanged(nameof(SearchColorTextColor)); } }
         public int Timeout { get => _propertyManager.Timeout.GetValue(Item); set { _propertyManager.Timeout.SetValue(Item, value); UpdateProperties(); } }
         public int Interval { get => _propertyManager.Interval.GetValue(Item); set { _propertyManager.Interval.SetValue(Item, value); UpdateProperties(); } }
-        public MouseButton MouseButton { get => _propertyManager.MouseButton.GetValue(Item); set { _propertyManager.MouseButton.SetValue(Item, value); UpdateProperties(); } }
+        public System.Windows.Input.MouseButton MouseButton { get => _propertyManager.MouseButton.GetValue(Item); set { _propertyManager.MouseButton.SetValue(Item, value); UpdateProperties(); } }
         public bool Ctrl { get => _propertyManager.Ctrl.GetValue(Item); set { _propertyManager.Ctrl.SetValue(Item, value); UpdateProperties(); } }
         public bool Alt { get => _propertyManager.Alt.GetValue(Item); set { _propertyManager.Alt.SetValue(Item, value); UpdateProperties(); } }
         public bool Shift { get => _propertyManager.Shift.GetValue(Item); set { _propertyManager.Shift.SetValue(Item, value); UpdateProperties(); } }
@@ -117,9 +117,29 @@ namespace MacroPanels.ViewModel
 
         #region ComboBox / Collections
         [ObservableProperty] private ObservableCollection<string> _itemTypes = new();
-        public string SelectedItemType { get => Item?.ItemType ?? "None"; set { if (Item == null || Item.ItemType == value) return; Item.ItemType = value; OnSelectedItemTypeChanged(); } }
-        [ObservableProperty] private ObservableCollection<MouseButton> _mouseButtons = new();
-        public MouseButton SelectedMouseButton { get => MouseButton; set { MouseButton = value; UpdateProperties(); } }
+        public string SelectedItemType 
+        { 
+            get => Item?.ItemType ?? "None"; 
+            set 
+            { 
+                if (Item == null) return;
+                if (Item.ItemType == value) return; 
+                Item.ItemType = value; 
+                OnSelectedItemTypeChanged(); 
+            } 
+        }
+        [ObservableProperty] private ObservableCollection<System.Windows.Input.MouseButton> _mouseButtons = new();
+        public System.Windows.Input.MouseButton SelectedMouseButton 
+        { 
+            get => MouseButton; 
+            set 
+            { 
+                if (MouseButton != value)
+                {
+                    MouseButton = value;
+                }
+            } 
+        }
         [ObservableProperty] private ObservableCollection<string> _operators = new();
         public string SelectedOperator { get => CompareOperator; set { CompareOperator = value; UpdateProperties(); } }
         [ObservableProperty] private ObservableCollection<string> _aIDetectModes = new();
@@ -130,14 +150,14 @@ namespace MacroPanels.ViewModel
         {
             _refreshTimer.Tick += (s, e) => { _refreshTimer.Stop(); WeakReferenceMessenger.Default.Send(new RefreshListViewMessage()); };
             foreach (var type in ItemType.GetTypes()) ItemTypes.Add(type);
-            foreach (var button in Enum.GetValues(typeof(MouseButton)).Cast<MouseButton>()) MouseButtons.Add(button);
+            foreach (var button in Enum.GetValues(typeof(System.Windows.Input.MouseButton)).Cast<System.Windows.Input.MouseButton>()) MouseButtons.Add(button);
             InitializeOperators();
             InitializeAIDetectModes();
         }
 
         private void InitializeOperators()
         {
-            foreach (var op in new[] { "==", "!=","<",">","<=",">=","Contains","NotContains","StartsWith","EndsWith","IsEmpty","IsNotEmpty" })
+            foreach (var op in new[] { "==", "!=", ">", "<", ">=", "<=", "Contains", "NotContains", "StartsWith", "EndsWith", "IsEmpty", "IsNotEmpty" })
                 Operators.Add(op);
         }
         private void InitializeAIDetectModes()
@@ -189,12 +209,20 @@ namespace MacroPanels.ViewModel
         void UpdateProperties()
         {
             if (_isUpdating) return;
-            _isUpdating = true;
-            foreach (var name in new[] { nameof(SelectedItemType), nameof(WindowTitle), nameof(WindowTitleText), nameof(WindowClassName), nameof(WindowClassNameText), nameof(ImagePath), nameof(Threshold), nameof(SearchColor), nameof(Timeout), nameof(Interval), nameof(MouseButton), nameof(Ctrl), nameof(Alt), nameof(Shift), nameof(Key), nameof(X), nameof(Y), nameof(Wait), nameof(LoopCount), nameof(ConfThreshold), nameof(IoUThreshold), nameof(SearchColorBrush), nameof(SearchColorText), nameof(SearchColorTextColor), nameof(ModelPath), nameof(ClassID), nameof(AIDetectMode), nameof(ProgramPath), nameof(Arguments), nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName), nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), nameof(SaveDirectory) })
-                OnPropertyChanged(name);
-            _refreshTimer.Stop();
-            _refreshTimer.Start();
-            _isUpdating = false;
+            
+            try
+            {
+                _isUpdating = true;
+                foreach (var name in new[] { nameof(SelectedItemType), nameof(WindowTitle), nameof(WindowTitleText), nameof(WindowClassName), nameof(WindowClassNameText), nameof(ImagePath), nameof(Threshold), nameof(SearchColor), nameof(Timeout), nameof(Interval), nameof(MouseButton), nameof(SelectedMouseButton), nameof(Ctrl), nameof(Alt), nameof(Shift), nameof(Key), nameof(X), nameof(Y), nameof(Wait), nameof(LoopCount), nameof(ConfThreshold), nameof(IoUThreshold), nameof(SearchColorBrush), nameof(SearchColorText), nameof(SearchColorTextColor), nameof(ModelPath), nameof(ClassID), nameof(AIDetectMode), nameof(ProgramPath), nameof(Arguments), nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName), nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), nameof(SaveDirectory) })
+                    OnPropertyChanged(name);
+                
+                _refreshTimer.Stop();
+                _refreshTimer.Start();
+            }
+            finally
+            {
+                _isUpdating = false;
+            }
         }
         #endregion
 
@@ -240,18 +268,28 @@ namespace MacroPanels.ViewModel
         }
         public static string? SelectFolder()
         {
-            // Simple folder chooser fallback: use OpenFileDialog hack
-            var dlg = new OpenFileDialog
+            try
             {
-                CheckFileExists = false,
-                FileName = "フォルダを選択",
-                Filter = "Folder|*.folder"
-            };
-            if (dlg.ShowDialog() == true)
-            {
-                try { return Path.GetDirectoryName(dlg.FileName); } catch { return null; }
+                // WPFのFolderBrowserDialogを使用
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    ValidateNames = false,
+                    CheckFileExists = false,
+                    CheckPathExists = true,
+                    FileName = "Folder Selection"
+                };
+                
+                if (dialog.ShowDialog() == true)
+                {
+                    return System.IO.Path.GetDirectoryName(dialog.FileName);
+                }
+                return null;
             }
-            return null;
+            catch
+            {
+                // フォールバック：現在のディレクトリを返す
+                return Environment.CurrentDirectory;
+            }
         }
     }
 }
