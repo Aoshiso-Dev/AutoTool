@@ -18,6 +18,7 @@ namespace MacroPanels.Model.List.Interface
         public bool IsSelected { get; set; }
         public string ItemType { get; set; }
         public string Description { get; set; }
+        public string Comment { get; set; }
         public int NestLevel { get; set; }
         public bool IsInLoop { get; set; }
         public bool IsInIf { get; set; }

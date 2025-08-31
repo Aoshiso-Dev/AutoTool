@@ -7,8 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resource\AutoTool.ico</ApplicationIcon>
-    <FileVersion>1.2.7</FileVersion>
-    <AssemblyVersion>1.2.7</AssemblyVersion>
+    <FileVersion>1.3.0</FileVersion>
+    <AssemblyVersion>1.3.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

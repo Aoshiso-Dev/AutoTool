@@ -132,6 +132,22 @@ namespace MacroPanels.ViewModel
         public string SaveDirectory { get => _propertyManager.SaveDirectory.GetValue(Item); set { _propertyManager.SaveDirectory.SetValue(Item, value); UpdateProperties(); } }
         public double ConfThreshold { get => _propertyManager.ConfThreshold.GetValue(Item); set { _propertyManager.ConfThreshold.SetValue(Item, value); UpdateProperties(); } }
         public double IoUThreshold { get => _propertyManager.IoUThreshold.GetValue(Item); set { _propertyManager.IoUThreshold.SetValue(Item, value); UpdateProperties(); } }
+        
+        /// <summary>
+        /// コメント（全コマンド共通）
+        /// </summary>
+        public string Comment 
+        { 
+            get => Item?.Comment ?? string.Empty; 
+            set 
+            { 
+                if (Item != null && Item.Comment != value)
+                {
+                    Item.Comment = value;
+                    UpdateProperties();
+                }
+            } 
+        }
         #endregion
 
         #region ColorPicker
@@ -327,7 +343,7 @@ namespace MacroPanels.ViewModel
             nameof(ClassID), nameof(AIDetectMode), nameof(ProgramPath), nameof(Arguments), 
             nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName), 
             nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), 
-            nameof(SaveDirectory)
+            nameof(SaveDirectory), nameof(Comment)
         };
 
         void UpdateProperties()

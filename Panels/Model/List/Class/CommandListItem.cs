@@ -34,7 +34,11 @@ namespace MacroPanels.List.Class
         [NotifyPropertyChangedFor(nameof(DisplayName))]
         protected string _itemType = "None";
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FullDescription))]
         protected string _description = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FullDescription))]
+        protected string _comment = string.Empty;
         [ObservableProperty]
         protected int _nestLevel = 0;
         [ObservableProperty]
@@ -54,6 +58,29 @@ namespace MacroPanels.List.Class
         /// </summary>
         public string CategoryName => CommandDef.CommandRegistry.DisplayOrder.GetCategoryName(ItemType);
 
+        /// <summary>
+        /// コメント付きの完全な説明を取得
+        /// </summary>
+        public string FullDescription
+        {
+            get
+            {
+                var baseDesc = Description;
+                if (!string.IsNullOrWhiteSpace(Comment))
+                {
+                    return string.IsNullOrWhiteSpace(baseDesc) 
+                        ? $"💬 {Comment}" 
+                        : $"{baseDesc} 💬 {Comment}";
+                }
+                return baseDesc;
+            }
+        }
+
+        /// <summary>
+        /// コメントが設定されているかどうか
+        /// </summary>
+        public bool HasComment => !string.IsNullOrWhiteSpace(Comment);
+
         public CommandListItem() { }
 
         public CommandListItem(CommandListItem? item)
@@ -65,6 +92,7 @@ namespace MacroPanels.List.Class
                 IsSelected = item.IsSelected;
                 LineNumber = item.LineNumber;
                 ItemType = item.ItemType;
+                Comment = item.Comment;
                 NestLevel = item.NestLevel;
                 IsInLoop = item.IsInLoop;
                 IsInIf = item.IsInIf;
