@@ -19,25 +19,58 @@
 
     <Window.Resources>
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
+        <converters:RunningStatusConverter x:Key="RunningStatusConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
+
+    <!-- キーボードショートカットの設定 -->
+    <Window.InputBindings>
+        <!-- ファイル操作 -->
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveFileCommand}"/>
+        <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding SaveFileAsCommand}"/>
+        <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenFileCommand}"/>
+        
+        <!-- 編集操作 -->
+        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}"/>
+        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}"/>
+        <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}"/>
+        
+        <!-- 今後拡張可能なショートカット -->
+        <!-- <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding NewFileCommand}"/> -->
+        <!-- <KeyBinding Key="F5" Command="{Binding RefreshCommand}"/> -->
+    </Window.InputBindings>
 
     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Menu Grid.Row="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
             <MenuItem DockPanel.Dock="Left" Header="ファイル">
-                <MenuItem Header="開く" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
-                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFile, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOpened}"/>
-                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFileAs, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileAsCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}"/>
+                <MenuItem Header="開く (_O)" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFile, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOpened}" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFileAs, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileAsCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}" InputGestureText="Ctrl+Shift+S"/>
+                <Separator/>
                 <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}" IsEnabled="{Binding IsFileOperationEnable}">
                     <MenuItem.ItemTemplate>
                         <DataTemplate>
                             <MenuItem Header="{Binding FileName}" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding FilePath}" />
                         </DataTemplate>
                     </MenuItem.ItemTemplate>
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="編集">
+                <MenuItem Header="元に戻す (_U)" Command="{Binding UndoCommand}" InputGestureText="Ctrl+Z">
+                    <MenuItem.ToolTip>
+                        <TextBlock Text="{Binding CommandHistory.UndoDescription, StringFormat='元に戻す: {0}'}"/>
+                    </MenuItem.ToolTip>
+                </MenuItem>
+                <MenuItem Header="やり直し (_R)" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y">
+                    <MenuItem.ToolTip>
+                        <TextBlock Text="{Binding CommandHistory.RedoDescription, StringFormat='やり直し: {0}'}"/>
+                    </MenuItem.ToolTip>
                 </MenuItem>
             </MenuItem>
             <MenuItem DockPanel.Dock="Right" Header="ヘルプ" HorizontalAlignment="Right">
@@ -56,6 +89,31 @@
             </TabItem>
             -->
         </TabControl>
+
+        <!-- ステータスバー -->
+        <StatusBar Grid.Row="2" Height="25">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Undo: " Visibility="{Binding CommandHistory.CanUndo, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TextBlock Text="{Binding CommandHistory.UndoDescription}" FontStyle="Italic" 
+                               Visibility="{Binding CommandHistory.CanUndo, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TextBlock Text=" | " Margin="5,0" 
+                               Visibility="{Binding CommandHistory.CanRedo, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TextBlock Text="Redo: " Visibility="{Binding CommandHistory.CanRedo, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TextBlock Text="{Binding CommandHistory.RedoDescription}" FontStyle="Italic" 
+                               Visibility="{Binding CommandHistory.CanRedo, Converter={StaticResource BoolToVisibilityConverter}}" />
+                </StackPanel>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="実行状態: " />
+                    <TextBlock Text="{Binding IsRunning, Converter={StaticResource RunningStatusConverter}}" />
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
 
     </Grid>
 </Window>

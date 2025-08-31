@@ -11,11 +11,12 @@ using System.Diagnostics;
 using System.Windows.Data;
 using MacroPanels.Model.CommandDefinition;
 
-
 namespace MacroPanels.ViewModel
 {
     public partial class ListPanelViewModel : ObservableObject
     {
+        private object? _commandHistory;
+
         #region Properties
         [ObservableProperty]
         private bool _isRunning;
@@ -76,6 +77,13 @@ namespace MacroPanels.ViewModel
         {
         }
 
+        /// <summary>
+        /// CommandHistoryManagerを設定
+        /// </summary>
+        public void SetCommandHistory(object commandHistory)
+        {
+            _commandHistory = commandHistory;
+        }
 
         #region OnChanged
         private void OnSelectedLineNumberChanged()
@@ -133,6 +141,82 @@ namespace MacroPanels.ViewModel
                 
                 System.Diagnostics.Debug.WriteLine($"Added command: {item.ItemType} -> {CommandRegistry.DisplayOrder.GetDisplayName(item.ItemType)}");
             }
+        }
+
+        /// <summary>
+        /// 指定位置にアイテムを挿入（Undo/Redo用）
+        /// </summary>
+        public void InsertAt(int index, ICommandListItem item)
+        {
+            if (index < 0) index = 0;
+            if (index > CommandList.Items.Count) index = CommandList.Items.Count;
+
+            CommandList.Insert(index, item);
+            SelectedLineNumber = index;
+            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+        }
+
+        /// <summary>
+        /// 指定位置のアイテムを削除（Undo/Redo用）
+        /// </summary>
+        public void RemoveAt(int index)
+        {
+            if (index >= 0 && index < CommandList.Items.Count)
+            {
+                CommandList.RemoveAt(index);
+                
+                if (CommandList.Items.Count == 0)
+                {
+                    SelectedLineNumber = 0;
+                }
+                else if (index >= CommandList.Items.Count)
+                {
+                    SelectedLineNumber = CommandList.Items.Count - 1;
+                }
+                else
+                {
+                    SelectedLineNumber = index;
+                }
+                
+                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+            }
+        }
+
+        /// <summary>
+        /// 指定位置のアイテムを置換（Undo/Redo用）
+        /// </summary>
+        public void ReplaceAt(int index, ICommandListItem item)
+        {
+            if (index >= 0 && index < CommandList.Items.Count)
+            {
+                CommandList.Override(index, item);
+                SelectedLineNumber = index;
+                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+            }
+        }
+
+        /// <summary>
+        /// アイテムを移動（Undo/Redo用）
+        /// </summary>
+        public void MoveItem(int fromIndex, int toIndex)
+        {
+            if (fromIndex >= 0 && fromIndex < CommandList.Items.Count &&
+                toIndex >= 0 && toIndex < CommandList.Items.Count &&
+                fromIndex != toIndex)
+            {
+                CommandList.Move(fromIndex, toIndex);
+                SelectedLineNumber = toIndex;
+                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+            }
+        }
+
+        /// <summary>
+        /// アイテムを追加（Undo/Redo用）
+        /// </summary>
+        public void AddItem(ICommandListItem item)
+        {
+            CommandList.Add(item);
+            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
         }
 
         public void Up()

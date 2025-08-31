@@ -27,12 +27,14 @@ using MacroPanels.Model.List.Interface;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using LogHelper;
 using static System.Net.Mime.MediaTypeNames;
+using AutoTool.Model;
 
 namespace AutoTool.ViewModel
 {
     public partial class MacroPanelViewModel : ObservableObject
     {
         private CancellationTokenSource? _cts;
+        private CommandHistoryManager? _commandHistory;
 
         [ObservableProperty]
         private bool _isRunning = false;
@@ -55,7 +57,6 @@ namespace AutoTool.ViewModel
         [ObservableProperty]
         private int _selectedListTabIndex = 0;
 
-
         public MacroPanelViewModel()
         {
             ListPanelViewModel = new ListPanelViewModel();
@@ -65,6 +66,17 @@ namespace AutoTool.ViewModel
             FavoritePanelViewModel = new FavoritePanelViewModel();
 
             RegisterMessages();
+        }
+
+        /// <summary>
+        /// CommandHistoryManagerを設定
+        /// </summary>
+        public void SetCommandHistory(CommandHistoryManager commandHistory)
+        {
+            _commandHistory = commandHistory;
+            
+            // ListPanelViewModelにも設定
+            ListPanelViewModel.SetCommandHistory(commandHistory);
         }
 
         private void RegisterMessages()
@@ -104,28 +116,113 @@ namespace AutoTool.ViewModel
             {
                 ListPanelViewModel.Load();
                 EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
+                
+                // ファイル読み込み後は履歴をクリア
+                _commandHistory?.Clear();
             });
             WeakReferenceMessenger.Default.Register<ClearMessage>(this, (sender, message) =>
             {
-                ListPanelViewModel.Clear();
+                // クリア操作をUndoスタックに追加
+                if (_commandHistory != null)
+                {
+                    var clearCommand = new ClearAllCommand(
+                        ListPanelViewModel.CommandList.Items.ToList(),
+                        () => ListPanelViewModel.Clear(),
+                        (items) => RestoreItems(items)
+                    );
+                    _commandHistory.ExecuteCommand(clearCommand);
+                }
+                else
+                {
+                    ListPanelViewModel.Clear();
+                }
+                
                 EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
             });
             WeakReferenceMessenger.Default.Register<AddMessage>(this, (sender, message) =>
             {
-                ListPanelViewModel.Add((message as AddMessage).ItemType);
+                var itemType = (message as AddMessage).ItemType;
+                
+                // 追加操作をUndoスタックに追加
+                if (_commandHistory != null)
+                {
+                    // 新しいアイテムを作成
+                    var newItem = MacroPanels.Model.CommandDefinition.CommandRegistry.CreateCommandItem(itemType);
+                    if (newItem != null)
+                    {
+                        var targetIndex = ListPanelViewModel.SelectedLineNumber + 1;
+                        var addCommand = new AddItemCommand(
+                            newItem,
+                            targetIndex,
+                            (item, index) => ListPanelViewModel.InsertAt(index, item),
+                            (index) => ListPanelViewModel.RemoveAt(index)
+                        );
+                        _commandHistory.ExecuteCommand(addCommand);
+                    }
+                }
+                else
+                {
+                    ListPanelViewModel.Add(itemType);
+                }
+                
                 EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
             });
             WeakReferenceMessenger.Default.Register<UpMessage>(this, (sender, message) =>
             {
-                ListPanelViewModel.Up();
+                var fromIndex = ListPanelViewModel.SelectedLineNumber;
+                var toIndex = fromIndex - 1;
+                
+                if (toIndex >= 0 && _commandHistory != null)
+                {
+                    var moveCommand = new MoveItemCommand(
+                        fromIndex, toIndex,
+                        (from, to) => ListPanelViewModel.MoveItem(from, to)
+                    );
+                    _commandHistory.ExecuteCommand(moveCommand);
+                }
+                else
+                {
+                    ListPanelViewModel.Up();
+                }
             });
             WeakReferenceMessenger.Default.Register<DownMessage>(this, (sender, message) =>
             {
-                ListPanelViewModel.Down();
+                var fromIndex = ListPanelViewModel.SelectedLineNumber;
+                var toIndex = fromIndex + 1;
+                
+                if (toIndex < ListPanelViewModel.GetCount() && _commandHistory != null)
+                {
+                    var moveCommand = new MoveItemCommand(
+                        fromIndex, toIndex,
+                        (from, to) => ListPanelViewModel.MoveItem(from, to)
+                    );
+                    _commandHistory.ExecuteCommand(moveCommand);
+                }
+                else
+                {
+                    ListPanelViewModel.Down();
+                }
             });
             WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (sender, message) =>
             {
-                ListPanelViewModel.Delete();
+                var selectedItem = ListPanelViewModel.SelectedItem;
+                var selectedIndex = ListPanelViewModel.SelectedLineNumber;
+                
+                if (selectedItem != null && _commandHistory != null)
+                {
+                    var removeCommand = new RemoveItemCommand(
+                        selectedItem.Clone(),
+                        selectedIndex,
+                        (item, index) => ListPanelViewModel.InsertAt(index, item),
+                        (index) => ListPanelViewModel.RemoveAt(index)
+                    );
+                    _commandHistory.ExecuteCommand(removeCommand);
+                }
+                else
+                {
+                    ListPanelViewModel.Delete();
+                }
+                
                 EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
             });
 
@@ -141,8 +238,23 @@ namespace AutoTool.ViewModel
                 var item = (message as EditCommandMessage).Item;
                 if (item != null)
                 {
-                    ListPanelViewModel.SetSelectedItem(item);
-                    ListPanelViewModel.SetSelectedLineNumber(item.LineNumber - 1);
+                    var oldItem = ListPanelViewModel.SelectedItem;
+                    var index = item.LineNumber - 1;
+                    
+                    // 編集操作をUndoスタックに追加
+                    if (oldItem != null && _commandHistory != null)
+                    {
+                        var editCommand = new EditItemCommand(
+                            oldItem, item, index,
+                            (editedItem, editIndex) => ListPanelViewModel.ReplaceAt(editIndex, editedItem)
+                        );
+                        _commandHistory.ExecuteCommand(editCommand);
+                    }
+                    else
+                    {
+                        ListPanelViewModel.SetSelectedItem(item);
+                        ListPanelViewModel.SetSelectedLineNumber(item.LineNumber - 1);
+                    }
                 }
             });
             WeakReferenceMessenger.Default.Register<RefreshListViewMessage>(this, (sender, message) =>
@@ -219,6 +331,19 @@ namespace AutoTool.ViewModel
             });
         }
 
+        /// <summary>
+        /// アイテムリストを復元（Undo用）
+        /// </summary>
+        private void RestoreItems(IEnumerable<ICommandListItem> items)
+        {
+            ListPanelViewModel.Clear();
+            foreach (var item in items)
+            {
+                ListPanelViewModel.AddItem(item.Clone());
+            }
+            EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount());
+        }
+
         public async Task Run()
         {
             var listItems = ListPanelViewModel.CommandList.Items;
@@ -269,6 +394,10 @@ namespace AutoTool.ViewModel
 
         public void SaveMacroFile(string filePath) => ListPanelViewModel.Save(filePath);
 
-        public void LoadMacroFile(string filePath){ ListPanelViewModel.Load(filePath); EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount()); }
+        public void LoadMacroFile(string filePath)
+        { 
+            ListPanelViewModel.Load(filePath); 
+            EditPanelViewModel.SetListCount(ListPanelViewModel.GetCount()); 
+        }
     }
 }

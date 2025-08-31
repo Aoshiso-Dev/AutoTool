@@ -17,6 +17,10 @@ namespace AutoTool
 
     public partial class MainWindowViewModel : ObservableObject
     {
+        // Undo/Redo管理
+        [ObservableProperty]
+        private CommandHistoryManager _commandHistory = new();
+
         public bool IsRunning
         {
             get
@@ -43,7 +47,6 @@ namespace AutoTool
             set
             {
                 SetProperty(ref _selectedTabIndex, value);
-
                 UpdateProperties();
             }
         }
@@ -96,17 +99,49 @@ namespace AutoTool
         [ObservableProperty]
         private MacroPanelViewModel _macroPanelViewModel;
 
+        [ObservableProperty]
+        private string _statusMessage = "準備完了";
+
         public MainWindowViewModel()
         {
             MacroPanelViewModel = new MacroPanelViewModel();
 
             InitializeFileManager();
+            InitializeCommandHistory();
 
             // IsEnabledを定期的に更新する
             var timer = new DispatcherTimer();
             timer.Interval = TimeSpan.FromMilliseconds(100);
-            timer.Tick += (sender, e) => OnPropertyChanged(nameof(IsRunning));
+            timer.Tick += (sender, e) => 
+            {
+                var wasRunning = IsRunning;
+                OnPropertyChanged(nameof(IsRunning));
+                
+                // 実行状態が変わった場合はコマンドの実行可能状態も更新
+                if (wasRunning != IsRunning)
+                {
+                    UpdateCommandStates();
+                }
+            };
             timer.Start();
+        }
+
+        private void InitializeCommandHistory()
+        {
+            // MacroPanelViewModelにCommandHistoryを渡す
+            MacroPanelViewModel.SetCommandHistory(CommandHistory);
+            
+            // 履歴変更時にコマンド状態を更新
+            CommandHistory.HistoryChanged += (s, e) => UpdateCommandStates();
+        }
+
+        private void UpdateCommandStates()
+        {
+            OpenFileCommand.NotifyCanExecuteChanged();
+            SaveFileCommand.NotifyCanExecuteChanged();
+            SaveFileAsCommand.NotifyCanExecuteChanged();
+            UndoCommand.NotifyCanExecuteChanged();
+            RedoCommand.NotifyCanExecuteChanged();
         }
 
         private void InitializeFileManager()
@@ -139,6 +174,8 @@ namespace AutoTool
             OnPropertyChanged(nameof(MenuItemHeader_SaveFile));
             OnPropertyChanged(nameof(MenuItemHeader_SaveFileAs));
             OnPropertyChanged(nameof(AutoToolTitle));
+            
+            UpdateCommandStates();
         }
 
 
@@ -167,27 +204,135 @@ namespace AutoTool
             }
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanOpenFile))]
         private void OpenFile(string filePath)
         {
             _fileManagers[SelectedTabIndex].OpenFile(filePath);
+            
+            // ファイル読み込み後は履歴をクリア
+            CommandHistory.Clear();
+            StatusMessage = $"ファイルを開きました: {CurrentFileName}";
+            
             UpdateProperties();
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanSaveFile))]
         private void SaveFile()
         {
-            _fileManagers[SelectedTabIndex].SaveFile();
-            UpdateProperties();
+            try
+            {
+                StatusMessage = "保存中...";
+                _fileManagers[SelectedTabIndex].SaveFile();
+                UpdateProperties();
+                
+                StatusMessage = $"保存完了: {CurrentFileName}";
+                
+                // 3秒後にステータスメッセージをクリア
+                var timer = new DispatcherTimer();
+                timer.Interval = TimeSpan.FromSeconds(3);
+                timer.Tick += (s, e) => 
+                {
+                    StatusMessage = "準備完了";
+                    timer.Stop();
+                };
+                timer.Start();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = "保存に失敗しました";
+                MessageBox.Show($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー", 
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanSaveFileAs))]
         private void SaveFileAs()
         {
-            _fileManagers[SelectedTabIndex].SaveFileAs();
-            UpdateProperties();
+            try
+            {
+                StatusMessage = "名前を付けて保存中...";
+                _fileManagers[SelectedTabIndex].SaveFileAs();
+                UpdateProperties();
+                
+                StatusMessage = $"保存完了: {CurrentFileName}";
+                
+                // 3秒後にステータスメッセージをクリア
+                var timer = new DispatcherTimer();
+                timer.Interval = TimeSpan.FromSeconds(3);
+                timer.Tick += (s, e) => 
+                {
+                    StatusMessage = "準備完了";
+                    timer.Stop();
+                };
+                timer.Start();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = "保存に失敗しました";
+                MessageBox.Show($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー", 
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
+        [RelayCommand(CanExecute = nameof(CanUndo))]
+        private void Undo()
+        {
+            CommandHistory.Undo();
+            StatusMessage = $"元に戻しました: {CommandHistory.RedoDescription}";
+            
+            // 2秒後にステータスメッセージをクリア
+            var timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(2);
+            timer.Tick += (s, e) => 
+            {
+                StatusMessage = "準備完了";
+                timer.Stop();
+            };
+            timer.Start();
+        }
+
+        [RelayCommand(CanExecute = nameof(CanRedo))]
+        private void Redo()
+        {
+            CommandHistory.Redo();
+            StatusMessage = $"やり直しました: {CommandHistory.UndoDescription}";
+            
+            // 2秒後にステータスメッセージをクリア
+            var timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(2);
+            timer.Tick += (s, e) => 
+            {
+                StatusMessage = "準備完了";
+                timer.Stop();
+            };
+            timer.Start();
+        }
+
+        // CanExecute メソッドを追加
+        private bool CanOpenFile()
+        {
+            return IsFileOperationEnable && !IsRunning;
+        }
+
+        private bool CanSaveFile()
+        {
+            return IsFileOpened && !IsRunning;
+        }
+
+        private bool CanSaveFileAs()
+        {
+            return IsFileOperationEnable && !IsRunning;
+        }
+
+        private bool CanUndo()
+        {
+            return !IsRunning && CommandHistory.CanUndo;
+        }
+
+        private bool CanRedo()
+        {
+            return !IsRunning && CommandHistory.CanRedo;
+        }
 
         private void SaveFile(string filePath)
         {
@@ -212,6 +357,5 @@ namespace AutoTool
                 throw new NotImplementedException();
             }
         }
-
     }
 }

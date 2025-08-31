@@ -47,6 +47,22 @@ namespace MacroPanels.List.Class
             PairLoopItems();
         }
 
+        /// <summary>
+        /// 指定インデックスのアイテムを削除
+        /// </summary>
+        public void RemoveAt(int index)
+        {
+            if (index >= 0 && index < Items.Count)
+            {
+                Items.RemoveAt(index);
+
+                ReorderItems();
+                CalculateNestLevel();
+                PairIfItems();
+                PairLoopItems();
+            }
+        }
+
         public void Insert(int index, ICommandListItem item)
         {
             Items.Insert(index, item);
