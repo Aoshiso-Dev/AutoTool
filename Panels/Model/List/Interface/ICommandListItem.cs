@@ -64,8 +64,8 @@ namespace MacroPanels.Model.List.Interface
         public System.Windows.Input.MouseButton Button { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
-        //public string WindowTitle { get; set; }
-        //public string WindowClassName { get; set; }
+        public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
     }
 
     public interface IWaitItem : ICommandListItem

@@ -69,6 +69,7 @@ namespace MacroPanels.ViewModel.Helpers
             WindowTitle = new MultiInterfacePropertyAccessor<string>(string.Empty)
                 .AddInterface<IWaitImageItem>(x => x.WindowTitle)
                 .AddInterface<IClickImageItem>(x => x.WindowTitle)
+                .AddInterface<IClickItem>(x => x.WindowTitle)
                 .AddInterface<IHotkeyItem>(x => x.WindowTitle)
                 .AddInterface<IIfImageExistItem>(x => x.WindowTitle)
                 .AddInterface<IIfImageNotExistItem>(x => x.WindowTitle)
@@ -81,6 +82,7 @@ namespace MacroPanels.ViewModel.Helpers
             WindowClassName = new MultiInterfacePropertyAccessor<string>(string.Empty)
                 .AddInterface<IWaitImageItem>(x => x.WindowClassName)
                 .AddInterface<IClickImageItem>(x => x.WindowClassName)
+                .AddInterface<IClickItem>(x => x.WindowClassName)
                 .AddInterface<IHotkeyItem>(x => x.WindowClassName)
                 .AddInterface<IIfImageExistItem>(x => x.WindowClassName)
                 .AddInterface<IIfImageNotExistItem>(x => x.WindowClassName)
@@ -109,7 +111,7 @@ namespace MacroPanels.ViewModel.Helpers
                 .AddInterface<IIfImageExistItem>(x => x.SearchColor)
                 .AddInterface<IIfImageNotExistItem>(x => x.SearchColor);
 
-            // タイミング関連の初期化
+            // タイミング関連の初期化（Wait_ImageとClick_Imageのみ）
             Timeout = new MultiInterfacePropertyAccessor<int>(5000)
                 .AddInterface<IWaitImageItem>(x => x.Timeout)
                 .AddInterface<IClickImageItem>(x => x.Timeout);

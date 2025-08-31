@@ -1,20 +1,15 @@
-﻿using System.Collections.ObjectModel;
-using System.Windows;
-using System.Windows.Media;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MacroPanels.View;
+using CommunityToolkit.Mvvm.Messaging;
 using MacroPanels.List.Class;
-using System.Windows.Input;
-using System.IO;
-using MacroPanels.Model.MacroFactory;
+using MacroPanels.Message;
 using MacroPanels.Model.List.Interface;
 using MacroPanels.Model.List.Type;
-using MacroPanels.Message;
-using CommunityToolkit.Mvvm.Messaging;
-using MacroPanels.Model;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows.Data;
-using System.Security.Cryptography.X509Certificates;
+using MacroPanels.Model.CommandDefinition;
 
 
 namespace MacroPanels.ViewModel
@@ -115,29 +110,8 @@ namespace MacroPanels.ViewModel
 
         public void Add(string itemType)
         {
-            ICommandListItem? item = itemType switch
-            {
-                nameof(ItemType.Click) => new ClickItem(),
-                nameof(ItemType.Click_Image) => new ClickImageItem(),
-                nameof(ItemType.Click_Image_AI) => new ClickImageAIItem(),
-                nameof(ItemType.Hotkey) => new HotkeyItem(),
-                nameof(ItemType.Wait) => new WaitItem(),
-                nameof(ItemType.Wait_Image) => new WaitImageItem(),
-                nameof(ItemType.Execute) => new ExecuteItem(),
-                nameof(ItemType.Screenshot) => new ScreenshotItem(),
-                nameof(ItemType.Loop) => new LoopItem(),
-                nameof(ItemType.Loop_End) => new LoopEndItem(),
-                nameof(ItemType.Loop_Break) => new LoopBreakItem(),
-                nameof(ItemType.IF_ImageExist) => new IfImageExistItem(),
-                nameof(ItemType.IF_ImageNotExist) => new IfImageNotExistItem(),
-                nameof(ItemType.IF_ImageExist_AI) => new IfImageExistAIItem(),
-                nameof(ItemType.IF_ImageNotExist_AI) => new IfImageNotExistAIItem(),
-                nameof(ItemType.IF_Variable) => new IfVariableItem(),
-                nameof(ItemType.IF_End) => new IfEndItem(),
-                nameof(ItemType.SetVariable) => new SetVariableItem(),
-                nameof(ItemType.SetVariable_AI) => new SetVariableAIItem(),
-                _ => null
-            };
+            // CommandRegistry を使用して自動生成
+            var item = CommandRegistry.CreateCommandItem(itemType);
 
             if (item != null)
             {

@@ -6,7 +6,12 @@ using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Win32;
+using MacroPanels.Command.Interface;
+using MacroPanels.Command.Class;
+using MacroPanels.List.Class;
+using System.Diagnostics;
 using MacroPanels.Model.List.Interface;
+using MacroPanels.Model.CommandDefinition;
 using MacroPanels.Model.List.Type;
 using System.IO;
 
@@ -255,126 +260,25 @@ namespace MacroPanels.List.Class
 
                 foreach (var item in deserializedItems)
                 {
-                    switch(item.ItemType)
+                    // CommandRegistry を使用して自動的に適切な型を作成
+                    var itemType = CommandRegistry.GetItemType(item.ItemType);
+                    if (itemType != null)
                     {
-                        case nameof(ItemType.Click):
-                            if (item is ClickItem ci)
-                                Add(new ClickItem(ci));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を ClickItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Click_Image):
-                            if (item is ClickImageItem cii)
-                                Add(new ClickImageItem(cii));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を ClickImageItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Click_Image_AI):
-                            if (item is ClickImageAIItem ciai)
-                                Add(new ClickImageAIItem(ciai));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を ClickImageAIItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Hotkey):
-                            if (item is HotkeyItem hi)
-                                Add(new HotkeyItem(hi));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を HotkeyItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Wait):
-                            if (item is WaitItem wi)
-                                Add(new WaitItem(wi));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を WaitItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Wait_Image):
-                            if (item is WaitImageItem wii)
-                                Add(new WaitImageItem(wii));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を WaitImageItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Execute):
-                            if (item is ExecuteItem epi)
-                                Add(new ExecuteItem(epi));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を ExecuteProgramItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Screenshot):
-                            if (item is ScreenshotItem si)
-                                Add(new ScreenshotItem(si));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を ScreenshotItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Loop):
-                            if (item is LoopItem li)
-                                Add(new LoopItem(li));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を LoopItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Loop_End):
-                            if (item is LoopEndItem eli)
-                                Add(new LoopEndItem(eli));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を EndLoopItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.Loop_Break):
-                            if (item is LoopBreakItem bi)
-                                Add(new LoopBreakItem(bi));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を BreakItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.IF_ImageExist):
-                            if (item is IfImageExistItem ifei)
-                                Add(new IfImageExistItem(ifei));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfImageExistItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.IF_ImageNotExist):
-                            if (item is IfImageNotExistItem ifnei)
-                                Add(new IfImageNotExistItem(ifnei));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfImageNotExistItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.IF_ImageExist_AI):
-                            if (item is IfImageExistAIItem ifeai)
-                                Add(new IfImageExistAIItem(ifeai));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfImageExistAIItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.IF_ImageNotExist_AI):
-                            if (item is IfImageNotExistAIItem ifneai)
-                                Add(new IfImageNotExistAIItem(ifneai));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfImageNotExistAIItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.IF_Variable):
-                            if (item is IfVariableItem ivi)
-                                Add(new IfVariableItem(ivi));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を IfVariableItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.IF_End):
-                            if (item is IfEndItem eii)
-                                Add(new IfEndItem(eii));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を EndIfItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.SetVariable):
-                            if (item is SetVariableItem svi)
-                                Add(new SetVariableItem(svi));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を SetVariableItem にキャストできません。");
-                            break;
-                        case nameof(ItemType.SetVariable_AI):
-                            if (item is SetVariableAIItem svai)
-                                Add(new SetVariableAIItem(svai));
-                            else
-                                throw new InvalidDataException($"型不一致: {item.ItemType} を SetVariableAIItem にキャストできません。");
-                            break;
-                        default:
-                            throw new InvalidDataException($"不明な ItemType: {item.ItemType}");
+                        try
+                        {
+                            // デシリアライズされたデータから新しいアイテムを作成
+                            var newItem = (ICommandListItem)Activator.CreateInstance(itemType, item)!;
+                            Add(newItem);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new InvalidDataException($"型 {item.ItemType} のアイテム作成に失敗しました: {ex.Message}");
+                        }
                     }
-
+                    else
+                    {
+                        throw new InvalidDataException($"不明な ItemType: {item.ItemType}");
+                    }
                 }
             }
 

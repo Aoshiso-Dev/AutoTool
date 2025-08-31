@@ -32,8 +32,8 @@ namespace MacroPanels.Command.Interface
     public interface IHotkeyCommand : ICommand { new IHotkeyCommandSettings Settings { get; } }
     public interface IClickCommand : ICommand { new IClickCommandSettings Settings { get; } }
     public interface IWaitCommand : ICommand { new IWaitCommandSettings Settings { get; } }
-    public interface IIfImageExistCommand : ICommand, IIfCommand { new IWaitImageCommandSettings Settings { get; } }
-    public interface IIfImageNotExistCommand : ICommand, IIfCommand { new IWaitImageCommandSettings Settings { get; } }
+    public interface IIfImageExistCommand : ICommand, IIfCommand { new IIfImageCommandSettings Settings { get; } }
+    public interface IIfImageNotExistCommand : ICommand, IIfCommand { new IIfImageCommandSettings Settings { get; } }
     public interface ILoopCommand : ICommand { new ILoopCommandSettings Settings { get; } }
     public interface IEndLoopCommand : ICommand { new ILoopEndCommandSettings Settings { get; } }
     public interface ILoopBreakCommand : ICommand { }

@@ -20,6 +20,7 @@ using System.Windows.Threading;
 using Microsoft.Win32;
 using ColorPickHelper;
 using MacroPanels.ViewModel.Helpers;
+using MacroPanels.Model.CommandDefinition;
 
 namespace MacroPanels.ViewModel
 {
@@ -148,9 +149,18 @@ namespace MacroPanels.ViewModel
 
         public EditPanelViewModel()
         {
+            // CommandRegistryを初期化
+            CommandRegistry.Initialize();
+            
             _refreshTimer.Tick += (s, e) => { _refreshTimer.Stop(); WeakReferenceMessenger.Default.Send(new RefreshListViewMessage()); };
-            foreach (var type in ItemType.GetTypes()) ItemTypes.Add(type);
-            foreach (var button in Enum.GetValues(typeof(System.Windows.Input.MouseButton)).Cast<System.Windows.Input.MouseButton>()) MouseButtons.Add(button);
+            
+            // 自動生成されたタイプを使用
+            foreach (var type in CommandRegistry.GetAllTypeNames()) 
+                ItemTypes.Add(type);
+                
+            foreach (var button in Enum.GetValues(typeof(System.Windows.Input.MouseButton)).Cast<System.Windows.Input.MouseButton>()) 
+                MouseButtons.Add(button);
+                
             InitializeOperators();
             InitializeAIDetectModes();
         }
@@ -170,29 +180,21 @@ namespace MacroPanels.ViewModel
         {
             var lineNumber = Item?.LineNumber ?? 0;
             var isSelected = Item?.IsSelected ?? false;
-            Item = SelectedItemType switch
+            
+            // CommandRegistryを使用して自動生成
+            var newItem = CommandRegistry.CreateCommandItem(SelectedItemType);
+            if (newItem != null)
             {
-                nameof(ItemType.Click) => new ClickItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Click) },
-                nameof(ItemType.Click_Image) => new ClickImageItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Click_Image) },
-                nameof(ItemType.Click_Image_AI) => new ClickImageAIItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Click_Image_AI) },
-                nameof(ItemType.Hotkey) => new HotkeyItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Hotkey) },
-                nameof(ItemType.Execute) => new ExecuteItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Execute) },
-                nameof(ItemType.Screenshot) => new ScreenshotItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Screenshot) },
-                nameof(ItemType.Wait) => new WaitItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Wait) },
-                nameof(ItemType.Wait_Image) => new WaitImageItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Wait_Image) },
-                nameof(ItemType.Loop) => new LoopItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Loop) },
-                nameof(ItemType.Loop_End) => new LoopEndItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Loop_End) },
-                nameof(ItemType.Loop_Break) => new LoopBreakItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.Loop_Break) },
-                nameof(ItemType.IF_ImageExist) => new IfImageExistItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_ImageExist) },
-                nameof(ItemType.IF_ImageNotExist) => new IfImageNotExistItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_ImageNotExist) },
-                nameof(ItemType.IF_ImageExist_AI) => new IfImageExistAIItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_ImageExist_AI) },
-                nameof(ItemType.IF_ImageNotExist_AI) => new IfImageNotExistAIItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_ImageNotExist_AI) },
-                nameof(ItemType.IF_End) => new IfEndItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_End) },
-                nameof(ItemType.SetVariable) => new SetVariableItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariable) },
-                nameof(ItemType.SetVariable_AI) => new SetVariableAIItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.SetVariable_AI) },
-                nameof(ItemType.IF_Variable) => new IfVariableItem { LineNumber = lineNumber, IsSelected = isSelected, ItemType = nameof(ItemType.IF_Variable) },
-                _ => throw new ArgumentException($"Unknown ItemType: {SelectedItemType}")
-            };
+                newItem.LineNumber = lineNumber;
+                newItem.IsSelected = isSelected;
+                newItem.ItemType = SelectedItemType;
+                Item = newItem;
+            }
+            else
+            {
+                throw new ArgumentException($"Unknown ItemType: {SelectedItemType}");
+            }
+            
             UpdateProperties();
             UpdateIsProperties();
             WeakReferenceMessenger.Default.Send(new EditCommandMessage(Item));
@@ -213,7 +215,22 @@ namespace MacroPanels.ViewModel
             try
             {
                 _isUpdating = true;
-                foreach (var name in new[] { nameof(SelectedItemType), nameof(WindowTitle), nameof(WindowTitleText), nameof(WindowClassName), nameof(WindowClassNameText), nameof(ImagePath), nameof(Threshold), nameof(SearchColor), nameof(Timeout), nameof(Interval), nameof(MouseButton), nameof(SelectedMouseButton), nameof(Ctrl), nameof(Alt), nameof(Shift), nameof(Key), nameof(X), nameof(Y), nameof(Wait), nameof(LoopCount), nameof(ConfThreshold), nameof(IoUThreshold), nameof(SearchColorBrush), nameof(SearchColorText), nameof(SearchColorTextColor), nameof(ModelPath), nameof(ClassID), nameof(AIDetectMode), nameof(ProgramPath), nameof(Arguments), nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName), nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), nameof(SaveDirectory) })
+                var propertyNames = new[] 
+                { 
+                    nameof(SelectedItemType), nameof(WindowTitle), nameof(WindowTitleText), 
+                    nameof(WindowClassName), nameof(WindowClassNameText), nameof(ImagePath), 
+                    nameof(Threshold), nameof(SearchColor), nameof(Timeout), nameof(Interval), 
+                    nameof(MouseButton), nameof(SelectedMouseButton), nameof(Ctrl), nameof(Alt), 
+                    nameof(Shift), nameof(Key), nameof(X), nameof(Y), nameof(Wait), nameof(LoopCount), 
+                    nameof(ConfThreshold), nameof(IoUThreshold), nameof(SearchColorBrush), 
+                    nameof(SearchColorText), nameof(SearchColorTextColor), nameof(ModelPath), 
+                    nameof(ClassID), nameof(AIDetectMode), nameof(ProgramPath), nameof(Arguments), 
+                    nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName), 
+                    nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), 
+                    nameof(SaveDirectory) 
+                };
+                
+                foreach (var name in propertyNames)
                     OnPropertyChanged(name);
                 
                 _refreshTimer.Stop();
@@ -234,11 +251,113 @@ namespace MacroPanels.ViewModel
         [RelayCommand] public void Capture() { var cw = new CaptureWindow { Mode = 0 }; if (cw.ShowDialog() == true) { var path = DialogHelper.CreateCaptureFilePath(); var mat = OpenCVHelper.ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion); OpenCVHelper.ScreenCaptureHelper.SaveCapture(mat, path); ImagePath = path; } }
         [RelayCommand] public void PickSearchColor() { var w = new ColorPickWindow(); w.ShowDialog(); SearchColor = w.Color; }
         [RelayCommand] public void ClearSearchColor() { SearchColor = null; }
-        [RelayCommand] public void PickPoint() { var cw = new CaptureWindow { Mode = 1 }; if (cw.ShowDialog() == true) { X = (int)cw.SelectedPoint.X; Y = (int)cw.SelectedPoint.Y; } }
+        [RelayCommand] 
+        public void PickPoint() 
+        { 
+            var cw = new CaptureWindow { Mode = 1 }; 
+            if (cw.ShowDialog() == true) 
+            { 
+                // 絶対座標を取得
+                var absoluteX = (int)cw.SelectedPoint.X;
+                var absoluteY = (int)cw.SelectedPoint.Y;
+                
+                // ウィンドウが指定されている場合は相対座標に変換
+                if (!string.IsNullOrEmpty(WindowTitle) || !string.IsNullOrEmpty(WindowClassName))
+                {
+                    try
+                    {
+                        // ウィンドウハンドルを取得
+                        var windowHandle = GetWindowHandle(WindowTitle, WindowClassName);
+                        if (windowHandle != IntPtr.Zero)
+                        {
+                            // ウィンドウの位置を取得
+                            if (GetWindowRect(windowHandle, out var windowRect))
+                            {
+                                // 相対座標に変換
+                                X = absoluteX - windowRect.Left;
+                                Y = absoluteY - windowRect.Top;
+                                
+                                // 成功メッセージを表示
+                                MessageBox.Show($"ウィンドウ相対座標を設定しました: ({X}, {Y})\nウィンドウ: {WindowTitle}[{WindowClassName}]\n絶対座標: ({absoluteX}, {absoluteY})", 
+                                              "座標設定完了", MessageBoxButton.OK, MessageBoxImage.Information);
+                            }
+                            else
+                            {
+                                // ウィンドウRECT取得失敗
+                                X = absoluteX;
+                                Y = absoluteY;
+                                MessageBox.Show($"ウィンドウの位置情報が取得できませんでした。\n絶対座標 ({X}, {Y}) を設定しました。", 
+                                              "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            }
+                        }
+                        else
+                        {
+                            // ウィンドウが見つからない場合は絶対座標を使用
+                            X = absoluteX;
+                            Y = absoluteY;
+                            MessageBox.Show($"指定されたウィンドウが見つかりません。\n絶対座標 ({X}, {Y}) を設定しました。", 
+                                          "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // エラーが発生した場合は絶対座標を使用
+                        X = absoluteX;
+                        Y = absoluteY;
+                        MessageBox.Show($"ウィンドウ情報の取得に失敗しました。\n絶対座標 ({X}, {Y}) を設定しました。\nエラー: {ex.Message}", 
+                                      "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                else
+                {
+                    // ウィンドウが指定されていない場合は絶対座標をそのまま使用
+                    X = absoluteX;
+                    Y = absoluteY;
+                    MessageBox.Show($"絶対座標を設定しました: ({X}, {Y})", 
+                                  "座標設定完了", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            } 
+        }
         [RelayCommand] public void BrowseModel() { var f = DialogHelper.SelectModelFile(); if (f != null) ModelPath = f; }
         [RelayCommand] public void BrowseProgram() { var f = DialogHelper.SelectExecutableFile(); if (f != null) ProgramPath = f; }
         [RelayCommand] public void BrowseWorkingDirectory() { var d = DialogHelper.SelectFolder(); if (d != null) WorkingDirectory = d; }
         [RelayCommand] public void BrowseSaveDirectory() { var d = DialogHelper.SelectFolder(); if (d != null) SaveDirectory = d; }
+        #endregion
+
+        #region Windows API Helper Methods
+        // Windows API用のプライベートメソッド
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        private static IntPtr GetWindowHandle(string windowTitle, string windowClassName)
+        {
+            // クラス名とタイトルの両方を使用してウィンドウを検索
+            if (!string.IsNullOrEmpty(windowClassName) && !string.IsNullOrEmpty(windowTitle))
+            {
+                return FindWindow(windowClassName, windowTitle);
+            }
+            else if (!string.IsNullOrEmpty(windowClassName))
+            {
+                return FindWindow(windowClassName, null);
+            }
+            else if (!string.IsNullOrEmpty(windowTitle))
+            {
+                return FindWindow(null, windowTitle);
+            }
+            return IntPtr.Zero;
+        }
         #endregion
 
         #region External API
@@ -248,48 +367,5 @@ namespace MacroPanels.ViewModel
         public void SetRunningState(bool isRunning) => IsRunning = isRunning;
         public void Prepare() { }
         #endregion
-    }
-
-    internal static class DialogHelper
-    {
-        public static string? SelectImageFile() => OpenFile("画像 (*.png;*.jpg;*.bmp)|*.png;*.jpg;*.bmp|All (*.*)|*.*");
-        public static string? SelectModelFile() => OpenFile("ONNX (*.onnx)|*.onnx|All (*.*)|*.*");
-        public static string? SelectExecutableFile() => OpenFile("実行ファイル (*.exe)|*.exe|All (*.*)|*.*");
-        private static string? OpenFile(string filter)
-        {
-            var dlg = new OpenFileDialog { Filter = filter, Multiselect = false };
-            return dlg.ShowDialog() == true ? dlg.FileName : null;
-        }
-        public static string CreateCaptureFilePath()
-        {
-            var dir = Path.Combine(Directory.GetCurrentDirectory(), "Capture");
-            Directory.CreateDirectory(dir);
-            return Path.Combine(dir, $"{DateTime.Now:yyyyMMddHHmmss}.png");
-        }
-        public static string? SelectFolder()
-        {
-            try
-            {
-                // WPFのFolderBrowserDialogを使用
-                var dialog = new Microsoft.Win32.OpenFileDialog
-                {
-                    ValidateNames = false,
-                    CheckFileExists = false,
-                    CheckPathExists = true,
-                    FileName = "Folder Selection"
-                };
-                
-                if (dialog.ShowDialog() == true)
-                {
-                    return System.IO.Path.GetDirectoryName(dialog.FileName);
-                }
-                return null;
-            }
-            catch
-            {
-                // フォールバック：現在のディレクトリを返す
-                return Environment.CurrentDirectory;
-            }
-        }
     }
 }
