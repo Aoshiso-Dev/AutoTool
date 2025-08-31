@@ -58,6 +58,9 @@ namespace MacroPanels.ViewModel.Helpers
 
         // スクリーンショット関連
         public PropertyAccessor<ScreenshotItem, string> SaveDirectory { get; }
+        // New AI thresholds
+        public MultiInterfacePropertyAccessor<double> ConfThreshold { get; }
+        public MultiInterfacePropertyAccessor<double> IoUThreshold { get; }
 
         public EditPanelPropertyManager()
         {
@@ -71,6 +74,7 @@ namespace MacroPanels.ViewModel.Helpers
                 .AddInterface<IIfImageExistAIItem>(x => x.WindowTitle)
                 .AddInterface<IIfImageNotExistAIItem>(x => x.WindowTitle)
                 .AddInterface<ISetVariableAIItem>(x => x.WindowTitle)
+                .AddInterface<IClickImageAIItem>(x => x.WindowTitle)
                 .AddInterface<IScreenshotItem>(x => x.WindowTitle);
 
             WindowClassName = new MultiInterfacePropertyAccessor<string>(string.Empty)
@@ -82,6 +86,7 @@ namespace MacroPanels.ViewModel.Helpers
                 .AddInterface<IIfImageExistAIItem>(x => x.WindowClassName)
                 .AddInterface<IIfImageNotExistAIItem>(x => x.WindowClassName)
                 .AddInterface<ISetVariableAIItem>(x => x.WindowClassName)
+                .AddInterface<IClickImageAIItem>(x => x.WindowClassName)
                 .AddInterface<IScreenshotItem>(x => x.WindowClassName);
 
             // 画像関連の初期化
@@ -115,7 +120,8 @@ namespace MacroPanels.ViewModel.Helpers
             // マウス・キーボード関連の初期化
             MouseButton = new MultiInterfacePropertyAccessor<MouseButton>(System.Windows.Input.MouseButton.Left)
                 .AddInterface<IClickImageItem>(x => x.Button)
-                .AddInterface<IClickItem>(x => x.Button);
+                .AddInterface<IClickItem>(x => x.Button)
+                .AddInterface<IClickImageAIItem>(x => x.Button);
 
             Ctrl = new PropertyAccessor<IHotkeyItem, bool>(x => x.Ctrl, false);
             Alt = new PropertyAccessor<IHotkeyItem, bool>(x => x.Alt, false);
@@ -134,13 +140,15 @@ namespace MacroPanels.ViewModel.Helpers
             ModelPath = new MultiInterfacePropertyAccessor<string>(string.Empty)
                 .AddInterface<IfImageExistAIItem>(x => x.ModelPath)
                 .AddInterface<IfImageNotExistAIItem>(x => x.ModelPath)
-                .AddInterface<SetVariableAIItem>(x => x.ModelPath);
+                .AddInterface<SetVariableAIItem>(x => x.ModelPath)
+                .AddInterface<ClickImageAIItem>(x => x.ModelPath);
 
             ClassID = new MultiInterfacePropertyAccessor<int>(0)
                 .AddInterface<IfImageExistAIItem>(x => x.ClassID)
-                .AddInterface<IfImageNotExistAIItem>(x => x.ClassID);
+                .AddInterface<IfImageNotExistAIItem>(x => x.ClassID)
+                .AddInterface<ClickImageAIItem>(x => x.ClassID);
 
-            Mode = new PropertyAccessor<SetVariableAIItem, string>(x => x.AIMode, "Class");
+            Mode = new PropertyAccessor<SetVariableAIItem, string>(x => x.AIDetectMode, "Class");
 
             // プログラム実行関連の初期化
             ProgramPath = new PropertyAccessor<ExecuteItem, string>(x => x.ProgramPath, string.Empty);
@@ -160,6 +168,18 @@ namespace MacroPanels.ViewModel.Helpers
 
             // スクリーンショット関連の初期化
             SaveDirectory = new PropertyAccessor<ScreenshotItem, string>(x => x.SaveDirectory, string.Empty);
+
+            ConfThreshold = new MultiInterfacePropertyAccessor<double>(0.5)
+                .AddInterface<IfImageExistAIItem>(x => x.ConfThreshold)
+                .AddInterface<IfImageNotExistAIItem>(x => x.ConfThreshold)
+                .AddInterface<SetVariableAIItem>(x => x.ConfThreshold)
+                .AddInterface<ClickImageAIItem>(x => x.ConfThreshold);
+
+            IoUThreshold = new MultiInterfacePropertyAccessor<double>(0.25)
+                .AddInterface<IfImageExistAIItem>(x => x.IoUThreshold)
+                .AddInterface<IfImageNotExistAIItem>(x => x.IoUThreshold)
+                .AddInterface<SetVariableAIItem>(x => x.IoUThreshold)
+                .AddInterface<ClickImageAIItem>(x => x.IoUThreshold);
         }
     }
 }

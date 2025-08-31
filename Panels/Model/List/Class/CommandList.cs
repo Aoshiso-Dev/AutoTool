@@ -269,6 +269,12 @@ namespace MacroPanels.List.Class
                             else
                                 throw new InvalidDataException($"型不一致: {item.ItemType} を ClickImageItem にキャストできません。");
                             break;
+                        case nameof(ItemType.Click_Image_AI):
+                            if (item is ClickImageAIItem ciai)
+                                Add(new ClickImageAIItem(ciai));
+                            else
+                                throw new InvalidDataException($"型不一致: {item.ItemType} を ClickImageAIItem にキャストできません。");
+                            break;
                         case nameof(ItemType.Hotkey):
                             if (item is HotkeyItem hi)
                                 Add(new HotkeyItem(hi));

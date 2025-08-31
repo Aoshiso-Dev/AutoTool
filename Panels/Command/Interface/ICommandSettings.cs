@@ -83,6 +83,15 @@ namespace MacroPanels.Command.Interface
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
     }
+    public interface IIfImageNotExistAISettings : ICommandSettings
+    {
+        string ModelPath { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        int ClassID { get; set; }
+        double ConfThreshold { get; set; }
+        double IoUThreshold { get; set; }
+    }
 
     public interface IExecuteCommandSettings : ICommandSettings
     {
@@ -111,13 +120,23 @@ namespace MacroPanels.Command.Interface
     {
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
-        string AIMode { get; set; }
+        string AIDetectMode { get; set; }
         string ModelPath { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
-        int Timeout { get; set; }
-        int Interval { get; set; }
         string Name { get; set; }
+    }
+
+    // AI Click Image command
+    public interface IClickImageAICommandSettings : ICommandSettings
+    {
+        string ModelPath { get; set; }
+        int ClassID { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        double ConfThreshold { get; set; }
+        double IoUThreshold { get; set; }
+        MouseButton Button { get; set; }
     }
 
     // Screenshot command

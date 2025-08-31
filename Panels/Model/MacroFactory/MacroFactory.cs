@@ -84,27 +84,66 @@ namespace MacroPanels.Model.MacroFactory
         {
             return ifItem switch
             {
-                IfImageExistItem exist => new IfImageExistCommand(parent, exist) 
+                IfImageExistItem exist => new IfImageExistCommand(parent, new WaitImageCommandSettings 
+                { 
+                    ImagePath = exist.ImagePath,
+                    Threshold = exist.Threshold,
+                    SearchColor = exist.SearchColor,
+                    Timeout = 5000, // デフォルト値
+                    Interval = 500, // デフォルト値
+                    WindowTitle = exist.WindowTitle,
+                    WindowClassName = exist.WindowClassName
+                }) 
                 { 
                     LineNumber = exist.LineNumber, 
                     IsEnabled = exist.IsEnable 
                 },
-                IfImageNotExistItem notExist => new IfImageNotExistCommand(parent, notExist) 
+                IfImageNotExistItem notExist => new IfImageNotExistCommand(parent, new WaitImageCommandSettings 
+                { 
+                    ImagePath = notExist.ImagePath,
+                    Threshold = notExist.Threshold,
+                    SearchColor = notExist.SearchColor,
+                    Timeout = 5000, // デフォルト値
+                    Interval = 500, // デフォルト値
+                    WindowTitle = notExist.WindowTitle,
+                    WindowClassName = notExist.WindowClassName
+                }) 
                 { 
                     LineNumber = notExist.LineNumber, 
                     IsEnabled = notExist.IsEnable 
                 },
-                IfImageExistAIItem existAI => new IfImageExistAICommand(parent, existAI) 
+                IfImageExistAIItem existAI => new IfImageExistAICommand(parent, new AIImageDetectCommandSettings 
+                { 
+                    ModelPath = existAI.ModelPath,
+                    ClassID = existAI.ClassID,
+                    ConfThreshold = existAI.ConfThreshold,
+                    IoUThreshold = existAI.IoUThreshold,
+                    WindowTitle = existAI.WindowTitle,
+                    WindowClassName = existAI.WindowClassName
+                }) 
                 { 
                     LineNumber = existAI.LineNumber, 
                     IsEnabled = existAI.IsEnable 
                 },
-                IfImageNotExistAIItem notExistAI => new IfImageNotExistAICommand(parent, notExistAI) 
+                IfImageNotExistAIItem notExistAI => new IfImageNotExistAICommand(parent, new AIImageNotDetectCommandSettings 
+                { 
+                    ModelPath = notExistAI.ModelPath,
+                    ClassID = notExistAI.ClassID,
+                    ConfThreshold = notExistAI.ConfThreshold,
+                    IoUThreshold = notExistAI.IoUThreshold,
+                    WindowTitle = notExistAI.WindowTitle,
+                    WindowClassName = notExistAI.WindowClassName
+                }) 
                 { 
                     LineNumber = notExistAI.LineNumber, 
                     IsEnabled = notExistAI.IsEnable 
                 },
-                IfVariableItem ifVar => new IfVariableCommand(parent, ifVar) 
+                IfVariableItem ifVar => new IfVariableCommand(parent, new IfVariableCommandSettings 
+                { 
+                    Name = ifVar.Name,
+                    Operator = ifVar.Operator,
+                    Value = ifVar.Value
+                }) 
                 { 
                     LineNumber = ifVar.LineNumber, 
                     IsEnabled = ifVar.IsEnable 

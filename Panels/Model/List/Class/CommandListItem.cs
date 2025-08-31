@@ -570,25 +570,43 @@ namespace MacroPanels.List.Class
 
     public partial class IfImageExistAIItem : CommandListItem, IIfItem, IIfImageExistAIItem, IIfImageExistAISettings
     {
+        new public bool IsEnable
+        {
+            get => base.IsEnable;
+            set
+            {
+                if (base.IsEnable != value)
+                {
+                    base.IsEnable = value;
+                    if (Pair != null) Pair.IsEnable = value;
+                }
+            }
+        }
+
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _modelPath = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _classID = 0;
         [ObservableProperty]
-        private double _confThreshold = 0.5f;
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private double _confThreshold = 0.5;
         [ObservableProperty]
-        private double _ioUThreshold = 0.25f;
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private double _ioUThreshold = 0.25;
         [ObservableProperty]
-        private string[] _targetLabels = Array.Empty<string>();
-        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-             $"{LineNumber}->{Pair?.LineNumber} 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
+             $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
 
         public IfImageExistAIItem() { }
 
@@ -612,25 +630,46 @@ namespace MacroPanels.List.Class
         }
     }
 
-    public partial class IfImageNotExistAIItem : CommandListItem, IIfItem, IIfImageNotExistAIItem, IIfImageExistAISettings
+    public partial class IfImageNotExistAIItem : CommandListItem, IIfItem, IIfImageNotExistAIItem, IIfImageNotExistAISettings
     {
+        new public bool IsEnable
+        {
+            get => base.IsEnable;
+            set
+            {
+                if (base.IsEnable != value)
+                {
+                    base.IsEnable = value;
+                    if (Pair != null) Pair.IsEnable = value;
+                }
+            }
+        }
+
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _modelPath = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private int _classID = 0;
         [ObservableProperty]
-        private double _confThreshold = 0.45f;
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private double _confThreshold = 0.5;
         [ObservableProperty]
-        private double _ioUThreshold = 0.25f;
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private double _ioUThreshold = 0.25;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
+            $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
+
         public IfImageNotExistAIItem() { }
         public IfImageNotExistAIItem(IfImageNotExistAIItem? item = null) : base(item)
         {
@@ -715,25 +754,30 @@ namespace MacroPanels.List.Class
     public partial class SetVariableAIItem : CommandListItem, ISetVariableAIItem, ISetVariableAICommandSettings
     {
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
-        private string _aIMode = string.Empty;
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _aIDetectMode = "Class";
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _modelPath = string.Empty;
         [ObservableProperty]
-        private double _confThreshold = 0.45f;
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private double _confThreshold = 0.5;
         [ObservableProperty]
-        private double _ioUThreshold = 0.15f;
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private double _ioUThreshold = 0.25;
         [ObservableProperty]
-        private int _timeout = 5000;
-        [ObservableProperty]
-        private int _interval = 500;
-        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
         private string _name = string.Empty;
+
         new public string Description =>
-            $"変数:{Name} / モデル:{System.IO.Path.GetFileName(ModelPath)} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+            $"変数:{Name} / モード:{AIDetectMode} / モデル:{System.IO.Path.GetFileName(ModelPath)} / 閾値:C{ConfThreshold}/I{IoUThreshold}";
+
         public SetVariableAIItem() { }
         public SetVariableAIItem(SetVariableAIItem? item = null) : base(item)
         {
@@ -741,12 +785,10 @@ namespace MacroPanels.List.Class
             {
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
-                AIMode = item.AIMode;
+                AIDetectMode = item.AIDetectMode;
                 ModelPath = item.ModelPath;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
-                Timeout = item.Timeout;
-                Interval = item.Interval;
                 Name = item.Name;
             }
         }
@@ -808,19 +850,65 @@ namespace MacroPanels.List.Class
         private string _windowClassName = string.Empty;
 
         new public string Description =>
-            $"対象：{(string.IsNullOrEmpty(_windowTitle) && string.IsNullOrEmpty(_windowClassName) ? "全画面" : $"{_windowTitle}[{_windowClassName}]")} / 保存先:{(string.IsNullOrEmpty(_saveDirectory) ? "(./Screenshots)" : _saveDirectory)}";
+            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "全画面" : $"{WindowTitle}[{WindowClassName}]")} / 保存先:{(string.IsNullOrEmpty(SaveDirectory) ? "(./Screenshots)" : SaveDirectory)}";
 
         public ScreenshotItem() { }
         public ScreenshotItem(ScreenshotItem? item = null) : base(item)
         {
             if (item != null)
             {
-                _saveDirectory = item._saveDirectory;
-                _windowTitle = item._windowTitle;
-                _windowClassName = item._windowClassName;
+                SaveDirectory = item.SaveDirectory;
+                WindowTitle = item.WindowTitle;
+                WindowClassName = item.WindowClassName;
             }
         }
 
         public new ICommandListItem Clone() => new ScreenshotItem(this);
+    }
+
+    [SimpleCommandBinding(typeof(ClickImageAICommand), typeof(IClickImageAICommandSettings))]
+    public partial class ClickImageAIItem : CommandListItem, IClickImageAIItem, IClickImageAICommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowClassName = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _modelPath = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private int _classID = 0;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private double _confThreshold = 0.5;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private double _ioUThreshold = 0.25;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+
+        new public string Description =>
+            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / モデル:{System.IO.Path.GetFileName(ModelPath)} / クラスID:{ClassID} / 閾値:{ConfThreshold} / ボタン:{Button}";
+
+        public ClickImageAIItem() { }
+        public ClickImageAIItem(ClickImageAIItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                WindowTitle = item.WindowTitle;
+                WindowClassName = item.WindowClassName;
+                ModelPath = item.ModelPath;
+                ClassID = item.ClassID;
+                ConfThreshold = item.ConfThreshold;
+                IoUThreshold = item.IoUThreshold;
+                Button = item.Button;
+            }
+        }
+
+        public new ICommandListItem Clone() => new ClickImageAIItem(this);
     }
 }

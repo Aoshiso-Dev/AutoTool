@@ -84,10 +84,28 @@ namespace MacroPanels.Command.Class
         public string WindowClassName { get; set; } = string.Empty;
         public double ConfThreshold { get; set; } = 0.5; // デフォルト値を設定
         public double IoUThreshold { get; set; } = 0.25;
-        public int Timeout { get; set; } = 5000;
-        public int Interval { get; set; } = 500;
         
         // バリデーション追加
+        public void Validate()
+        {
+            if (string.IsNullOrEmpty(ModelPath))
+                throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
+            if (ConfThreshold < 0 || ConfThreshold > 1)
+                throw new ArgumentOutOfRangeException(nameof(ConfThreshold), "信頼度閾値は0-1の範囲である必要があります");
+            if (IoUThreshold < 0 || IoUThreshold > 1)
+                throw new ArgumentOutOfRangeException(nameof(IoUThreshold), "IoU閾値は0-1の範囲である必要があります");
+        }
+    }
+
+    public class AIImageNotDetectCommandSettings : ICommandSettings, IIfImageNotExistAISettings
+    {
+        public string ModelPath { get; set; } = string.Empty;
+        public int ClassID { get; set; } = 0;
+        public string WindowTitle { get; set; } = string.Empty;
+        public string WindowClassName { get; set; } = string.Empty;
+        public double ConfThreshold { get; set; } = 0.5;
+        public double IoUThreshold { get; set; } = 0.25;
+        
         public void Validate()
         {
             if (string.IsNullOrEmpty(ModelPath))
@@ -131,13 +149,11 @@ namespace MacroPanels.Command.Class
     {
         public string Name { get; set; } = string.Empty;
         public string ModelPath { get; set; } = string.Empty;
-        public string AIMode { get; set; } = string.Empty;
+        public string AIDetectMode { get; set; } = string.Empty;
         public string WindowTitle { get; set; } = string.Empty;
         public string WindowClassName { get; set; } = string.Empty;
         public double ConfThreshold { get; set; } = 0.5;
         public double IoUThreshold { get; set; } = 0.25;
-        public int Timeout { get; set; } = 5000;
-        public int Interval { get; set; } = 500;
         
         // バリデーション追加
         public void Validate()
@@ -146,6 +162,35 @@ namespace MacroPanels.Command.Class
                 throw new ArgumentException("変数名は必須です", nameof(Name));
             if (string.IsNullOrEmpty(ModelPath))
                 throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
+        }
+    }
+
+    public class IfVariableCommandSettings : ICommandSettings, IIfVariableCommandSettings
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Operator { get; set; } = "==";
+        public string Value { get; set; } = string.Empty;
+    }
+
+    public class ClickImageAICommandSettings : ICommandSettings, IClickImageAICommandSettings
+    {
+        public string ModelPath { get; set; } = string.Empty;
+        public int ClassID { get; set; } = 0;
+        public string WindowTitle { get; set; } = string.Empty;
+        public string WindowClassName { get; set; } = string.Empty;
+        public double ConfThreshold { get; set; } = 0.5;
+        public double IoUThreshold { get; set; } = 0.25;
+        public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
+        
+        // バリデーション追加
+        public void Validate()
+        {
+            if (string.IsNullOrEmpty(ModelPath))
+                throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
+            if (ConfThreshold < 0 || ConfThreshold > 1)
+                throw new ArgumentOutOfRangeException(nameof(ConfThreshold), "信頼度閾値は0-1の範囲である必要があります");
+            if (IoUThreshold < 0 || IoUThreshold > 1)
+                throw new ArgumentOutOfRangeException(nameof(IoUThreshold), "IoU閾値は0-1の範囲である必要があります");
         }
     }
 }

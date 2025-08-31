@@ -75,13 +75,20 @@ namespace Command.Interface
     public interface IIfImageExistAISettings : ICommandSettings
     {
         string ModelPath { get; set; } // 学習済みモデルのファイルパス
-        string NamesFilePath { get; set; } // 検出したいラベルが書かれたファイルパス
-        string TargetLabel { get; set; } // 検出したいラベル
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
-        int Timeout { get; set; }
-        int Interval { get; set; }
+        int ClassID { get; set; }
+    }
+
+    public interface IIfImageNotExistAISettings : ICommandSettings
+    {
+        string ModelPath { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        double ConfThreshold { get; set; }
+        double IoUThreshold { get; set; }
+        int ClassID { get; set; }
     }
 }

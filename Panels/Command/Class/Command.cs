@@ -494,9 +494,8 @@ namespace MacroPanels.Command.Class
 
             YoloWin.Init(Settings.ModelPath, 640, true);
 
-            var stopwatch = Stopwatch.StartNew();
-
-            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle).Detections;
+            // AI検出は即座に実行し、ループやタイムアウトは行わない
+            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle, (float)Settings.ConfThreshold, (float)Settings.IoUThreshold).Detections;
 
             if (det.Count > 0)
             {
@@ -504,8 +503,7 @@ namespace MacroPanels.Command.Class
 
                 if (best.ClassId == Settings.ClassID)
                 {
-                    OnDoingCommand?.Invoke(this, $"画像が見つかりました。({best.Rect.X}, {best.Rect.Y})");
-
+                    OnDoingCommand?.Invoke(this, $"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) ClassId: {best.ClassId}");
                     return await ExecuteChildrenAsync(cancellationToken);
                 }
             }
@@ -515,21 +513,44 @@ namespace MacroPanels.Command.Class
                 return false;
             }
 
-
             OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
-
             return true;
         }
     }
 
-    public class IfImageNotExistAICommand : BaseCommand, ICommand, IIfCommand, IIfImageExistAICommand
+    public class IfImageNotExistAICommand : BaseCommand, ICommand, IIfCommand, IIfImageNotExistAICommand
     {
-        new public IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings;
+        new public IIfImageNotExistAISettings Settings => (IIfImageNotExistAISettings)base.Settings;
         public IfImageNotExistAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
         {
         }
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
+            if (Children == null || !Children.Any())
+            {
+                throw new Exception("If内に要素がありません。");
+            }
+
+            YoloWin.Init(Settings.ModelPath, 640, true);
+
+            // AI検出は即座に実行し、ループやタイムアウトは行わない
+            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle, (float)Settings.ConfThreshold, (float)Settings.IoUThreshold).Detections;
+
+            // 指定クラスIDが検出されなかった場合に子コマンド実行
+            var targetDetections = det.Where(d => d.ClassId == Settings.ClassID).ToList();
+
+            if (targetDetections.Count == 0)
+            {
+                OnDoingCommand?.Invoke(this, $"クラスID {Settings.ClassID} の画像が見つかりませんでした。");
+                return await ExecuteChildrenAsync(cancellationToken);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return false;
+            }
+
+            OnDoingCommand?.Invoke(this, $"クラスID {Settings.ClassID} の画像が見つかりました。");
             return true;
         }
     }
@@ -607,7 +628,7 @@ namespace MacroPanels.Command.Class
 
             var stopwatch = Stopwatch.StartNew();
 
-            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle).Detections;
+            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle, (float)Settings.ConfThreshold, (float)Settings.IoUThreshold).Detections;
 
             if(det.Count == 0)
             {
@@ -616,7 +637,7 @@ namespace MacroPanels.Command.Class
             }
             else
             {
-                switch (Settings.AIMode)
+                switch (Settings.AIDetectMode)
                 {
                     case "Class":
                         // 最高スコアのものをセット
@@ -630,7 +651,7 @@ namespace MacroPanels.Command.Class
                         OnDoingCommand?.Invoke(this, $"画像が{det.Count}個見つかりました。{Settings.Name}に{det.Count}をセットしました。");
                         break;
                     default:
-                        throw new Exception($"不明なモードです: {Settings.AIMode}");
+                        throw new Exception($"不明なモードです: {Settings.AIDetectMode}");
                 }
             }
 
@@ -731,6 +752,60 @@ namespace MacroPanels.Command.Class
                 OnDoingCommand?.Invoke(this, $"スクリーンショットの保存に失敗しました: {ex.Message}");
                 return false;
             }
+        }
+    }
+
+    public class ClickImageAICommand : BaseCommand, ICommand, IClickImageAICommand
+    {
+        new public IClickImageAICommandSettings Settings => (IClickImageAICommandSettings)base.Settings;
+        public ClickImageAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            YoloWin.Init(Settings.ModelPath, 640, true);
+
+            // AI検出を実行
+            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle, (float)Settings.ConfThreshold, (float)Settings.IoUThreshold).Detections;
+
+            // 指定クラスIDが検出された場合にクリック
+            var targetDetections = det.Where(d => d.ClassId == Settings.ClassID).ToList();
+
+            if (targetDetections.Count > 0)
+            {
+                // 最も信頼度の高い検出結果を選択
+                var best = targetDetections.OrderByDescending(d => d.Score).First();
+                
+                // 検出領域の中心座標を計算
+                int centerX = (int)(best.Rect.X + best.Rect.Width / 2);
+                int centerY = (int)(best.Rect.Y + best.Rect.Height / 2);
+
+                // マウスクリックを実行
+                switch (Settings.Button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await Task.Run(() => MouseHelper.Input.Click(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName));
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await Task.Run(() => MouseHelper.Input.RightClick(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName));
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await Task.Run(() => MouseHelper.Input.MiddleClick(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName));
+                        break;
+                    default:
+                        throw new Exception("マウスボタンが不正です。");
+                }
+
+                OnDoingCommand?.Invoke(this, $"AI画像クリックが完了しました。({centerX}, {centerY}) ClassId: {best.ClassId}, Score: {best.Score:F2}");
+                return true;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return false;
+            }
+
+            OnDoingCommand?.Invoke(this, $"クラスID {Settings.ClassID} の画像が見つかりませんでした。");
+            return false;
         }
     }
 }

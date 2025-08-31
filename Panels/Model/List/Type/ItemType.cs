@@ -11,6 +11,7 @@ namespace MacroPanels.Model.List.Type
     {
         public static readonly string Click = "Click";
         public static readonly string Click_Image = "Click_Image";
+        public static readonly string Click_Image_AI = "Click_Image_AI";
         public static readonly string Hotkey = "Hotkey";
         public static readonly string Wait = "Wait";
         public static readonly string Wait_Image = "Wait_Image";
@@ -34,6 +35,7 @@ namespace MacroPanels.Model.List.Type
             {
                 Click,
                 Click_Image,
+                Click_Image_AI,
                 Hotkey,
                 Wait,
                 Wait_Image,

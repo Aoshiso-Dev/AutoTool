@@ -135,6 +135,17 @@ namespace MacroPanels.Model.List.Interface
         double IoUThreshold { get; set; }
     }
 
+    public interface IClickImageAIItem : ICommandListItem
+    {
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        string ModelPath { get; set; }
+        int ClassID { get; set; }
+        double ConfThreshold { get; set; }
+        double IoUThreshold { get; set; }
+        System.Windows.Input.MouseButton Button { get; set; }
+    }
+
     public interface IExecuteItem : ICommandListItem
     {
         public string ProgramPath { get; set; }
@@ -152,7 +163,7 @@ namespace MacroPanels.Model.List.Interface
     public interface ISetVariableAIItem : ICommandListItem
     {
         string WindowTitle { get; set; }
-        string AIMode { get; set; }
+        string AIDetectMode { get; set; }
         string WindowClassName { get; set; }
         string ModelPath { get; set; }
         double ConfThreshold { get; set; }

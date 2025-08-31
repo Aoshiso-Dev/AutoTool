@@ -119,6 +119,7 @@ namespace MacroPanels.ViewModel
             {
                 nameof(ItemType.Click) => new ClickItem(),
                 nameof(ItemType.Click_Image) => new ClickImageItem(),
+                nameof(ItemType.Click_Image_AI) => new ClickImageAIItem(),
                 nameof(ItemType.Hotkey) => new HotkeyItem(),
                 nameof(ItemType.Wait) => new WaitItem(),
                 nameof(ItemType.Wait_Image) => new WaitImageItem(),

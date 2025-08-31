@@ -79,6 +79,7 @@
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsWaitImageItem"/>
                                 <Binding Path="IsClickImageItem"/>
+                                <Binding Path="IsClickImageAIItem"/>
                                 <!--<Binding Path="IsClickItem"/>-->
                                 <Binding Path="IsHotkeyItem"/>
                                 <Binding Path="IsIfImageExistItem"/>
@@ -145,6 +146,7 @@
                         <Button Content="参照" Command="{Binding BrowseModelCommand}"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsClickImageAIItem"/>
                                 <Binding Path="IsIfImageExistAIItem"/>
                                 <Binding Path="IsIfImageNotExistAIItem"/>
                                 <Binding Path="IsSetVariableAIItem"/>
@@ -158,16 +160,47 @@
                         <TextBox Text="{Binding ClassID, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsClickImageAIItem"/>
                                 <Binding Path="IsIfImageExistAIItem"/>
                                 <Binding Path="IsIfImageNotExistAIItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
-                    
+
+                    <!-- 信頼度閾値の設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="信頼度閾値:"/>
+                        <Slider Value="{Binding ConfThreshold, UpdateSourceTrigger=PropertyChanged}" Minimum="0.01" Maximum="1.00" SmallChange="0.01" LargeChange="0.1" TickFrequency="0.01" IsSnapToTickEnabled="True" />
+                        <TextBox Text="{Binding ConfThreshold, StringFormat=F2}" IsReadOnly="True" Width="50"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsClickImageAIItem"/>
+                                <Binding Path="IsIfImageExistAIItem"/>
+                                <Binding Path="IsIfImageNotExistAIItem"/>
+                                <Binding Path="IsSetVariableAIItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+
+                    <!-- IoU閾値の設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="IoU閾値:"/>
+                        <Slider Value="{Binding IoUThreshold, UpdateSourceTrigger=PropertyChanged}" Minimum="0.01" Maximum="1.00" SmallChange="0.01" LargeChange="0.1" TickFrequency="0.01" IsSnapToTickEnabled="True" />
+                        <TextBox Text="{Binding IoUThreshold, StringFormat=F2}" IsReadOnly="True" Width="50"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsClickImageAIItem"/>
+                                <Binding Path="IsIfImageExistAIItem"/>
+                                <Binding Path="IsIfImageNotExistAIItem"/>
+                                <Binding Path="IsSetVariableAIItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
+
                     <!-- モードの設定 -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="モード:"/>
-                        <ComboBox ItemsSource="{Binding AIModes, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedAIMode}"/>
+                        <ComboBox ItemsSource="{Binding AIDetectModes, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedAIDetectMode}"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsSetVariableAIItem"/>
@@ -182,6 +215,7 @@
                         <TextBlock Text="ミリ秒"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsClickImageAIItem"/>
                                 <Binding Path="IsWaitImageItem"/>
                                 <Binding Path="IsClickImageItem"/>
                             </MultiBinding>
@@ -195,6 +229,7 @@
                         <TextBlock Text="ミリ秒"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsClickImageAIItem"/>
                                 <Binding Path="IsWaitImageItem"/>
                                 <Binding Path="IsClickImageItem"/>
                             </MultiBinding>
@@ -229,6 +264,7 @@
                         <ComboBox ItemsSource="{Binding MouseButtons, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedMouseButton}"/>
                         <StackPanel.Visibility>
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsClickImageAIItem"/>
                                 <Binding Path="IsClickImageItem"/>
                                 <Binding Path="IsClickItem"/>
                             </MultiBinding>

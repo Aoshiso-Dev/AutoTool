@@ -38,6 +38,8 @@ namespace MacroPanels.Command.Interface
     public interface IEndLoopCommand : ICommand { new ILoopEndCommandSettings Settings { get; } }
     public interface ILoopBreakCommand : ICommand { }
     public interface IIfImageExistAICommand : ICommand, IIfCommand { new IIfImageExistAISettings Settings { get; } }
+    public interface IIfImageNotExistAICommand : ICommand, IIfCommand { new IIfImageNotExistAISettings Settings { get; } } // Use proper interface
+    public interface IClickImageAICommand : ICommand { new IClickImageAICommandSettings Settings { get; } }
     public interface IExecuteCommand : ICommand { new IExecuteCommandSettings Settings { get; } }
     public interface ISetVariableCommand : ICommand { new ISetVariableCommandSettings Settings { get; } }
     public interface ISetVariableAICommand : ICommand { new ISetVariableAICommandSettings Settings { get; } }

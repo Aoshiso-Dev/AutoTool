@@ -14,7 +14,7 @@ namespace AutoTool
         public static Log Logger { get; private set; } = new Log();
 
         protected override void OnStartup(StartupEventArgs e)
-        {
+      {
             base.OnStartup(e);
 
             // UIスレッドで発生した未処理の例外をキャッチ
