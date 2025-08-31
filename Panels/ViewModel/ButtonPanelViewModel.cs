@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using MacroPanels.Message;
 using System.Collections.ObjectModel;
-using MacroPanels.Model.List.Type;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
 using System.Security.Cryptography.X509Certificates;
 using MacroPanels.List.Class;
+using MacroPanels.Model.CommandDefinition;
 
 namespace MacroPanels.ViewModel
 {
@@ -29,7 +29,10 @@ namespace MacroPanels.ViewModel
 
         public ButtonPanelViewModel()
         {
-            foreach(var type in ItemType.GetTypes())
+            // CommandRegistryを初期化
+            CommandRegistry.Initialize();
+            
+            foreach(var type in CommandRegistry.GetAllTypeNames())
             {
                 ItemTypes.Add(type);
             }

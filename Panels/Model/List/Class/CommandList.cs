@@ -12,7 +12,6 @@ using MacroPanels.List.Class;
 using System.Diagnostics;
 using MacroPanels.Model.List.Interface;
 using MacroPanels.Model.CommandDefinition;
-using MacroPanels.Model.List.Type;
 using System.IO;
 
 namespace MacroPanels.List.Class
@@ -24,14 +23,8 @@ namespace MacroPanels.List.Class
 
         public ICommandListItem this[int index]
         {
-            get
-            {
-                return Items[index];
-            }
-            set
-            {
-                Items[index] = value;
-            }
+            get => Items[index];
+            set => Items[index] = value;
         }
 
         public void Add(ICommandListItem item)
@@ -136,38 +129,16 @@ namespace MacroPanels.List.Class
 
             foreach (var item in Items)
             {
-                if (item.ItemType == ItemType.Loop_End)
-                {
-                    nestLevel--;
-                }
-                if(item.ItemType == ItemType.IF_End)
+                // ネストレベルを減らすコマンド（終了系）
+                if (CommandRegistry.IsEndCommand(item.ItemType))
                 {
                     nestLevel--;
                 }
 
                 item.NestLevel = nestLevel;
 
-                if (item.ItemType == ItemType.Loop)
-                {
-                    nestLevel++;
-                }
-                if (item.ItemType == ItemType.IF_ImageExist)
-                {
-                    nestLevel++;
-                }
-                if (item.ItemType == ItemType.IF_ImageNotExist)
-                {
-                    nestLevel++;
-                }
-                if (item.ItemType == ItemType.IF_ImageExist_AI)
-                {
-                    nestLevel++;
-                }
-                if (item.ItemType == ItemType.IF_ImageNotExist_AI)
-                {
-                    nestLevel++;
-                }
-                if(item.ItemType == ItemType.IF_Variable)
+                // ネストレベルを増やすコマンド（開始系）
+                if (CommandRegistry.IsLoopCommand(item.ItemType) || CommandRegistry.IsIfCommand(item.ItemType))
                 {
                     nestLevel++;
                 }
@@ -176,8 +147,8 @@ namespace MacroPanels.List.Class
 
         public void PairIfItems()
         {
-            var ifItems = Items.OfType<IIfItem>().Where(x => ItemType.IsIfItem(x.ItemType)).OrderBy(x => x.LineNumber).ToList();
-            var endIfItems = Items.OfType<IIfEndItem>().Where(x => x.ItemType == ItemType.IF_End).OrderBy(x => x.LineNumber).ToList();
+            var ifItems = Items.OfType<IIfItem>().Where(x => CommandRegistry.IsIfCommand(x.ItemType)).OrderBy(x => x.LineNumber).ToList();
+            var endIfItems = Items.OfType<IIfEndItem>().Where(x => x.ItemType == CommandRegistry.CommandTypes.IfEnd).OrderBy(x => x.LineNumber).ToList();
 
             foreach (var ifItem in ifItems)
             {
@@ -205,8 +176,8 @@ namespace MacroPanels.List.Class
 
         public void PairLoopItems()
         {
-            var loopItems = Items.OfType<ILoopItem>().Where(x => ItemType.IsLoopItem(x.ItemType)).OrderBy(x => x.LineNumber).ToList();
-            var endLoopItems = Items.OfType<ILoopEndItem>().Where(x => x.ItemType == ItemType.Loop_End).OrderBy(x => x.LineNumber).ToList();
+            var loopItems = Items.OfType<ILoopItem>().Where(x => CommandRegistry.IsLoopCommand(x.ItemType)).OrderBy(x => x.LineNumber).ToList();
+            var endLoopItems = Items.OfType<ILoopEndItem>().Where(x => x.ItemType == CommandRegistry.CommandTypes.LoopEnd).OrderBy(x => x.LineNumber).ToList();
 
             foreach (var loopItem in loopItems)
             {
