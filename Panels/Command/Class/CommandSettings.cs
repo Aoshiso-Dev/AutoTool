@@ -131,7 +131,7 @@ namespace MacroPanels.Command.Class
     {
         public string Name { get; set; } = string.Empty;
         public string ModelPath { get; set; } = string.Empty;
-        public int ClassID { get; set; } = 0;
+        public string AIMode { get; set; } = string.Empty;
         public string WindowTitle { get; set; } = string.Empty;
         public string WindowClassName { get; set; } = string.Empty;
         public double ConfThreshold { get; set; } = 0.5;

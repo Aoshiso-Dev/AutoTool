@@ -83,8 +83,6 @@ namespace MacroPanels.Model.List.Interface
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
         public Color? SearchColor { get; set; }
-        public int Timeout { get; set; }
-        public int Interval { get; set; }
         public string WindowTitle { get; set; }
         public string WindowClassName { get; set; }
     }
@@ -94,8 +92,6 @@ namespace MacroPanels.Model.List.Interface
         public string ImagePath { get; set; }
         public double Threshold { get; set; }
         public Color? SearchColor { get; set; }
-        public int Timeout { get; set; }
-        public int Interval { get; set; }
         public string WindowTitle { get; set; }
         public string WindowClassName { get; set; }
     }
@@ -128,8 +124,6 @@ namespace MacroPanels.Model.List.Interface
         int ClassID { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
-        int Timeout { get; set; }
-        int Interval { get; set; }
     }
     public interface IIfImageNotExistAIItem : ICommandListItem
     {
@@ -139,8 +133,6 @@ namespace MacroPanels.Model.List.Interface
         int ClassID { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
-        int Timeout { get; set; }
-        int Interval { get; set; }
     }
 
     public interface IExecuteItem : ICommandListItem
@@ -160,6 +152,7 @@ namespace MacroPanels.Model.List.Interface
     public interface ISetVariableAIItem : ICommandListItem
     {
         string WindowTitle { get; set; }
+        string AIMode { get; set; }
         string WindowClassName { get; set; }
         string ModelPath { get; set; }
         double ConfThreshold { get; set; }

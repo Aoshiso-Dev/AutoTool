@@ -42,6 +42,7 @@ namespace MacroPanels.ViewModel.Helpers
         // AI関連
         public MultiInterfacePropertyAccessor<string> ModelPath { get; }
         public MultiInterfacePropertyAccessor<int> ClassID { get; }
+        public PropertyAccessor<SetVariableAIItem, string> Mode { get; }
 
         // プログラム実行関連
         public PropertyAccessor<ExecuteItem, string> ProgramPath { get; }
@@ -105,19 +106,11 @@ namespace MacroPanels.ViewModel.Helpers
             // タイミング関連の初期化
             Timeout = new MultiInterfacePropertyAccessor<int>(5000)
                 .AddInterface<IWaitImageItem>(x => x.Timeout)
-                .AddInterface<IClickImageItem>(x => x.Timeout)
-                .AddInterface<IIfImageExistItem>(x => x.Timeout)
-                .AddInterface<IIfImageNotExistItem>(x => x.Timeout)
-                .AddInterface<IIfImageExistAIItem>(x => x.Timeout)
-                .AddInterface<IIfImageNotExistAIItem>(x => x.Timeout);
+                .AddInterface<IClickImageItem>(x => x.Timeout);
 
             Interval = new MultiInterfacePropertyAccessor<int>(500)
                 .AddInterface<IWaitImageItem>(x => x.Interval)
-                .AddInterface<IClickImageItem>(x => x.Interval)
-                .AddInterface<IIfImageExistItem>(x => x.Interval)
-                .AddInterface<IIfImageNotExistItem>(x => x.Interval)
-                .AddInterface<IIfImageExistAIItem>(x => x.Interval)
-                .AddInterface<IIfImageNotExistAIItem>(x => x.Interval);
+                .AddInterface<IClickImageItem>(x => x.Interval);
 
             // マウス・キーボード関連の初期化
             MouseButton = new MultiInterfacePropertyAccessor<MouseButton>(System.Windows.Input.MouseButton.Left)
@@ -146,6 +139,8 @@ namespace MacroPanels.ViewModel.Helpers
             ClassID = new MultiInterfacePropertyAccessor<int>(0)
                 .AddInterface<IfImageExistAIItem>(x => x.ClassID)
                 .AddInterface<IfImageNotExistAIItem>(x => x.ClassID);
+
+            Mode = new PropertyAccessor<SetVariableAIItem, string>(x => x.AIMode, "Class");
 
             // プログラム実行関連の初期化
             ProgramPath = new PropertyAccessor<ExecuteItem, string>(x => x.ProgramPath, string.Empty);

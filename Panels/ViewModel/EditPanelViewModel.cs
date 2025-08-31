@@ -284,6 +284,16 @@ namespace MacroPanels.ViewModel
             }
         }
 
+        public string AIMode
+        {
+            get => _propertyManager.Mode.GetValue(Item);
+            set
+            {
+                _propertyManager.Mode.SetValue(Item, value);
+                UpdateProperties();
+            }
+        }
+
         // プログラム実行関連
         public string ProgramPath
         {
@@ -430,6 +440,19 @@ namespace MacroPanels.ViewModel
                 UpdateProperties();
             }
         }
+
+        [ObservableProperty]
+        private ObservableCollection<string> _aIModes = new();
+
+        public string SelectedAIMode
+        {
+            get => AIMode;
+            set
+            {
+                AIMode = value;
+                UpdateProperties();
+            }
+        }
         #endregion
 
 
@@ -452,6 +475,8 @@ namespace MacroPanels.ViewModel
             }
 
             InitializeOperators();
+
+            InitializeAIModes();
         }
 
         private void InitializeOperators()
@@ -466,6 +491,18 @@ namespace MacroPanels.ViewModel
             foreach (var op in operators)
             {
                 Operators.Add(op);
+            }
+        }
+
+        private void InitializeAIModes()
+        {
+            var aiModes = new[]
+            {
+                "Class", "Count"
+            };
+            foreach (var mode in aiModes)
+            {
+                AIModes.Add(mode);
             }
         }
 
@@ -543,7 +580,8 @@ namespace MacroPanels.ViewModel
                     nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue),
                     nameof(ModelPath), nameof(ClassID), nameof(ProgramPath), nameof(Arguments),
                     nameof(WorkingDirectory), nameof(WaitForExit), nameof(SaveDirectory),
-                    nameof(SearchColorBrush), nameof(SearchColorText), nameof(SearchColorTextColor)
+                    nameof(SearchColorBrush), nameof(SearchColorText), nameof(SearchColorTextColor),
+                    nameof(AIMode), nameof(SelectedAIMode)
                 };
 
                 foreach (var property in propertiesToUpdate)

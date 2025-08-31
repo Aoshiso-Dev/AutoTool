@@ -29,7 +29,7 @@ public static class YoloWin
     /// <summary>
     /// 指定タイトルのウィンドウをキャプチャして検出します。
     /// </summary>
-    public static DetectionResult DetectFromWindowTitle(string windowTitle, float confTh = 0.25f, float iouTh = 0.45f, bool draw = true)
+    public static DetectionResult DetectFromWindowTitle(string windowTitle, float confTh = 0.45f, float iouTh = 0.15f, bool draw = true)
     {
         EnsureReady();
         DpiUtil.TryEnablePerMonitorDpi();

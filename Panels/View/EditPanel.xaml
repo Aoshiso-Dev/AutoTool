@@ -163,6 +163,17 @@
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
+                    
+                    <!-- モードの設定 -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="モード:"/>
+                        <ComboBox ItemsSource="{Binding AIModes, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedAIMode}"/>
+                        <StackPanel.Visibility>
+                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                <Binding Path="IsSetVariableAIItem"/>
+                            </MultiBinding>
+                        </StackPanel.Visibility>
+                    </StackPanel>
 
                     <!-- タイムアウトの設定 -->
                     <StackPanel Orientation="Horizontal">
@@ -173,10 +184,6 @@
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsWaitImageItem"/>
                                 <Binding Path="IsClickImageItem"/>
-                                <Binding Path="IsIfImageExistItem"/>
-                                <Binding Path="IsIfImageNotExistItem"/>
-                                <Binding Path="IsIfImageExistAIItem"/>
-                                <Binding Path="IsIfImageNotExistAIItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>
@@ -190,10 +197,6 @@
                             <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                 <Binding Path="IsWaitImageItem"/>
                                 <Binding Path="IsClickImageItem"/>
-                                <Binding Path="IsIfImageExistItem"/>
-                                <Binding Path="IsIfImageNotExistItem"/>
-                                <Binding Path="IsIfImageExistAIItem"/>
-                                <Binding Path="IsIfImageNotExistAIItem"/>
                             </MultiBinding>
                         </StackPanel.Visibility>
                     </StackPanel>

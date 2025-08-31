@@ -293,7 +293,7 @@ namespace MacroPanels.List.Class
         }
     }
 
-    public partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IWaitImageCommandSettings
+    public partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IIfWaitImageCommandSettings
     {
         new public bool IsEnable
         {
@@ -326,12 +326,6 @@ namespace MacroPanels.List.Class
         private Color? _searchColor = null;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        private int _timeout = 5000;
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(Description))]
-        private int _interval = 500;
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -341,7 +335,7 @@ namespace MacroPanels.List.Class
         private ICommandListItem? _pair = null;
 
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold}";
 
         public IfImageExistItem() { }
 
@@ -352,8 +346,6 @@ namespace MacroPanels.List.Class
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
                 SearchColor = item.SearchColor;
-                Timeout = item.Timeout;
-                Interval = item.Interval;
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
                 Pair = item.Pair;
@@ -366,7 +358,7 @@ namespace MacroPanels.List.Class
         }
     }
 
-    public partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IWaitImageCommandSettings
+    public partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IIfWaitImageCommandSettings
     {
         new public bool IsEnable
         {
@@ -399,12 +391,6 @@ namespace MacroPanels.List.Class
         private Color? _searchColor = null;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        private int _timeout = 5000;
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(Description))]
-        private int _interval = 500;
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -413,7 +399,7 @@ namespace MacroPanels.List.Class
         [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold}";
 
         public IfImageNotExistItem() { }
 
@@ -424,8 +410,6 @@ namespace MacroPanels.List.Class
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
                 SearchColor = item.SearchColor;
-                Timeout = item.Timeout;
-                Interval = item.Interval;
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
                 Pair = item.Pair;
@@ -601,14 +585,10 @@ namespace MacroPanels.List.Class
         [ObservableProperty]
         private string[] _targetLabels = Array.Empty<string>();
         [ObservableProperty]
-        private int _timeout = 5000;
-        [ObservableProperty]
-        private int _interval = 500;
-        [ObservableProperty]
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-             $"{LineNumber}->{Pair?.LineNumber} 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+             $"{LineNumber}->{Pair?.LineNumber} 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
 
         public IfImageExistAIItem() { }
 
@@ -622,8 +602,6 @@ namespace MacroPanels.List.Class
                 ClassID = item.ClassID;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
-                Timeout = item.Timeout;
-                Interval = item.Interval;
                 Pair = item.Pair;
             }
         }
@@ -649,14 +627,10 @@ namespace MacroPanels.List.Class
         [ObservableProperty]
         private double _ioUThreshold = 0.25f;
         [ObservableProperty]
-        private int _timeout = 5000;
-        [ObservableProperty]
-        private int _interval = 500;
-        [ObservableProperty]
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
         public IfImageNotExistAIItem() { }
         public IfImageNotExistAIItem(IfImageNotExistAIItem? item = null) : base(item)
         {
@@ -668,8 +642,6 @@ namespace MacroPanels.List.Class
                 ClassID = item.ClassID;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
-                Timeout = item.Timeout;
-                Interval = item.Interval;
                 Pair = item.Pair;
             }
         }
@@ -745,13 +717,15 @@ namespace MacroPanels.List.Class
         [ObservableProperty]
         private string _windowTitle = string.Empty;
         [ObservableProperty]
+        private string _aIMode = string.Empty;
+        [ObservableProperty]
         private string _windowClassName = string.Empty;
         [ObservableProperty]
         private string _modelPath = string.Empty;
         [ObservableProperty]
         private double _confThreshold = 0.45f;
         [ObservableProperty]
-        private double _ioUThreshold = 0.25f;
+        private double _ioUThreshold = 0.15f;
         [ObservableProperty]
         private int _timeout = 5000;
         [ObservableProperty]
@@ -767,6 +741,7 @@ namespace MacroPanels.List.Class
             {
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
+                AIMode = item.AIMode;
                 ModelPath = item.ModelPath;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;

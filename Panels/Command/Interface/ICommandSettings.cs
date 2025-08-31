@@ -64,6 +64,15 @@ namespace MacroPanels.Command.Interface
         ICommand? Pair { get; set; }
     }
 
+    public interface IIfWaitImageCommandSettings : ICommandSettings
+    {
+        string ImagePath { get; set; }
+        double Threshold { get; set; }
+        Color? SearchColor { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+    }
+
     // Align to actual usage in Items/Commands (YOLO by ClassId)
     public interface IIfImageExistAISettings : ICommandSettings
     {
@@ -73,8 +82,6 @@ namespace MacroPanels.Command.Interface
         int ClassID { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
-        int Timeout { get; set; }
-        int Interval { get; set; }
     }
 
     public interface IExecuteCommandSettings : ICommandSettings
@@ -104,6 +111,7 @@ namespace MacroPanels.Command.Interface
     {
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
+        string AIMode { get; set; }
         string ModelPath { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }

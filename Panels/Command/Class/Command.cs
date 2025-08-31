@@ -496,31 +496,25 @@ namespace MacroPanels.Command.Class
 
             var stopwatch = Stopwatch.StartNew();
 
-            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
+            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle).Detections;
+
+            if (det.Count > 0)
             {
-                var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle).Detections;
+                var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
 
-                if (det.Count > 0)
+                if (best.ClassId == Settings.ClassID)
                 {
-                    var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
+                    OnDoingCommand?.Invoke(this, $"画像が見つかりました。({best.Rect.X}, {best.Rect.Y})");
 
-                    if (best.ClassId == Settings.ClassID)
-                    {
-                        OnDoingCommand?.Invoke(this, $"画像が見つかりました。({best.Rect.X}, {best.Rect.Y})");
-
-                        return await ExecuteChildrenAsync(cancellationToken);
-                    }
+                    return await ExecuteChildrenAsync(cancellationToken);
                 }
-
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
-
-                await Task.Delay(Settings.Interval, cancellationToken);
             }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return false;
+            }
+
 
             OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
 
@@ -622,9 +616,22 @@ namespace MacroPanels.Command.Class
             }
             else
             {
-                var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
-                VariableStore.Set(Settings.Name, best.ClassId.ToString());
-                OnDoingCommand?.Invoke(this, $"画像が見つかりました。{Settings.Name}に{best.ClassId}をセットしました。");
+                switch (Settings.AIMode)
+                {
+                    case "Class":
+                        // 最高スコアのものをセット
+                        var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
+                        VariableStore.Set(Settings.Name, best.ClassId.ToString());
+                        OnDoingCommand?.Invoke(this, $"画像が見つかりました。{Settings.Name}に{best.ClassId}をセットしました。");
+                        break;
+                    case "Count":
+                        // 検出された数をセット
+                        VariableStore.Set(Settings.Name, det.Count.ToString());
+                        OnDoingCommand?.Invoke(this, $"画像が{det.Count}個見つかりました。{Settings.Name}に{det.Count}をセットしました。");
+                        break;
+                    default:
+                        throw new Exception($"不明なモードです: {Settings.AIMode}");
+                }
             }
 
             return Task.FromResult(true);
