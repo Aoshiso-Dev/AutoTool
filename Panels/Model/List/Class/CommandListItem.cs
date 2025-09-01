@@ -106,7 +106,6 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(WaitImageCommand), typeof(IWaitImageCommandSettings))]
     [CommandDef.CommandDefinition("Wait_Image", typeof(WaitImageCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImageCommandSettings
     {
@@ -156,7 +155,6 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ClickImageCommand), typeof(IClickImageCommandSettings))]
     [CommandDef.CommandDefinition("Click_Image", typeof(ClickImageCommand), typeof(IClickImageCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickImageCommandSettings
     {
@@ -210,7 +208,6 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(HotkeyCommand), typeof(IHotkeyCommandSettings))]
     [CommandDef.CommandDefinition("Hotkey", typeof(HotkeyCommand), typeof(IHotkeyCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class HotkeyItem : CommandListItem, IHotkeyItem, IHotkeyCommandSettings
     {
@@ -271,7 +268,6 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ClickCommand), typeof(IClickCommandSettings))]
     [CommandDef.CommandDefinition("Click", typeof(ClickCommand), typeof(IClickCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class ClickItem : CommandListItem, IClickItem, IClickCommandSettings
     {
@@ -313,7 +309,6 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(WaitCommand), typeof(IWaitCommandSettings))]
     [CommandDef.CommandDefinition("Wait", typeof(WaitCommand), typeof(IWaitCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class WaitItem : CommandListItem, IWaitItem, IWaitCommandSettings
     {
@@ -470,7 +465,6 @@ namespace MacroPanels.List.Class
     }
 
 
-    [CommandDef.SimpleCommandBinding(typeof(IfEndCommand), typeof(ICommandSettings))]
     [CommandDef.CommandDefinition("IF_End", typeof(IfEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control)]
     public partial class IfEndItem : CommandListItem, IIfEndItem, ICommandSettings
     {
@@ -559,7 +553,6 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(LoopEndCommand), typeof(ICommandSettings))]
     [CommandDef.CommandDefinition("Loop_End", typeof(LoopEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control)]
     public partial class LoopEndItem : CommandListItem, ILoopEndItem, ICommandSettings
     {
@@ -605,7 +598,6 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(LoopBreakCommand), typeof(ICommandSettings))]
     [CommandDef.CommandDefinition("Loop_Break", typeof(LoopBreakCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control)]
     public partial class LoopBreakItem : CommandListItem, ILoopBreakItem, ICommandSettings
     {
@@ -743,7 +735,6 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ExecuteCommand), typeof(IExecuteCommandSettings))]
     [CommandDef.CommandDefinition("Execute", typeof(ExecuteCommand), typeof(IExecuteCommandSettings), CommandDef.CommandCategory.System)]
     public partial class ExecuteItem : CommandListItem, IExecuteItem, IExecuteCommandSettings
     {
@@ -778,7 +769,6 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(SetVariableCommand), typeof(ISetVariableCommandSettings))]
     [CommandDef.CommandDefinition("SetVariable", typeof(SetVariableCommand), typeof(ISetVariableCommandSettings), CommandDef.CommandCategory.Variable)]
     public partial class SetVariableItem : CommandListItem, ISetVariableItem, ISetVariableCommandSettings
     {
@@ -805,7 +795,6 @@ namespace MacroPanels.List.Class
         public new ICommandListItem Clone() => new SetVariableItem(this);
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(SetVariableAICommand), typeof(ISetVariableAICommandSettings))]
     [CommandDef.CommandDefinition("SetVariable_AI", typeof(SetVariableAICommand), typeof(ISetVariableAICommandSettings), CommandDef.CommandCategory.AI)]
     public partial class SetVariableAIItem : CommandListItem, ISetVariableAIItem, ISetVariableAICommandSettings
     {
@@ -891,7 +880,6 @@ namespace MacroPanels.List.Class
         public new ICommandListItem Clone() => new IfVariableItem(this);
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ScreenshotCommand), typeof(IScreenshotCommandSettings))]
     [CommandDef.CommandDefinition("Screenshot", typeof(ScreenshotCommand), typeof(IScreenshotCommandSettings), CommandDef.CommandCategory.System)]
     public partial class ScreenshotItem : CommandListItem, IScreenshotItem, IScreenshotCommandSettings
     {
@@ -924,7 +912,6 @@ namespace MacroPanels.List.Class
         public new ICommandListItem Clone() => new ScreenshotItem(this);
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ClickImageAICommand), typeof(IClickImageAICommandSettings))]
     [CommandDef.CommandDefinition("Click_Image_AI", typeof(ClickImageAICommand), typeof(IClickImageAICommandSettings), CommandDef.CommandCategory.AI)]
     public partial class ClickImageAIItem : CommandListItem, IClickImageAIItem, IClickImageAICommandSettings
     {

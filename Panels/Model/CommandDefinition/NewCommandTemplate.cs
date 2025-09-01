@@ -29,7 +29,6 @@ namespace MacroPanels.List.Class
     /// <summary>
     /// 新しいコマンドのアイテム
     /// </summary>
-    [SimpleCommandBinding(typeof(MyNewCommand), typeof(IMyNewCommandSettings))]
     [CommandDefinition("MyNewCommand", typeof(MyNewCommand), typeof(IMyNewCommandSettings), CommandCategory.Action)]
     public partial class MyNewCommandItem : CommandListItem, IMyNewCommandItem, IMyNewCommandSettings
     {

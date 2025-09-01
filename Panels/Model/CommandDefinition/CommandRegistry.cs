@@ -357,11 +357,10 @@ namespace MacroPanels.Model.CommandDefinition
                 try
                 {
                     var attr = type.GetCustomAttribute<CommandDefinitionAttribute>()!;
-                    var hasSimpleBinding = type.GetCustomAttribute<SimpleCommandBindingAttribute>() != null;
                     
                     System.Diagnostics.Debug.WriteLine($"CommandRegistry: Processing type {type.Name} with TypeName '{attr.TypeName}'");
                     
-                    // ファクトリメソッドを作成（効率化）
+                    // ファクトリ作成メソッドを作成（最適化済）
                     var factory = CreateOptimizedFactory(type);
                     
                     var commandInfo = new CommandInfo
@@ -377,7 +376,6 @@ namespace MacroPanels.Model.CommandDefinition
                     };
 
                     commands[attr.TypeName] = commandInfo;
-                    System.Diagnostics.Debug.WriteLine($"CommandRegistry: Successfully registered {attr.TypeName} -> {type.Name} (SimpleBinding: {hasSimpleBinding})");
                 }
                 catch (Exception ex)
                 {
@@ -632,26 +630,26 @@ namespace MacroPanels.Model.CommandDefinition
                 return false;
             }
 
-            // SimpleCommandBinding属性をチェック
-            var bindingAttr = info.ItemType.GetCustomAttribute<SimpleCommandBindingAttribute>();
-            if (bindingAttr == null)
+            // CommandDefinitionAttributeを使用してコマンドを作成
+            // 複雑なコマンド（If、Loop）は除外
+            if (info.IsIfCommand || info.IsLoopCommand)
             {
-                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: No SimpleCommandBinding attribute found for {info.ItemType.Name}");
+                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Skipping complex command type {info.ItemType.Name}");
                 return false;
             }
 
             try
             {
-                // 設定オブジェクトとしてアイテム自体を使用
-                command = (ICommand)Activator.CreateInstance(bindingAttr.CommandType, parent, item)!;
+                // 設定オブジェクトとしてアイテム自身を使用
+                command = (ICommand)Activator.CreateInstance(info.CommandType, parent, item)!;
                 command.LineNumber = item.LineNumber;
                 command.IsEnabled = item.IsEnable;
-                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Successfully created {bindingAttr.CommandType.Name}");
+                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Successfully created {info.CommandType.Name}");
                 return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Failed to create command {bindingAttr.CommandType.Name}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Failed to create command {info.CommandType.Name}: {ex.Message}");
                 return false;
             }
         }
