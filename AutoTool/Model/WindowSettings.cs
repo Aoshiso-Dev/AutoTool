@@ -23,6 +23,12 @@ namespace AutoTool.Model
         // その他のUI設定（将来の拡張用）
         public int SelectedTabIndex { get; set; } = 0;
 
+        // 最後に開いたファイルのパス
+        public string LastOpenedFilePath { get; set; } = string.Empty;
+        
+        // 起動時に前回のファイルを開くかどうか
+        public bool OpenLastFileOnStartup { get; set; } = true;
+
         private static readonly string SettingsDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
             "AutoTool");
@@ -39,6 +45,7 @@ namespace AutoTool.Model
                 if (!Directory.Exists(SettingsDirectory))
                 {
                     Directory.CreateDirectory(SettingsDirectory);
+                    System.Diagnostics.Debug.WriteLine($"設定ディレクトリを作成: {SettingsDirectory}");
                 }
 
                 var json = JsonSerializer.Serialize(this, new JsonSerializerOptions 
@@ -48,6 +55,7 @@ namespace AutoTool.Model
                 File.WriteAllText(SettingsFilePath, json);
                 
                 System.Diagnostics.Debug.WriteLine($"ウィンドウ設定を保存しました: {SettingsFilePath}");
+                System.Diagnostics.Debug.WriteLine($"保存された LastOpenedFilePath: '{LastOpenedFilePath}'");
             }
             catch (Exception ex)
             {
@@ -63,6 +71,8 @@ namespace AutoTool.Model
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"設定ファイルの読み込みを試行: {SettingsFilePath}");
+                
                 if (File.Exists(SettingsFilePath))
                 {
                     var json = File.ReadAllText(SettingsFilePath);
@@ -72,8 +82,13 @@ namespace AutoTool.Model
                         // 画面範囲外の場合は調整
                         ValidatePosition(settings);
                         System.Diagnostics.Debug.WriteLine($"ウィンドウ設定を読み込みました: {SettingsFilePath}");
+                        System.Diagnostics.Debug.WriteLine($"読み込まれた LastOpenedFilePath: '{settings.LastOpenedFilePath}'");
                         return settings;
                     }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("設定ファイルが存在しません");
                 }
             }
             catch (Exception ex)
@@ -152,6 +167,26 @@ namespace AutoTool.Model
             window.WindowState = WindowState;
             
             System.Diagnostics.Debug.WriteLine($"ウィンドウ設定を適用: Left={Left}, Top={Top}, Width={Width}, Height={Height}");
+        }
+
+        /// <summary>
+        /// 最後に開いたファイルのパスを更新
+        /// </summary>
+        public void UpdateLastOpenedFile(string filePath)
+        {
+            var oldPath = LastOpenedFilePath;
+            LastOpenedFilePath = filePath ?? string.Empty;
+            System.Diagnostics.Debug.WriteLine($"最後に開いたファイルを更新: '{oldPath}' -> '{LastOpenedFilePath}'");
+        }
+
+        /// <summary>
+        /// 最後に開いたファイルが存在するかチェック
+        /// </summary>
+        public bool IsLastOpenedFileValid()
+        {
+            var isValid = !string.IsNullOrEmpty(LastOpenedFilePath) && File.Exists(LastOpenedFilePath);
+            System.Diagnostics.Debug.WriteLine($"LastOpenedFile 有効性チェック: '{LastOpenedFilePath}' -> {isValid}");
+            return isValid;
         }
     }
 }

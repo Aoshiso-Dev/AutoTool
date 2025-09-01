@@ -6,6 +6,7 @@ using AutoTool.ViewModel;
 using AutoTool.Model;
 using static AutoTool.Model.FileManager;
 using System.Windows.Threading;
+using System.IO;
 
 namespace AutoTool
 {
@@ -20,6 +21,9 @@ namespace AutoTool
         // Undo/Redo管理
         [ObservableProperty]
         private CommandHistoryManager _commandHistory = new();
+
+        // ウィンドウ設定
+        private WindowSettings _windowSettings;
 
         public bool IsRunning
         {
@@ -76,8 +80,17 @@ namespace AutoTool
             get { return _fileManagers[SelectedTabIndex].CurrentFilePath; }
             set
             {
+                var oldValue = _fileManagers[SelectedTabIndex].CurrentFilePath;
                 _fileManagers[SelectedTabIndex].CurrentFilePath = value;
                 OnPropertyChanged(nameof(CurrentFilePath));
+                
+                // ファイルパスが変更されたときに設定を更新
+                if (!string.IsNullOrEmpty(value) && oldValue != value)
+                {
+                    _windowSettings.UpdateLastOpenedFile(value);
+                    _windowSettings.Save();
+                    System.Diagnostics.Debug.WriteLine($"最後に開いたファイルを設定に保存: {value}");
+                }
             }
         }
 
@@ -104,6 +117,9 @@ namespace AutoTool
 
         public MainWindowViewModel()
         {
+            // ウィンドウ設定を読み込み
+            _windowSettings = WindowSettings.Load();
+            
             MacroPanelViewModel = new MacroPanelViewModel();
 
             InitializeFileManager();
@@ -124,6 +140,101 @@ namespace AutoTool
                 }
             };
             timer.Start();
+        }
+
+        /// <summary>
+        /// ウィンドウ設定を取得
+        /// </summary>
+        public WindowSettings GetWindowSettings() => _windowSettings;
+
+        /// <summary>
+        /// デバッグ用：現在の設定状況を出力
+        /// </summary>
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void PrintDebugSettings()
+        {
+            System.Diagnostics.Debug.WriteLine("=== WindowSettings Debug Info ===");
+            System.Diagnostics.Debug.WriteLine($"OpenLastFileOnStartup: {_windowSettings.OpenLastFileOnStartup}");
+            System.Diagnostics.Debug.WriteLine($"LastOpenedFilePath: '{_windowSettings.LastOpenedFilePath}'");
+            System.Diagnostics.Debug.WriteLine($"IsFileOperationEnable: {IsFileOperationEnable}");
+            System.Diagnostics.Debug.WriteLine($"IsFileOpened: {IsFileOpened}");
+            if (IsFileOperationEnable)
+            {
+                System.Diagnostics.Debug.WriteLine($"CurrentFilePath: '{CurrentFilePath}'");
+                System.Diagnostics.Debug.WriteLine($"CurrentFileName: '{CurrentFileName}'");
+            }
+            System.Diagnostics.Debug.WriteLine("=== End Debug Info ===");
+        }
+
+        /// <summary>
+        /// 起動時に前回のファイルを開く
+        /// </summary>
+        public void LoadLastOpenedFileOnStartup()
+        {
+            System.Diagnostics.Debug.WriteLine("=== LoadLastOpenedFileOnStartup 開始 ===");
+            System.Diagnostics.Debug.WriteLine($"OpenLastFileOnStartup: {_windowSettings.OpenLastFileOnStartup}");
+            System.Diagnostics.Debug.WriteLine($"LastOpenedFilePath: '{_windowSettings.LastOpenedFilePath}'");
+            System.Diagnostics.Debug.WriteLine($"IsLastOpenedFileValid: {_windowSettings.IsLastOpenedFileValid()}");
+            
+            if (_windowSettings.OpenLastFileOnStartup && _windowSettings.IsLastOpenedFileValid())
+            {
+                try
+                {
+                    System.Diagnostics.Debug.WriteLine($"前回のファイルを開いています: {_windowSettings.LastOpenedFilePath}");
+                    
+                    // ファイルの存在を再確認
+                    if (!File.Exists(_windowSettings.LastOpenedFilePath))
+                    {
+                        System.Diagnostics.Debug.WriteLine("ファイルが存在しません");
+                        StatusMessage = $"前回のファイルが見つかりません: {Path.GetFileName(_windowSettings.LastOpenedFilePath)}";
+                        _windowSettings.LastOpenedFilePath = string.Empty;
+                        _windowSettings.Save();
+                        return;
+                    }
+                    
+                    OpenFile(_windowSettings.LastOpenedFilePath);
+                    StatusMessage = $"前回のファイルを開きました: {CurrentFileName}";
+                    
+                    // 3秒後にステータスメッセージをクリア
+                    var timer = new DispatcherTimer();
+                    timer.Interval = TimeSpan.FromSeconds(3);
+                    timer.Tick += (s, e) => 
+                    {
+                        StatusMessage = "準備完了";
+                        timer.Stop();
+                    };
+                    timer.Start();
+                    
+                    System.Diagnostics.Debug.WriteLine("前回のファイルを正常に開きました");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"前回のファイルを開くのに失敗しました: {ex.Message}");
+                    StatusMessage = $"前回のファイルを開くのに失敗しました: {Path.GetFileName(_windowSettings.LastOpenedFilePath)}";
+                    
+                    // 失敗した場合は設定をクリア
+                    _windowSettings.LastOpenedFilePath = string.Empty;
+                    _windowSettings.Save();
+                }
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("前回のファイル復元は実行されませんでした");
+                if (!_windowSettings.OpenLastFileOnStartup)
+                {
+                    System.Diagnostics.Debug.WriteLine("理由: OpenLastFileOnStartup が false");
+                }
+                if (string.IsNullOrEmpty(_windowSettings.LastOpenedFilePath))
+                {
+                    System.Diagnostics.Debug.WriteLine("理由: LastOpenedFilePath が空");
+                }
+                if (!string.IsNullOrEmpty(_windowSettings.LastOpenedFilePath) && !File.Exists(_windowSettings.LastOpenedFilePath))
+                {
+                    System.Diagnostics.Debug.WriteLine("理由: ファイルが存在しない");
+                }
+            }
+            
+            System.Diagnostics.Debug.WriteLine("=== LoadLastOpenedFileOnStartup 終了 ===");
         }
 
         private void InitializeCommandHistory()
@@ -207,13 +318,32 @@ namespace AutoTool
         [RelayCommand(CanExecute = nameof(CanOpenFile))]
         private void OpenFile(string filePath)
         {
-            _fileManagers[SelectedTabIndex].OpenFile(filePath);
-            
-            // ファイル読み込み後は履歴をクリア
-            CommandHistory.Clear();
-            StatusMessage = $"ファイルを開きました: {CurrentFileName}";
-            
-            UpdateProperties();
+            try
+            {
+                _fileManagers[SelectedTabIndex].OpenFile(filePath);
+                
+                // ファイル読み込み後は履歴をクリア
+                CommandHistory.Clear();
+                StatusMessage = $"ファイルを開きました: {CurrentFileName}";
+                
+                // ファイルパスを明示的に更新して設定保存をトリガー
+                UpdateProperties();
+                
+                // 確実にファイルパスを保存
+                if (!string.IsNullOrEmpty(CurrentFilePath))
+                {
+                    _windowSettings.UpdateLastOpenedFile(CurrentFilePath);
+                    _windowSettings.Save();
+                    System.Diagnostics.Debug.WriteLine($"ファイル開いた後に設定保存: {CurrentFilePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"ファイルの読み込みに失敗しました: {Path.GetFileName(filePath)}";
+                System.Diagnostics.Debug.WriteLine($"ファイル読み込みエラー: {ex.Message}");
+                MessageBox.Show($"ファイルの読み込みに失敗しました。\n{ex.Message}", "読み込みエラー", 
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         [RelayCommand(CanExecute = nameof(CanSaveFile))]
@@ -224,6 +354,14 @@ namespace AutoTool
                 StatusMessage = "保存中...";
                 _fileManagers[SelectedTabIndex].SaveFile();
                 UpdateProperties();
+                
+                // 確実にファイルパスを保存
+                if (!string.IsNullOrEmpty(CurrentFilePath))
+                {
+                    _windowSettings.UpdateLastOpenedFile(CurrentFilePath);
+                    _windowSettings.Save();
+                    System.Diagnostics.Debug.WriteLine($"ファイル保存後に設定保存: {CurrentFilePath}");
+                }
                 
                 StatusMessage = $"保存完了: {CurrentFileName}";
                 
@@ -253,6 +391,14 @@ namespace AutoTool
                 StatusMessage = "名前を付けて保存中...";
                 _fileManagers[SelectedTabIndex].SaveFileAs();
                 UpdateProperties();
+                
+                // 確実にファイルパスを保存
+                if (!string.IsNullOrEmpty(CurrentFilePath))
+                {
+                    _windowSettings.UpdateLastOpenedFile(CurrentFilePath);
+                    _windowSettings.Save();
+                    System.Diagnostics.Debug.WriteLine($"名前を付けて保存後に設定保存: {CurrentFilePath}");
+                }
                 
                 StatusMessage = $"保存完了: {CurrentFileName}";
                 

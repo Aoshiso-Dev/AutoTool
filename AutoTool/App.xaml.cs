@@ -25,6 +25,30 @@ namespace AutoTool
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
         }
 
+        protected override void OnExit(ExitEventArgs e)
+        {
+            // アプリケーション終了時に設定を保存
+            try
+            {
+                if (MainWindow?.DataContext is MainWindowViewModel viewModel)
+                {
+                    var windowSettings = viewModel.GetWindowSettings();
+                    if (MainWindow is MainWindow mainWindow)
+                    {
+                        windowSettings.UpdateFromWindow(mainWindow);
+                    }
+                    windowSettings.Save();
+                    System.Diagnostics.Debug.WriteLine("アプリケーション終了時に設定を保存しました");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"アプリケーション終了時の設定保存に失敗: {ex.Message}");
+            }
+            
+            base.OnExit(e);
+        }
+
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
             // 例外を処理（例: ログに記録、ユーザーに通知など）

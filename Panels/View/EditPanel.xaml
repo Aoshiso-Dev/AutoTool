@@ -334,10 +334,40 @@
                             </StackPanel>
 
                             <!-- 待機時間の設定 -->
-                            <StackPanel Orientation="Horizontal" Margin="0,5">
-                                <TextBlock Text="待機時間:" Width="120" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding Wait, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
-                                <TextBlock Text="(ms)" Margin="5,0" VerticalAlignment="Center"/>
+                            <StackPanel Margin="0,5">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="待機時間:"  Width="120"/>
+                                    <TextBox Text="{Binding WaitHours, UpdateSourceTrigger=PropertyChanged}" 
+                                             Width="30"
+                                             VerticalAlignment="Center"
+                                             HorizontalAlignment="Left"
+                                             ToolTip="時間 (0以上)"/>
+                                    <TextBlock Text="時間" Margin="5,0" VerticalAlignment="Center" Width="auto"/>
+                                    <TextBox Text="{Binding WaitMinutes, UpdateSourceTrigger=PropertyChanged}" 
+                                             Width="30"
+                                             VerticalAlignment="Center"
+                                             HorizontalAlignment="Left"
+                                             ToolTip="分 (0-59)"/>
+                                    <TextBlock Text="分" Margin="5,0" VerticalAlignment="Center" Width="auto"/>
+                                    <TextBox Text="{Binding WaitSeconds, UpdateSourceTrigger=PropertyChanged}" 
+                                             Width="30"
+                                             VerticalAlignment="Center"
+                                             HorizontalAlignment="Left"
+                                             ToolTip="秒 (0-59)"/>
+                                    <TextBlock Text="秒" Margin="5,0" VerticalAlignment="Center" Width="auto"/>
+                                    <TextBox Text="{Binding WaitMilliseconds, UpdateSourceTrigger=PropertyChanged}" 
+                                             Width="50"
+                                             VerticalAlignment="Center"
+                                             HorizontalAlignment="Left"
+                                             ToolTip="ミリ秒 (0-999)"/>
+                                    <TextBlock Text="ミリ秒" Margin="5,0" VerticalAlignment="Center" Width="auto"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding WaitTimeDisplay}" 
+                                           Margin="125,2,0,0"
+                                           Width="auto"
+                                           FontSize="11" 
+                                           Foreground="DarkGray" 
+                                           HorizontalAlignment="Left"/>
                                 <StackPanel.Visibility>
                                     <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
                                         <Binding Path="IsWaitItem"/>

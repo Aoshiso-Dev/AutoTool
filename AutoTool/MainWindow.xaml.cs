@@ -17,17 +17,15 @@ namespace AutoTool
     /// </summary>
     public partial class MainWindow : Window
     {
-        private WindowSettings _windowSettings;
-
         public MainWindow()
         {
             InitializeComponent();
             
-            // ウィンドウ設定を読み込み
-            _windowSettings = WindowSettings.Load();
-            
             // ウィンドウが表示される前に設定を適用
             this.SourceInitialized += MainWindow_SourceInitialized;
+            
+            // ウィンドウが完全に読み込まれた後に前回のファイルを開く
+            this.Loaded += MainWindow_Loaded;
             
             // ウィンドウが閉じる時に設定を保存
             this.Closing += MainWindow_Closing;
@@ -35,15 +33,39 @@ namespace AutoTool
 
         private void MainWindow_SourceInitialized(object sender, EventArgs e)
         {
-            // ウィンドウ設定を適用
-            _windowSettings.ApplyToWindow(this);
+            // ViewModelからウィンドウ設定を取得して適用
+            if (DataContext is MainWindowViewModel viewModel)
+            {
+                var windowSettings = viewModel.GetWindowSettings();
+                windowSettings.ApplyToWindow(this);
+            }
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // 起動時に前回のファイルを開く
+            if (DataContext is MainWindowViewModel viewModel)
+            {
+                // デバッグ情報を出力
+                viewModel.PrintDebugSettings();
+                
+                // UIが完全に初期化された後に遅延実行
+                Dispatcher.BeginInvoke(() =>
+                {
+                    viewModel.LoadLastOpenedFileOnStartup();
+                }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            }
         }
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             // 現在のウィンドウ状態を設定に保存
-            _windowSettings.UpdateFromWindow(this);
-            _windowSettings.Save();
+            if (DataContext is MainWindowViewModel viewModel)
+            {
+                var windowSettings = viewModel.GetWindowSettings();
+                windowSettings.UpdateFromWindow(this);
+                windowSettings.Save();
+            }
         }
     }
 }

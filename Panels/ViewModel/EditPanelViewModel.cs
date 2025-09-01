@@ -35,7 +35,7 @@ namespace MacroPanels.ViewModel
         private bool _isUpdating;
         private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromMilliseconds(120) };
 
-        #region Item
+        #region Item Management
         private ICommandListItem? _item = null;
         public ICommandListItem? Item
         {
@@ -65,9 +65,7 @@ namespace MacroPanels.ViewModel
                 }
             }
         }
-        #endregion
 
-        #region ListCount
         private int _listCount = 0;
         public int ListCount
         {
@@ -76,7 +74,7 @@ namespace MacroPanels.ViewModel
         }
         #endregion
 
-        #region IsProperties
+        #region Item Type Detection Properties
         public bool IsListNotEmpty => ListCount > 0;
         public bool IsListEmpty => ListCount == 0;
         public bool IsListNotEmptyButNoSelection => ListCount > 0 && Item == null;
@@ -102,12 +100,14 @@ namespace MacroPanels.ViewModel
         public bool IsScreenshotItem => Item is ScreenshotItem;
         #endregion
 
-        #region Properties (via PropertyManager)
+        #region Window Properties
         public string WindowTitleText => string.IsNullOrEmpty(WindowTitle) ? "指定なし" : WindowTitle;
         public string WindowTitle { get => _propertyManager.WindowTitle.GetValue(Item); set { _propertyManager.WindowTitle.SetValue(Item, value); UpdateProperties(); } }
         public string WindowClassNameText => string.IsNullOrEmpty(WindowClassName) ? "指定なし" : WindowClassName;
         public string WindowClassName { get => _propertyManager.WindowClassName.GetValue(Item); set { _propertyManager.WindowClassName.SetValue(Item, value); UpdateProperties(); } }
-        
+        #endregion
+
+        #region Image Properties
         // 画像パスは表示用は絶対パス、保存時は相対パス
         public string ImagePath 
         { 
@@ -125,19 +125,118 @@ namespace MacroPanels.ViewModel
         }
         
         public double Threshold { get => _propertyManager.Threshold.GetValue(Item); set { _propertyManager.Threshold.SetValue(Item, value); UpdateProperties(); } }
+        
         public Color? SearchColor { get => _propertyManager.SearchColor.GetValue(Item); set { _propertyManager.SearchColor.SetValue(Item, value); UpdateProperties(); OnPropertyChanged(nameof(SearchColorBrush)); OnPropertyChanged(nameof(SearchColorText)); OnPropertyChanged(nameof(SearchColorTextColor)); } }
+        public Brush SearchColorBrush => new SolidColorBrush(SearchColor ?? Color.FromArgb(0, 0, 0, 0));
+        public string SearchColorText => SearchColor != null ? $"R:{SearchColor.Value.R:D3} G:{SearchColor.Value.G:D3} B:{SearchColor.Value.B:D3}" : "指定なし";
+        public Brush SearchColorTextColor => SearchColor != null ? new SolidColorBrush(Color.FromArgb(255, (byte)(255 - SearchColor.Value.R), (byte)(255 - SearchColor.Value.G), (byte)(255 - SearchColor.Value.B))) : new SolidColorBrush(Colors.Black);
+        #endregion
+
+        #region Timing Properties
         public int Timeout { get => _propertyManager.Timeout.GetValue(Item); set { _propertyManager.Timeout.SetValue(Item, value); UpdateProperties(); } }
         public int Interval { get => _propertyManager.Interval.GetValue(Item); set { _propertyManager.Interval.SetValue(Item, value); UpdateProperties(); } }
+        #endregion
+
+        #region Input Properties (Mouse/Keyboard)
         public System.Windows.Input.MouseButton MouseButton { get => _propertyManager.MouseButton.GetValue(Item); set { _propertyManager.MouseButton.SetValue(Item, value); UpdateProperties(); } }
         public bool Ctrl { get => _propertyManager.Ctrl.GetValue(Item); set { _propertyManager.Ctrl.SetValue(Item, value); UpdateProperties(); } }
         public bool Alt { get => _propertyManager.Alt.GetValue(Item); set { _propertyManager.Alt.SetValue(Item, value); UpdateProperties(); } }
         public bool Shift { get => _propertyManager.Shift.GetValue(Item); set { _propertyManager.Shift.SetValue(Item, value); UpdateProperties(); } }
         public Key Key { get => _propertyManager.Key.GetValue(Item); set { _propertyManager.Key.SetValue(Item, value); UpdateProperties(); } }
+        #endregion
+
+        #region Position Properties
         public int X { get => _propertyManager.X.GetValue(Item); set { _propertyManager.X.SetValue(Item, value); UpdateProperties(); } }
         public int Y { get => _propertyManager.Y.GetValue(Item); set { _propertyManager.Y.SetValue(Item, value); UpdateProperties(); } }
-        public int Wait { get => _propertyManager.Wait.GetValue(Item); set { _propertyManager.Wait.SetValue(Item, value); UpdateProperties(); } }
-        public int LoopCount { get => _propertyManager.LoopCount.GetValue(Item); set { _propertyManager.LoopCount.SetValue(Item, value); UpdateProperties(); } }
+        #endregion
+
+        #region Wait Time Properties
+        public int Wait { get => _propertyManager.Wait.GetValue(Item); set { _propertyManager.Wait.SetValue(Item, value); UpdateProperties(); OnWaitChanged(); } }
         
+        // 待機時間の分割プロパティ
+        private int _waitHours = 0;
+        public int WaitHours
+        {
+            get => _waitHours;
+            set
+            {
+                if (SetProperty(ref _waitHours, Math.Max(0, value)))
+                {
+                    UpdateWaitFromComponents();
+                }
+            }
+        }
+        
+        private int _waitMinutes = 0;
+        public int WaitMinutes
+        {
+            get => _waitMinutes;
+            set
+            {
+                if (SetProperty(ref _waitMinutes, Math.Max(0, Math.Min(59, value))))
+                {
+                    UpdateWaitFromComponents();
+                }
+            }
+        }
+        
+        private int _waitSeconds = 0;
+        public int WaitSeconds
+        {
+            get => _waitSeconds;
+            set
+            {
+                if (SetProperty(ref _waitSeconds, Math.Max(0, Math.Min(59, value))))
+                {
+                    UpdateWaitFromComponents();
+                }
+            }
+        }
+        
+        private int _waitMilliseconds = 0;
+        public int WaitMilliseconds
+        {
+            get => _waitMilliseconds;
+            set
+            {
+                if (SetProperty(ref _waitMilliseconds, Math.Max(0, Math.Min(999, value))))
+                {
+                    UpdateWaitFromComponents();
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 待機時間の表示用文字列
+        /// </summary>
+        public string WaitTimeDisplay
+        {
+            get
+            {
+                var totalMs = Wait;
+                if (totalMs <= 0) return "合計: 0ミリ秒";
+                
+                var hours = totalMs / (1000 * 60 * 60);
+                var minutes = (totalMs % (1000 * 60 * 60)) / (1000 * 60);
+                var seconds = (totalMs % (1000 * 60)) / 1000;
+                var milliseconds = totalMs % 1000;
+                
+                var parts = new List<string>();
+                if (hours > 0) parts.Add($"{hours}時間");
+                if (minutes > 0) parts.Add($"{minutes}分");
+                if (seconds > 0) parts.Add($"{seconds}秒");
+                if (milliseconds > 0) parts.Add($"{milliseconds}ミリ秒");
+                
+                return $"合計: {string.Join(" ", parts)} ({totalMs:N0}ミリ秒)";
+            }
+        }
+        #endregion
+
+        #region Loop Properties
+        public int LoopCount { get => _propertyManager.LoopCount.GetValue(Item); set { _propertyManager.LoopCount.SetValue(Item, value); UpdateProperties(); } }
+        #endregion
+
+        #region AI Properties
         // ONNXモデルパスも相対パス対応
         public string ModelPath 
         { 
@@ -156,7 +255,11 @@ namespace MacroPanels.ViewModel
         
         public int ClassID { get => _propertyManager.ClassID.GetValue(Item); set { _propertyManager.ClassID.SetValue(Item, value); UpdateProperties(); } }
         public string AIDetectMode { get => _propertyManager.Mode.GetValue(Item); set { _propertyManager.Mode.SetValue(Item, value); UpdateProperties(); } }
-        
+        public double ConfThreshold { get => _propertyManager.ConfThreshold.GetValue(Item); set { _propertyManager.ConfThreshold.SetValue(Item, value); UpdateProperties(); } }
+        public double IoUThreshold { get => _propertyManager.IoUThreshold.GetValue(Item); set { _propertyManager.IoUThreshold.SetValue(Item, value); UpdateProperties(); } }
+        #endregion
+
+        #region Program Execution Properties
         // プログラムパスも相対パス対応
         public string ProgramPath 
         { 
@@ -192,11 +295,16 @@ namespace MacroPanels.ViewModel
         }
         
         public bool WaitForExit { get => _propertyManager.WaitForExit.GetValue(Item); set { _propertyManager.WaitForExit.SetValue(Item, value); UpdateProperties(); } }
+        #endregion
+
+        #region Variable Properties
         public string VariableName { get => _propertyManager.VariableName.GetValue(Item); set { _propertyManager.VariableName.SetValue(Item, value); UpdateProperties(); } }
         public string VariableValue { get => _propertyManager.VariableValue.GetValue(Item); set { _propertyManager.VariableValue.SetValue(Item, value); UpdateProperties(); } }
         public string CompareOperator { get => _propertyManager.CompareOperator.GetValue(Item); set { _propertyManager.CompareOperator.SetValue(Item, value); UpdateProperties(); } }
         public string CompareValue { get => _propertyManager.CompareValue.GetValue(Item); set { _propertyManager.CompareValue.SetValue(Item, value); UpdateProperties(); } }
-        
+        #endregion
+
+        #region Screenshot Properties
         // 保存先ディレクトリも相対パス対応
         public string SaveDirectory 
         { 
@@ -212,10 +320,9 @@ namespace MacroPanels.ViewModel
                 UpdateProperties(); 
             } 
         }
-        
-        public double ConfThreshold { get => _propertyManager.ConfThreshold.GetValue(Item); set { _propertyManager.ConfThreshold.SetValue(Item, value); UpdateProperties(); } }
-        public double IoUThreshold { get => _propertyManager.IoUThreshold.GetValue(Item); set { _propertyManager.IoUThreshold.SetValue(Item, value); UpdateProperties(); } }
-        
+        #endregion
+
+        #region Comment Properties
         /// <summary>
         /// コメント（全コマンド共通）
         /// </summary>
@@ -231,12 +338,6 @@ namespace MacroPanels.ViewModel
                 }
             } 
         }
-        #endregion
-
-        #region ColorPicker
-        public Brush SearchColorBrush => new SolidColorBrush(SearchColor ?? Color.FromArgb(0, 0, 0, 0));
-        public string SearchColorText => SearchColor != null ? $"R:{SearchColor.Value.R:D3} G:{SearchColor.Value.G:D3} B:{SearchColor.Value.B:D3}" : "指定なし";
-        public Brush SearchColorTextColor => SearchColor != null ? new SolidColorBrush(Color.FromArgb(255, (byte)(255 - SearchColor.Value.R), (byte)(255 - SearchColor.Value.G), (byte)(255 - SearchColor.Value.B))) : new SolidColorBrush(Colors.Black);
         #endregion
 
         #region ComboBox / Collections
@@ -272,6 +373,7 @@ namespace MacroPanels.ViewModel
                 OnSelectedItemTypeChanged(value);
             } 
         }
+        
         [ObservableProperty] private ObservableCollection<System.Windows.Input.MouseButton> _mouseButtons = new();
         public System.Windows.Input.MouseButton SelectedMouseButton 
         { 
@@ -284,12 +386,15 @@ namespace MacroPanels.ViewModel
                 }
             } 
         }
+        
         [ObservableProperty] private ObservableCollection<string> _operators = new();
         public string SelectedOperator { get => CompareOperator; set { CompareOperator = value; UpdateProperties(); } }
+        
         [ObservableProperty] private ObservableCollection<string> _aIDetectModes = new();
         public string SelectedAIDetectMode { get => AIDetectMode; set { AIDetectMode = value; UpdateProperties(); } }
         #endregion
 
+        #region Constructor and Initialization
         public EditPanelViewModel()
         {
             // CommandRegistryを初期化
@@ -328,12 +433,61 @@ namespace MacroPanels.ViewModel
             foreach (var op in new[] { "==", "!=", ">", "<", ">=", "<=", "Contains", "NotContains", "StartsWith", "EndsWith", "IsEmpty", "IsNotEmpty" })
                 Operators.Add(op);
         }
+        
         private void InitializeAIDetectModes()
         {
             foreach (var mode in new[] { "Class", "Count" }) AIDetectModes.Add(mode);
         }
+        #endregion
 
-        #region OnChanged
+        #region Wait Time Helper Methods
+        /// <summary>
+        /// 時間、分、秒、ミリ秒からトータルミリ秒に変換
+        /// </summary>
+        private void UpdateWaitFromComponents()
+        {
+            var totalMs = (_waitHours * 60 * 60 * 1000) + 
+                         (_waitMinutes * 60 * 1000) + 
+                         (_waitSeconds * 1000) + 
+                         _waitMilliseconds;
+            
+            // 循環参照を避けるために直接プロパティマネージャーを使用
+            _propertyManager.Wait.SetValue(Item, totalMs);
+            
+            // 表示を更新
+            OnPropertyChanged(nameof(Wait));
+            OnPropertyChanged(nameof(WaitTimeDisplay));
+            UpdateProperties();
+        }
+        
+        /// <summary>
+        /// トータルミリ秒から時間、分、秒、ミリ秒に分解
+        /// </summary>
+        private void OnWaitChanged()
+        {
+            var totalMs = Wait;
+            
+            var hours = totalMs / (1000 * 60 * 60);
+            var minutes = (totalMs % (1000 * 60 * 60)) / (1000 * 60);
+            var seconds = (totalMs % (1000 * 60)) / 1000;
+            var milliseconds = totalMs % 1000;
+            
+            // 循環更新を防ぐために直接フィールドを更新
+            _waitHours = hours;
+            _waitMinutes = minutes;
+            _waitSeconds = seconds;
+            _waitMilliseconds = milliseconds;
+            
+            // プロパティ変更通知
+            OnPropertyChanged(nameof(WaitHours));
+            OnPropertyChanged(nameof(WaitMinutes));
+            OnPropertyChanged(nameof(WaitSeconds));
+            OnPropertyChanged(nameof(WaitMilliseconds));
+            OnPropertyChanged(nameof(WaitTimeDisplay));
+        }
+        #endregion
+
+        #region Command Type Change Handling
         private void OnSelectedItemTypeChanged(string typeName)
         {
             if (string.IsNullOrEmpty(typeName) || Item == null)
@@ -397,7 +551,7 @@ namespace MacroPanels.ViewModel
         }
         #endregion
 
-        #region Update
+        #region Property Update Management
         private void UpdateIsProperties()
         {
             // 配列をstaticにしてGC圧を軽減
@@ -427,7 +581,8 @@ namespace MacroPanels.ViewModel
             nameof(ClassID), nameof(AIDetectMode), nameof(ProgramPath), nameof(Arguments), 
             nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName), 
             nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), 
-            nameof(SaveDirectory), nameof(Comment)
+            nameof(SaveDirectory), nameof(Comment), nameof(WaitHours), nameof(WaitMinutes),
+            nameof(WaitSeconds), nameof(WaitMilliseconds), nameof(WaitTimeDisplay)
         };
 
         void UpdateProperties()
@@ -640,6 +795,12 @@ namespace MacroPanels.ViewModel
         {
             System.Diagnostics.Debug.WriteLine($"SetItem called with: {item?.ItemType ?? "null"}");
             Item = item;
+            
+            // 待機時間コンポーネントを更新
+            if (item is IWaitItem)
+            {
+                OnWaitChanged();
+            }
         }
         
         public void SetListCount(int listCount) => ListCount = listCount;
