@@ -1,70 +1,56 @@
-ï»¿using System.Text;
+using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using AutoTool.Model;
+using Microsoft.Extensions.Logging;
 
 namespace AutoTool
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// MainWindow.xaml ‚Ì‘ŠŒİì—pƒƒWƒbƒN
     /// </summary>
     public partial class MainWindow : Window
     {
+        private readonly ILogger<MainWindow> _logger;
+
         public MainWindow()
         {
             InitializeComponent();
-            
-            // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒè¡¨ç¤ºã•ã‚Œã‚‹å‰ã«è¨­å®šã‚’é©ç”¨
-            this.SourceInitialized += MainWindow_SourceInitialized;
-            
-            // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒå®Œå…¨ã«èª­ã¿è¾¼ã¾ã‚ŒãŸå¾Œã«å‰å›ã®ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã
-            this.Loaded += MainWindow_Loaded;
-            
-            // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‰ã˜ã‚‹æ™‚ã«è¨­å®šã‚’ä¿å­˜
-            this.Closing += MainWindow_Closing;
-        }
 
-        private void MainWindow_SourceInitialized(object sender, EventArgs e)
-        {
-            // ViewModelã‹ã‚‰ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦è¨­å®šã‚’å–å¾—ã—ã¦é©ç”¨
-            if (DataContext is MainWindowViewModel viewModel)
+            try
             {
-                var windowSettings = viewModel.GetWindowSettings();
-                windowSettings.ApplyToWindow(this);
-            }
-        }
-
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            // èµ·å‹•æ™‚ã«å‰å›ã®ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã
-            if (DataContext is MainWindowViewModel viewModel)
-            {
-                // ãƒ‡ãƒãƒƒã‚°æƒ…å ±ã‚’å‡ºåŠ›
-                viewModel.PrintDebugSettings();
-                
-                // UIãŒå®Œå…¨ã«åˆæœŸåŒ–ã•ã‚ŒãŸå¾Œã«é…å»¶å®Ÿè¡Œ
-                Dispatcher.BeginInvoke(() =>
+                // ƒƒK[‚Ìæ“¾
+                var app = Application.Current as App;
+                if (app?._host != null)
                 {
-                    viewModel.LoadLastOpenedFileOnStartup();
-                }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                    _logger = app._host.Services.GetService<ILogger<MainWindow>>();
+
+                    // ƒrƒ…[ƒ‚ƒfƒ‹‚ğæ“¾‚µ‚ÄDataContext‚Éİ’è
+                    DataContext = app._host.Services.GetService<MainWindowViewModel>();
+
+                    _logger.LogDebug("MainWindow ‰Šú‰»Š®—¹");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "MainWindow ‰Šú‰»’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
             }
         }
 
-        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            // ç¾åœ¨ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦çŠ¶æ…‹ã‚’è¨­å®šã«ä¿å­˜
-            if (DataContext is MainWindowViewModel viewModel)
+            try
             {
-                var windowSettings = viewModel.GetWindowSettings();
-                windowSettings.UpdateFromWindow(this);
-                windowSettings.Save();
+                // ƒrƒ…[ƒ‚ƒfƒ‹‚ÌƒNƒŠ[ƒ“ƒAƒbƒv
+                if (DataContext is MainWindowViewModel viewModel)
+                {
+                    viewModel.SaveWindowSettings();
+                    viewModel.Cleanup();
+                }
+
+                _logger.LogDebug("MainWindow I—¹ˆ—Š®—¹");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "MainWindow I—¹ˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
             }
         }
     }

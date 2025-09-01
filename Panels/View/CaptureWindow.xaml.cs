@@ -1,7 +1,7 @@
 ﻿using MouseHelper;
+using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Ribbon.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -76,10 +76,10 @@ namespace MacroPanels.View
                     _canvasCurrentPoint = PointToScreen(e.GetPosition(this));
 
                     // キャンバス更新：開始位置と現在位置から選択範囲を計算
-                    var canvasX = Math.Min(_canvasCurrentPoint.X - Left, _canvasStartPoint.X - Left);
-                    var canvasY = Math.Min(_canvasCurrentPoint.Y - Top, _canvasStartPoint.Y - Top);
-                    var canvasWidth = Math.Abs(_canvasCurrentPoint.X - _canvasStartPoint.X);
-                    var canvasHeight = Math.Abs(_canvasCurrentPoint.Y - _canvasStartPoint.Y);
+                    var canvasX = System.Math.Min(_canvasCurrentPoint.X - Left, _canvasStartPoint.X - Left);
+                    var canvasY = System.Math.Min(_canvasCurrentPoint.Y - Top, _canvasStartPoint.Y - Top);
+                    var canvasWidth = System.Math.Abs(_canvasCurrentPoint.X - _canvasStartPoint.X);
+                    var canvasHeight = System.Math.Abs(_canvasCurrentPoint.Y - _canvasStartPoint.Y);
 
                     // キャンバス更新：選択矩形の位置とサイズをキャンバス座標で設定
                     Canvas.SetLeft(_canvasSelectionRectangle, canvasX);
@@ -97,10 +97,10 @@ namespace MacroPanels.View
                 if (_canvasSelectionRectangle.Visibility == Visibility.Visible)
                 {
                     SelectedRegion = new Rect(
-                        Math.Min(_screenStartPoint.X, _screenCurrentPoint.X),
-                        Math.Min(_screenStartPoint.Y, _screenCurrentPoint.Y),
-                        Math.Abs(_screenCurrentPoint.X - _screenStartPoint.X),
-                        Math.Abs(_screenCurrentPoint.Y - _screenStartPoint.Y)
+                        System.Math.Min(_screenStartPoint.X, _screenCurrentPoint.X),
+                        System.Math.Min(_screenStartPoint.Y, _screenCurrentPoint.Y),
+                        System.Math.Abs(_screenCurrentPoint.X - _screenStartPoint.X),
+                        System.Math.Abs(_screenCurrentPoint.Y - _screenStartPoint.Y)
                     );
 
                     this.DialogResult = !SelectedRegion.IsEmpty;
@@ -109,5 +109,4 @@ namespace MacroPanels.View
             }
         }
     }
-
 }

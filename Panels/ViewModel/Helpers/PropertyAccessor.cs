@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 using MacroPanels.Model.List.Interface;
 
 namespace MacroPanels.ViewModel.Helpers

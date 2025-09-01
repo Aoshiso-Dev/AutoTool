@@ -23,12 +23,15 @@ using MacroPanels.ViewModel.Helpers;
 using MacroPanels.Model.CommandDefinition;
 using MacroPanels.ViewModel.Shared;
 using MacroPanels.Helpers;
+using Microsoft.Extensions.Logging;
 
 namespace MacroPanels.ViewModel
 {
     public partial class EditPanelViewModel : ObservableObject
     {
+        private readonly ILogger<EditPanelViewModel> _logger;
         private readonly EditPanelPropertyManager _propertyManager = new();
+        private CommandHistoryManager? _commandHistory;
 
         [ObservableProperty]
         private bool _isRunning = false;
@@ -395,8 +398,12 @@ namespace MacroPanels.ViewModel
         #endregion
 
         #region Constructor and Initialization
-        public EditPanelViewModel()
+        public EditPanelViewModel(ILogger<EditPanelViewModel> logger)
         {
+            _logger = logger;
+            
+            _logger.LogInformation("EditPanelViewModel を初期化しています");
+
             // CommandRegistryを初期化
             CommandRegistry.Initialize();
             
@@ -415,10 +422,10 @@ namespace MacroPanels.ViewModel
             ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
             
             // 初期選択項目を設定（デバッグ用）
-            System.Diagnostics.Debug.WriteLine($"ItemTypes initialized with {ItemTypes.Count} items");
+            _logger.LogDebug("ItemTypes initialized with {Count} items", ItemTypes.Count);
             if (ItemTypes.Count > 0)
             {
-                System.Diagnostics.Debug.WriteLine($"First item: {ItemTypes[0].DisplayName} ({ItemTypes[0].TypeName})");
+                _logger.LogDebug("First item: {DisplayName} ({TypeName})", ItemTypes[0].DisplayName, ItemTypes[0].TypeName);
             }
                 
             foreach (var button in Enum.GetValues(typeof(System.Windows.Input.MouseButton)).Cast<System.Windows.Input.MouseButton>()) 
@@ -426,6 +433,15 @@ namespace MacroPanels.ViewModel
                 
             InitializeOperators();
             InitializeAIDetectModes();
+        }
+
+        /// <summary>
+        /// CommandHistoryManagerを設定
+        /// </summary>
+        public void SetCommandHistory(CommandHistoryManager? commandHistory)
+        {
+            _commandHistory = commandHistory;
+            _logger.LogDebug("CommandHistoryManager を設定しました");
         }
 
         private void InitializeOperators()
@@ -582,7 +598,12 @@ namespace MacroPanels.ViewModel
             nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName), 
             nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), 
             nameof(SaveDirectory), nameof(Comment), nameof(WaitHours), nameof(WaitMinutes),
-            nameof(WaitSeconds), nameof(WaitMilliseconds), nameof(WaitTimeDisplay)
+            nameof(WaitSeconds), nameof(WaitMilliseconds), nameof(WaitTimeDisplay),
+            // ファイル検証プロパティ
+            nameof(IsImageFileValid), nameof(IsModelFileValid), nameof(IsProgramFileValid),
+            nameof(IsWorkingDirectoryValid), nameof(IsSaveDirectoryValid),
+            nameof(ImageFileErrorMessage), nameof(ModelFileErrorMessage), nameof(ProgramFileErrorMessage),
+            nameof(WorkingDirectoryErrorMessage), nameof(SaveDirectoryErrorMessage)
         };
 
         void UpdateProperties()
@@ -752,6 +773,144 @@ namespace MacroPanels.ViewModel
         }
         #endregion
 
+        #region File Validation Properties
+        /// <summary>
+        /// 画像ファイルの存在チェック
+        /// </summary>
+        public bool IsImageFileValid
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ImagePath)) return true; // 空の場合は有効扱い
+                var absolutePath = PathHelper.ToAbsolutePath(ImagePath);
+                return File.Exists(absolutePath);
+            }
+        }
+
+        /// <summary>
+        /// ONNXモデルファイルの存在チェック
+        /// </summary>
+        public bool IsModelFileValid
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ModelPath)) return true; // 空の場合は有効扱い
+                var absolutePath = PathHelper.ToAbsolutePath(ModelPath);
+                return File.Exists(absolutePath);
+            }
+        }
+
+        /// <summary>
+        /// 実行ファイルの存在チェック
+        /// </summary>
+        public bool IsProgramFileValid
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ProgramPath)) return true; // 空の場合は有効扱い
+                var absolutePath = PathHelper.ToAbsolutePath(ProgramPath);
+                return File.Exists(absolutePath);
+            }
+        }
+
+        /// <summary>
+        /// ワーキングディレクトリの存在チェック
+        /// </summary>
+        public bool IsWorkingDirectoryValid
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(WorkingDirectory)) return true; // 空の場合は有効扱い
+                var absolutePath = PathHelper.ToAbsolutePath(WorkingDirectory);
+                return Directory.Exists(absolutePath);
+            }
+        }
+
+        /// <summary>
+        /// 保存先ディレクトリの存在チェック（親ディレクトリが存在するかチェック）
+        /// </summary>
+        public bool IsSaveDirectoryValid
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(SaveDirectory)) return true; // 空の場合は有効扱い
+                var absolutePath = PathHelper.ToAbsolutePath(SaveDirectory);
+                
+                // ディレクトリが存在する場合
+                if (Directory.Exists(absolutePath)) return true;
+                
+                // 親ディレクトリが存在する場合（作成可能)
+                var parentDir = Path.GetDirectoryName(absolutePath);
+                return !string.IsNullOrEmpty(parentDir) && Directory.Exists(parentDir);
+            }
+        }
+
+        /// <summary>
+        /// 画像ファイルエラーメッセージ
+        /// </summary>
+        public string ImageFileErrorMessage
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ImagePath)) return "";
+                if (IsImageFileValid) return "";
+                return $"画像ファイルが見つかりません: {ImagePath}";
+            }
+        }
+
+        /// <summary>
+        /// ONNXモデルファイルエラーメッセージ
+        /// </summary>
+        public string ModelFileErrorMessage
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ModelPath)) return "";
+                if (IsModelFileValid) return "";
+                return $"ONNXモデルファイルが見つかりません: {ModelPath}";
+            }
+        }
+
+        /// <summary>
+        /// 実行ファイルエラーメッセージ
+        /// </summary>
+        public string ProgramFileErrorMessage
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ProgramPath)) return "";
+                if (IsProgramFileValid) return "";
+                return $"実行ファイルが見つかりません: {ProgramPath}";
+            }
+        }
+
+        /// <summary>
+        /// ワーキングディレクトリエラーメッセージ
+        /// </summary>
+        public string WorkingDirectoryErrorMessage
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(WorkingDirectory)) return "";
+                if (IsWorkingDirectoryValid) return "";
+                return $"ワーキングディレクトリが見つかりません: {WorkingDirectory}";
+            }
+        }
+
+        /// <summary>
+        /// 保存先ディレクトリエラーメッセージ
+        /// </summary>
+        public string SaveDirectoryErrorMessage
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(SaveDirectory)) return "";
+                if (IsSaveDirectoryValid) return "";
+                return $"保存先ディレクトリの親フォルダが見つかりません: {SaveDirectory}";
+            }
+        }
+        #endregion
+
         #region Windows API Helper Methods
         // Windows API用のプライベートメソッド
         [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -793,7 +952,7 @@ namespace MacroPanels.ViewModel
         
         public void SetItem(ICommandListItem? item) 
         {
-            System.Diagnostics.Debug.WriteLine($"SetItem called with: {item?.ItemType ?? "null"}");
+            _logger.LogDebug("SetItem called with: {ItemType}", item?.ItemType ?? "null");
             Item = item;
             
             // 待機時間コンポーネントを更新
@@ -803,8 +962,18 @@ namespace MacroPanels.ViewModel
             }
         }
         
-        public void SetListCount(int listCount) => ListCount = listCount;
-        public void SetRunningState(bool isRunning) => IsRunning = isRunning;
+        public void SetListCount(int listCount) 
+        {
+            ListCount = listCount;
+            _logger.LogDebug("ListCount set to: {ListCount}", listCount);
+        }
+        
+        public void SetRunningState(bool isRunning) 
+        {
+            IsRunning = isRunning;
+            _logger.LogDebug("Running state set to: {IsRunning}", isRunning);
+        }
+        
         public void Prepare() { }
         
         /// <summary>
@@ -813,13 +982,13 @@ namespace MacroPanels.ViewModel
         [System.Diagnostics.Conditional("DEBUG")]
         public void PrintDebugState()
         {
-            System.Diagnostics.Debug.WriteLine("=== EditPanelViewModel Debug State ===");
-            System.Diagnostics.Debug.WriteLine($"Item: {Item?.GetType().Name ?? "null"}");
-            System.Diagnostics.Debug.WriteLine($"ItemType: {Item?.ItemType ?? "null"}");
-            System.Diagnostics.Debug.WriteLine($"SelectedItemType: {SelectedItemType}");
-            System.Diagnostics.Debug.WriteLine($"SelectedItemTypeObj: {SelectedItemTypeObj?.DisplayName ?? "null"} ({SelectedItemTypeObj?.TypeName ?? "null"})");
-            System.Diagnostics.Debug.WriteLine($"ItemTypes Count: {ItemTypes.Count}");
-            System.Diagnostics.Debug.WriteLine("=== End Debug State ===");
+            _logger.LogDebug("=== EditPanelViewModel Debug State ===");
+            _logger.LogDebug("Item: {ItemType}", Item?.GetType().Name ?? "null");
+            _logger.LogDebug("ItemType: {ItemType}", Item?.ItemType ?? "null");
+            _logger.LogDebug("SelectedItemType: {SelectedItemType}", SelectedItemType);
+            _logger.LogDebug("SelectedItemTypeObj: {DisplayName} ({TypeName})", SelectedItemTypeObj?.DisplayName ?? "null", SelectedItemTypeObj?.TypeName ?? "null");
+            _logger.LogDebug("ItemTypes Count: {Count}", ItemTypes.Count);
+            _logger.LogDebug("=== End Debug State ===");
         }
         #endregion
     }

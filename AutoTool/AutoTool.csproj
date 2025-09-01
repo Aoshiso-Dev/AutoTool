@@ -16,13 +16,30 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
     <PackageReference Include="Tesseract" Version="5.2.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ColorPickHelper\ColorPickHelper.csproj" />
+    <ProjectReference Include="..\InputHelper\MouseHelper.csproj" />
+    <ProjectReference Include="..\KeyHelper\KeyHelper.csproj" />
     <ProjectReference Include="..\LogHelper\LogHelper.csproj" />
+    <ProjectReference Include="..\OCRHelper\OCRHelper.csproj" />
+    <ProjectReference Include="..\OpenCVHelper\OpenCVHelper.csproj" />
     <ProjectReference Include="..\Panels\MacroPanels.csproj" />
+    <ProjectReference Include="..\WindowInfoHelper\WindowHelper.csproj" />
     <ProjectReference Include="..\XmlSerializer\XmlSerializer.csproj" />
+    <ProjectReference Include="..\YoloV8DetectHelper\YoLoWinLib.csproj" />
   </ItemGroup>
 
 </Project>

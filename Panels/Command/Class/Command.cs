@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using MacroPanels.Command.Interface;
@@ -17,71 +18,216 @@ using MouseHelper;
 using System.IO;
 using YoloWinLib;
 using System.Collections.Concurrent;
+using System.Windows.Media;
 
 namespace MacroPanels.Command.Class
 {
+    /// <summary>
+    /// ループ中断用の専用例外
+    /// </summary>
+    public class LoopBreakException : Exception
+    {
+        public LoopBreakException() : base("ループが中断されました") { }
+        public LoopBreakException(string message) : base(message) { }
+    }
+
+    /// <summary>
+    /// コマンドの基底クラス
+    /// </summary>
     public abstract class BaseCommand : ICommand
     {
+        // プライベートフィールド
+        private readonly List<ICommand> _children = new();
+
+        // ICommandインターフェースの実装
         public int LineNumber { get; set; }
-        public bool IsEnabled { get; set; }
-        public ICommand? Parent { get; set; }
-        public IEnumerable<ICommand> Children { get; set; }
+        public bool IsEnabled { get; set; } = true;
+        public ICommand? Parent { get; private set; }
+        public IEnumerable<ICommand> Children => _children;
         public int NestLevel { get; set; }
-        public ICommandSettings Settings { get; }
-        public EventHandler OnStartCommand { get; set; }
-        public EventHandler OnFinishCommand { get; set; }
-        public EventHandler<string> OnDoingCommand { get; set; }
+        public object? Settings { get; set; }
+        public string Description { get; protected set; } = string.Empty;
 
-        public BaseCommand()
-        {
-            Children = new List<ICommand>();
-            Settings = new CommandSettings();
-            OnStartCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
-            OnDoingCommand += (sender, log) => WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, log));
-            OnFinishCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
-        }
+        // イベント
+        public event EventHandler? OnStartCommand;
+        public event EventHandler? OnFinishCommand;
+        public event EventHandler<string>? OnDoingCommand;
 
-        public BaseCommand(ICommand parent, ICommandSettings settings)
+        protected BaseCommand(ICommand? parent = null, object? settings = null)
         {
             Parent = parent;
-            NestLevel = parent == null ? 0 : parent.NestLevel + 1;
-            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            Children = new List<ICommand>();
-
+            Settings = settings;
+            NestLevel = parent?.NestLevel + 1 ?? 0;
+            
+            // メッセージング設定
             OnStartCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
-            OnDoingCommand += (sender, log) => WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, log));
+            OnDoingCommand += (sender, log) => WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, log ?? ""));
             OnFinishCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
         }
 
-        public virtual async Task<bool> Execute(CancellationToken cancellationToken)
+        public virtual void AddChild(ICommand child)
         {
-            OnStartCommand?.Invoke(this, EventArgs.Empty);
-            bool result = await DoExecuteAsync(cancellationToken);
-            OnFinishCommand?.Invoke(this, EventArgs.Empty);
-
-            return result;
+            _children.Add(child);
         }
 
+        public virtual void RemoveChild(ICommand child)
+        {
+            _children.Remove(child);
+        }
+
+        public virtual IEnumerable<ICommand> GetChildren()
+        {
+            return _children;
+        }
+
+        /// <summary>
+        /// ファイルパスの有効性を検証
+        /// </summary>
+        protected virtual void ValidateFiles()
+        {
+            // 基底クラスでは何もしない（派生クラスでオーバーライド）
+        }
+
+        /// <summary>
+        /// ファイル存在チェック（エラー時に例外を投げる）
+        /// </summary>
+        protected void ValidateFileExists(string filePath, string fileDescription)
+        {
+            if (string.IsNullOrEmpty(filePath))
+                return; // 空の場合はチェックしない
+
+            var absolutePath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(Environment.CurrentDirectory, filePath);
+            
+            if (!File.Exists(absolutePath))
+            {
+                throw new FileNotFoundException($"{fileDescription}が見つかりません: {filePath}\n確認したパス: {absolutePath}");
+            }
+        }
+
+        /// <summary>
+        /// ディレクトリ存在チェック（エラー時に例外を投げる）
+        /// </summary>
+        protected void ValidateDirectoryExists(string directoryPath, string directoryDescription)
+        {
+            if (string.IsNullOrEmpty(directoryPath))
+                return; // 空の場合はチェックしない
+
+            var absolutePath = Path.IsPathRooted(directoryPath) ? directoryPath : Path.Combine(Environment.CurrentDirectory, directoryPath);
+            
+            if (!Directory.Exists(absolutePath))
+            {
+                throw new DirectoryNotFoundException($"{directoryDescription}が見つかりません: {directoryPath}\n確認したパス: {absolutePath}");
+            }
+        }
+
+        /// <summary>
+        /// 保存先ディレクトリの親フォルダ存在チェック
+        /// </summary>
+        protected void ValidateSaveDirectoryParentExists(string directoryPath, string directoryDescription)
+        {
+            if (string.IsNullOrEmpty(directoryPath))
+                return; // 空の場合はチェックしない
+
+            var absolutePath = Path.IsPathRooted(directoryPath) ? directoryPath : Path.Combine(Environment.CurrentDirectory, directoryPath);
+            
+            // ディレクトリが既に存在する場合はOK
+            if (Directory.Exists(absolutePath))
+                return;
+                
+            // 親ディレクトリが存在するかチェック
+            var parentDir = Path.GetDirectoryName(absolutePath);
+            if (string.IsNullOrEmpty(parentDir) || !Directory.Exists(parentDir))
+            {
+                throw new DirectoryNotFoundException($"{directoryDescription}の親フォルダが見つかりません: {directoryPath}\n親フォルダ: {parentDir ?? "不明"}");
+            }
+        }
+
+        /// <summary>
+        /// コマンドを実行
+        /// </summary>
+        public virtual async Task<bool> Execute(CancellationToken cancellationToken)
+        {
+            if (!IsEnabled)
+                return true;
+
+            OnStartCommand?.Invoke(this, EventArgs.Empty);
+            WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
+
+            try
+            {
+                // 実行前にファイル検証を行う
+                ValidateFiles();
+                
+                var result = await DoExecuteAsync(cancellationToken);
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                return result;
+            }
+            catch (OperationCanceledException)
+            {
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                throw;
+            }
+            catch (LoopBreakException)
+            {
+                // LoopBreakExceptionはそのまま上位に伝播
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                throw;
+            }
+            catch (FileNotFoundException ex)
+            {
+                LogMessage($"❌ ファイルエラー: {ex.Message}");
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                return false;
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                LogMessage($"❌ ディレクトリエラー: {ex.Message}");
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 実行エラー: {ex.Message}");
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 実際の実行処理（派生クラスで実装）
+        /// </summary>
         protected abstract Task<bool> DoExecuteAsync(CancellationToken cancellationToken);
 
-        public bool CanExecute() => true;
+        /// <summary>
+        /// 子コマンドを順次実行
+        /// </summary>
+        protected async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
+        {
+            foreach (var child in _children)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                var result = await child.Execute(cancellationToken);
+                if (!result)
+                    return false;
+            }
+            return true;
+        }
 
+        /// <summary>
+        /// 進捗報告
+        /// </summary>
         protected void ReportProgress(double elapsedMilliseconds, double totalMilliseconds)
         {
-            int progress;
-            if (totalMilliseconds <= 0)
-            {
-                progress = 100;
-            }
-            else
-            {
-                progress = (int)Math.Round((elapsedMilliseconds / totalMilliseconds) * 100);
-                if (progress < 0) progress = 0;
-                if (progress > 100) progress = 100;
-            }
+            int progress = totalMilliseconds <= 0 ? 100 : 
+                Math.Max(0, Math.Min(100, (int)Math.Round((elapsedMilliseconds / totalMilliseconds) * 100)));
+            
             WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(this, progress));
         }
 
+        /// <summary>
+        /// 子要素の進捗をリセット
+        /// </summary>
         protected void ResetChildrenProgress()
         {
             foreach (var command in Children)
@@ -90,569 +236,581 @@ namespace MacroPanels.Command.Class
             }
         }
 
-        protected async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
+        /// <summary>
+        /// ログ出力
+        /// </summary>
+        protected void LogMessage(string message)
         {
-            // Children は常にリストで初期化される想定
-            if (Children == null || !Children.Any())
-            {
-                throw new Exception("子要素がありません。");
-            }
-
-            ResetChildrenProgress();
-
-            foreach (var command in Children)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return false;
-                }
-
-                if (!await command.Execute(cancellationToken))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            OnDoingCommand?.Invoke(this, message);
+            WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, message));
         }
     }
 
-    public class RootCommand : BaseCommand, ICommand, IRootCommand
+    /// <summary>
+    /// ルートコマンド
+    /// </summary>
+    public class RootCommand : BaseCommand, IRootCommand
     {
+        public RootCommand() : base(null, null)
+        {
+            Description = "ルートコマンド";
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            return ExecuteChildrenAsync(cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// 何もしないコマンド
+    /// </summary>
+    public class NothingCommand : BaseCommand, IRootCommand
+    {
+        public NothingCommand() : base(null, null)
+        {
+            Description = "何もしない";
+        }
+
         protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
         }
     }
 
-    public class NothingCommand : BaseCommand, ICommand, IRootCommand
+    /// <summary>
+    /// 画像待機コマンド
+    /// </summary>
+    public class WaitImageCommand : BaseCommand, IWaitImageCommand
     {
-        public NothingCommand() { }
+        public new IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings!;
 
-        public NothingCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-
-        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        public WaitImageCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
         {
-            return Task.FromResult(true);
+            Description = "画像待機";
         }
-    }
 
-    public class WaitImageCommand : BaseCommand, ICommand, IWaitImageCommand
-    {
-        new public IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings;
-
-        public WaitImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ImagePath, "画像ファイル");
+            }
+        }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
+            var settings = Settings;
+            if (settings == null) return false;
+
             var stopwatch = Stopwatch.StartNew();
 
-            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
+            while (stopwatch.ElapsedMilliseconds < settings.Timeout)
             {
-                var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
+                var point = await ImageSearchHelper.SearchImage(
+                    settings.ImagePath, cancellationToken, settings.Threshold, 
+                    settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
 
                 if (point != null)
                 {
-                    OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+                    LogMessage($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
                     return true;
                 }
 
                 if (cancellationToken.IsCancellationRequested) return false;
 
-                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
-
-                await Task.Delay(Settings.Interval, cancellationToken);
+                ReportProgress(stopwatch.ElapsedMilliseconds, settings.Timeout);
+                await Task.Delay(settings.Interval, cancellationToken);
             }
 
-            OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
-
+            LogMessage("画像が見つかりませんでした。");
             return false;
         }
     }
 
-    public class ClickImageCommand : BaseCommand, ICommand, IClickImageCommand
+    /// <summary>
+    /// 画像クリックコマンド
+    /// </summary>
+    public class ClickImageCommand : BaseCommand, IClickImageCommand
     {
-        new public IClickImageCommandSettings Settings => (IClickImageCommandSettings)base.Settings;
+        public new IClickImageCommandSettings Settings => (IClickImageCommandSettings)base.Settings!;
 
-        public ClickImageCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        public ClickImageCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "画像クリック";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ImagePath, "画像ファイル");
+            }
+        }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
+            var settings = Settings;
+            if (settings == null) return false;
+
             var stopwatch = Stopwatch.StartNew();
 
-            while (stopwatch.ElapsedMilliseconds < Settings.Timeout)
+            while (stopwatch.ElapsedMilliseconds < settings.Timeout)
             {
-                var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
+                var point = await ImageSearchHelper.SearchImage(
+                    settings.ImagePath, cancellationToken, settings.Threshold,
+                    settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
 
                 if (point != null)
                 {
-                    switch (Settings.Button)
-                    {
-                        case System.Windows.Input.MouseButton.Left:
-                            await MouseHelper.Input.ClickAsync(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
-                            break;
-                        case System.Windows.Input.MouseButton.Right:
-                            await MouseHelper.Input.RightClickAsync(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
-                            break;
-                        case System.Windows.Input.MouseButton.Middle:
-                            await MouseHelper.Input.MiddleClickAsync(point.Value.X, point.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
-                            break;
-                        default:
-                            throw new Exception("マウスボタンが不正です。");
-                    }
-
-                    OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
-
+                    await ExecuteMouseClick(point.Value.X, point.Value.Y, settings.Button, 
+                        settings.WindowTitle, settings.WindowClassName);
+                    
+                    LogMessage($"画像をクリックしました。({point.Value.X}, {point.Value.Y})");
                     return true;
                 }
 
                 if (cancellationToken.IsCancellationRequested) return false;
 
-                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Timeout);
-
-                await Task.Delay(Settings.Interval, cancellationToken);
+                ReportProgress(stopwatch.ElapsedMilliseconds, settings.Timeout);
+                await Task.Delay(settings.Interval, cancellationToken);
             }
 
-            OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
-
+            LogMessage("画像が見つかりませんでした。");
             return false;
         }
 
-    }
-
-    public class HotkeyCommand : BaseCommand, ICommand, IHotkeyCommand
-    {
-        new public IHotkeyCommandSettings Settings => (IHotkeyCommandSettings)base.Settings;
-
-        public HotkeyCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        private static async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button, 
+            string windowTitle, string windowClassName)
         {
-            await Task.Run(() => KeyHelper.Input.KeyPress(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift, Settings.WindowTitle, Settings.WindowClassName));
-
-            OnDoingCommand?.Invoke(this, $"ホットキーが押されました。");
-
-            return true;
-        }
-    }
-
-    public class ClickCommand : BaseCommand, ICommand, IClickCommand
-    {
-        new public IClickCommandSettings Settings => (IClickCommandSettings)base.Settings;
-
-        public ClickCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            switch (Settings.Button)
+            switch (button)
             {
                 case System.Windows.Input.MouseButton.Left:
-                    await MouseHelper.Input.ClickAsync(Settings.X, Settings.Y, Settings.WindowTitle, Settings.WindowClassName);
+                    await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
                     break;
                 case System.Windows.Input.MouseButton.Right:
-                    await MouseHelper.Input.RightClickAsync(Settings.X, Settings.Y, Settings.WindowTitle, Settings.WindowClassName);
+                    await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
                     break;
                 case System.Windows.Input.MouseButton.Middle:
-                    await MouseHelper.Input.MiddleClickAsync(Settings.X, Settings.Y, Settings.WindowTitle, Settings.WindowClassName);
+                    await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
                     break;
                 default:
-                    throw new Exception("マウスボタンが不正です。");
+                    throw new ArgumentException($"サポートされていないマウスボタン: {button}");
             }
+        }
+    }
 
-            var targetDescription = string.IsNullOrEmpty(Settings.WindowTitle) && string.IsNullOrEmpty(Settings.WindowClassName) 
-                ? "グローバル" 
-                : $"{Settings.WindowTitle}[{Settings.WindowClassName}]";
-            OnDoingCommand?.Invoke(this, $"クリックしました。対象: {targetDescription} ({Settings.X}, {Settings.Y})");
+    /// <summary>
+    /// ホットキーコマンド
+    /// </summary>
+    public class HotkeyCommand : BaseCommand, IHotkeyCommand
+    {
+        public new IHotkeyCommandSettings Settings => (IHotkeyCommandSettings)base.Settings!;
 
+        public HotkeyCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "ホットキー";
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            await Task.Run(() => KeyHelper.Input.KeyPress(
+                settings.Key, settings.Ctrl, settings.Alt, settings.Shift,
+                settings.WindowTitle, settings.WindowClassName));
+
+            LogMessage("ホットキーを実行しました。");
             return true;
         }
     }
 
-    public class WaitCommand : BaseCommand, ICommand, IWaitCommand
+    /// <summary>
+    /// クリックコマンド
+    /// </summary>
+    public class ClickCommand : BaseCommand, IClickCommand
     {
-        new public IWaitCommandSettings Settings => (IWaitCommandSettings)base.Settings;
+        public new IClickCommandSettings Settings => (IClickCommandSettings)base.Settings!;
 
-        public WaitCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        public ClickCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "クリック";
+        }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            await ExecuteMouseClick(settings.X, settings.Y, settings.Button,
+                settings.WindowTitle, settings.WindowClassName);
+
+            var target = string.IsNullOrEmpty(settings.WindowTitle) && string.IsNullOrEmpty(settings.WindowClassName)
+                ? "グローバル" : $"{settings.WindowTitle}[{settings.WindowClassName}]";
+            
+            LogMessage($"クリックしました。対象: {target} ({settings.X}, {settings.Y})");
+            return true;
+        }
+
+        private static async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button,
+            string windowTitle, string windowClassName)
+        {
+            switch (button)
+            {
+                case System.Windows.Input.MouseButton.Left:
+                    await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
+                    break;
+                case System.Windows.Input.MouseButton.Right:
+                    await MouseHelper.Input.RightClickAsync(x, y, windowClassName);
+                    break;
+                case System.Windows.Input.MouseButton.Middle:
+                    await MouseHelper.Input.MiddleClickAsync(x, y, windowClassName);
+                    break;
+                default:
+                    throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 待機コマンド
+    /// </summary>
+    public class WaitCommand : BaseCommand, IWaitCommand
+    {
+        public new IWaitCommandSettings Settings => (IWaitCommandSettings)base.Settings!;
+
+        public WaitCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "待機";
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
             var stopwatch = Stopwatch.StartNew();
 
-            while (stopwatch.ElapsedMilliseconds < Settings.Wait)
+            while (stopwatch.ElapsedMilliseconds < settings.Wait)
             {
                 if (cancellationToken.IsCancellationRequested) return false;
 
-                ReportProgress(stopwatch.ElapsedMilliseconds, Settings.Wait);
-
-                await Task.Delay(100, cancellationToken);
+                ReportProgress(stopwatch.ElapsedMilliseconds, settings.Wait);
+                await Task.Delay(50, cancellationToken);
             }
 
-            OnDoingCommand?.Invoke(this, $"待機しました。");
-
+            LogMessage("待機が完了しました。");
             return true;
         }
     }
 
-    public class IfCommand : BaseCommand, ICommand, IIfCommand
+    /// <summary>
+    /// ループコマンド
+    /// </summary>
+    public class LoopCommand : BaseCommand, ILoopCommand
     {
-        public IfCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        public new ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings!;
+
+        public LoopCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "ループ";
+        }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            return await Task.FromResult(true);
+            var settings = Settings;
+            if (settings == null) return false;
+
+            LogMessage($"ループを開始します。({settings.LoopCount}回)");
+
+            for (int i = 0; i < settings.LoopCount; i++)
+            {
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ResetChildrenProgress();
+
+                try
+                {
+                    var result = await ExecuteChildrenAsync(cancellationToken);
+                    if (!result) return false;
+                }
+                catch (LoopBreakException)
+                {
+                    // LoopBreakExceptionをキャッチしてこのループを中断
+                    LogMessage($"ループが中断されました。(実行回数: {i + 1}/{settings.LoopCount})");
+                    break; // このループのみを抜ける
+                }
+
+                ReportProgress(i + 1, settings.LoopCount);
+            }
+
+            LogMessage("ループが完了しました。");
+            return true;
+        }
+
+        /// <summary>
+        /// 子コマンドを順次実行（LoopBreakException対応版）
+        /// </summary>
+        protected new async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
+        {
+            foreach (var child in Children)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                try
+                {
+                    var result = await child.Execute(cancellationToken);
+                    if (!result)
+                        return false;
+                }
+                catch (LoopBreakException)
+                {
+                    // LoopBreakExceptionは上位のLoopCommandに伝播
+                    throw;
+                }
+            }
+            return true;
         }
     }
 
-    public class IfImageExistCommand : BaseCommand, ICommand, IIfCommand, IIfImageExistCommand
+    /// <summary>
+    /// If文の基底クラス
+    /// </summary>
+    public abstract class IfCommand : BaseCommand
     {
-        new public IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings;
-
-        public IfImageExistCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
+        protected IfCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
         {
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            if (Children == null || !Children.Any())
+            var condition = await EvaluateConditionAsync(cancellationToken);
+            if (condition)
             {
-                throw new Exception("If内に要素がありません。");
+                return await ExecuteChildrenAsync(cancellationToken);
             }
+            return true; // 条件が偽でも成功として扱う
+        }
 
-            // タイムアウトなしで即座に判定
-            var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
+        protected abstract Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken);
+    }
+
+    /// <summary>
+    /// 画像存在確認If文
+    /// </summary>
+    public class IfImageExistCommand : IfCommand, IIfImageExistCommand
+    {
+        public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings!;
+
+        public IfImageExistCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "画像存在確認";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ImagePath, "画像ファイル");
+            }
+        }
+
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            var point = await ImageSearchHelper.SearchImage(
+                settings.ImagePath, cancellationToken, settings.Threshold,
+                settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
 
             if (point != null)
             {
-                OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
-                return await ExecuteChildrenAsync(cancellationToken);
+                LogMessage($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+                return true;
             }
 
-            OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
-            return true;
+            LogMessage("画像が見つかりませんでした。");
+            return false;
         }
     }
 
-    public class IfImageNotExistCommand : BaseCommand, ICommand, IIfCommand, IIfImageNotExistCommand
+    /// <summary>
+    /// 画像非存在確認If文
+    /// </summary>
+    public class IfImageNotExistCommand : IfCommand, IIfImageNotExistCommand
     {
-        new public IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings;
+        public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings!;
 
-        public IfImageNotExistCommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
+        public IfImageNotExistCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
         {
+            Description = "画像非存在確認";
         }
 
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        protected override void ValidateFiles()
         {
-            if (Children == null || !Children.Any())
+            var settings = Settings;
+            if (settings != null)
             {
-                throw new Exception("If内に要素がありません。");
+                ValidateFileExists(settings.ImagePath, "画像ファイル");
             }
+        }
 
-            // タイムアウトなしで即座に判定
-            var point = await ImageSearchHelper.SearchImage(Settings.ImagePath, cancellationToken, Settings.Threshold, Settings.SearchColor, Settings.WindowTitle, Settings.WindowClassName);
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
 
-            // 画像が「存在しない」ことを検知したら即座に子コマンドを実行
+            var point = await ImageSearchHelper.SearchImage(
+                settings.ImagePath, cancellationToken, settings.Threshold,
+                settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
+
             if (point == null)
             {
-                OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
-                return await ExecuteChildrenAsync(cancellationToken);
-            }
-
-            // 画像が見つかった場合は条件不成立
-            OnDoingCommand?.Invoke(this, $"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
-            return true;
-        }
-    }
-
-    public class IfEndCommand : BaseCommand, ICommand
-    {
-        public IfEndCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            return await Task.Run(() =>
-            {
-                ResetChildrenProgress();
+                LogMessage("画像が見つかりませんでした。");
                 return true;
-            });
-        }
-    }
-
-    public class LoopCommand : BaseCommand, ICommand, ILoopCommand
-    {
-        new public ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings;
-
-        public LoopCommand() { }
-
-        public LoopCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            if (Children == null || !Children.Any())
-            {
-                throw new Exception("ループ内に要素がありません。");
             }
 
-            OnDoingCommand?.Invoke(this, $"ループを開始します。");
+            LogMessage($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+            return false;
+        }
+    }
 
-            for (int i = 0; i < Settings.LoopCount; i++)
+    /// <summary>
+    /// AI画像存在確認If文
+    /// </summary>
+    public class IfImageExistAICommand : IfCommand, IIfImageExistAICommand
+    {
+        public new IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings!;
+
+        public IfImageExistAICommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "AI画像存在確認";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
             {
-                ResetChildrenProgress();
-
-                foreach (var command in Children)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return false;
-                    }
-
-                    if (!await command.Execute(cancellationToken))
-                    {
-                        return true;
-                    }
-                }
-
-                // 1-origin で進捗を報告して 100% に届くようにする
-                ReportProgress(i + 1, Settings.LoopCount);
+                ValidateFileExists(settings.ModelPath, "ONNXモデルファイル");
             }
-
-            OnDoingCommand?.Invoke(this, $"ループを終了します。");
-
-            return true;
-        }
-    }
-
-    public class LoopEndCommand : BaseCommand, ICommand, IEndLoopCommand
-    {
-        new public ILoopEndCommandSettings Settings => (ILoopEndCommandSettings)base.Settings;
-
-        public LoopEndCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            return await Task.Run(() =>
-            {
-                ResetChildrenProgress();
-
-                return true;
-            });
-        }
-    }
-
-    public class LoopBreakCommand : BaseCommand, ICommand, ILoopBreakCommand
-    {
-        public LoopBreakCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            return await Task.Run(() => false);
-        }
-    }
-
-    public class IfImageExistAICommand : BaseCommand, ICommand, IIfCommand, IIfImageExistAICommand
-    {
-        new public IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings;
-
-        public IfImageExistAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
-        {
         }
 
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
         {
+            var settings = Settings;
+            if (settings == null) return false;
+
             if (Children == null || !Children.Any())
             {
                 throw new Exception("If内に要素がありません。");
             }
 
-            YoloWin.Init(Settings.ModelPath, 640, true);
+            YoloWin.Init(settings.ModelPath, 640, true);
 
             // AI検出は即座に実行し、ループやタイムアウトは行わない
-            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle, (float)Settings.ConfThreshold, (float)Settings.IoUThreshold).Detections;
+            var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
 
             if (det.Count > 0)
             {
                 var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
 
-                if (best.ClassId == Settings.ClassID)
+                if (best.ClassId == settings.ClassID)
                 {
-                    OnDoingCommand?.Invoke(this, $"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) ClassId: {best.ClassId}");
-                    return await ExecuteChildrenAsync(cancellationToken);
+                    LogMessage($"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) ClassId: {best.ClassId}");
+                    return true;
                 }
             }
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return false;
-            }
-
-            OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。");
-            return true;
+            LogMessage("画像が見つかりませんでした。");
+            return false;
         }
     }
 
-    public class IfImageNotExistAICommand : BaseCommand, ICommand, IIfCommand, IIfImageNotExistAICommand
+    /// <summary>
+    /// AI画像非存在確認If文
+    /// </summary>
+    public class IfImageNotExistAICommand : IfCommand, IIfImageNotExistAICommand
     {
-        new public IIfImageNotExistAISettings Settings => (IIfImageNotExistAISettings)base.Settings;
-        public IfImageNotExistAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings)
+        public new IIfImageNotExistAISettings Settings => (IIfImageNotExistAISettings)base.Settings!;
+
+        public IfImageNotExistAICommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
         {
+            Description = "AI画像非存在確認";
         }
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+
+        protected override void ValidateFiles()
         {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ModelPath, "ONNXモデルファイル");
+            }
+        }
+
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
             if (Children == null || !Children.Any())
             {
                 throw new Exception("If内に要素がありません。");
             }
 
-            YoloWin.Init(Settings.ModelPath, 640, true);
+            YoloWin.Init(settings.ModelPath, 640, true);
 
             // AI検出は即座に実行し、ループやタイムアウトは行わない
-            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle, (float)Settings.ConfThreshold, (float)Settings.IoUThreshold).Detections;
+            var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
 
             // 指定クラスIDが検出されなかった場合に子コマンド実行
-            var targetDetections = det.Where(d => d.ClassId == Settings.ClassID).ToList();
+            var targetDetections = det.Where(d => d.ClassId == settings.ClassID).ToList();
 
             if (targetDetections.Count == 0)
             {
-                OnDoingCommand?.Invoke(this, $"クラスID {Settings.ClassID} の画像が見つかりませんでした。");
-                return await ExecuteChildrenAsync(cancellationToken);
+                LogMessage($"クラスID {settings.ClassID} の画像が見つかりませんでした。");
+                return true;
             }
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return false;
-            }
-
-            OnDoingCommand?.Invoke(this, $"クラスID {Settings.ClassID} の画像が見つかりました。");
-            return true;
+            LogMessage($"クラスID {settings.ClassID} の画像が見つかりました。");
+            return false;
         }
     }
 
-    public class ExecuteCommand : BaseCommand, ICommand, IExecuteCommand
+    /// <summary>
+    /// 変数条件確認If文
+    /// </summary>
+    public class IfVariableCommand : IfCommand, IIfVariableCommand
     {
-        new public IExecuteCommandSettings Settings => (IExecuteCommandSettings)base.Settings;
-        public ExecuteCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            try
-            {
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = Settings.ProgramPath,
-                    Arguments = Settings.Arguments,
-                    WorkingDirectory = Settings.WorkingDirectory,
-                    UseShellExecute = true,
-                };
-                await Task.Run(() =>
-                {
-                    Process.Start(startInfo);
-                    OnDoingCommand?.Invoke(this, $"プログラムを実行しました。");
-                });
-            }
-            catch (Exception ex)
-            {
-                OnDoingCommand?.Invoke(this, $"プログラムの実行に失敗しました: {ex.Message}");
-                return false;
-            }
-            return await Task.FromResult(true);
-        }
-    }
+        public new IIfVariableCommandSettings Settings => (IIfVariableCommandSettings)base.Settings!;
 
-    // 共有変数ストア
-    internal static class VariableStore
-    {
-        private static readonly ConcurrentDictionary<string, string> s_vars = new(StringComparer.OrdinalIgnoreCase);
-
-        public static void Set(string name, string value)
+        public IfVariableCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
         {
-            if (string.IsNullOrWhiteSpace(name)) return;
-            s_vars[name] = value ?? string.Empty;
+            Description = "変数条件確認";
         }
 
-        public static string? Get(string name)
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(name)) return null;
-            return s_vars.TryGetValue(name, out var v) ? v : null;
-        }
+            var settings = Settings;
+            if (settings == null) return false;
 
-        public static void Clear() => s_vars.Clear();
-    }
-
-    public class SetVariableCommand : BaseCommand, ICommand, ISetVariableCommand
-    {
-        new public ISetVariableCommandSettings Settings => (ISetVariableCommandSettings)base.Settings;
-        public SetVariableCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-
-        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            VariableStore.Set(Settings.Name, Settings.Value);
-            OnDoingCommand?.Invoke(this, $"変数を設定しました。{Settings.Name} = \"{Settings.Value}\"");
-            return Task.FromResult(true);
-        }
-    }
-
-    public class SetVariableAICommand : BaseCommand, ICommand, ISetVariableAICommand
-    {
-        new public ISetVariableAICommandSettings Settings => (ISetVariableAICommandSettings)base.Settings;
-        public SetVariableAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            YoloWin.Init(Settings.ModelPath, 640, true);
-
-            var stopwatch = Stopwatch.StartNew();
-
-            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle, (float)Settings.ConfThreshold, (float)Settings.IoUThreshold).Detections;
-
-            if(det.Count == 0)
-            {
-                VariableStore.Set(Settings.Name, "-1");
-                OnDoingCommand?.Invoke(this, $"画像が見つかりませんでした。{Settings.Name}に-1をセットしました。");
-            }
-            else
-            {
-                switch (Settings.AIDetectMode)
-                {
-                    case "Class":
-                        // 最高スコアのものをセット
-                        var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
-                        VariableStore.Set(Settings.Name, best.ClassId.ToString());
-                        OnDoingCommand?.Invoke(this, $"画像が見つかりました。{Settings.Name}に{best.ClassId}をセットしました。");
-                        break;
-                    case "Count":
-                        // 検出された数をセット
-                        VariableStore.Set(Settings.Name, det.Count.ToString());
-                        OnDoingCommand?.Invoke(this, $"画像が{det.Count}個見つかりました。{Settings.Name}に{det.Count}をセットしました。");
-                        break;
-                    default:
-                        throw new Exception($"不明なモードです: {Settings.AIDetectMode}");
-                }
-            }
-
-            return Task.FromResult(true);
-        }
-    }
-
-    public class IfVariableCommand : BaseCommand, ICommand, IIfVariableCommand
-    {
-        new public IIfVariableCommandSettings Settings => (IIfVariableCommandSettings)base.Settings;
-        public IfVariableCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
-
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
             if (Children == null || !Children.Any())
             {
                 throw new Exception("If内に要素がありません。");
             }
 
-            var lhs = VariableStore.Get(Settings.Name) ?? string.Empty;
-            var rhs = Settings.Value ?? string.Empty;
+            var lhs = VariableStore.Get(settings.Name) ?? string.Empty;
+            var rhs = settings.Value ?? string.Empty;
 
-            bool result = Evaluate(lhs, rhs, Settings.Operator);
-            OnDoingCommand?.Invoke(this, $"IfVariable: {Settings.Name}({lhs}) {Settings.Operator} {rhs} => {result}");
+            bool result = Evaluate(lhs, rhs, settings.Operator);
+            LogMessage($"IfVariable: {settings.Name}({lhs}) {settings.Operator} {rhs} => {result}");
 
-            if (result)
-            {
-                return await ExecuteChildrenAsync(cancellationToken);
-            }
-
-            return true;
+            return result;
         }
 
         private static bool Evaluate(string lhs, string rhs, string op)
@@ -688,94 +846,317 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    public class ScreenshotCommand : BaseCommand, ICommand, IScreenshotCommand
+    // 終了コマンド類
+    public class IfEndCommand : BaseCommand
     {
-        new public IScreenshotCommandSettings Settings => (IScreenshotCommandSettings)base.Settings;
-        public ScreenshotCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        public IfEndCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "If終了";
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            ResetChildrenProgress();
+            return Task.FromResult(true);
+        }
+    }
+
+    public class LoopEndCommand : BaseCommand
+    {
+        public LoopEndCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "ループ終了";
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            ResetChildrenProgress();
+            return Task.FromResult(true);
+        }
+    }
+
+    public class LoopBreakCommand : BaseCommand, ILoopBreakCommand
+    {
+        public LoopBreakCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "ループ中断";
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            LogMessage("ループ中断を実行します。");
+            
+            // LoopBreakExceptionを投げて最も内側のループのみを中断
+            throw new LoopBreakException("ループ中断コマンドが実行されました");
+        }
+    }
+
+    // その他のコマンド
+    public class ExecuteCommand : BaseCommand, IExecuteCommand
+    {
+        public new IExecuteCommandSettings Settings => (IExecuteCommandSettings)base.Settings!;
+
+        public ExecuteCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "プログラム実行";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ProgramPath, "実行ファイル");
+                if (!string.IsNullOrEmpty(settings.WorkingDirectory))
+                {
+                    ValidateDirectoryExists(settings.WorkingDirectory, "ワーキングディレクトリ");
+                }
+            }
+        }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
+            var settings = Settings;
+            if (settings == null) return false;
+
             try
             {
-                var dir = string.IsNullOrWhiteSpace(Settings.SaveDirectory)
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = settings.ProgramPath,
+                    Arguments = settings.Arguments,
+                    WorkingDirectory = settings.WorkingDirectory,
+                    UseShellExecute = true,
+                };
+                await Task.Run(() =>
+                {
+                    Process.Start(startInfo);
+                    LogMessage($"プログラムを実行しました。");
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"プログラムの実行に失敗しました: {ex.Message}");
+                return false;
+            }
+        }
+    }
+
+    public class SetVariableCommand : BaseCommand, ISetVariableCommand
+    {
+        public new ISetVariableCommandSettings Settings => (ISetVariableCommandSettings)base.Settings!;
+
+        public SetVariableCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "変数設定";
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return Task.FromResult(false);
+
+            VariableStore.Set(settings.Name, settings.Value);
+            LogMessage($"変数を設定しました。{settings.Name} = \"{settings.Value}\"");
+            return Task.FromResult(true);
+        }
+    }
+
+    public class SetVariableAICommand : BaseCommand, ISetVariableAICommand
+    {
+        public new ISetVariableAICommandSettings Settings => (ISetVariableAICommandSettings)base.Settings!;
+
+        public SetVariableAICommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "AI変数設定";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ModelPath, "ONNXモデルファイル");
+            }
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return Task.FromResult(false);
+
+            YoloWin.Init(settings.ModelPath, 640, true);
+
+            var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
+
+            if (det.Count == 0)
+            {
+                VariableStore.Set(settings.Name, "-1");
+                LogMessage($"画像が見つかりませんでした。{settings.Name}に-1をセットしました。");
+            }
+            else
+            {
+                switch (settings.AIDetectMode)
+                {
+                    case "Class":
+                        // 最高スコアのものをセット
+                        var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
+                        VariableStore.Set(settings.Name, best.ClassId.ToString());
+                        LogMessage($"画像が見つかりました。{settings.Name}に{best.ClassId}をセットしました。");
+                        break;
+                    case "Count":
+                        // 検出された数をセット
+                        VariableStore.Set(settings.Name, det.Count.ToString());
+                        LogMessage($"画像が{det.Count}個見つかりました。{settings.Name}に{det.Count}をセットしました。");
+                        break;
+                    default:
+                        throw new Exception($"不明なモードです: {settings.AIDetectMode}");
+                }
+            }
+
+            return Task.FromResult(true);
+        }
+    }
+
+    public class ScreenshotCommand : BaseCommand, IScreenshotCommand
+    {
+        public new IScreenshotCommandSettings Settings => (IScreenshotCommandSettings)base.Settings!;
+
+        public ScreenshotCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "スクリーンショット";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null && !string.IsNullOrEmpty(settings.SaveDirectory))
+            {
+                ValidateSaveDirectoryParentExists(settings.SaveDirectory, "保存先ディレクトリ");
+            }
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            try
+            {
+                var dir = string.IsNullOrWhiteSpace(settings.SaveDirectory)
                     ? Path.Combine(Environment.CurrentDirectory, "Screenshots")
-                    : Settings.SaveDirectory;
+                    : settings.SaveDirectory;
 
                 if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
                 var file = $"{DateTime.Now:yyyyMMdd_HHmmssfff}.png";
                 var fullPath = Path.Combine(dir, file);
 
-                using var mat = (string.IsNullOrEmpty(Settings.WindowTitle) && string.IsNullOrEmpty(Settings.WindowClassName))
+                using var mat = (string.IsNullOrEmpty(settings.WindowTitle) && string.IsNullOrEmpty(settings.WindowClassName))
                     ? ScreenCaptureHelper.CaptureScreen()
-                    : ScreenCaptureHelper.CaptureWindow(Settings.WindowTitle, Settings.WindowClassName);
+                    : ScreenCaptureHelper.CaptureWindow(settings.WindowTitle, settings.WindowClassName);
 
                 if (cancellationToken.IsCancellationRequested) return false;
 
                 ScreenCaptureHelper.SaveCapture(mat, fullPath);
 
-                OnDoingCommand?.Invoke(this, $"スクリーンショットを保存しました: {fullPath}");
-                return await Task.FromResult(true);
+                LogMessage($"スクリーンショットを保存しました: {fullPath}");
+                return true;
             }
             catch (Exception ex)
             {
-                OnDoingCommand?.Invoke(this, $"スクリーンショットの保存に失敗しました: {ex.Message}");
+                LogMessage($"スクリーンショットの保存に失敗しました: {ex.Message}");
                 return false;
             }
         }
     }
 
-    public class ClickImageAICommand : BaseCommand, ICommand, IClickImageAICommand
+    public class ClickImageAICommand : BaseCommand, IClickImageAICommand
     {
-        new public IClickImageAICommandSettings Settings => (IClickImageAICommandSettings)base.Settings;
-        public ClickImageAICommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
+        public new IClickImageAICommandSettings Settings => (IClickImageAICommandSettings)base.Settings!;
+
+        public ClickImageAICommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        {
+            Description = "AI画像クリック";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ModelPath, "ONNXモデルファイル");
+            }
+        }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            YoloWin.Init(Settings.ModelPath, 640, true);
+            var settings = Settings;
+            if (settings == null) return false;
+
+            YoloWin.Init(settings.ModelPath, 640, true);
 
             // AI検出を実行
-            var det = YoloWin.DetectFromWindowTitle(Settings.WindowTitle, (float)Settings.ConfThreshold, (float)Settings.IoUThreshold).Detections;
+            var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
 
             // 指定クラスIDが検出された場合にクリック
-            var targetDetections = det.Where(d => d.ClassId == Settings.ClassID).ToList();
+            var targetDetections = det.Where(d => d.ClassId == settings.ClassID).ToList();
 
             if (targetDetections.Count > 0)
             {
                 // 最も信頼度の高い検出結果を選択
                 var best = targetDetections.OrderByDescending(d => d.Score).First();
-                
+
                 // 検出領域の中心座標を計算
                 int centerX = (int)(best.Rect.X + best.Rect.Width / 2);
                 int centerY = (int)(best.Rect.Y + best.Rect.Height / 2);
 
                 // マウスクリックを実行（非同期）
-                switch (Settings.Button)
+                switch (settings.Button)
                 {
                     case System.Windows.Input.MouseButton.Left:
-                        await MouseHelper.Input.ClickAsync(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName);
+                        await MouseHelper.Input.ClickAsync(centerX, centerY, settings.WindowTitle, settings.WindowClassName);
                         break;
                     case System.Windows.Input.MouseButton.Right:
-                        await MouseHelper.Input.RightClickAsync(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName);
+                        await MouseHelper.Input.RightClickAsync(centerX, centerY, settings.WindowTitle, settings.WindowClassName);
                         break;
                     case System.Windows.Input.MouseButton.Middle:
-                        await MouseHelper.Input.MiddleClickAsync(centerX, centerY, Settings.WindowTitle, Settings.WindowClassName);
+                        await MouseHelper.Input.MiddleClickAsync(centerX, centerY, settings.WindowTitle, settings.WindowClassName);
                         break;
                     default:
                         throw new Exception("マウスボタンが不正です。");
                 }
 
-                OnDoingCommand?.Invoke(this, $"AI画像クリックが完了しました。({centerX}, {centerY}) ClassId: {best.ClassId}, Score: {best.Score:F2}");
+                LogMessage($"AI画像クリックが完了しました。({centerX}, {centerY}) ClassId: {best.ClassId}, Score: {best.Score:F2}");
                 return true;
             }
 
             if (cancellationToken.IsCancellationRequested)
-            {
                 return false;
-            }
 
-            OnDoingCommand?.Invoke(this, $"クラスID {Settings.ClassID} の画像が見つかりませんでした。");
+            LogMessage($"クラスID {settings.ClassID} の画像が見つかりませんでした。");
             return false;
         }
+    }
+
+    // 共有変数ストア
+    internal static class VariableStore
+    {
+        private static readonly ConcurrentDictionary<string, string> s_vars = new(StringComparer.OrdinalIgnoreCase);
+
+        public static void Set(string name, string value)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+            s_vars[name] = value ?? string.Empty;
+        }
+
+        public static string? Get(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            return s_vars.TryGetValue(name, out var v) ? v : null;
+        }
+
+        public static void Clear() => s_vars.Clear();
     }
 }

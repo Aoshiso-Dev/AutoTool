@@ -1,16 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
-    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.0" />
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,18 +17,11 @@
     <ProjectReference Include="..\InputHelper\MouseHelper.csproj" />
     <ProjectReference Include="..\KeyHelper\KeyHelper.csproj" />
     <ProjectReference Include="..\LogHelper\LogHelper.csproj" />
+    <ProjectReference Include="..\OCRHelper\OCRHelper.csproj" />
     <ProjectReference Include="..\OpenCVHelper\OpenCVHelper.csproj" />
     <ProjectReference Include="..\WindowInfoHelper\WindowHelper.csproj" />
+    <ProjectReference Include="..\XmlSerializer\XmlSerializer.csproj" />
     <ProjectReference Include="..\YoloV8DetectHelper\YoLoWinLib.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="View\FavoritePanel.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="View\LogPanel.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
   </ItemGroup>
 
 </Project>

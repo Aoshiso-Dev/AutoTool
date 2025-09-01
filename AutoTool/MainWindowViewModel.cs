@@ -1,507 +1,670 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using System.Windows;
+﻿using System;
 using System.Collections.ObjectModel;
-using AutoTool.ViewModel;
-using AutoTool.Model;
-using static AutoTool.Model.FileManager;
-using System.Windows.Threading;
 using System.IO;
+using System.Windows;
+using System.Linq;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using MacroPanels.ViewModel;
+using MacroPanels.Message;
+using MacroPanels.Plugin;
+using Microsoft.Extensions.Logging;
+using AutoTool.Services.Configuration;
+using AutoTool.Services.Theme;
+using AutoTool.Services.Performance;
 
 namespace AutoTool
 {
-    public static class TabIndexes
-    {
-        public const int Macro = 0;
-        public const int Monitor = 1;
-    }
-
+    /// <summary>
+    /// メインウィンドウのビューモデル
+    /// </summary>
     public partial class MainWindowViewModel : ObservableObject
     {
-        // Undo/Redo管理
+        // プライベートフィールド
+        private readonly ILogger<MainWindowViewModel>? _logger;
+        private readonly IConfigurationService? _configurationService;
+        private readonly IThemeService? _themeService;
+        private readonly IPerformanceService? _performanceService;
+        private readonly MacroPanels.Plugin.IPluginService? _pluginService;
+
+        // マクロパネルのビューモデル
         [ObservableProperty]
-        private CommandHistoryManager _commandHistory = new();
+        private MacroPanels.ViewModel.MacroPanelViewModel? _macroPanelViewModel;
 
-        // ウィンドウ設定
-        private WindowSettings _windowSettings;
-
-        public bool IsRunning
-        {
-            get
-            {
-                return SelectedTabIndex switch
-                {
-                    TabIndexes.Macro => MacroPanelViewModel.IsRunning,
-                    _ => false,
-                };
-            }
-        }
-             
-        private Dictionary<int, FileManager> _fileManagers = [];
-
-        public string AutoToolTitle
-        {
-            get { return IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened ? $"AutoTool - {CurrentFileName}" : "AutoTool"; }
-        }
-
-        private int _selectedTabIndex = TabIndexes.Macro;
-        public int SelectedTabIndex
-        {
-            get { return _selectedTabIndex; }
-            set
-            {
-                SetProperty(ref _selectedTabIndex, value);
-                UpdateProperties();
-            }
-        }
-
-        public bool IsFileOperationEnable
-        {
-            get { return _fileManagers.ContainsKey(SelectedTabIndex); }
-        }
-
-        public bool IsFileOpened
-        {
-            get { return IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened; }
-        }
-
-        public string CurrentFileName
-        {
-            get { return _fileManagers[SelectedTabIndex].CurrentFileName; }
-            set
-            {
-                _fileManagers[SelectedTabIndex].CurrentFileName = value;
-                OnPropertyChanged(nameof(CurrentFileName));
-            }
-        }
-
-        public string CurrentFilePath
-        {
-            get { return _fileManagers[SelectedTabIndex].CurrentFilePath; }
-            set
-            {
-                var oldValue = _fileManagers[SelectedTabIndex].CurrentFilePath;
-                _fileManagers[SelectedTabIndex].CurrentFilePath = value;
-                OnPropertyChanged(nameof(CurrentFilePath));
-                
-                // ファイルパスが変更されたときに設定を更新
-                if (!string.IsNullOrEmpty(value) && oldValue != value)
-                {
-                    _windowSettings.UpdateLastOpenedFile(value);
-                    _windowSettings.Save();
-                    System.Diagnostics.Debug.WriteLine($"最後に開いたファイルを設定に保存: {value}");
-                }
-            }
-        }
-
-        public ObservableCollection<RecentFile>? RecentFiles
-        {
-            get { return _fileManagers[SelectedTabIndex].RecentFiles; }
-        }
-
-        public string MenuItemHeader_SaveFile
-        {
-            get { return IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened ? $"{CurrentFileName} を保存" : "保存"; }
-        }
-
-        public string MenuItemHeader_SaveFileAs
-        {
-            get { return IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened ? $"{CurrentFileName} を名前を付けて保存" : "名前を付けて保存"; }
-        }
+        // ウィンドウの状態
+        [ObservableProperty]
+        private double _windowWidth = 1200;
 
         [ObservableProperty]
-        private MacroPanelViewModel _macroPanelViewModel;
+        private double _windowHeight = 800;
 
+        [ObservableProperty]
+        private WindowState _windowState = WindowState.Normal;
+
+        [ObservableProperty]
+        private string _title = "AutoTool - マクロ自動化ツール";
+
+        // ステータス
         [ObservableProperty]
         private string _statusMessage = "準備完了";
 
+        [ObservableProperty]
+        private bool _isLoading;
+
+        [ObservableProperty]
+        private AppTheme _currentTheme = AppTheme.Light;
+
+        // パフォーマンス情報
+        [ObservableProperty]
+        private string _memoryUsage = "0 MB";
+
+        [ObservableProperty]
+        private string _cpuUsage = "0%";
+
+        // プラグイン情報
+        [ObservableProperty]
+        private ObservableCollection<IPluginInfo> _loadedPlugins = new();
+
+        [ObservableProperty]
+        private ObservableCollection<IPluginCommandInfo> _availableCommands = new();
+
+        [ObservableProperty]
+        private int _pluginCount;
+
+        [ObservableProperty]
+        private int _commandCount;
+
+        #region コンストラクタ
+
+        /// <summary>
+        /// デザイン時用コンストラクタ
+        /// </summary>
         public MainWindowViewModel()
         {
-            // ウィンドウ設定を読み込み
-            _windowSettings = WindowSettings.Load();
-            
-            MacroPanelViewModel = new MacroPanelViewModel();
-
-            InitializeFileManager();
-            InitializeCommandHistory();
-
-            // IsEnabledを定期的に更新する
-            var timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(100);
-            timer.Tick += (sender, e) => 
+            if (IsInDesignMode())
             {
-                var wasRunning = IsRunning;
-                OnPropertyChanged(nameof(IsRunning));
-                
-                // 実行状態が変わった場合はコマンドの実行可能状態も更新
-                if (wasRunning != IsRunning)
-                {
-                    UpdateCommandStates();
-                }
-            };
-            timer.Start();
-        }
-
-        /// <summary>
-        /// ウィンドウ設定を取得
-        /// </summary>
-        public WindowSettings GetWindowSettings() => _windowSettings;
-
-        /// <summary>
-        /// デバッグ用：現在の設定状況を出力
-        /// </summary>
-        [System.Diagnostics.Conditional("DEBUG")]
-        public void PrintDebugSettings()
-        {
-            System.Diagnostics.Debug.WriteLine("=== WindowSettings Debug Info ===");
-            System.Diagnostics.Debug.WriteLine($"OpenLastFileOnStartup: {_windowSettings.OpenLastFileOnStartup}");
-            System.Diagnostics.Debug.WriteLine($"LastOpenedFilePath: '{_windowSettings.LastOpenedFilePath}'");
-            System.Diagnostics.Debug.WriteLine($"IsFileOperationEnable: {IsFileOperationEnable}");
-            System.Diagnostics.Debug.WriteLine($"IsFileOpened: {IsFileOpened}");
-            if (IsFileOperationEnable)
-            {
-                System.Diagnostics.Debug.WriteLine($"CurrentFilePath: '{CurrentFilePath}'");
-                System.Diagnostics.Debug.WriteLine($"CurrentFileName: '{CurrentFileName}'");
+                InitializeDesignMode();
             }
-            System.Diagnostics.Debug.WriteLine("=== End Debug Info ===");
         }
 
         /// <summary>
-        /// 起動時に前回のファイルを開く
+        /// 実行時用コンストラクタ
         /// </summary>
-        public void LoadLastOpenedFileOnStartup()
+        public MainWindowViewModel(
+            ILogger<MainWindowViewModel> logger,
+            IConfigurationService configurationService,
+            IThemeService themeService,
+            IPerformanceService performanceService,
+            MacroPanels.ViewModel.MacroPanelViewModel macroPanelViewModel,
+            MacroPanels.Plugin.IPluginService pluginService)
         {
-            System.Diagnostics.Debug.WriteLine("=== LoadLastOpenedFileOnStartup 開始 ===");
-            System.Diagnostics.Debug.WriteLine($"OpenLastFileOnStartup: {_windowSettings.OpenLastFileOnStartup}");
-            System.Diagnostics.Debug.WriteLine($"LastOpenedFilePath: '{_windowSettings.LastOpenedFilePath}'");
-            System.Diagnostics.Debug.WriteLine($"IsLastOpenedFileValid: {_windowSettings.IsLastOpenedFileValid()}");
-            
-            if (_windowSettings.OpenLastFileOnStartup && _windowSettings.IsLastOpenedFileValid())
+            _logger = logger;
+            _configurationService = configurationService;
+            _themeService = themeService;
+            _performanceService = performanceService;
+            _pluginService = pluginService;
+            MacroPanelViewModel = macroPanelViewModel;
+
+            InitializeRuntime();
+        }
+
+        #endregion
+
+        #region 初期化メソッド
+
+        /// <summary>
+        /// デザインモード用の初期化
+        /// </summary>
+        private void InitializeDesignMode()
+        {
+            try
             {
-                try
+                StatusMessage = "デザインモード";
+                Title = "AutoTool - デザインモード";
+                
+                // デザインモード用のダミーデータ
+                MacroPanelViewModel = new MacroPanels.ViewModel.MacroPanelViewModel();
+                
+                // デザインモード用のダミープラグイン情報
+                LoadedPlugins.Add(new DesignTimePluginInfo("StandardCommands", "標準コマンドプラグイン", "1.0.0"));
+                PluginCount = 1;
+                CommandCount = 7;
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"デザインモード初期化エラー: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// 実行時の初期化
+        /// </summary>
+        private void InitializeRuntime()
+        {
+            try
+            {
+                _logger?.LogInformation("MainWindowViewModel 初期化開始");
+
+                // メッセージング設定
+                SetupMessaging();
+
+                // プラグインイベントの設定
+                SetupPluginEvents();
+
+                // 設定の読み込み
+                LoadSettings();
+
+                // テーマの適用
+                ApplyTheme();
+
+                // パフォーマンス監視開始
+                StartPerformanceMonitoring();
+
+                // プラグイン情報の初期化
+                UpdatePluginInfo();
+
+                StatusMessage = "初期化完了";
+                _logger?.LogInformation("MainWindowViewModel 初期化完了");
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = $"初期化エラー: {ex.Message}";
+                StatusMessage = errorMessage;
+                _logger?.LogError(ex, "MainWindowViewModel 初期化中にエラーが発生しました");
+            }
+        }
+
+        /// <summary>
+        /// メッセージング設定
+        /// </summary>
+        private void SetupMessaging()
+        {
+            // アプリケーション終了メッセージの受信
+            WeakReferenceMessenger.Default.Register<ExitApplicationMessage>(this, (r, m) =>
+            {
+                Application.Current.Shutdown();
+            });
+
+            // ステータスメッセージの受信
+            WeakReferenceMessenger.Default.Register<StatusMessage>(this, (r, m) =>
+            {
+                StatusMessage = m.Message;
+            });
+        }
+
+        /// <summary>
+        /// プラグインイベントの設定
+        /// </summary>
+        private void SetupPluginEvents()
+        {
+            if (_pluginService != null)
+            {
+                _pluginService.PluginLoaded += OnPluginLoaded;
+                _pluginService.PluginUnloaded += OnPluginUnloaded;
+            }
+        }
+
+        /// <summary>
+        /// プラグイン読み込み時の処理
+        /// </summary>
+        private void OnPluginLoaded(object? sender, PluginLoadedEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                UpdatePluginInfo();
+                StatusMessage = $"プラグインが読み込まれました: {e.PluginInfo.Name}";
+                _logger?.LogInformation("プラグイン読み込み通知: {PluginName}", e.PluginInfo.Name);
+            });
+        }
+
+        /// <summary>
+        /// プラグインアンロード時の処理
+        /// </summary>
+        private void OnPluginUnloaded(object? sender, PluginUnloadedEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                UpdatePluginInfo();
+                StatusMessage = $"プラグインがアンロードされました: {e.PluginId}";
+                _logger?.LogInformation("プラグインアンロード通知: {PluginId}", e.PluginId);
+            });
+        }
+
+        /// <summary>
+        /// プラグイン情報の更新
+        /// </summary>
+        private void UpdatePluginInfo()
+        {
+            if (_pluginService != null)
+            {
+                var plugins = _pluginService.GetLoadedPlugins().ToList();
+                var commands = _pluginService.GetAvailablePluginCommands().ToList();
+
+                LoadedPlugins.Clear();
+                foreach (var plugin in plugins)
                 {
-                    System.Diagnostics.Debug.WriteLine($"前回のファイルを開いています: {_windowSettings.LastOpenedFilePath}");
+                    LoadedPlugins.Add(plugin);
+                }
+
+                AvailableCommands.Clear();
+                foreach (var command in commands)
+                {
+                    AvailableCommands.Add(command);
+                }
+
+                PluginCount = plugins.Count;
+                CommandCount = commands.Count;
+
+                _logger?.LogDebug("プラグイン情報更新: {PluginCount}個のプラグイン, {CommandCount}個のコマンド", 
+                    PluginCount, CommandCount);
+            }
+        }
+
+        /// <summary>
+        /// 設定の読み込み
+        /// </summary>
+        private void LoadSettings()
+        {
+            try
+            {
+                if (_configurationService != null)
+                {
+                    // ウィンドウサイズの復元
+                    WindowWidth = _configurationService.GetValue("WindowWidth", 1200.0);
+                    WindowHeight = _configurationService.GetValue("WindowHeight", 800.0);
                     
-                    // ファイルの存在を再確認
-                    if (!File.Exists(_windowSettings.LastOpenedFilePath))
+                    // テーマ設定の復元
+                    var themeString = _configurationService.GetValue("Theme", "Light");
+                    if (Enum.TryParse<AppTheme>(themeString, out var theme))
                     {
-                        System.Diagnostics.Debug.WriteLine("ファイルが存在しません");
-                        StatusMessage = $"前回のファイルが見つかりません: {Path.GetFileName(_windowSettings.LastOpenedFilePath)}";
-                        _windowSettings.LastOpenedFilePath = string.Empty;
-                        _windowSettings.Save();
-                        return;
+                        CurrentTheme = theme;
+                    }
+
+                    _logger?.LogDebug("設定読み込み完了: Width={Width}, Height={Height}, Theme={Theme}",
+                        WindowWidth, WindowHeight, CurrentTheme);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "設定読み込み中にエラーが発生しました。デフォルト値を使用します。");
+            }
+        }
+
+        /// <summary>
+        /// テーマの適用
+        /// </summary>
+        private void ApplyTheme()
+        {
+            try
+            {
+                _themeService?.SetTheme(CurrentTheme);
+                _logger?.LogDebug("テーマ適用完了: {Theme}", CurrentTheme);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "テーマ適用中にエラーが発生しました: {Theme}", CurrentTheme);
+            }
+        }
+
+        /// <summary>
+        /// パフォーマンス監視開始
+        /// </summary>
+        private void StartPerformanceMonitoring()
+        {
+            try
+            {
+                if (_performanceService != null)
+                {
+                    _performanceService.StartMonitoring();
+                    
+                    // パフォーマンス情報の定期更新
+                    var timer = new System.Windows.Threading.DispatcherTimer
+                    {
+                        Interval = TimeSpan.FromSeconds(2)
+                    };
+                    
+                    timer.Tick += (s, e) => UpdatePerformanceInfo();
+                    timer.Start();
+
+                    _logger?.LogDebug("パフォーマンス監視開始");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "パフォーマンス監視開始中にエラーが発生しました");
+            }
+        }
+
+        /// <summary>
+        /// パフォーマンス情報の更新
+        /// </summary>
+        private void UpdatePerformanceInfo()
+        {
+            try
+            {
+                if (_performanceService != null)
+                {
+                    var info = _performanceService.GetCurrentInfo();
+                    MemoryUsage = $"{info.MemoryUsageMB:F1} MB";
+                    CpuUsage = $"{info.CpuUsagePercent:F1}%";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogTrace(ex, "パフォーマンス情報更新中にエラーが発生しました");
+            }
+        }
+
+        #endregion
+
+        #region コマンド
+
+        [RelayCommand]
+        private void ChangeTheme(string? themeName)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(themeName) && Enum.TryParse<AppTheme>(themeName, out var theme) && theme != CurrentTheme)
+                {
+                    CurrentTheme = theme;
+                    ApplyTheme();
+                    
+                    // 設定を保存
+                    _configurationService?.SetValue("Theme", CurrentTheme.ToString());
+                    
+                    _logger?.LogInformation("テーマ変更: {Theme}", CurrentTheme);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "テーマ変更中にエラーが発生しました: {Theme}", themeName);
+                StatusMessage = $"テーマ変更エラー: {ex.Message}";
+            }
+        }
+
+        [RelayCommand]
+        private void ShowAbout()
+        {
+            try
+            {
+                var aboutMessage = $"""
+                    AutoTool - マクロ自動化ツール
+                    
+                    バージョン: 1.0.0
+                    .NET 8.0
+                    
+                    読み込み済みプラグイン: {PluginCount}個
+                    利用可能なコマンド: {CommandCount}個
+                    
+                    開発者: AutoTool Development Team
+                    """;
+
+                MessageBox.Show(aboutMessage, "AutoToolについて", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+
+                _logger?.LogDebug("Aboutダイアログを表示しました");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Aboutダイアログ表示中にエラーが発生しました");
+            }
+        }
+
+        [RelayCommand]
+        private void RefreshPerformance()
+        {
+            try
+            {
+                UpdatePerformanceInfo();
+                StatusMessage = "パフォーマンス情報を更新しました";
+                _logger?.LogDebug("パフォーマンス情報を手動更新しました");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "パフォーマンス情報更新中にエラーが発生しました");
+                StatusMessage = $"パフォーマンス更新エラー: {ex.Message}";
+            }
+        }
+
+        [RelayCommand]
+        private async Task RefreshPlugins()
+        {
+            try
+            {
+                IsLoading = true;
+                StatusMessage = "プラグインを再読み込み中...";
+
+                if (_pluginService != null)
+                {
+                    await _pluginService.LoadAllPluginsAsync();
+                    UpdatePluginInfo();
+                    StatusMessage = $"プラグイン再読み込み完了: {PluginCount}個のプラグイン";
+                }
+
+                _logger?.LogInformation("プラグイン再読み込み完了");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "プラグイン再読み込み中にエラーが発生しました");
+                StatusMessage = $"プラグイン再読み込みエラー: {ex.Message}";
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        [RelayCommand]
+        private void ShowPluginInfo()
+        {
+            try
+            {
+                var pluginInfo = "読み込み済みプラグイン:\n\n";
+                
+                if (LoadedPlugins.Any())
+                {
+                    foreach (var plugin in LoadedPlugins)
+                    {
+                        pluginInfo += $"• {plugin.Name} (v{plugin.Version})\n";
+                        pluginInfo += $"  ID: {plugin.Id}\n";
+                        pluginInfo += $"  説明: {plugin.Description}\n";
+                        pluginInfo += $"  作者: {plugin.Author}\n";
+                        pluginInfo += $"  状態: {plugin.Status}\n\n";
                     }
                     
-                    OpenFile(_windowSettings.LastOpenedFilePath);
-                    StatusMessage = $"前回のファイルを開きました: {CurrentFileName}";
-                    
-                    // 3秒後にステータスメッセージをクリア
-                    var timer = new DispatcherTimer();
-                    timer.Interval = TimeSpan.FromSeconds(3);
-                    timer.Tick += (s, e) => 
+                    if (AvailableCommands.Any())
                     {
-                        StatusMessage = "準備完了";
-                        timer.Stop();
-                    };
-                    timer.Start();
-                    
-                    System.Diagnostics.Debug.WriteLine("前回のファイルを正常に開きました");
+                        pluginInfo += "利用可能なコマンド:\n\n";
+                        var commandsByCategory = AvailableCommands.GroupBy(c => c.Category);
+                        foreach (var category in commandsByCategory)
+                        {
+                            pluginInfo += $"[{category.Key}]\n";
+                            foreach (var command in category)
+                            {
+                                pluginInfo += $"  • {command.Name} ({command.Id})\n";
+                                pluginInfo += $"    {command.Description}\n";
+                            }
+                            pluginInfo += "\n";
+                        }
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    System.Diagnostics.Debug.WriteLine($"前回のファイルを開くのに失敗しました: {ex.Message}");
-                    StatusMessage = $"前回のファイルを開くのに失敗しました: {Path.GetFileName(_windowSettings.LastOpenedFilePath)}";
-                    
-                    // 失敗した場合は設定をクリア
-                    _windowSettings.LastOpenedFilePath = string.Empty;
-                    _windowSettings.Save();
+                    pluginInfo += "読み込み済みのプラグインはありません。";
                 }
+
+                MessageBox.Show(pluginInfo, "プラグイン情報", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+
+                _logger?.LogDebug("プラグイン情報を表示しました");
             }
-            else
+            catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("前回のファイル復元は実行されませんでした");
-                if (!_windowSettings.OpenLastFileOnStartup)
-                {
-                    System.Diagnostics.Debug.WriteLine("理由: OpenLastFileOnStartup が false");
-                }
-                if (string.IsNullOrEmpty(_windowSettings.LastOpenedFilePath))
-                {
-                    System.Diagnostics.Debug.WriteLine("理由: LastOpenedFilePath が空");
-                }
-                if (!string.IsNullOrEmpty(_windowSettings.LastOpenedFilePath) && !File.Exists(_windowSettings.LastOpenedFilePath))
-                {
-                    System.Diagnostics.Debug.WriteLine("理由: ファイルが存在しない");
-                }
+                _logger?.LogError(ex, "プラグイン情報表示中にエラーが発生しました");
             }
-            
-            System.Diagnostics.Debug.WriteLine("=== LoadLastOpenedFileOnStartup 終了 ===");
-        }
-
-        private void InitializeCommandHistory()
-        {
-            // MacroPanelViewModelにCommandHistoryを渡す
-            MacroPanelViewModel.SetCommandHistory(CommandHistory);
-            
-            // 履歴変更時にコマンド状態を更新
-            CommandHistory.HistoryChanged += (s, e) => UpdateCommandStates();
-        }
-
-        private void UpdateCommandStates()
-        {
-            OpenFileCommand.NotifyCanExecuteChanged();
-            SaveFileCommand.NotifyCanExecuteChanged();
-            SaveFileAsCommand.NotifyCanExecuteChanged();
-            UndoCommand.NotifyCanExecuteChanged();
-            RedoCommand.NotifyCanExecuteChanged();
-        }
-
-        private void InitializeFileManager()
-        {
-            _fileManagers.Add(
-                TabIndexes.Macro,
-                new FileManager(
-                    new FileManager.FileTypeInfo()
-                    {
-                        Filter = "AutoTool マクロファイル(*.macro)|*.macro",
-                        FilterIndex = 1,
-                        RestoreDirectory = true,
-                        DefaultExt = "macro",
-                        Title = "マクロファイルを開く",
-                    },
-                    SaveFile,
-                    LoadFile
-                    )
-                );
-        }
-
-
-        private void UpdateProperties()
-        {
-            OnPropertyChanged(nameof(IsFileOperationEnable));
-            OnPropertyChanged(nameof(IsFileOpened));
-            OnPropertyChanged(nameof(CurrentFilePath));
-            OnPropertyChanged(nameof(CurrentFileName));
-            OnPropertyChanged(nameof(RecentFiles));
-            OnPropertyChanged(nameof(MenuItemHeader_SaveFile));
-            OnPropertyChanged(nameof(MenuItemHeader_SaveFileAs));
-            OnPropertyChanged(nameof(AutoToolTitle));
-            
-            UpdateCommandStates();
-        }
-
-
-        [RelayCommand]
-        private void VersionInfo()
-        {
-            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            var appName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            string githubUrl = "https://github.com/Aoshiso-Dev/AutoTool";
-            var versionString = $"{version.Major}.{version.Minor}.{version.Build}";
-
-            MessageBox.Show($"{appName}\nVer.{versionString}\n{githubUrl}", "バージョン情報", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         [RelayCommand]
-        private void OpenAppDir()
-        {
-            var appDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            if (appDir != null)
-            {
-                System.Diagnostics.Process.Start("EXPLORER.EXE", appDir);
-            }
-            else
-            {
-                MessageBox.Show("アプリケーションのディレクトリが見つかりませんでした。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand(CanExecute = nameof(CanOpenFile))]
-        private void OpenFile(string filePath)
+        private async Task LoadPluginFile()
         {
             try
             {
-                _fileManagers[SelectedTabIndex].OpenFile(filePath);
-                
-                // ファイル読み込み後は履歴をクリア
-                CommandHistory.Clear();
-                StatusMessage = $"ファイルを開きました: {CurrentFileName}";
-                
-                // ファイルパスを明示的に更新して設定保存をトリガー
-                UpdateProperties();
-                
-                // 確実にファイルパスを保存
-                if (!string.IsNullOrEmpty(CurrentFilePath))
+                var dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    _windowSettings.UpdateLastOpenedFile(CurrentFilePath);
-                    _windowSettings.Save();
-                    System.Diagnostics.Debug.WriteLine($"ファイル開いた後に設定保存: {CurrentFilePath}");
-                }
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"ファイルの読み込みに失敗しました: {Path.GetFileName(filePath)}";
-                System.Diagnostics.Debug.WriteLine($"ファイル読み込みエラー: {ex.Message}");
-                MessageBox.Show($"ファイルの読み込みに失敗しました。\n{ex.Message}", "読み込みエラー", 
-                              MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand(CanExecute = nameof(CanSaveFile))]
-        private void SaveFile()
-        {
-            try
-            {
-                StatusMessage = "保存中...";
-                _fileManagers[SelectedTabIndex].SaveFile();
-                UpdateProperties();
-                
-                // 確実にファイルパスを保存
-                if (!string.IsNullOrEmpty(CurrentFilePath))
-                {
-                    _windowSettings.UpdateLastOpenedFile(CurrentFilePath);
-                    _windowSettings.Save();
-                    System.Diagnostics.Debug.WriteLine($"ファイル保存後に設定保存: {CurrentFilePath}");
-                }
-                
-                StatusMessage = $"保存完了: {CurrentFileName}";
-                
-                // 3秒後にステータスメッセージをクリア
-                var timer = new DispatcherTimer();
-                timer.Interval = TimeSpan.FromSeconds(3);
-                timer.Tick += (s, e) => 
-                {
-                    StatusMessage = "準備完了";
-                    timer.Stop();
+                    Title = "プラグインファイルを選択",
+                    Filter = "DLLファイル (*.dll)|*.dll|すべてのファイル (*.*)|*.*",
+                    Multiselect = false
                 };
-                timer.Start();
+
+                if (dialog.ShowDialog() == true)
+                {
+                    IsLoading = true;
+                    StatusMessage = $"プラグインを読み込み中: {Path.GetFileName(dialog.FileName)}";
+
+                    if (_pluginService != null)
+                    {
+                        await _pluginService.LoadPluginAsync(dialog.FileName);
+                        UpdatePluginInfo();
+                        StatusMessage = $"プラグイン読み込み完了: {Path.GetFileName(dialog.FileName)}";
+                    }
+
+                    _logger?.LogInformation("プラグインファイル読み込み完了: {FileName}", dialog.FileName);
+                }
             }
             catch (Exception ex)
             {
-                StatusMessage = "保存に失敗しました";
-                MessageBox.Show($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー", 
-                              MessageBoxButton.OK, MessageBoxImage.Error);
+                _logger?.LogError(ex, "プラグインファイル読み込み中にエラーが発生しました");
+                StatusMessage = $"プラグイン読み込みエラー: {ex.Message}";
+                MessageBox.Show($"プラグインの読み込みに失敗しました:\n{ex.Message}", 
+                    "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 
-        [RelayCommand(CanExecute = nameof(CanSaveFileAs))]
-        private void SaveFileAs()
+        #endregion
+
+        #region パブリックメソッド
+
+        /// <summary>
+        /// ウィンドウ設定を保存
+        /// </summary>
+        public void SaveWindowSettings()
         {
             try
             {
-                StatusMessage = "名前を付けて保存中...";
-                _fileManagers[SelectedTabIndex].SaveFileAs();
-                UpdateProperties();
+                _configurationService?.SetValue("WindowWidth", WindowWidth);
+                _configurationService?.SetValue("WindowHeight", WindowHeight);
+                _configurationService?.SetValue("WindowState", WindowState.ToString());
                 
-                // 確実にファイルパスを保存
-                if (!string.IsNullOrEmpty(CurrentFilePath))
-                {
-                    _windowSettings.UpdateLastOpenedFile(CurrentFilePath);
-                    _windowSettings.Save();
-                    System.Diagnostics.Debug.WriteLine($"名前を付けて保存後に設定保存: {CurrentFilePath}");
-                }
-                
-                StatusMessage = $"保存完了: {CurrentFileName}";
-                
-                // 3秒後にステータスメッセージをクリア
-                var timer = new DispatcherTimer();
-                timer.Interval = TimeSpan.FromSeconds(3);
-                timer.Tick += (s, e) => 
-                {
-                    StatusMessage = "準備完了";
-                    timer.Stop();
-                };
-                timer.Start();
+                _logger?.LogDebug("ウィンドウ設定保存完了");
             }
             catch (Exception ex)
             {
-                StatusMessage = "保存に失敗しました";
-                MessageBox.Show($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー", 
-                              MessageBoxButton.OK, MessageBoxImage.Error);
+                _logger?.LogError(ex, "ウィンドウ設定保存中にエラーが発生しました");
             }
         }
 
-        [RelayCommand(CanExecute = nameof(CanUndo))]
-        private void Undo()
+        /// <summary>
+        /// リソースのクリーンアップ
+        /// </summary>
+        public void Cleanup()
         {
-            CommandHistory.Undo();
-            StatusMessage = $"元に戻しました: {CommandHistory.RedoDescription}";
-            
-            // 2秒後にステータスメッセージをクリア
-            var timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(2);
-            timer.Tick += (s, e) => 
+            try
             {
-                StatusMessage = "準備完了";
-                timer.Stop();
-            };
-            timer.Start();
-        }
+                // プラグインイベントの解除
+                if (_pluginService != null)
+                {
+                    _pluginService.PluginLoaded -= OnPluginLoaded;
+                    _pluginService.PluginUnloaded -= OnPluginUnloaded;
+                }
 
-        [RelayCommand(CanExecute = nameof(CanRedo))]
-        private void Redo()
-        {
-            CommandHistory.Redo();
-            StatusMessage = $"やり直しました: {CommandHistory.UndoDescription}";
-            
-            // 2秒後にステータスメッセージをクリア
-            var timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(2);
-            timer.Tick += (s, e) => 
-            {
-                StatusMessage = "準備完了";
-                timer.Stop();
-            };
-            timer.Start();
-        }
-
-        // CanExecute メソッドを追加
-        private bool CanOpenFile()
-        {
-            return IsFileOperationEnable && !IsRunning;
-        }
-
-        private bool CanSaveFile()
-        {
-            return IsFileOpened && !IsRunning;
-        }
-
-        private bool CanSaveFileAs()
-        {
-            return IsFileOperationEnable && !IsRunning;
-        }
-
-        private bool CanUndo()
-        {
-            return !IsRunning && CommandHistory.CanUndo;
-        }
-
-        private bool CanRedo()
-        {
-            return !IsRunning && CommandHistory.CanRedo;
-        }
-
-        private void SaveFile(string filePath)
-        {
-            if (SelectedTabIndex == TabIndexes.Macro)
-            {
-                MacroPanelViewModel.SaveMacroFile(filePath);
+                _performanceService?.StopMonitoring();
+                WeakReferenceMessenger.Default.UnregisterAll(this);
+                
+                _logger?.LogDebug("MainWindowViewModel クリーンアップ完了");
             }
-            else
+            catch (Exception ex)
             {
-                throw new NotImplementedException();
+                _logger?.LogError(ex, "クリーンアップ中にエラーが発生しました");
             }
         }
 
-        private void LoadFile(string filePath)
+        #endregion
+
+        #region ヘルパーメソッド
+
+        /// <summary>
+        /// デザインモードかどうかを判定
+        /// </summary>
+        private static bool IsInDesignMode()
         {
-            if (SelectedTabIndex == TabIndexes.Macro)
-            {
-                MacroPanelViewModel.LoadMacroFile(filePath);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            return System.ComponentModel.DesignerProperties.GetIsInDesignMode(new DependencyObject());
+        }
+
+        #endregion
+    }
+
+    #region メッセージクラス
+
+    /// <summary>
+    /// アプリケーション終了メッセージ
+    /// </summary>
+    public class ExitApplicationMessage
+    {
+        public string Reason { get; }
+
+        public ExitApplicationMessage(string reason = "")
+        {
+            Reason = reason;
         }
     }
+
+    /// <summary>
+    /// ステータスメッセージ
+    /// </summary>
+    public class StatusMessage
+    {
+        public string Message { get; }
+
+        public StatusMessage(string message)
+        {
+            Message = message;
+        }
+    }
+
+    #endregion
+
+    #region デザインタイム用クラス
+
+    /// <summary>
+    /// デザインタイム用プラグイン情報
+    /// </summary>
+    public class DesignTimePluginInfo : IPluginInfo
+    {
+        public string Id { get; }
+        public string Name { get; }
+        public string Version { get; }
+        public string Description { get; }
+        public string Author { get; }
+        public DateTime LoadedAt { get; set; }
+        public PluginStatus Status { get; set; }
+
+        public DesignTimePluginInfo(string id, string name, string version)
+        {
+            Id = id;
+            Name = name;
+            Version = version;
+            Description = "デザインタイム用ダミープラグイン";
+            Author = "Design Time";
+            LoadedAt = DateTime.Now;
+            Status = PluginStatus.Active;
+        }
+    }
+
+    #endregion
 }

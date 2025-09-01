@@ -13,10 +13,6 @@
         MinWidth="600" MinHeight="400">
     <!-- Width/Heightを削除し、MinWidth/MinHeightを追加 -->
 
-    <Window.DataContext>
-        <local:MainWindowViewModel/>
-    </Window.DataContext>
-
     <Window.Resources>
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
         <converters:RunningStatusConverter x:Key="RunningStatusConverter"/>

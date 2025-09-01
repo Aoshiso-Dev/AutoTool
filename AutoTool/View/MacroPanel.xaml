@@ -1,26 +1,129 @@
 ﻿<UserControl x:Class="AutoTool.View.MacroPanel"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:AutoTool"
-        xmlns:panels="clr-namespace:MacroPanels.View;assembly=MacroPanels"
-        xmlns:converter="clr-namespace:MacroPanels.View.Converter;assembly=MacroPanels"
-        xmlns:vm="MainW"
-        mc:Ignorable="d">
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:panels="clr-namespace:MacroPanels.View;assembly=MacroPanels"
+             xmlns:converter="clr-namespace:MacroPanels.View.Converter;assembly=MacroPanels"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="1200" 
+             HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+             Background="{DynamicResource AppBackground}">
+    
+    <UserControl.Resources>
+        <!-- モダンなスタイル定義 -->
+        <Style x:Key="ModernTabControlStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="{DynamicResource PanelBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+        
+        <Style x:Key="ModernTabItemStyle" TargetType="TabItem">
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="0,0,2,0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource AppForeground}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Border" 
+                                Background="Transparent" 
+                                BorderBrush="{DynamicResource BorderBrush}" 
+                                BorderThickness="1,1,1,0" 
+                                CornerRadius="4,4,0,0"
+                                Margin="0,0,2,0">
+                            <ContentPresenter x:Name="ContentSite"
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Center"
+                                            ContentSource="Header"
+                                            Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource ButtonHoverBackground}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-    <DockPanel LastChildFill="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-        <panels:ButtonPanel DockPanel.Dock="Top" DataContext="{Binding ButtonPanelViewModel}" Margin="2" HorizontalAlignment="Stretch"/>
+        <Style x:Key="ModernGridSplitterStyle" TargetType="GridSplitter">
+            <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="ShowsPreview" Value="True"/>
+            <Setter Property="ResizeBehavior" Value="PreviousAndNext"/>
+            <Setter Property="ResizeDirection" Value="Columns"/>
+            <Setter Property="Cursor" Value="SizeWE"/>
+        </Style>
+    </UserControl.Resources>
+    
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <DockPanel LastChildFill="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            
+            <!-- ButtonPanel - DI対応完了 -->
+            <panels:ButtonPanel DockPanel.Dock="Top" 
+                              DataContext="{Binding ButtonPanelViewModel}" 
+                              Margin="6" HorizontalAlignment="Stretch"/>
+            
+            <!-- メインコンテンツエリア -->
+            <Grid Margin="6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="400"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*" MinWidth="400"/>
+                </Grid.ColumnDefinitions>
 
-        <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="250" HorizontalAlignment="Stretch">
-            <TabItem Header="編集">
-                <panels:EditPanel DataContext="{Binding EditPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </TabItem>
-            <TabItem Header="ログ">
-                <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </TabItem>
-        </TabControl>
+                <!-- 左側：リスト系パネル -->
+                <TabControl Grid.Column="0" 
+                           SelectedIndex="{Binding SelectedListTabIndex}" 
+                           Style="{StaticResource ModernTabControlStyle}"
+                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    
+                    <TabItem Header="📋 マクロリスト" Style="{StaticResource ModernTabItemStyle}"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <panels:ListPanel DataContext="{Binding ListPanelViewModel}" 
+                                        Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </TabItem>
+                    
+                    <TabItem Header="⭐ お気に入り" Style="{StaticResource ModernTabItemStyle}"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <panels:FavoritePanel DataContext="{Binding FavoritePanelViewModel}" 
+                                            Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </TabItem>
+                    
+                </TabControl>
 
-        <panels:ListPanel DataContext="{Binding ListPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-    </DockPanel>
+                <!-- GridSplitter -->
+                <GridSplitter Grid.Column="1" Style="{StaticResource ModernGridSplitterStyle}"/>
+
+                <!-- 右側：編集・ログパネル -->
+                <TabControl Grid.Column="2" 
+                           Style="{StaticResource ModernTabControlStyle}"
+                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    
+                    <TabItem Header="⚙️ コマンド設定" Style="{StaticResource ModernTabItemStyle}"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <panels:EditPanel DataContext="{Binding EditPanelViewModel}" 
+                                        Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </TabItem>
+                    
+                    <TabItem Header="📄 実行ログ" Style="{StaticResource ModernTabItemStyle}"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <panels:LogPanel DataContext="{Binding LogPanelViewModel}" 
+                                       Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </TabItem>
+                    
+                </TabControl>
+                
+            </Grid>
+        </DockPanel>
+    </Grid>
 </UserControl>

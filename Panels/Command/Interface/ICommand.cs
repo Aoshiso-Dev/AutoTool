@@ -9,20 +9,70 @@ using System.Windows.Input;
 namespace MacroPanels.Command.Interface
 {
 
+    /// <summary>
+    /// コマンドのインターフェース
+    /// </summary>
     public interface ICommand
     {
+        /// <summary>
+        /// 行番号
+        /// </summary>
         int LineNumber { get; set; }
-        bool IsEnabled { get; set; }
-        ICommand? Parent { get; set; }
-        IEnumerable<ICommand> Children { get; set; }
-        int NestLevel { get; set; }
-        ICommandSettings Settings { get; }
-        EventHandler OnStartCommand { get; set; }
-        EventHandler OnFinishCommand { get; set; }
 
+        /// <summary>
+        /// 親コマンド
+        /// </summary>
+        ICommand? Parent { get; }
+
+        /// <summary>
+        /// 子コマンド
+        /// </summary>
+        IEnumerable<ICommand> Children { get; }
+
+        /// <summary>
+        /// ネストレベル
+        /// </summary>
+        int NestLevel { get; set; }
+
+        /// <summary>
+        /// 設定オブジェクト
+        /// </summary>
+        object? Settings { get; set; }
+
+        /// <summary>
+        /// 説明
+        /// </summary>
+        string Description { get; }
+
+        /// <summary>
+        /// 有効/無効
+        /// </summary>
+        bool IsEnabled { get; set; }
+
+        /// <summary>
+        /// コマンドを実行
+        /// </summary>
         Task<bool> Execute(CancellationToken cancellationToken);
 
-        bool CanExecute();
+        /// <summary>
+        /// 子コマンドを追加
+        /// </summary>
+        void AddChild(ICommand child);
+
+        /// <summary>
+        /// 子コマンドを削除
+        /// </summary>
+        void RemoveChild(ICommand child);
+
+        /// <summary>
+        /// 子コマンドを取得
+        /// </summary>
+        IEnumerable<ICommand> GetChildren();
+
+        /// <summary>
+        /// コマンド開始時のイベント
+        /// </summary>
+        event System.EventHandler? OnStartCommand;
     }
 
     public interface IRootCommand : ICommand { }
