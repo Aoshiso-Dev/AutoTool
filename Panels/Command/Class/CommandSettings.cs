@@ -10,65 +10,81 @@ namespace MacroPanels.Command.Class
 {
     public class CommandSettings : ICommandSettings { }
 
-    public class WaitImageCommandSettings : ICommandSettings, IWaitImageCommandSettings
+    /// <summary>
+    /// ウィンドウ対象を持つコマンド設定の基底クラス
+    /// </summary>
+    public abstract class WindowTargetCommandSettings : CommandSettings
     {
-        public string ImagePath { get; set; } = string.Empty;
-        public double Threshold { get; set; } = 0.8; // デフォルト値を設定
-        public Color? SearchColor { get; set; }
-        public int Timeout { get; set; } = 5000; // デフォルト値を設定
-        public int Interval { get; set; } = 500; // デフォルト値を設定
         public string WindowTitle { get; set; } = string.Empty;
         public string WindowClassName { get; set; } = string.Empty;
     }
 
-    // IF系画像コマンド用の設定クラス（TimeoutとIntervalを削除）
-    public class IfImageCommandSettings : ICommandSettings, IIfImageCommandSettings
+    /// <summary>
+    /// 画像検索機能を持つコマンド設定の基底クラス
+    /// </summary>
+    public abstract class ImageSearchCommandSettings : WindowTargetCommandSettings, IValidatable
     {
         public string ImagePath { get; set; } = string.Empty;
         public double Threshold { get; set; } = 0.8;
         public Color? SearchColor { get; set; } = null;
-        public string WindowTitle { get; set; } = string.Empty;
-        public string WindowClassName { get; set; } = string.Empty;
-        
-        // バリデーション追加
-        public void Validate()
+
+        public virtual void Validate()
         {
-            if (string.IsNullOrEmpty(ImagePath))
-                throw new ArgumentException("画像パスは必須です", nameof(ImagePath));
-            if (Threshold < 0 || Threshold > 1)
-                throw new ArgumentOutOfRangeException(nameof(Threshold), "閾値は0-1の範囲である必要があります");
+            ValidationHelper.ValidateRequired(ImagePath, nameof(ImagePath), "画像パス");
+            ValidationHelper.ValidateThreshold(Threshold, nameof(Threshold));
         }
     }
 
-    public class ClickImageCommandSettings : ICommandSettings, IClickImageCommandSettings
+    /// <summary>
+    /// AI検出機能を持つコマンド設定の基底クラス
+    /// </summary>
+    public abstract class AIDetectionCommandSettings : WindowTargetCommandSettings, IValidatable
     {
-        public string ImagePath { get; set; } = string.Empty;
-        public double Threshold { get; set; } = 0.8;
-        public Color? SearchColor { get; set; }
+        public string ModelPath { get; set; } = string.Empty;
+        public int ClassID { get; set; } = 0;
+        public double ConfThreshold { get; set; } = 0.5;
+        public double IoUThreshold { get; set; } = 0.25;
+
+        public virtual void Validate()
+        {
+            ValidationHelper.ValidateRequired(ModelPath, nameof(ModelPath), "モデルパス");
+            ValidationHelper.ValidateThreshold(ConfThreshold, "信頼度閾値");
+            ValidationHelper.ValidateThreshold(IoUThreshold, "IoU閾値");
+        }
+    }
+
+    public class WaitImageCommandSettings : ImageSearchCommandSettings, IWaitImageCommandSettings
+    {
+        public int Timeout { get; set; } = 5000; // デフォルト値を設定
+        public int Interval { get; set; } = 500; // デフォルト値を設定
+    }
+
+    // IF系画像コマンド用の設定クラス（TimeoutとIntervalを削除）
+    public class IfImageCommandSettings : ImageSearchCommandSettings, IIfImageCommandSettings
+    {
+        // Validateはベースクラスで実装済み
+    }
+
+    public class ClickImageCommandSettings : ImageSearchCommandSettings, IClickImageCommandSettings
+    {
         public int Timeout { get; set; } = 5000;
         public int Interval { get; set; } = 500;
         public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
-        public string WindowTitle { get; set; } = string.Empty;
-        public string WindowClassName { get; set; } = string.Empty;
     }
 
-    public class HotkeyCommandSettings : ICommandSettings, IHotkeyCommandSettings
+    public class HotkeyCommandSettings : WindowTargetCommandSettings, IHotkeyCommandSettings
     {
         public bool Ctrl { get; set; }
         public bool Alt { get; set; }
         public bool Shift { get; set; }
         public System.Windows.Input.Key Key { get; set; } = System.Windows.Input.Key.Escape;
-        public string WindowTitle { get; set; } = string.Empty;
-        public string WindowClassName { get; set; } = string.Empty;
     }
 
-    public class ClickCommandSettings : ICommandSettings, IClickCommandSettings
+    public class ClickCommandSettings : WindowTargetCommandSettings, IClickCommandSettings
     {
         public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
         public int X { get; set; }
         public int Y { get; set; }
-        public string WindowTitle { get; set; } = string.Empty;
-        public string WindowClassName { get; set; } = string.Empty;
     }
 
     public class WaitCommandSettings : ICommandSettings, IWaitCommandSettings
@@ -76,16 +92,14 @@ namespace MacroPanels.Command.Class
         public int Wait { get; set; } = 1000; // デフォルト1秒
     }
 
-    public class LoopCommandSettings : ICommandSettings, ILoopCommandSettings
+    public class LoopCommandSettings : ICommandSettings, ILoopCommandSettings, IValidatable
     {
         public int LoopCount { get; set; } = 1; // デフォルト1回
         public ICommand? Pair { get; set; }
         
-        // バリデーション追加
         public void Validate()
         {
-            if (LoopCount <= 0)
-                throw new ArgumentOutOfRangeException(nameof(LoopCount), "ループ回数は1以上である必要があります");
+            ValidationHelper.ValidatePositiveInteger(LoopCount, nameof(LoopCount), "ループ回数");
         }
     }
 
@@ -95,94 +109,52 @@ namespace MacroPanels.Command.Class
         public ICommand? Pair { get; set; }
     }
 
-    public class AIImageDetectCommandSettings : ICommandSettings, IIfImageExistAISettings
+    public class AIImageDetectCommandSettings : AIDetectionCommandSettings, IIfImageExistAISettings
     {
-        public string ModelPath { get; set; } = string.Empty;
-        public int ClassID { get; set; } = 0;
-        public string WindowTitle { get; set; } = string.Empty;
-        public string WindowClassName { get; set; } = string.Empty;
-        public double ConfThreshold { get; set; } = 0.5; // デフォルト値を設定
-        public double IoUThreshold { get; set; } = 0.25;
         public int Timeout { get; set; } = 5000;
         public int Interval { get; set; } = 500;
         
-        // バリデーション追加
-        public void Validate()
-        {
-            if (string.IsNullOrEmpty(ModelPath))
-                throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
-            if (ConfThreshold < 0 || ConfThreshold > 1)
-                throw new ArgumentOutOfRangeException(nameof(ConfThreshold), "信頼度閾値は0-1の範囲である必要があります");
-            if (IoUThreshold < 0 || IoUThreshold > 1)
-                throw new ArgumentOutOfRangeException(nameof(IoUThreshold), "IoU閾値は0-1の範囲である必要があります");
-        }
+        // Validateはベースクラスで実装済み
     }
 
-    public class AIImageNotDetectCommandSettings : ICommandSettings, IIfImageNotExistAISettings
+    public class AIImageNotDetectCommandSettings : AIDetectionCommandSettings, IIfImageNotExistAISettings
     {
-        public string ModelPath { get; set; } = string.Empty;
-        public int ClassID { get; set; } = 0;
-        public string WindowTitle { get; set; } = string.Empty;
-        public string WindowClassName { get; set; } = string.Empty;
-        public double ConfThreshold { get; set; } = 0.5;
-        public double IoUThreshold { get; set; } = 0.25;
-        
-        public void Validate()
-        {
-            if (string.IsNullOrEmpty(ModelPath))
-                throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
-            if (ConfThreshold < 0 || ConfThreshold > 1)
-                throw new ArgumentOutOfRangeException(nameof(ConfThreshold), "信頼度閾値は0-1の範囲である必要があります");
-            if (IoUThreshold < 0 || IoUThreshold > 1)
-                throw new ArgumentOutOfRangeException(nameof(IoUThreshold), "IoU閾値は0-1の範囲である必要があります");
-        }
+        // Validateはベースクラスで実装済み
     }
 
-    public class ExecuteCommandSettings : ICommandSettings, IExecuteCommandSettings
+    public class ExecuteCommandSettings : ICommandSettings, IExecuteCommandSettings, IValidatable
     {
         public string ProgramPath { get; set; } = string.Empty;
         public string Arguments { get; set; } = string.Empty;
         public string WorkingDirectory { get; set; } = string.Empty;
         public bool WaitForExit { get; set; } = false;
         
-        // バリデーション追加
         public void Validate()
         {
-            if (string.IsNullOrEmpty(ProgramPath))
-                throw new ArgumentException("プログラムパスは必須です", nameof(ProgramPath));
+            ValidationHelper.ValidateRequired(ProgramPath, nameof(ProgramPath), "プログラムパス");
         }
     }
 
-    public class SetVariableCommandSettings : ICommandSettings, ISetVariableCommandSettings
+    public class SetVariableCommandSettings : ICommandSettings, ISetVariableCommandSettings, IValidatable
     {
         public string Name { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
         
-        // バリデーション追加
         public void Validate()
         {
-            if (string.IsNullOrWhiteSpace(Name))
-                throw new ArgumentException("変数名は必須です", nameof(Name));
+            ValidationHelper.ValidateVariableName(Name, nameof(Name));
         }
     }
 
-    public class SetVariableAISettings : ICommandSettings, ISetVariableAICommandSettings
+    public class SetVariableAISettings : AIDetectionCommandSettings, ISetVariableAICommandSettings
     {
         public string Name { get; set; } = string.Empty;
-        public string ModelPath { get; set; } = string.Empty;
         public string AIDetectMode { get; set; } = string.Empty;
-        public string WindowTitle { get; set; } = string.Empty;
-        public string WindowClassName { get; set; } = string.Empty;
-        public double ConfThreshold { get; set; } = 0.5;
-        public double IoUThreshold { get; set; } = 0.25;
         
-        // バリデーション追加
-        public void Validate()
+        public override void Validate()
         {
-            if (string.IsNullOrWhiteSpace(Name))
-                throw new ArgumentException("変数名は必須です", nameof(Name));
-            if (string.IsNullOrEmpty(ModelPath))
-                throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
+            ValidationHelper.ValidateVariableName(Name, nameof(Name));
+            base.Validate(); // AI検出のバリデーションも実行
         }
     }
 
@@ -193,25 +165,15 @@ namespace MacroPanels.Command.Class
         public string Value { get; set; } = string.Empty;
     }
 
-    public class ClickImageAICommandSettings : ICommandSettings, IClickImageAICommandSettings
+    public class ScreenshotCommandSettings : WindowTargetCommandSettings, IScreenshotCommandSettings
     {
-        public string ModelPath { get; set; } = string.Empty;
-        public int ClassID { get; set; } = 0;
-        public string WindowTitle { get; set; } = string.Empty;
-        public string WindowClassName { get; set; } = string.Empty;
-        public double ConfThreshold { get; set; } = 0.5;
-        public double IoUThreshold { get; set; } = 0.25;
+        public string SaveDirectory { get; set; } = string.Empty;
+    }
+
+    public class ClickImageAICommandSettings : AIDetectionCommandSettings, IClickImageAICommandSettings
+    {
         public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
         
-        // バリデーション追加
-        public void Validate()
-        {
-            if (string.IsNullOrEmpty(ModelPath))
-                throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
-            if (ConfThreshold < 0 || ConfThreshold > 1)
-                throw new ArgumentOutOfRangeException(nameof(ConfThreshold), "信頼度閾値は0-1の範囲である必要があります");
-            if (IoUThreshold < 0 || IoUThreshold > 1)
-                throw new ArgumentOutOfRangeException(nameof(IoUThreshold), "IoU閾値は0-1の範囲である必要があります");
-        }
+        // Validateはベースクラスで実装済み
     }
 }

@@ -4,11 +4,54 @@ using MacroPanels.List.Class;
 using System.Diagnostics;
 using MacroPanels.Model.List.Interface;
 using MacroPanels.Model.CommandDefinition;
+using MouseHelper;
 
 namespace MacroPanels.Model.MacroFactory
 {
     public static class MacroFactory
     {
+        // If命令の設定作成デリゲートのディクショナリ
+        private static readonly Dictionary<Type, Func<IIfItem, ICommandSettings>> _ifSettingsCreators = 
+            new Dictionary<Type, Func<IIfItem, ICommandSettings>>
+            {
+                { typeof(IfImageExistItem), item => CreateIfImageSettings((IfImageExistItem)item) },
+                { typeof(IfImageNotExistItem), item => CreateIfImageSettings((IfImageNotExistItem)item) },
+                { typeof(IfImageExistAIItem), item => CreateIfImageExistAISettings((IfImageExistAIItem)item) },
+                { typeof(IfImageNotExistAIItem), item => CreateIfImageNotExistAISettings((IfImageNotExistAIItem)item) },
+                { typeof(IfVariableItem), item => CreateIfVariableSettings((IfVariableItem)item) }
+            };
+
+        // If命令のコマンドクラスマッピング
+        private static readonly Dictionary<Type, Type> _ifCommandTypes = new Dictionary<Type, Type>
+        {
+            { typeof(IfImageExistItem), typeof(IfImageExistCommand) },
+            { typeof(IfImageNotExistItem), typeof(IfImageNotExistCommand) },
+            { typeof(IfImageExistAIItem), typeof(IfImageExistAICommand) },
+            { typeof(IfImageNotExistAIItem), typeof(IfImageNotExistAICommand) },
+            { typeof(IfVariableItem), typeof(IfVariableCommand) }
+        };
+
+        /// <summary>
+        /// MouseButton操作の共通実行メソッド
+        /// </summary>
+        public static async Task ExecuteMouseButtonAction(System.Windows.Input.MouseButton button, int x, int y, string windowTitle, string windowClassName)
+        {
+            switch (button)
+            {
+                case System.Windows.Input.MouseButton.Left:
+                    await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
+                    break;
+                case System.Windows.Input.MouseButton.Right:
+                    await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
+                    break;
+                case System.Windows.Input.MouseButton.Middle:
+                    await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
+                    break;
+                default:
+                    throw new Exception("マウスボタンが不正です。");
+            }
+        }
+
         public static ICommand CreateMacro(IEnumerable<ICommandListItem> items)
         {
             var cloneItems = items.Select(x => x.Clone()).ToList();
@@ -58,20 +101,12 @@ namespace MacroPanels.Model.MacroFactory
             Debug.WriteLine($"Could not create simple command for {item.ItemType}, checking complex commands...");
             
             // 複合コマンド（条件分岐・ループ）の処理
-            switch (item)
+            return item switch
             {
-                case IIfItem ifItem:
-                    Debug.WriteLine($"Creating If command for {item.ItemType}");
-                    return CreateIfCommand(parent, ifItem, items);
-                
-                case ILoopItem loopItem:
-                    Debug.WriteLine($"Creating Loop command for {item.ItemType}");
-                    return CreateLoopCommand(parent, loopItem, items);
-                
-                default:
-                    Debug.WriteLine($"Unsupported item type: {item.GetType().Name} (ItemType: {item.ItemType})");
-                    throw new NotSupportedException($"未対応のアイテム型です: {item.GetType().Name} (ItemType: {item.ItemType})");
-            }
+                IIfItem ifItem => CreateIfCommand(parent, ifItem, items),
+                ILoopItem loopItem => CreateLoopCommand(parent, loopItem, items),
+                _ => throw new NotSupportedException($"未対応のアイテム型です: {item.GetType().Name} (ItemType: {item.ItemType})")
+            };
         }
 
         private static ICommand CreateIfCommand(ICommand parent, IIfItem ifItem, IEnumerable<ICommandListItem> items)
@@ -103,87 +138,76 @@ namespace MacroPanels.Model.MacroFactory
         {
             Debug.WriteLine($"Creating If command instance for {ifItem.GetType().Name}");
             
-            switch (ifItem)
-            {
-                case IfImageExistItem exist:
-                    Debug.WriteLine($"Creating IfImageExistCommand");
-                    return new IfImageExistCommand(parent, new IfImageCommandSettings 
-                    { 
-                        ImagePath = exist.ImagePath,
-                        Threshold = exist.Threshold,
-                        SearchColor = exist.SearchColor,
-                        WindowTitle = exist.WindowTitle,
-                        WindowClassName = exist.WindowClassName
-                    }) 
-                    { 
-                        LineNumber = exist.LineNumber, 
-                        IsEnabled = exist.IsEnable 
-                    };
-                    
-                case IfImageNotExistItem notExist:
-                    Debug.WriteLine($"Creating IfImageNotExistCommand");
-                    return new IfImageNotExistCommand(parent, new IfImageCommandSettings 
-                    { 
-                        ImagePath = notExist.ImagePath,
-                        Threshold = notExist.Threshold,
-                        SearchColor = notExist.SearchColor,
-                        WindowTitle = notExist.WindowTitle,
-                        WindowClassName = notExist.WindowClassName
-                    }) 
-                    { 
-                        LineNumber = notExist.LineNumber, 
-                        IsEnabled = notExist.IsEnable 
-                    };
-                    
-                case IfImageExistAIItem existAI:
-                    Debug.WriteLine($"Creating IfImageExistAICommand");
-                    return new IfImageExistAICommand(parent, new AIImageDetectCommandSettings 
-                    { 
-                        ModelPath = existAI.ModelPath,
-                        ClassID = existAI.ClassID,
-                        ConfThreshold = existAI.ConfThreshold,
-                        IoUThreshold = existAI.IoUThreshold,
-                        WindowTitle = existAI.WindowTitle,
-                        WindowClassName = existAI.WindowClassName
-                    }) 
-                    { 
-                        LineNumber = existAI.LineNumber, 
-                        IsEnabled = existAI.IsEnable 
-                    };
-                    
-                case IfImageNotExistAIItem notExistAI:
-                    Debug.WriteLine($"Creating IfImageNotExistAICommand");
-                    return new IfImageNotExistAICommand(parent, new AIImageNotDetectCommandSettings 
-                    { 
-                        ModelPath = notExistAI.ModelPath,
-                        ClassID = notExistAI.ClassID,
-                        ConfThreshold = notExistAI.ConfThreshold,
-                        IoUThreshold = notExistAI.IoUThreshold,
-                        WindowTitle = notExistAI.WindowTitle,
-                        WindowClassName = notExistAI.WindowClassName
-                    }) 
-                    { 
-                        LineNumber = notExistAI.LineNumber, 
-                        IsEnabled = notExistAI.IsEnable 
-                    };
-                    
-                case IfVariableItem ifVar:
-                    Debug.WriteLine($"Creating IfVariableCommand");
-                    return new IfVariableCommand(parent, new IfVariableCommandSettings 
-                    { 
-                        Name = ifVar.Name,
-                        Operator = ifVar.Operator,
-                        Value = ifVar.Value
-                    }) 
-                    { 
-                        LineNumber = ifVar.LineNumber, 
-                        IsEnabled = ifVar.IsEnable 
-                    };
-                    
-                default:
-                    throw new NotSupportedException($"未対応のIf文型です: {ifItem.GetType().Name}");
-            }
+            var itemType = ifItem.GetType();
+            
+            // 設定オブジェクト作成
+            if (!_ifSettingsCreators.TryGetValue(itemType, out var settingsCreator))
+                throw new NotSupportedException($"未対応のIf文型です: {itemType.Name}");
+            
+            // コマンドクラス取得
+            if (!_ifCommandTypes.TryGetValue(itemType, out var commandType))
+                throw new NotSupportedException($"未対応のIf文型です: {itemType.Name}");
+            
+            var settings = settingsCreator(ifItem);
+            var command = (IIfCommand)Activator.CreateInstance(commandType, parent, settings)!;
+            
+            command.LineNumber = ifItem.LineNumber;
+            command.IsEnabled = ifItem.IsEnable;
+            
+            Debug.WriteLine($"Successfully created {commandType.Name}");
+            return command;
         }
+
+        // 個別の設定作成メソッド
+        private static ICommandSettings CreateIfImageSettings(IfImageExistItem item) =>
+            new IfImageCommandSettings 
+            { 
+                ImagePath = item.ImagePath,
+                Threshold = item.Threshold,
+                SearchColor = item.SearchColor,
+                WindowTitle = item.WindowTitle,
+                WindowClassName = item.WindowClassName
+            };
+
+        private static ICommandSettings CreateIfImageSettings(IfImageNotExistItem item) =>
+            new IfImageCommandSettings 
+            { 
+                ImagePath = item.ImagePath,
+                Threshold = item.Threshold,
+                SearchColor = item.SearchColor,
+                WindowTitle = item.WindowTitle,
+                WindowClassName = item.WindowClassName
+            };
+
+        private static ICommandSettings CreateIfImageExistAISettings(IfImageExistAIItem item) =>
+            new AIImageDetectCommandSettings 
+            { 
+                ModelPath = item.ModelPath,
+                ClassID = item.ClassID,
+                ConfThreshold = item.ConfThreshold,
+                IoUThreshold = item.IoUThreshold,
+                WindowTitle = item.WindowTitle,
+                WindowClassName = item.WindowClassName
+            };
+
+        private static ICommandSettings CreateIfImageNotExistAISettings(IfImageNotExistAIItem item) =>
+            new AIImageNotDetectCommandSettings 
+            { 
+                ModelPath = item.ModelPath,
+                ClassID = item.ClassID,
+                ConfThreshold = item.ConfThreshold,
+                IoUThreshold = item.IoUThreshold,
+                WindowTitle = item.WindowTitle,
+                WindowClassName = item.WindowClassName
+            };
+
+        private static ICommandSettings CreateIfVariableSettings(IfVariableItem item) =>
+            new IfVariableCommandSettings 
+            { 
+                Name = item.Name,
+                Operator = item.Operator,
+                Value = item.Value
+            };
 
         private static LoopCommand CreateLoopCommand(ICommand parent, ILoopItem loopItem, IEnumerable<ICommandListItem> items)
         {

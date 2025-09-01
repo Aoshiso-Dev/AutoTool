@@ -22,8 +22,6 @@ namespace MacroPanels.List.Class
     public partial class CommandListItem : ObservableObject, ICommandListItem
     {
         [ObservableProperty]
-        protected bool _isEnable = true;
-        [ObservableProperty]
         protected bool _isRunning = false;
         [ObservableProperty]
         protected bool _isSelected = false;
@@ -47,6 +45,45 @@ namespace MacroPanels.List.Class
         protected bool _isInIf = false;
         [ObservableProperty]
         protected int _progress = 0;
+
+        // IsEnableは手動で実装するため、ObservablePropertyは使用しない
+        private bool _isEnable = true;
+
+        /// <summary>
+        /// IsEnableの変更時にPairも同期するかどうか
+        /// </summary>
+        protected virtual bool SyncPairOnIsEnableChange => false;
+
+        /// <summary>
+        /// Pairアイテムを取得（派生クラスでオーバーライド）
+        /// </summary>
+        protected virtual ICommandListItem? GetPair() => null;
+
+        /// <summary>
+        /// IsEnableプロパティ - Pairとの同期処理を含む
+        /// </summary>
+        public virtual bool IsEnable
+        {
+            get => _isEnable;
+            set
+            {
+                if (_isEnable != value)
+                {
+                    _isEnable = value;
+                    OnPropertyChanged();
+
+                    // Pairとの同期が必要な場合
+                    if (SyncPairOnIsEnableChange)
+                    {
+                        var pair = GetPair();
+                        if (pair != null)
+                        {
+                            pair.IsEnable = value;
+                        }
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// UI表示用の日本語名を取得
@@ -81,13 +118,39 @@ namespace MacroPanels.List.Class
         /// </summary>
         public bool HasComment => !string.IsNullOrWhiteSpace(Comment);
 
+        /// <summary>
+        /// ウィンドウ対象の表示名を取得（共通ヘルパーメソッド）
+        /// </summary>
+        protected static string FormatWindowTarget(string windowTitle, string windowClassName, string defaultName = "グローバル")
+        {
+            return string.IsNullOrEmpty(windowTitle) && string.IsNullOrEmpty(windowClassName) 
+                ? defaultName 
+                : $"{windowTitle}[{windowClassName}]";
+        }
+
+        /// <summary>
+        /// ファイル名のみを表示用に取得（共通ヘルパーメソッド）
+        /// </summary>
+        protected static string FormatFileName(string filePath)
+        {
+            return string.IsNullOrEmpty(filePath) ? filePath : System.IO.Path.GetFileName(filePath);
+        }
+
+        /// <summary>
+        /// Pairの範囲を表示用にフォーマット（共通ヘルパーメソッド）
+        /// </summary>
+        protected string FormatPairRange(ICommandListItem? pair)
+        {
+            return $"{LineNumber}->{pair?.LineNumber}";
+        }
+
         public CommandListItem() { }
 
         public CommandListItem(CommandListItem? item)
         {
             if (item != null)
             {
-                IsEnable = item.IsEnable;
+                _isEnable = item._isEnable;  // プライベートフィールドを直接設定
                 IsRunning = item.IsRunning;
                 IsSelected = item.IsSelected;
                 LineNumber = item.LineNumber;
@@ -131,7 +194,7 @@ namespace MacroPanels.List.Class
         [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
 
-        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+        new public string Description => $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / パス:{FormatFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
 
         public WaitImageItem() { }
 
@@ -183,7 +246,7 @@ namespace MacroPanels.List.Class
         [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
 
-        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
+        new public string Description => $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / パス:{FormatFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
 
         public ClickImageItem() { }
 
@@ -234,8 +297,7 @@ namespace MacroPanels.List.Class
         {
             get
             {
-                var target = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]";
-
+                var target = FormatWindowTarget(WindowTitle, WindowClassName);
                 var keys = new List<string>();
 
                 if (Ctrl) keys.Add("Ctrl");
@@ -287,7 +349,7 @@ namespace MacroPanels.List.Class
         [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
 
-        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / X座標:{X} / Y座標:{Y} / ボタン:{Button}";
+        new public string Description => $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / X座標:{X} / Y座標:{Y} / ボタン:{Button}";
 
         public ClickItem() { }
 
@@ -336,25 +398,8 @@ namespace MacroPanels.List.Class
     [CommandDef.CommandDefinition("IF_ImageExist", typeof(IfImageExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true)]
     public partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IIfImageCommandSettings
     {
-        new public bool IsEnable
-        {
-            get
-            {
-                return base.IsEnable;
-            }
-            set
-            {
-                if (base.IsEnable != value)
-                {
-                    base.IsEnable = value;
-
-                    if (Pair != null)
-                    {
-                        Pair.IsEnable = value;
-                    }
-                }
-            }
-        }
+        protected override bool SyncPairOnIsEnableChange => true;
+        protected override ICommandListItem? GetPair() => Pair;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -376,7 +421,7 @@ namespace MacroPanels.List.Class
         private ICommandListItem? _pair = null;
 
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold}";
+        new public string Description => $"{FormatPairRange(Pair)} / 対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / パス:{FormatFileName(ImagePath)} / 閾値:{Threshold}";
 
         public IfImageExistItem() { }
 
@@ -402,25 +447,8 @@ namespace MacroPanels.List.Class
     [CommandDef.CommandDefinition("IF_ImageNotExist", typeof(IfImageNotExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true)]
     public partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IIfImageCommandSettings
     {
-        new public bool IsEnable
-        {
-            get
-            {
-                return base.IsEnable;
-            }
-            set
-            {
-                if (base.IsEnable != value)
-                {
-                    base.IsEnable = value;
-
-                    if (Pair != null)
-                    {
-                        Pair.IsEnable = value;
-                    }
-                }
-            }
-        }
+        protected override bool SyncPairOnIsEnableChange => true;
+        protected override ICommandListItem? GetPair() => Pair;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -441,7 +469,7 @@ namespace MacroPanels.List.Class
         [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold}";
+        new public string Description => $"{FormatPairRange(Pair)} / 対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / パス:{FormatFileName(ImagePath)} / 閾値:{Threshold}";
 
         public IfImageNotExistItem() { }
 
@@ -468,25 +496,8 @@ namespace MacroPanels.List.Class
     [CommandDef.CommandDefinition("IF_End", typeof(IfEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control)]
     public partial class IfEndItem : CommandListItem, IIfEndItem, ICommandSettings
     {
-        new public bool IsEnable
-        {
-            get
-            {
-                return base.IsEnable;
-            }
-            set
-            {
-                if (base.IsEnable != value)
-                {
-                    base.IsEnable = value;
-
-                    if (Pair != null)
-                    {
-                        Pair.IsEnable = value;
-                    }
-                }
-            }
-        }
+        protected override bool SyncPairOnIsEnableChange => true;
+        protected override ICommandListItem? GetPair() => Pair;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -507,25 +518,8 @@ namespace MacroPanels.List.Class
     [CommandDef.CommandDefinition("Loop", typeof(LoopCommand), typeof(ILoopCommandSettings), CommandDef.CommandCategory.Control, isLoopCommand: true)]
     public partial class LoopItem : CommandListItem, ILoopItem, ICommandListItem
     {
-        new public bool IsEnable
-        {
-            get
-            {
-                return base.IsEnable;
-            }
-            set
-            {
-                if (base.IsEnable != value)
-                {
-                    base.IsEnable = value;
-
-                    if (Pair != null)
-                    {
-                        Pair.IsEnable = value;
-                    }
-                }
-            }
-        }
+        protected override bool SyncPairOnIsEnableChange => true;
+        protected override ICommandListItem? GetPair() => Pair;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -556,25 +550,8 @@ namespace MacroPanels.List.Class
     [CommandDef.CommandDefinition("Loop_End", typeof(LoopEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control)]
     public partial class LoopEndItem : CommandListItem, ILoopEndItem, ICommandSettings
     {
-        new public bool IsEnable
-        {
-            get
-            {
-                return base.IsEnable;
-            }
-            set
-            {
-                if (base.IsEnable != value)
-                {
-                    base.IsEnable = value;
-
-                    if (Pair != null)
-                    {
-                        Pair.IsEnable = value;
-                    }
-                }
-            }
-        }
+        protected override bool SyncPairOnIsEnableChange => true;
+        protected override ICommandListItem? GetPair() => Pair;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -614,18 +591,8 @@ namespace MacroPanels.List.Class
     [CommandDef.CommandDefinition("IF_ImageExist_AI", typeof(IfImageExistAICommand), typeof(IIfImageExistAISettings), CommandDef.CommandCategory.AI, isIfCommand: true)]
     public partial class IfImageExistAIItem : CommandListItem, IIfItem, IIfImageExistAIItem, IIfImageExistAISettings
     {
-        new public bool IsEnable
-        {
-            get => base.IsEnable;
-            set
-            {
-                if (base.IsEnable != value)
-                {
-                    base.IsEnable = value;
-                    if (Pair != null) Pair.IsEnable = value;
-                }
-            }
-        }
+        protected override bool SyncPairOnIsEnableChange => true;
+        protected override ICommandListItem? GetPair() => Pair;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -650,7 +617,7 @@ namespace MacroPanels.List.Class
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-             $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
+             $"{FormatPairRange(Pair)} / 対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
 
         public IfImageExistAIItem() { }
 
@@ -677,18 +644,8 @@ namespace MacroPanels.List.Class
     [CommandDef.CommandDefinition("IF_ImageNotExist_AI", typeof(IfImageNotExistAICommand), typeof(IIfImageNotExistAISettings), CommandDef.CommandCategory.AI, isIfCommand: true)]
     public partial class IfImageNotExistAIItem : CommandListItem, IIfItem, IIfImageNotExistAIItem, IIfImageNotExistAISettings
     {
-        new public bool IsEnable
-        {
-            get => base.IsEnable;
-            set
-            {
-                if (base.IsEnable != value)
-                {
-                    base.IsEnable = value;
-                    if (Pair != null) Pair.IsEnable = value;
-                }
-            }
-        }
+        protected override bool SyncPairOnIsEnableChange => true;
+        protected override ICommandListItem? GetPair() => Pair;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -713,7 +670,7 @@ namespace MacroPanels.List.Class
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-            $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
+            $"{FormatPairRange(Pair)} / 対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
 
         public IfImageNotExistAIItem() { }
         public IfImageNotExistAIItem(IfImageNotExistAIItem? item = null) : base(item)
@@ -751,7 +708,7 @@ namespace MacroPanels.List.Class
         [NotifyPropertyChangedFor(nameof(Description))]
         private bool _waitForExit = false;
 
-        new public string Description => $"ファイルパス:{System.IO.Path.GetFileName(ProgramPath)} / 引数:{Arguments} / 作業フォルダ:{WorkingDirectory}";
+        new public string Description => $"ファイルパス:{FormatFileName(ProgramPath)} / 引数:{Arguments} / 作業フォルダ:{WorkingDirectory}";
         public ExecuteItem() { }
         public ExecuteItem(ExecuteItem? item = null) : base(item)
         {
@@ -821,7 +778,7 @@ namespace MacroPanels.List.Class
         private string _name = string.Empty;
 
         new public string Description =>
-            $"変数:{Name} / モード:{AIDetectMode} / モデル:{System.IO.Path.GetFileName(ModelPath)} / 閾値:C{ConfThreshold}/I{IoUThreshold}";
+            $"変数:{Name} / モード:{AIDetectMode} / モデル:{FormatFileName(ModelPath)} / 閾値:C{ConfThreshold}/I{IoUThreshold}";
 
         public SetVariableAIItem() { }
         public SetVariableAIItem(SetVariableAIItem? item = null) : base(item)
@@ -847,6 +804,9 @@ namespace MacroPanels.List.Class
     [CommandDef.CommandDefinition("IF_Variable", typeof(IfVariableCommand), typeof(IIfVariableCommandSettings), CommandDef.CommandCategory.Variable, isIfCommand: true)]
     public partial class IfVariableItem : CommandListItem, IIfVariableItem, IIfVariableCommandSettings, IIfItem
     {
+        protected override bool SyncPairOnIsEnableChange => true;
+        protected override ICommandListItem? GetPair() => Pair;
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private string _name = string.Empty;
@@ -863,7 +823,7 @@ namespace MacroPanels.List.Class
         [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / If {Name} {Operator} \"{Value}\"";
+        new public string Description => $"{FormatPairRange(Pair)} / If {Name} {Operator} \"{Value}\"";
 
         public IfVariableItem() { }
         public IfVariableItem(IfVariableItem? item = null) : base(item)
@@ -896,7 +856,7 @@ namespace MacroPanels.List.Class
         private string _windowClassName = string.Empty;
 
         new public string Description =>
-            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "全画面" : $"{WindowTitle}[{WindowClassName}]")} / 保存先:{(string.IsNullOrEmpty(SaveDirectory) ? "(./Screenshots)" : SaveDirectory)}";
+            $"対象：{FormatWindowTarget(WindowTitle, WindowClassName, "全画面")} / 保存先:{(string.IsNullOrEmpty(SaveDirectory) ? "(./Screenshots)" : SaveDirectory)}";
 
         public ScreenshotItem() { }
         public ScreenshotItem(ScreenshotItem? item = null) : base(item)
@@ -938,7 +898,7 @@ namespace MacroPanels.List.Class
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
 
         new public string Description =>
-            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / モデル:{System.IO.Path.GetFileName(ModelPath)} / クラスID:{ClassID} / 閾値:{ConfThreshold} / ボタン:{Button}";
+            $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / モデル:{FormatFileName(ModelPath)} / クラスID:{ClassID} / 閾値:{ConfThreshold} / ボタン:{Button}";
 
         public ClickImageAIItem() { }
         public ClickImageAIItem(ClickImageAIItem? item = null) : base(item)

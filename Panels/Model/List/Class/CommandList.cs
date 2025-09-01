@@ -27,24 +27,27 @@ namespace MacroPanels.List.Class
             set => Items[index] = value;
         }
 
-        public void Add(ICommandListItem item)
+        /// <summary>
+        /// リスト変更後の共通処理
+        /// </summary>
+        private void RefreshListState()
         {
-            Items.Add(item);
-
             ReorderItems();
             CalculateNestLevel();
             PairIfItems();
             PairLoopItems();
         }
 
+        public void Add(ICommandListItem item)
+        {
+            Items.Add(item);
+            RefreshListState();
+        }
+
         public void Remove(ICommandListItem item)
         {
             Items.Remove(item);
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RefreshListState();
         }
 
         /// <summary>
@@ -55,42 +58,26 @@ namespace MacroPanels.List.Class
             if (index >= 0 && index < Items.Count)
             {
                 Items.RemoveAt(index);
-
-                ReorderItems();
-                CalculateNestLevel();
-                PairIfItems();
-                PairLoopItems();
+                RefreshListState();
             }
         }
 
         public void Insert(int index, ICommandListItem item)
         {
             Items.Insert(index, item);
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RefreshListState();
         }
 
         public void Override(int index, ICommandListItem item)
         {
             if(item == null)
-            {
                 throw new ArgumentNullException(nameof(item));
-            }
 
             if(index < 0 || index >= Items.Count)
-            {
                 throw new ArgumentOutOfRangeException(nameof(index));
-            }
 
             Items[index] = item;
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RefreshListState();
         }
 
         public void Clear()
@@ -101,41 +88,29 @@ namespace MacroPanels.List.Class
         public void Move(int oldIndex, int newIndex)
         {
             if (oldIndex < 0 || oldIndex >= Items.Count || newIndex < 0 || newIndex >= Items.Count)
-            {
                 return;
-            }
 
             var item = Items[oldIndex];
             Items.RemoveAt(oldIndex);
             Items.Insert(newIndex, item);
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RefreshListState();
         }
 
         public void Copy(int oldIndex, int newIndex)
         {
             if (oldIndex < 0 || oldIndex >= Items.Count || newIndex < 0 || newIndex >= Items.Count)
-            {
                 return;
-            }
 
             var item = Items[oldIndex];
             Items.Insert(newIndex, item);
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RefreshListState();
         }
 
         public void ReorderItems()
         {
-            foreach (var item in Items)
+            for (int i = 0; i < Items.Count; i++)
             {
-                item.LineNumber = Items.IndexOf(item) + 1;
+                Items[i].LineNumber = i + 1;
             }
         }
 
@@ -161,62 +136,57 @@ namespace MacroPanels.List.Class
             }
         }
 
-        public void PairIfItems()
+        /// <summary>
+        /// 共通のペアリング処理
+        /// </summary>
+        private void PairItems<TStart, TEnd>(Func<ICommandListItem, bool> startPredicate, Func<ICommandListItem, bool> endPredicate)
+            where TStart : class
+            where TEnd : class
         {
-            var ifItems = Items.OfType<IIfItem>().Where(x => CommandRegistry.IsIfCommand(x.ItemType)).OrderBy(x => x.LineNumber).ToList();
-            var endIfItems = Items.OfType<IIfEndItem>().Where(x => x.ItemType == CommandRegistry.CommandTypes.IfEnd).OrderBy(x => x.LineNumber).ToList();
+            var startItems = Items.OfType<TStart>().Cast<ICommandListItem>()
+                .Where(startPredicate)
+                .OrderBy(x => x.LineNumber)
+                .ToList();
 
-            foreach (var ifItem in ifItems)
+            var endItems = Items.OfType<TEnd>().Cast<ICommandListItem>()
+                .Where(endPredicate)
+                .OrderBy(x => x.LineNumber)
+                .ToList();
+
+            foreach (var startItem in startItems)
             {
-                if(ifItem.Pair != null)
-                {
-                    continue;
-                }
+                var startPairItem = startItem as dynamic;
+                if (startPairItem?.Pair != null) continue;
 
-                foreach(var endIfItem in endIfItems)
+                foreach (var endItem in endItems)
                 {
-                    if (endIfItem.Pair != null)
-                    {
-                        continue;
-                    }
+                    var endPairItem = endItem as dynamic;
+                    if (endPairItem?.Pair != null) continue;
 
-                    if (endIfItem.NestLevel == ifItem.NestLevel &&　endIfItem.LineNumber > ifItem.LineNumber)
+                    if (endItem.NestLevel == startItem.NestLevel && endItem.LineNumber > startItem.LineNumber)
                     {
-                        ifItem.Pair = endIfItem;
-                        endIfItem.Pair = ifItem;
+                        startPairItem.Pair = endItem;
+                        endPairItem.Pair = startItem;
                         break;
                     }
                 }
             }
         }
 
+        public void PairIfItems()
+        {
+            PairItems<IIfItem, IIfEndItem>(
+                x => CommandRegistry.IsIfCommand(x.ItemType),
+                x => x.ItemType == CommandRegistry.CommandTypes.IfEnd
+            );
+        }
+
         public void PairLoopItems()
         {
-            var loopItems = Items.OfType<ILoopItem>().Where(x => CommandRegistry.IsLoopCommand(x.ItemType)).OrderBy(x => x.LineNumber).ToList();
-            var endLoopItems = Items.OfType<ILoopEndItem>().Where(x => x.ItemType == CommandRegistry.CommandTypes.LoopEnd).OrderBy(x => x.LineNumber).ToList();
-
-            foreach (var loopItem in loopItems)
-            {
-                if(loopItem.Pair != null)
-                {
-                    continue;
-                }
-
-                foreach (var endLoopItem in endLoopItems)
-                {
-                    if (endLoopItem.Pair != null)
-                    {
-                        continue;
-                    }
-
-                    if (endLoopItem.NestLevel == loopItem.NestLevel && endLoopItem.LineNumber > loopItem.LineNumber)
-                    {
-                        loopItem.Pair = endLoopItem;
-                        endLoopItem.Pair = loopItem;
-                        break;
-                    }
-                }
-            }
+            PairItems<ILoopItem, ILoopEndItem>(
+                x => CommandRegistry.IsLoopCommand(x.ItemType),
+                x => x.ItemType == CommandRegistry.CommandTypes.LoopEnd
+            );
         }
 
         public IEnumerable<ICommandListItem> Clone()
