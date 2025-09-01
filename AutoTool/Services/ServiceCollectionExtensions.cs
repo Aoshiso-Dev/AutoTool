@@ -8,6 +8,9 @@ using MacroPanels.Plugin;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using MacroPanels.Model.CommandDefinition;
+using MacroPanels.ViewModel;
+using AutoTool.ViewModel;
 
 namespace AutoTool.Services
 {
@@ -33,8 +36,24 @@ namespace AutoTool.Services
             // パフォーマンスサービス
             services.AddSingleton<IPerformanceService, PerformanceService>();
 
-            // MacroPanelsのサービス
-            services.AddTransient<MacroPanels.ViewModel.MacroPanelViewModel>();
+            // コマンドレジストリ
+            services.AddSingleton<ICommandRegistry, CommandRegistryAdapter>();
+
+            // ViewModelファクトリ
+            services.AddSingleton<IViewModelFactory, ViewModelFactory>();
+
+            // メッセージサービス
+            services.AddSingleton<IMessageService, MessageBoxService>();
+
+            // MacroPanelsのViewModels
+            services.AddTransient<ButtonPanelViewModel>();
+            services.AddTransient<ListPanelViewModel>();
+            services.AddTransient<EditPanelViewModel>();
+            services.AddTransient<LogPanelViewModel>();
+            services.AddTransient<FavoritePanelViewModel>();
+            
+            // AutoToolのViewModels
+            services.AddTransient<MacroPanelViewModel>();
             
             return services;
         }
@@ -49,13 +68,10 @@ namespace AutoTool.Services
             
             try
             {
-                // MacroFactoryにプラグインサービスを設定
-                MacroPanels.Model.MacroFactory.MacroFactory.SetPluginService(pluginService);
-                
-                // プラグインを読み込み
+                // プラグインを読み込み - DI,Pluginブランチの内容を使用
                 await pluginService.LoadAllPluginsAsync();
                 
-                logger.LogInformation("プラグインシステム初期化完了");
+                logger.LogInformation("プラグインシステムを初期化しました");
                 
                 // 読み込み済みプラグインの情報をログ出力
                 var loadedPlugins = pluginService.GetLoadedPlugins();

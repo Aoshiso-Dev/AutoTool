@@ -7,6 +7,7 @@
              xmlns:converter="clr-namespace:MacroPanels.View.Converter"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:item="clr-namespace:MacroPanels.List.Class"
+             xmlns:controls="clr-namespace:MacroPanels.View.Controls"
              mc:Ignorable="d"
              d:DesignHeight="1000" d:DesignWidth="300">
 
@@ -55,6 +56,14 @@
         </Style>
         <Style TargetType="GroupBox">
             <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <!-- KeyInputBox用のスタイル -->
+        <Style TargetType="controls:KeyInputBox">
+            <Setter Property="Margin" Value="1"/>
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
         </Style>
     </UserControl.Resources>
 
@@ -436,8 +445,10 @@
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,2">
                                     <TextBlock Text="キー:" Width="120" VerticalAlignment="Center" Foreground="Black"/>
-                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource KeyToStringConverter}}"
-                                             Width="100" Foreground="Black" Background="White"/>
+                                    <controls:KeyInputBox KeyValue="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                         Width="100" 
+                                                         Height="23"
+                                                         ToolTip="キーを押してください。Escapeキーでクリアできます。"/>
                                 </StackPanel>
                                 <StackPanel.Visibility>
                                     <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">

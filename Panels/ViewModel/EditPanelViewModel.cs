@@ -142,10 +142,83 @@ namespace MacroPanels.ViewModel
 
         #region Input Properties (Mouse/Keyboard)
         public System.Windows.Input.MouseButton MouseButton { get => _propertyManager.MouseButton.GetValue(Item); set { _propertyManager.MouseButton.SetValue(Item, value); UpdateProperties(); } }
-        public bool Ctrl { get => _propertyManager.Ctrl.GetValue(Item); set { _propertyManager.Ctrl.SetValue(Item, value); UpdateProperties(); } }
-        public bool Alt { get => _propertyManager.Alt.GetValue(Item); set { _propertyManager.Alt.SetValue(Item, value); UpdateProperties(); } }
-        public bool Shift { get => _propertyManager.Shift.GetValue(Item); set { _propertyManager.Shift.SetValue(Item, value); UpdateProperties(); } }
-        public Key Key { get => _propertyManager.Key.GetValue(Item); set { _propertyManager.Key.SetValue(Item, value); UpdateProperties(); } }
+        public bool Ctrl 
+        { 
+            get 
+            {
+                var value = _propertyManager.Ctrl.GetValue(Item);
+                _logger.LogDebug("Ctrl getter called: Item={ItemType}, Value={Ctrl}", 
+                    Item?.ItemType ?? "null", value);
+                return value;
+            } 
+            set 
+            { 
+                _logger.LogDebug("Ctrl setter called: Item={ItemType}, OldValue={OldCtrl}, NewValue={NewCtrl}", 
+                    Item?.ItemType ?? "null", Ctrl, value);
+                
+                _propertyManager.Ctrl.SetValue(Item, value);
+                UpdateProperties();
+            } 
+        }
+        public bool Alt 
+        { 
+            get 
+            {
+                var value = _propertyManager.Alt.GetValue(Item);
+                _logger.LogDebug("Alt getter called: Item={ItemType}, Value={Alt}", 
+                    Item?.ItemType ?? "null", value);
+                return value;
+            } 
+            set 
+            { 
+                _logger.LogDebug("Alt setter called: Item={ItemType}, OldValue={OldAlt}, NewValue={NewAlt}", 
+                    Item?.ItemType ?? "null", Alt, value);
+                
+                _propertyManager.Alt.SetValue(Item, value);
+                UpdateProperties();
+            } 
+        }
+        public bool Shift 
+        { 
+            get 
+            {
+                var value = _propertyManager.Shift.GetValue(Item);
+                _logger.LogDebug("Shift getter called: Item={ItemType}, Value={Shift}", 
+                    Item?.ItemType ?? "null", value);
+                return value;
+            } 
+            set 
+            { 
+                _logger.LogDebug("Shift setter called: Item={ItemType}, OldValue={OldShift}, NewValue={NewShift}", 
+                    Item?.ItemType ?? "null", Shift, value);
+                
+                _propertyManager.Shift.SetValue(Item, value);
+                UpdateProperties();
+            } 
+        }
+        public Key Key 
+        { 
+            get 
+            {
+                var value = _propertyManager.Key.GetValue(Item);
+                _logger.LogDebug("Key getter called: Item={ItemType}, Value={Key}", 
+                    Item?.ItemType ?? "null", value);
+                return value;
+            } 
+            set 
+            { 
+                _logger.LogDebug("Key setter called: Item={ItemType}, OldValue={OldKey}, NewValue={NewKey}", 
+                    Item?.ItemType ?? "null", Key, value);
+                
+                _propertyManager.Key.SetValue(Item, value);
+                UpdateProperties();
+                
+                // 設定後の値を確認
+                var currentValue = _propertyManager.Key.GetValue(Item);
+                _logger.LogDebug("Key setter finished: Item={ItemType}, ActualValue={ActualKey}", 
+                    Item?.ItemType ?? "null", currentValue);
+            } 
+        }
         #endregion
 
         #region Position Properties
@@ -398,11 +471,14 @@ namespace MacroPanels.ViewModel
         #endregion
 
         #region Constructor and Initialization
+        /// <summary>
+        /// DI対応コンストラクタ
+        /// </summary>
         public EditPanelViewModel(ILogger<EditPanelViewModel> logger)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             
-            _logger.LogInformation("EditPanelViewModel を初期化しています");
+            _logger.LogInformation("EditPanelViewModel をDI対応で初期化しています");
 
             // CommandRegistryを初期化
             CommandRegistry.Initialize();
@@ -433,10 +509,12 @@ namespace MacroPanels.ViewModel
                 
             InitializeOperators();
             InitializeAIDetectModes();
+            
+            _logger.LogInformation("EditPanelViewModel の初期化が完了しました");
         }
 
         /// <summary>
-        /// CommandHistoryManagerを設定
+        /// CommandHistoryを設定
         /// </summary>
         public void SetCommandHistory(CommandHistoryManager? commandHistory)
         {
@@ -575,7 +653,7 @@ namespace MacroPanels.ViewModel
                 OnPropertyChanged(name);
         }
 
-        private static readonly string[] IsPropertyNames = {
+        private readonly string[] IsPropertyNames = {
             nameof(IsListNotEmpty), nameof(IsListEmpty), nameof(IsListNotEmptyButNoSelection), 
             nameof(IsNotNullItem), nameof(IsWaitImageItem), 
             nameof(IsClickImageItem), nameof(IsClickImageAIItem), nameof(IsHotkeyItem), 
@@ -586,7 +664,7 @@ namespace MacroPanels.ViewModel
             nameof(IsSetVariableAIItem), nameof(IsIfVariableItem), nameof(IsScreenshotItem)
         };
 
-        private static readonly string[] AllPropertyNames = {
+        private readonly string[] AllPropertyNames = {
             nameof(SelectedItemType), nameof(WindowTitle), nameof(WindowTitleText), 
             nameof(WindowClassName), nameof(WindowClassNameText), nameof(ImagePath), 
             nameof(Threshold), nameof(SearchColor), nameof(Timeout), nameof(Interval), 
@@ -599,7 +677,7 @@ namespace MacroPanels.ViewModel
             nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue), 
             nameof(SaveDirectory), nameof(Comment), nameof(WaitHours), nameof(WaitMinutes),
             nameof(WaitSeconds), nameof(WaitMilliseconds), nameof(WaitTimeDisplay),
-            // ファイル検証プロパティ
+            // ファイル検証プロパティ - DI,Pluginブランチの内容を採用
             nameof(IsImageFileValid), nameof(IsModelFileValid), nameof(IsProgramFileValid),
             nameof(IsWorkingDirectoryValid), nameof(IsSaveDirectoryValid),
             nameof(ImageFileErrorMessage), nameof(ModelFileErrorMessage), nameof(ProgramFileErrorMessage),
@@ -827,20 +905,19 @@ namespace MacroPanels.ViewModel
         }
 
         /// <summary>
-        /// 保存先ディレクトリの存在チェック（親ディレクトリが存在するかチェック）
+        /// 保存先ディレクトリの有効性チェック
         /// </summary>
         public bool IsSaveDirectoryValid
         {
             get
             {
                 if (string.IsNullOrEmpty(SaveDirectory)) return true; // 空の場合は有効扱い
+                
+                // 絶対パスに変換して親ディレクトリをチェック
                 var absolutePath = PathHelper.ToAbsolutePath(SaveDirectory);
-                
-                // ディレクトリが存在する場合
-                if (Directory.Exists(absolutePath)) return true;
-                
-                // 親ディレクトリが存在する場合（作成可能)
                 var parentDir = Path.GetDirectoryName(absolutePath);
+                
+                // 親ディレクトリが存在すれば作成可能として有効とみなす
                 return !string.IsNullOrEmpty(parentDir) && Directory.Exists(parentDir);
             }
         }
@@ -953,12 +1030,26 @@ namespace MacroPanels.ViewModel
         public void SetItem(ICommandListItem? item) 
         {
             _logger.LogDebug("SetItem called with: {ItemType}", item?.ItemType ?? "null");
+            
+            if (item is HotkeyItem hotkeyItem)
+            {
+                _logger.LogDebug("HotkeyItem detected: Ctrl={Ctrl}, Alt={Alt}, Shift={Shift}, Key={Key}",
+                    hotkeyItem.Ctrl, hotkeyItem.Alt, hotkeyItem.Shift, hotkeyItem.Key);
+            }
+            
             Item = item;
             
             // 待機時間コンポーネントを更新
             if (item is IWaitItem)
             {
                 OnWaitChanged();
+            }
+            
+            // ホットキーアイテムの場合、プロパティの状態をログ出力
+            if (item is HotkeyItem)
+            {
+                _logger.LogDebug("After SetItem - Hotkey properties: Ctrl={Ctrl}, Alt={Alt}, Shift={Shift}, Key={Key}",
+                    Ctrl, Alt, Shift, Key);
             }
         }
         
@@ -989,6 +1080,45 @@ namespace MacroPanels.ViewModel
             _logger.LogDebug("SelectedItemTypeObj: {DisplayName} ({TypeName})", SelectedItemTypeObj?.DisplayName ?? "null", SelectedItemTypeObj?.TypeName ?? "null");
             _logger.LogDebug("ItemTypes Count: {Count}", ItemTypes.Count);
             _logger.LogDebug("=== End Debug State ===");
+        }
+
+        /// <summary>
+        /// デバッグ用：ホットキー設定の詳細状態を出力
+        /// </summary>
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void PrintHotkeyDebugState()
+        {
+            _logger.LogDebug("=== Hotkey Debug State ===");
+            _logger.LogDebug("Item: {ItemType}", Item?.GetType().Name ?? "null");
+            _logger.LogDebug("Item is HotkeyItem: {IsHotkeyItem}", Item is HotkeyItem);
+            _logger.LogDebug("IsHotkeyItem property: {IsHotkeyItemProperty}", IsHotkeyItem);
+            
+            if (Item is HotkeyItem hotkeyItem)
+            {
+                _logger.LogDebug("Direct HotkeyItem properties:");
+                _logger.LogDebug("  Ctrl: {Ctrl}", hotkeyItem.Ctrl);
+                _logger.LogDebug("  Alt: {Alt}", hotkeyItem.Alt);
+                _logger.LogDebug("  Shift: {Shift}", hotkeyItem.Shift);
+                _logger.LogDebug("  Key: {Key}", hotkeyItem.Key);
+            }
+            
+            _logger.LogDebug("ViewModel properties:");
+            _logger.LogDebug("  Ctrl: {Ctrl}", Ctrl);
+            _logger.LogDebug("  Alt: {Alt}", Alt);
+            _logger.LogDebug("  Shift: {Shift}", Shift);
+            _logger.LogDebug("  Key: {Key}", Key);
+            
+            _logger.LogDebug("PropertyManager test:");
+            var testCtrl = _propertyManager.Ctrl.GetValue(Item);
+            var testAlt = _propertyManager.Alt.GetValue(Item);
+            var testShift = _propertyManager.Shift.GetValue(Item);
+            var testKey = _propertyManager.Key.GetValue(Item);
+            _logger.LogDebug("  PropertyManager Ctrl: {Ctrl}", testCtrl);
+            _logger.LogDebug("  PropertyManager Alt: {Alt}", testAlt);
+            _logger.LogDebug("  PropertyManager Shift: {Shift}", testShift);
+            _logger.LogDebug("  PropertyManager Key: {Key}", testKey);
+            
+            _logger.LogDebug("=== End Hotkey Debug State ===");
         }
         #endregion
     }

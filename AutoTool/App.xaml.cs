@@ -18,7 +18,6 @@ namespace AutoTool
     {
         internal IHost? _host;
         private ILogger<App>? _logger;
-        private bool _isDiMode = true; // DIモードフラグ
 
         /// <summary>
         /// アプリケーション開始時の処理
@@ -57,6 +56,11 @@ namespace AutoTool
 
                 // プラグインシステムを初期化
                 await serviceProvider.InitializePluginSystemAsync();
+
+                // メインウィンドウを作成して表示
+                var mainWindow = new MainWindow();
+                MainWindow = mainWindow;
+                mainWindow.Show();
 
                 System.Diagnostics.Debug.WriteLine("=== App.OnStartup 完了 ===");
             }
@@ -115,10 +119,10 @@ namespace AutoTool
                     e.Exception.Message.Contains("Object reference not set"))
                 {
                     System.Diagnostics.Debug.WriteLine("DefaultBinder関連エラーを検出しました");
-                    _logger?.LogError("DefaultBinder関連エラーが発生しました。レガシーモードで継続します。");
+                    _logger?.LogWarning("DefaultBinder関連エラーが発生しました。継続して実行します。");
                     
                     var message = "アプリケーションで軽微なエラーが発生しました。\n" +
-                                (_isDiMode ? "レガシーモードで継続して実行します。" : "継続して実行します。") + "\n\n" +
+                                "継続して実行します。\n\n" +
                                 "エラーの詳細:\n" + e.Exception.Message;
 
                     MessageBox.Show(message, "情報", 

@@ -1,25 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
-using CommunityToolkit.Mvvm.Input;
 using MacroPanels.List.Class;
 using System.Windows;
 using MacroPanels.Command.Class;
 using MacroPanels.Command.Interface;
 using MacroPanels.Command.Message;
-using System.Windows.Controls;
-using System.Windows.Data;
-using Microsoft.Win32;
-using System.Collections.ObjectModel;
 using System.IO;
-using System.Xml.Serialization;
-using System.Windows.Shapes;
-using System.Security.Policy;
-using System.ComponentModel;
 using MacroPanels.ViewModel.Shared;
 using Microsoft.Extensions.Logging;
 using AutoTool.Services;
@@ -29,7 +20,6 @@ using MacroPanels.Message;
 using MacroPanels.Model.MacroFactory;
 using MacroPanels.Model.List.Interface;
 using LogHelper;
-using AutoTool.Model;
 
 namespace AutoTool.ViewModel
 {
@@ -58,35 +48,35 @@ namespace AutoTool.ViewModel
     }
 
     /// <summary>
-    /// マクロパネルのViewModel（DI対応版）
+    /// マクロパネルのViewModel（DI完全対応版）
     /// コマンド追加・削除・編集・移動機能をUndo/Redo対応で実装
     /// </summary>
     public partial class MacroPanelViewModel : ObservableObject
     {
         private readonly ILogger<MacroPanelViewModel> _logger;
-        private readonly IViewModelFactory? _viewModelFactory;
-        private readonly IMessageService? _messageService;
-        private readonly IPerformanceService? _performanceService;
+        private readonly IViewModelFactory _viewModelFactory;
+        private readonly IMessageService _messageService;
+        private readonly IPerformanceService _performanceService;
         private CancellationTokenSource? _cts;
-        private CommandHistoryManager? _commandHistory;
+        private MacroPanels.ViewModel.Shared.CommandHistoryManager? _commandHistory;
 
         [ObservableProperty]
         private bool _isRunning = false;
 
         [ObservableProperty]
-        private ButtonPanelViewModel _buttonPanelViewModel;
+        private ButtonPanelViewModel _buttonPanelViewModel = null!;
 
         [ObservableProperty]
-        private ListPanelViewModel _listPanelViewModel;
+        private ListPanelViewModel _listPanelViewModel = null!;
 
         [ObservableProperty]
-        private EditPanelViewModel _editPanelViewModel;
+        private EditPanelViewModel _editPanelViewModel = null!;
 
         [ObservableProperty]
-        private LogPanelViewModel _logPanelViewModel;
+        private LogPanelViewModel _logPanelViewModel = null!;
 
         [ObservableProperty]
-        private FavoritePanelViewModel _favoritePanelViewModel;
+        private FavoritePanelViewModel _favoritePanelViewModel = null!;
 
         [ObservableProperty]
         private int _selectedListTabIndex = 0;
@@ -100,28 +90,7 @@ namespace AutoTool.ViewModel
         [ObservableProperty]
         private int _totalCommands = 0;
 
-        // デフォルトコンストラクタ（既存コード用）
-        [Obsolete("レガシーサポート用。新しいコードではDI対応コンストラクタを使用してください。")]
-        public MacroPanelViewModel()
-        {
-            // NullLoggerを使用
-            var loggerFactory = Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
-            _logger = loggerFactory.CreateLogger<MacroPanelViewModel>();
-            
-            // ViewModelを直接作成
-            ListPanelViewModel = new ListPanelViewModel();
-            var editLogger = Microsoft.Extensions.Logging.Abstractions.NullLogger<EditPanelViewModel>.Instance;
-            EditPanelViewModel = new EditPanelViewModel(editLogger);
-            ButtonPanelViewModel = new ButtonPanelViewModel();
-            LogPanelViewModel = new LogPanelViewModel();
-            FavoritePanelViewModel = new FavoritePanelViewModel();
-            
-            _logger.LogInformation("MacroPanelViewModel: レガシーモードで初期化完了");
-            
-            RegisterMessages();
-        }
-
-        // DI対応コンストラクタ（推奨）
+        // DI対応コンストラクタ（必須）
         public MacroPanelViewModel(
             ILogger<MacroPanelViewModel> logger,
             IViewModelFactory viewModelFactory,
@@ -134,10 +103,10 @@ namespace AutoTool.ViewModel
             _performanceService = performanceService ?? throw new ArgumentNullException(nameof(performanceService));
 
             _logger.LogInformation("MacroPanelViewModel: DI対応コンストラクタで初期化開始");
-            
+
             InitializeViewModels();
             RegisterMessages();
-            
+
             _logger.LogInformation("MacroPanelViewModel: DI対応で初期化完了");
         }
 
@@ -147,26 +116,12 @@ namespace AutoTool.ViewModel
             {
                 _logger.LogDebug("ViewModelの初期化を開始します");
 
-                if (_viewModelFactory != null)
-                {
-                    // DIファクトリを使用
-                    ButtonPanelViewModel = _viewModelFactory.CreateButtonPanelViewModel();
-                    ListPanelViewModel = _viewModelFactory.CreateListPanelViewModel();
-                    EditPanelViewModel = _viewModelFactory.CreateEditPanelViewModel();
-                    LogPanelViewModel = _viewModelFactory.CreateLogPanelViewModel();
-                    FavoritePanelViewModel = _viewModelFactory.CreateFavoritePanelViewModel();
-                }
-                else
-                {
-                    // フォールバック：直接作成
-                    _logger.LogWarning("ViewModelFactoryが利用できません。フォールバック作成を実行します");
-                    ButtonPanelViewModel = new ButtonPanelViewModel();
-                    ListPanelViewModel = new ListPanelViewModel();
-                    var editLogger = Microsoft.Extensions.Logging.Abstractions.NullLogger<EditPanelViewModel>.Instance;
-                    EditPanelViewModel = new EditPanelViewModel(editLogger);
-                    LogPanelViewModel = new LogPanelViewModel();
-                    FavoritePanelViewModel = new FavoritePanelViewModel();
-                }
+                // DIファクトリを使用してViewModelを作成
+                ButtonPanelViewModel = _viewModelFactory.CreateButtonPanelViewModel();
+                ListPanelViewModel = _viewModelFactory.CreateListPanelViewModel();
+                EditPanelViewModel = _viewModelFactory.CreateEditPanelViewModel();
+                LogPanelViewModel = _viewModelFactory.CreateLogPanelViewModel();
+                FavoritePanelViewModel = _viewModelFactory.CreateFavoritePanelViewModel();
 
                 _logger.LogDebug("ViewModelの初期化が完了しました");
             }
@@ -180,17 +135,17 @@ namespace AutoTool.ViewModel
         /// <summary>
         /// CommandHistoryManagerを設定
         /// </summary>
-        public void SetCommandHistory(CommandHistoryManager commandHistory)
+        public void SetCommandHistory(MacroPanels.ViewModel.Shared.CommandHistoryManager commandHistory)
         {
             _commandHistory = commandHistory ?? throw new ArgumentNullException(nameof(commandHistory));
             _logger.LogDebug("CommandHistoryManagerが設定されました");
-            
+
             // ListPanelViewModelにも設定
             ListPanelViewModel?.SetCommandHistory(commandHistory);
         }
 
         /// <summary>
-        /// メッセージ登録（完全修正版）
+        /// メッセージ登録
         /// </summary>
         private void RegisterMessages()
         {
@@ -203,28 +158,28 @@ namespace AutoTool.ViewModel
                 {
                     await PrepareAndRun();
                 });
-                
+
                 WeakReferenceMessenger.Default.Register<StopMessage>(this, (sender, message) =>
                 {
                     StopExecution();
                 });
-                
+
                 WeakReferenceMessenger.Default.Register<SaveMessage>(this, (sender, message) =>
                 {
                     ListPanelViewModel?.Save();
                     LogPanelViewModel?.WriteLog("ファイルを保存しました");
                 });
-                
+
                 WeakReferenceMessenger.Default.Register<LoadMessage>(this, (sender, message) =>
                 {
                     LoadCommands();
                 });
-                
+
                 WeakReferenceMessenger.Default.Register<ClearMessage>(this, (sender, message) =>
                 {
                     ClearAllCommands();
                 });
-                
+
                 WeakReferenceMessenger.Default.Register<AddMessage>(this, (sender, message) =>
                 {
                     var itemType = (message as AddMessage)?.ItemType;
@@ -233,17 +188,17 @@ namespace AutoTool.ViewModel
                         AddCommand(itemType);
                     }
                 });
-                
+
                 WeakReferenceMessenger.Default.Register<UpMessage>(this, (sender, message) =>
                 {
                     MoveCommandUp();
                 });
-                
+
                 WeakReferenceMessenger.Default.Register<DownMessage>(this, (sender, message) =>
                 {
                     MoveCommandDown();
                 });
-                
+
                 WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (sender, message) =>
                 {
                     DeleteSelectedCommand();
@@ -323,44 +278,40 @@ namespace AutoTool.ViewModel
             {
                 _logger.LogDebug("コマンド追加: {ItemType}", itemType);
 
-                // 追加操作をUndoスタックに追加
-                if (_commandHistory != null && ListPanelViewModel != null)
+                if (_commandHistory == null)
                 {
-                    // 新しいアイテムを作成
-                    var newItem = MacroPanels.Model.CommandDefinition.CommandRegistry.CreateCommandItem(itemType);
-                    if (newItem != null)
-                    {
-                        var targetIndex = Math.Max(0, ListPanelViewModel.SelectedLineNumber + 1);
-                        var addCommand = new AddItemCommand(
-                            newItem,
-                            targetIndex,
-                            (item, index) => {
-                                ListPanelViewModel.InsertAt(index, item);
-                                RefreshAllPanels();
-                            },
-                            (index) => {
-                                ListPanelViewModel.RemoveAt(index);
-                                RefreshAllPanels();
-                            }
-                        );
-                        _commandHistory.ExecuteCommand(addCommand);
-                        
-                        LogPanelViewModel?.WriteLog($"コマンド追加: {itemType} (位置: {targetIndex})");
-                        _logger.LogInformation("コマンド追加完了: {ItemType} at {Index}", itemType, targetIndex);
-                    }
+                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
                 }
-                else
+
+                // 新しいアイテムを作成
+                var newItem = MacroPanels.Model.CommandDefinition.CommandRegistry.CreateCommandItem(itemType);
+                if (newItem != null)
                 {
-                    // フォールバック：直接追加
-                    ListPanelViewModel?.Add(itemType);
-                    RefreshAllPanels();
-                    _logger.LogDebug("フォールバック: 直接コマンド追加 {ItemType}", itemType);
+                    var targetIndex = Math.Max(0, ListPanelViewModel.SelectedLineNumber + 1);
+                    var addCommand = new MacroPanels.ViewModel.Shared.AddItemCommand(
+                        newItem,
+                        targetIndex,
+                        (item, index) =>
+                        {
+                            ListPanelViewModel.InsertAt(index, item);
+                            RefreshAllPanels();
+                        },
+                        (index) =>
+                        {
+                            ListPanelViewModel.RemoveAt(index);
+                            RefreshAllPanels();
+                        }
+                    );
+                    _commandHistory.ExecuteCommand(addCommand);
+
+                    LogPanelViewModel?.WriteLog($"コマンド追加: {itemType} (位置: {targetIndex})");
+                    _logger.LogInformation("コマンド追加完了: {ItemType} at {Index}", itemType, targetIndex);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "コマンド追加中にエラーが発生しました: {ItemType}", itemType);
-                _messageService?.ShowError($"コマンドの追加に失敗しました: {ex.Message}");
+                _messageService.ShowError($"コマンドの追加に失敗しました: {ex.Message}");
             }
         }
 
@@ -376,39 +327,46 @@ namespace AutoTool.ViewModel
                 var selectedItem = ListPanelViewModel.SelectedItem;
                 var selectedIndex = ListPanelViewModel.SelectedLineNumber;
 
-                if (selectedItem != null && _commandHistory != null)
+                if (selectedItem == null)
                 {
-                    _logger.LogDebug("コマンド削除: インデックス {Index}", selectedIndex);
+                    _logger.LogDebug("削除対象のアイテムが選択されていません");
+                    return;
+                }
 
-                    var removeCommand = new RemoveItemCommand(
-                        selectedItem.Clone(),
-                        selectedIndex,
-                        (item, index) => {
-                            ListPanelViewModel.InsertAt(index, item);
-                            RefreshAllPanels();
-                        },
-                        (index) => {
-                            ListPanelViewModel.RemoveAt(index);
-                            RefreshAllPanels();
-                        }
-                    );
-                    _commandHistory.ExecuteCommand(removeCommand);
-                    
-                    LogPanelViewModel?.WriteLog($"コマンド削除: インデックス {selectedIndex}");
-                    _logger.LogInformation("コマンド削除完了: index {Index}", selectedIndex);
-                }
-                else
+                if (_commandHistory == null)
                 {
-                    // フォールバック：直接削除
-                    ListPanelViewModel.Delete();
-                    RefreshAllPanels();
-                    _logger.LogDebug("フォールバック: 直接コマンド削除");
+                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
                 }
+
+                _logger.LogDebug("コマンド削除: インデックス {Index}", selectedIndex);
+
+                var removeCommand = new MacroPanels.ViewModel.Shared.RemoveItemCommand(
+                    selectedItem.Clone(),
+                    selectedIndex,
+                    (item, index) =>
+                    {
+                        ListPanelViewModel.InsertAt(index, item);
+                        RefreshAllPanels();
+                        // 削除取り消し時にEditPanelに復元されたアイテムを設定
+                        EditPanelViewModel?.SetItem(ListPanelViewModel.SelectedItem);
+                    },
+                    (index) =>
+                    {
+                        ListPanelViewModel.RemoveAt(index);
+                        RefreshAllPanels();
+                        // 削除時にEditPanelに新しい選択アイテムを設定
+                        EditPanelViewModel?.SetItem(ListPanelViewModel.SelectedItem);
+                    }
+                );
+                _commandHistory.ExecuteCommand(removeCommand);
+
+                LogPanelViewModel?.WriteLog($"コマンド削除: インデックス {selectedIndex}");
+                _logger.LogInformation("コマンド削除完了: index {Index}", selectedIndex);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "コマンド削除中にエラーが発生しました");
-                _messageService?.ShowError($"コマンドの削除に失敗しました: {ex.Message}");
+                _messageService.ShowError($"コマンドの削除に失敗しました: {ex.Message}");
             }
         }
 
@@ -423,35 +381,31 @@ namespace AutoTool.ViewModel
 
                 _logger.LogDebug("全コマンドクリア実行");
 
-                // クリア操作をUndoスタックに追加
-                if (_commandHistory != null)
+                if (_commandHistory == null)
                 {
-                    var currentItems = ListPanelViewModel.CommandList?.Items?.ToList();
-                    if (currentItems != null && currentItems.Any())
-                    {
-                        var clearCommand = new ClearAllCommand(
-                            currentItems,
-                            () => {
-                                ListPanelViewModel.Clear();
-                                RefreshAllPanels();
-                            },
-                            (items) => {
-                                RestoreItems(items);
-                                RefreshAllPanels();
-                            }
-                        );
-                        _commandHistory.ExecuteCommand(clearCommand);
-                        
-                        LogPanelViewModel?.WriteLog($"全コマンドクリア: {currentItems.Count}件削除");
-                        _logger.LogInformation("全コマンドクリア完了: {Count}件", currentItems.Count);
-                    }
+                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
                 }
-                else
+
+                var currentItems = ListPanelViewModel.CommandList?.Items?.ToList();
+                if (currentItems != null && currentItems.Any())
                 {
-                    // フォールバック：直接クリア
-                    ListPanelViewModel.Clear();
-                    RefreshAllPanels();
-                    _logger.LogDebug("フォールバック: 直接全クリア");
+                    var clearCommand = new MacroPanels.ViewModel.Shared.ClearAllCommand(
+                        currentItems,
+                        () =>
+                        {
+                            ListPanelViewModel.Clear();
+                            RefreshAllPanels();
+                        },
+                        (items) =>
+                        {
+                            RestoreItems(items);
+                            RefreshAllPanels();
+                        }
+                    );
+                    _commandHistory.ExecuteCommand(clearCommand);
+
+                    LogPanelViewModel?.WriteLog($"全コマンドクリア: {currentItems.Count}件削除");
+                    _logger.LogInformation("全コマンドクリア完了: {Count}件", currentItems.Count);
                 }
 
                 // ファイル読み込み後は履歴をクリア
@@ -460,7 +414,7 @@ namespace AutoTool.ViewModel
             catch (Exception ex)
             {
                 _logger.LogError(ex, "全コマンドクリア中にエラーが発生しました");
-                _messageService?.ShowError($"コマンドのクリアに失敗しました: {ex.Message}");
+                _messageService.ShowError($"コマンドのクリアに失敗しました: {ex.Message}");
             }
         }
 
@@ -476,35 +430,37 @@ namespace AutoTool.ViewModel
                 var fromIndex = ListPanelViewModel.SelectedLineNumber;
                 var toIndex = fromIndex - 1;
 
-                if (toIndex >= 0 && _commandHistory != null)
+                if (toIndex < 0)
                 {
-                    _logger.LogDebug("コマンド上移動: {From} → {To}", fromIndex, toIndex);
+                    _logger.LogDebug("最上位アイテムのため上移動できません");
+                    return;
+                }
 
-                    var moveCommand = new MoveItemCommand(
-                        fromIndex, toIndex,
-                        (from, to) => {
-                            ListPanelViewModel.MoveItem(from, to);
-                            ListPanelViewModel.SelectedLineNumber = to;
-                            RefreshListPanel();
-                        }
-                    );
-                    _commandHistory.ExecuteCommand(moveCommand);
-                    
-                    LogPanelViewModel?.WriteLog($"コマンド上移動: {fromIndex} → {toIndex}");
-                    _logger.LogInformation("コマンド上移動完了: {From} → {To}", fromIndex, toIndex);
-                }
-                else
+                if (_commandHistory == null)
                 {
-                    // フォールバック：直接移動
-                    ListPanelViewModel.Up();
-                    RefreshListPanel();
-                    _logger.LogDebug("フォールバック: 直接上移動");
+                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
                 }
+
+                _logger.LogDebug("コマンド上移動: {From} → {To}", fromIndex, toIndex);
+
+                var moveCommand = new MacroPanels.ViewModel.Shared.MoveItemCommand(
+                    fromIndex, toIndex,
+                    (from, to) =>
+                    {
+                        ListPanelViewModel.MoveItem(from, to);
+                        ListPanelViewModel.SelectedLineNumber = to;
+                        RefreshListPanel();
+                    }
+                );
+                _commandHistory.ExecuteCommand(moveCommand);
+
+                LogPanelViewModel?.WriteLog($"コマンド上移動: {fromIndex} → {toIndex}");
+                _logger.LogInformation("コマンド上移動完了: {From} → {To}", fromIndex, toIndex);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "コマンド上移動中にエラーが発生しました");
-                _messageService?.ShowError($"コマンドの移動に失敗しました: {ex.Message}");
+                _messageService.ShowError($"コマンドの移動に失敗しました: {ex.Message}");
             }
         }
 
@@ -520,35 +476,37 @@ namespace AutoTool.ViewModel
                 var fromIndex = ListPanelViewModel.SelectedLineNumber;
                 var toIndex = fromIndex + 1;
 
-                if (toIndex < ListPanelViewModel.GetCount() && _commandHistory != null)
+                if (toIndex >= ListPanelViewModel.GetCount())
                 {
-                    _logger.LogDebug("コマンド下移動: {From} → {To}", fromIndex, toIndex);
+                    _logger.LogDebug("最下位アイテムのため下移動できません");
+                    return;
+                }
 
-                    var moveCommand = new MoveItemCommand(
-                        fromIndex, toIndex,
-                        (from, to) => {
-                            ListPanelViewModel.MoveItem(from, to);
-                            ListPanelViewModel.SelectedLineNumber = to;
-                            RefreshListPanel();
-                        }
-                    );
-                    _commandHistory.ExecuteCommand(moveCommand);
-                    
-                    LogPanelViewModel?.WriteLog($"コマンド下移動: {fromIndex} → {toIndex}");
-                    _logger.LogInformation("コマンド下移動完了: {From} → {To}", fromIndex, toIndex);
-                }
-                else
+                if (_commandHistory == null)
                 {
-                    // フォールバック：直接移動
-                    ListPanelViewModel.Down();
-                    RefreshListPanel();
-                    _logger.LogDebug("フォールバック: 直接下移動");
+                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
                 }
+
+                _logger.LogDebug("コマンド下移動: {From} → {To}", fromIndex, toIndex);
+
+                var moveCommand = new MacroPanels.ViewModel.Shared.MoveItemCommand(
+                    fromIndex, toIndex,
+                    (from, to) =>
+                    {
+                        ListPanelViewModel.MoveItem(from, to);
+                        ListPanelViewModel.SelectedLineNumber = to;
+                        RefreshListPanel();
+                    }
+                );
+                _commandHistory.ExecuteCommand(moveCommand);
+
+                LogPanelViewModel?.WriteLog($"コマンド下移動: {fromIndex} → {toIndex}");
+                _logger.LogInformation("コマンド下移動完了: {From} → {To}", fromIndex, toIndex);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "コマンド下移動中にエラーが発生しました");
-                _messageService?.ShowError($"コマンドの移動に失敗しました: {ex.Message}");
+                _messageService.ShowError($"コマンドの移動に失敗しました: {ex.Message}");
             }
         }
 
@@ -565,36 +523,36 @@ namespace AutoTool.ViewModel
                 var oldItem = ListPanelViewModel.SelectedItem;
                 var index = item.LineNumber - 1;
 
-                // 編集操作をUndoスタックに追加
-                if (oldItem != null && _commandHistory != null)
+                if (oldItem == null)
                 {
-                    _logger.LogDebug("コマンド編集: インデックス {Index}", index);
+                    _logger.LogDebug("編集対象のアイテムが選択されていません");
+                    return;
+                }
 
-                    var editCommand = new EditItemCommand(
-                        oldItem, item, index,
-                        (editedItem, editIndex) => {
-                            ListPanelViewModel.ReplaceAt(editIndex, editedItem);
-                            RefreshListPanel();
-                        }
-                    );
-                    _commandHistory.ExecuteCommand(editCommand);
-                    
-                    LogPanelViewModel?.WriteLog($"コマンド編集: インデックス {index}");
-                    _logger.LogInformation("コマンド編集完了: index {Index}", index);
-                }
-                else
+                if (_commandHistory == null)
                 {
-                    // フォールバック：直接設定
-                    ListPanelViewModel.SetSelectedItem(item);
-                    ListPanelViewModel.SetSelectedLineNumber(item.LineNumber - 1);
-                    RefreshListPanel();
-                    _logger.LogDebug("フォールバック: 直接コマンド編集");
+                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
                 }
+
+                _logger.LogDebug("コマンド編集: インデックス {Index}", index);
+
+                var editCommand = new MacroPanels.ViewModel.Shared.EditItemCommand(
+                    oldItem, item, index,
+                    (editedItem, editIndex) =>
+                    {
+                        ListPanelViewModel.ReplaceAt(editIndex, editedItem);
+                        RefreshListPanel();
+                    }
+                );
+                _commandHistory.ExecuteCommand(editCommand);
+
+                LogPanelViewModel?.WriteLog($"コマンド編集: インデックス {index}");
+                _logger.LogInformation("コマンド編集完了: index {Index}", index);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "コマンド編集中にエラーが発生しました");
-                _messageService?.ShowError($"コマンドの編集に失敗しました: {ex.Message}");
+                _messageService.ShowError($"コマンドの編集に失敗しました: {ex.Message}");
             }
         }
 
@@ -627,11 +585,11 @@ namespace AutoTool.ViewModel
             {
                 RefreshListPanel();
                 EditPanelViewModel?.SetListCount(ListPanelViewModel?.GetCount() ?? 0);
-                
+
                 // プロパティ変更通知を送信
                 OnPropertyChanged(nameof(ListPanelViewModel));
                 OnPropertyChanged(nameof(EditPanelViewModel));
-                
+
                 _logger.LogDebug("全パネルを更新しました");
             }
             catch (Exception ex)
@@ -666,7 +624,7 @@ namespace AutoTool.ViewModel
             catch (Exception ex)
             {
                 _logger.LogError(ex, "実行準備中にエラーが発生しました");
-                _messageService?.ShowError($"実行準備に失敗しました: {ex.Message}");
+                _messageService.ShowError($"実行準備に失敗しました: {ex.Message}");
                 SetAllViewModelsRunningState(false);
             }
         }
@@ -679,10 +637,10 @@ namespace AutoTool.ViewModel
             try
             {
                 _logger.LogInformation("マクロ実行停止要求");
-                
+
                 _cts?.Cancel();
                 SetAllViewModelsRunningState(false);
-                
+
                 LogPanelViewModel?.WriteLog("=== マクロ実行停止 ===");
             }
             catch (Exception ex)
@@ -704,7 +662,7 @@ namespace AutoTool.ViewModel
             FavoritePanelViewModel?.SetRunningState(isRunning);
             ListPanelViewModel?.SetRunningState(isRunning);
             LogPanelViewModel?.SetRunningState(isRunning);
-            
+
             _logger.LogDebug("全ViewModelの実行状態を設定: {IsRunning}", isRunning);
         }
 
@@ -714,23 +672,23 @@ namespace AutoTool.ViewModel
         public async Task Run()
         {
             IEnumerable<ICommandListItem>? listItems = null;
-            
+
             try
             {
                 _logger.LogInformation("マクロ実行開始");
-                
+
                 // ListPanelViewModelとCommandListの存在確認を詳細に行う
                 if (ListPanelViewModel == null)
                 {
                     _logger.LogError("ListPanelViewModelがnullです");
-                    _messageService?.ShowError("ListPanelViewModelが初期化されていません");
+                    _messageService.ShowError("ListPanelViewModelが初期化されていません");
                     return;
                 }
 
                 if (ListPanelViewModel.CommandList == null)
                 {
                     _logger.LogError("CommandListがnullです");
-                    _messageService?.ShowError("CommandListが初期化されていません");
+                    _messageService.ShowError("CommandListが初期化されていません");
                     return;
                 }
 
@@ -738,7 +696,7 @@ namespace AutoTool.ViewModel
                 if (listItems == null)
                 {
                     _logger.LogError("CommandList.Itemsがnullです");
-                    _messageService?.ShowError("コマンドリストのアイテムが初期化されていません");
+                    _messageService.ShowError("コマンドリストのアイテムが初期化されていません");
                     return;
                 }
 
@@ -748,7 +706,7 @@ namespace AutoTool.ViewModel
                 if (!commandArray.Any())
                 {
                     _logger.LogWarning("実行するコマンドがありません（リストが空）");
-                    _messageService?.ShowWarning("実行するコマンドがありません");
+                    _messageService.ShowWarning("実行するコマンドがありません");
                     return;
                 }
 
@@ -756,7 +714,7 @@ namespace AutoTool.ViewModel
                 for (int i = 0; i < commandArray.Length; i++)
                 {
                     var cmd = commandArray[i];
-                    _logger.LogDebug("コマンド[{Index}]: {Type}, LineNumber: {LineNumber}", 
+                    _logger.LogDebug("コマンド[{Index}]: {Type}, LineNumber: {LineNumber}",
                         i, cmd?.GetType().Name ?? "null", cmd?.LineNumber ?? -1);
                 }
 
@@ -764,7 +722,7 @@ namespace AutoTool.ViewModel
                 if (macro == null)
                 {
                     _logger.LogError("MacroFactory.CreateMacroがnullを返しました");
-                    _messageService?.ShowError("マクロの作成に失敗しました");
+                    _messageService.ShowError("マクロの作成に失敗しました");
                     return;
                 }
 
@@ -788,17 +746,17 @@ namespace AutoTool.ViewModel
                 {
                     _logger.LogWarning("マクロ実行が失敗で終了しました");
                     LogPanelViewModel?.WriteLog("=== マクロ実行失敗 ===");
-                    
+
                     // エラーの詳細を表示（LogPanelの最後の数行から取得）
                     var errorLines = LogPanelViewModel?.GetRecentErrorLines() ?? new List<string>();
                     if (errorLines.Any())
                     {
                         var errorMessage = string.Join("\n", errorLines.Take(3)); // 最新の3行まで
-                        _messageService?.ShowError($"マクロ実行中にエラーが発生しました:\n\n{errorMessage}\n\n詳細はログパネルを確認してください。");
+                        _messageService.ShowError($"マクロ実行中にエラーが発生しました:\n\n{errorMessage}\n\n詳細はログパネルを確認してください。");
                     }
                     else
                     {
-                        _messageService?.ShowError("マクロ実行中にエラーが発生しました。\n詳細はログパネルを確認してください。");
+                        _messageService.ShowError("マクロ実行中にエラーが発生しました。\n詳細はログパネルを確認してください。");
                     }
                 }
             }
@@ -811,7 +769,7 @@ namespace AutoTool.ViewModel
             {
                 _logger.LogError(ex, "マクロ実行中にエラーが発生しました");
                 LogPanelViewModel?.WriteLog($"❌ 致命的エラー: {ex.Message}");
-                
+
                 if (_cts != null && !_cts.Token.IsCancellationRequested)
                 {
                     // ファイル関連エラーの場合は詳細なメッセージを表示
@@ -825,8 +783,8 @@ namespace AutoTool.ViewModel
                     {
                         errorMessage = $"マクロ実行中にエラーが発生しました:\n\n{ex.Message}";
                     }
-                    
-                    _messageService?.ShowError(errorMessage);
+
+                    _messageService.ShowError(errorMessage);
                 }
             }
             finally
@@ -837,7 +795,7 @@ namespace AutoTool.ViewModel
                     var runningItems = listItems.Where(x => x.IsRunning).ToList();
                     runningItems.ForEach(x => x.IsRunning = false);
                 }
-                
+
                 var progressItems = ListPanelViewModel?.CommandList?.Items?.ToList();
                 progressItems?.ForEach(x => x.Progress = 0);
 
@@ -904,7 +862,7 @@ namespace AutoTool.ViewModel
             var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
             var commandName = command.GetType().ToString().Split('.').Last().Replace("Command", "").PadRight(20, ' ');
             var detail = message.Detail;
-            
+
             LogPanelViewModel?.WriteLog(lineNumber, commandName, detail);
             GlobalLogger.Instance.Write(lineNumber, commandName, detail);
         }
@@ -939,7 +897,7 @@ namespace AutoTool.ViewModel
 
                 // ファイル読み込み後は履歴をクリア
                 _commandHistory?.Clear();
-                
+
                 var commandCount = ListPanelViewModel?.GetCount() ?? 0;
                 LogPanelViewModel?.WriteLog($"コマンドファイル読み込み完了: {commandCount}件");
                 _logger.LogInformation("コマンド読み込み完了: {Count}件", commandCount);
@@ -947,7 +905,7 @@ namespace AutoTool.ViewModel
             catch (Exception ex)
             {
                 _logger.LogError(ex, "コマンド読み込み中にエラーが発生しました");
-                _messageService?.ShowError($"コマンドの読み込みに失敗しました: {ex.Message}");
+                _messageService.ShowError($"コマンドの読み込みに失敗しました: {ex.Message}");
             }
         }
 
@@ -962,7 +920,7 @@ namespace AutoTool.ViewModel
         {
             ListPanelViewModel?.Load(filePath);
             RefreshAllPanels();
-            
+
             // ファイル読み込み後は履歴をクリア
             _commandHistory?.Clear();
         }
@@ -983,7 +941,7 @@ namespace AutoTool.ViewModel
                 {
                     ListPanelViewModel?.AddItem(item.Clone());
                 }
-                
+
                 _logger.LogDebug("アイテムリストを復元しました: {Count}件", items.Count());
             }
             catch (Exception ex)
@@ -994,152 +952,4 @@ namespace AutoTool.ViewModel
 
         #endregion
     }
-
-    #region Legacy Support Classes
-
-    /// <summary>
-    /// レガシーサポート用ViewModelファクトリ
-    /// </summary>
-    internal class LegacyViewModelFactory : IViewModelFactory
-    {
-        private readonly ILogger _logger;
-
-        public LegacyViewModelFactory(ILogger logger)
-        {
-            _logger = logger;
-        }
-
-        public T Create<T>() where T : class
-        {
-            _logger.LogDebug("レガシーファクトリでViewModel作成: {Type}", typeof(T).Name);
-            
-            if (typeof(T) == typeof(EditPanelViewModel))
-            {
-                var nullLogger = Microsoft.Extensions.Logging.Abstractions.NullLogger<EditPanelViewModel>.Instance;
-                return new EditPanelViewModel(nullLogger) as T;
-            }
-            
-            return Activator.CreateInstance<T>();
-        }
-
-        public ButtonPanelViewModel CreateButtonPanelViewModel() => new ButtonPanelViewModel();
-        public ListPanelViewModel CreateListPanelViewModel() => new ListPanelViewModel();
-        public EditPanelViewModel CreateEditPanelViewModel() => 
-            new EditPanelViewModel(Microsoft.Extensions.Logging.Abstractions.NullLogger<EditPanelViewModel>.Instance);
-        public LogPanelViewModel CreateLogPanelViewModel() => new LogPanelViewModel();
-        public FavoritePanelViewModel CreateFavoritePanelViewModel() => new FavoritePanelViewModel();
-    }
-
-    /// <summary>
-    /// レガシーサポート用メッセージサービス
-    /// </summary>
-    internal class LegacyMessageService : IMessageService
-    {
-        private readonly ILogger _logger;
-
-        public LegacyMessageService(ILogger logger)
-        {
-            _logger = logger;
-        }
-
-        public void ShowError(string message, string title = "エラー")
-        {
-            _logger.LogError("Error: {Message}", message);
-            System.Windows.MessageBox.Show(message, title, 
-                System.Windows.MessageBoxButton.OK, 
-                System.Windows.MessageBoxImage.Error);
-        }
-
-        public void ShowWarning(string message, string title = "警告")
-        {
-            _logger.LogWarning("Warning: {Message}", message);
-            System.Windows.MessageBox.Show(message, title, 
-                System.Windows.MessageBoxButton.OK, 
-                System.Windows.MessageBoxImage.Warning);
-        }
-
-        public void ShowInformation(string message, string title = "情報")
-        {
-            _logger.LogInformation("Info: {Message}", message);
-            System.Windows.MessageBox.Show(message, title, 
-                System.Windows.MessageBoxButton.OK, 
-                System.Windows.MessageBoxImage.Information);
-        }
-
-        public bool ShowConfirmation(string message, string title = "確認")
-        {
-            _logger.LogInformation("Confirmation: {Message}", message);
-            var result = System.Windows.MessageBox.Show(message, title, 
-                System.Windows.MessageBoxButton.YesNo, 
-                System.Windows.MessageBoxImage.Question);
-            return result == System.Windows.MessageBoxResult.Yes;
-        }
-    }
-
-    /// <summary>
-    /// レガシーサポート用パフォーマンスサービス
-    /// </summary>
-    internal class LegacyPerformanceService : IPerformanceService
-    {
-        private readonly ILogger _logger;
-
-        public LegacyPerformanceService(ILogger logger)
-        {
-            _logger = logger;
-        }
-
-        public async Task<T> MeasureAsync<T>(string operationName, Func<Task<T>> operation)
-        {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            try
-            {
-                var result = await operation();
-                stopwatch.Stop();
-                _logger.LogDebug("Operation completed: {Operation} ({ElapsedMs}ms)", operationName, stopwatch.ElapsedMilliseconds);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                stopwatch.Stop();
-                _logger.LogError(ex, "Operation failed: {Operation} ({ElapsedMs}ms)", operationName, stopwatch.ElapsedMilliseconds);
-                throw;
-            }
-        }
-
-        public async Task MeasureAsync(string operationName, Func<Task> operation)
-        {
-            await MeasureAsync(operationName, async () =>
-            {
-                await operation();
-                return Task.CompletedTask;
-            });
-        }
-
-        public PerformanceStatistics GetStatistics()
-        {
-            return new PerformanceStatistics();
-        }
-
-        public void RecordMetric(string name, double value, Dictionary<string, string>? tags = null)
-        {
-            _logger.LogDebug("Metric recorded: {Name} = {Value}", name, value);
-        }
-
-        public void IncrementCounter(string name, Dictionary<string, string>? tags = null)
-        {
-            _logger.LogDebug("Counter incremented: {Name}", name);
-        }
-
-        public void ClearMetrics()
-        {
-            _logger.LogDebug("Metrics cleared");
-        }
-
-        public void Reset()
-        {
-            _logger.LogDebug("Performance statistics reset");
-        }
-    }
-
-    #endregion
 }

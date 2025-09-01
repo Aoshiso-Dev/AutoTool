@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using AutoTool.Services.Configuration;
 using AutoTool.Services.Theme;
 using AutoTool.Services.Performance;
+using AutoTool.ViewModel; // DI,Pluginブランチの内容を採用
 
 namespace AutoTool
 {
@@ -29,9 +30,9 @@ namespace AutoTool
         private readonly IPerformanceService? _performanceService;
         private readonly MacroPanels.Plugin.IPluginService? _pluginService;
 
-        // マクロパネルのビューモデル
+        // マクロパネルのビューモデル（DI,Plugin統合版の名前空間を使用）
         [ObservableProperty]
-        private MacroPanels.ViewModel.MacroPanelViewModel? _macroPanelViewModel;
+        private AutoTool.ViewModel.MacroPanelViewModel? _macroPanelViewModel;
 
         // ウィンドウの状態
         [ObservableProperty]
@@ -97,7 +98,7 @@ namespace AutoTool
             IConfigurationService configurationService,
             IThemeService themeService,
             IPerformanceService performanceService,
-            MacroPanels.ViewModel.MacroPanelViewModel macroPanelViewModel,
+            AutoTool.ViewModel.MacroPanelViewModel macroPanelViewModel,
             MacroPanels.Plugin.IPluginService pluginService)
         {
             _logger = logger;
@@ -125,8 +126,8 @@ namespace AutoTool
                 Title = "AutoTool - デザインモード";
                 
                 // デザインモード用のダミーデータ
-                MacroPanelViewModel = new MacroPanels.ViewModel.MacroPanelViewModel();
-                
+                MacroPanelViewModel = new AutoTool.ViewModel.MacroPanelViewModel(logger: null, null, null, null);
+
                 // デザインモード用のダミープラグイン情報
                 LoadedPlugins.Add(new DesignTimePluginInfo("StandardCommands", "標準コマンドプラグイン", "1.0.0"));
                 PluginCount = 1;

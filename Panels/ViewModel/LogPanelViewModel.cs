@@ -14,7 +14,7 @@ namespace MacroPanels.ViewModel
 {
     public partial class LogPanelViewModel : ObservableObject
     {
-        private readonly ILogger<LogPanelViewModel>? _logger;
+        private readonly ILogger<LogPanelViewModel> _logger;
         private readonly StringBuilder _logBuffer = new();
         private const int MAX_LOG_LENGTH = 50000; // ログの最大文字数
 
@@ -27,13 +27,9 @@ namespace MacroPanels.ViewModel
         [ObservableProperty]
         private int _logEntryCount = 0;
 
-        // レガシーサポート用コンストラクタ
-        public LogPanelViewModel()
-        {
-            Initialize();
-        }
-
-        // DI対応コンストラクタ
+        /// <summary>
+        /// DI対応コンストラクタ
+        /// </summary>
         public LogPanelViewModel(ILogger<LogPanelViewModel> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -46,18 +42,18 @@ namespace MacroPanels.ViewModel
         {
             try
             {
-                _logger?.LogDebug("LogPanelViewModel の初期化を開始します");
+                _logger.LogDebug("LogPanelViewModel の初期化を開始します");
                 
                 // ログの初期化
                 _logBuffer.Clear();
                 Log = string.Empty;
                 LogEntryCount = 0;
                 
-                _logger?.LogDebug("LogPanelViewModel の初期化が完了しました");
+                _logger.LogDebug("LogPanelViewModel の初期化が完了しました");
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "LogPanelViewModel の初期化中にエラーが発生しました");
+                _logger.LogError(ex, "LogPanelViewModel の初期化中にエラーが発生しました");
                 throw;
             }
         }
@@ -68,7 +64,7 @@ namespace MacroPanels.ViewModel
         public void SetRunningState(bool isRunning)
         {
             IsRunning = isRunning;
-            _logger?.LogDebug("実行状態を設定: {IsRunning}", isRunning);
+            _logger.LogDebug("実行状態を設定: {IsRunning}", isRunning);
             
             if (isRunning)
             {
@@ -87,7 +83,7 @@ namespace MacroPanels.ViewModel
         {
             try
             {
-                _logger?.LogDebug("ログパネルの準備を実行します（ログクリア）");
+                _logger.LogDebug("ログパネルの準備を実行します（ログクリア）");
                 
                 _logBuffer.Clear();
                 Log = string.Empty;
@@ -95,90 +91,12 @@ namespace MacroPanels.ViewModel
                 
                 WriteLog("=== ログクリア ===");
                 
-                _logger?.LogDebug("ログパネルの準備が完了しました");
+                _logger.LogDebug("ログパネルの準備が完了しました");
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "ログパネルの準備中にエラーが発生しました");
-            }
-        }
-
-        /// <summary>
-        /// シンプルなログ出力
-        /// </summary>
-        public void WriteLog(string text)
-        {
-            try
-            {
-                var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                var logEntry = $"[{timestamp}] {text}{Environment.NewLine}";
-                
-                AppendLogEntry(logEntry);
-                
-                _logger?.LogTrace("ログエントリを追加: {Text}", text);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "ログ出力中にエラーが発生しました: {Text}", text);
-            }
-        }
-
-        /// <summary>
-        /// 構造化されたログ出力
-        /// </summary>
-        public void WriteLog(string lineNumber, string commandName, string detail)
-        {
-            try
-            {
-                var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                var formattedLog = $"[{timestamp}] {lineNumber.PadRight(4)} {commandName.PadRight(20)} {detail}{Environment.NewLine}";
-                
-                AppendLogEntry(formattedLog);
-                
-                _logger?.LogTrace("構造化ログエントリを追加: Line={LineNumber}, Command={CommandName}, Detail={Detail}", 
-                    lineNumber, commandName, detail);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "構造化ログ出力中にエラーが発生しました: Line={LineNumber}, Command={CommandName}", 
-                    lineNumber, commandName);
-            }
-        }
-
-        /// <summary>
-        /// ログエントリをバッファに追加（バッファサイズ管理付き）
-        /// </summary>
-        private void AppendLogEntry(string logEntry)
-        {
-            try
-            {
-                _logBuffer.Append(logEntry);
-                LogEntryCount++;
-                
-                // バッファサイズ管理
-                if (_logBuffer.Length > MAX_LOG_LENGTH)
-                {
-                    var content = _logBuffer.ToString();
-                    var halfLength = content.Length / 2;
-                    var newlineIndex = content.IndexOf(Environment.NewLine, halfLength);
-                    
-                    if (newlineIndex > 0)
-                    {
-                        var trimmedContent = content.Substring(newlineIndex + Environment.NewLine.Length);
-                        _logBuffer.Clear();
-                        _logBuffer.Append(trimmedContent);
-                        
-                        _logger?.LogDebug("ログバッファを整理しました: {OldLength} -> {NewLength}", 
-                            content.Length, _logBuffer.Length);
-                    }
-                }
-                
-                // UIに反映
-                Log = _logBuffer.ToString();
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "ログエントリの追加中にエラーが発生しました");
+                _logger.LogError(ex, "ログパネルの準備中にエラーが発生しました");
+                throw;
             }
         }
 
@@ -186,90 +104,144 @@ namespace MacroPanels.ViewModel
         /// ログをクリア
         /// </summary>
         [RelayCommand]
-        public void ClearLog()
+        public void Clear()
         {
             try
             {
-                _logger?.LogDebug("ログを手動でクリアします");
+                _logger.LogDebug("ログを手動クリアします");
                 
                 _logBuffer.Clear();
                 Log = string.Empty;
                 LogEntryCount = 0;
                 
-                WriteLog("=== ログ手動クリア ===");
-                
-                _logger?.LogInformation("ログがクリアされました");
+                _logger.LogDebug("ログクリアが完了しました");
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "ログクリア中にエラーが発生しました");
+                _logger.LogError(ex, "ログクリア中にエラーが発生しました");
+                throw;
             }
         }
 
         /// <summary>
-        /// 最近のエラー行を取得（実行時エラー表示用）
+        /// ログを書き込み（標準形式）
         /// </summary>
-        /// <param name="maxLines">取得する最大行数</param>
-        /// <returns>最近のエラー行のリスト</returns>
-        public List<string> GetRecentErrorLines(int maxLines = 5)
+        /// <param name="text">ログテキスト</param>
+        public void WriteLog(string text)
+        {
+            WriteLog(DateTime.Now.ToString("HH:mm:ss.fff"), "", text);
+        }
+
+        /// <summary>
+        /// ログを書き込み（詳細形式）
+        /// </summary>
+        /// <param name="time">時刻</param>
+        /// <param name="command">コマンド名</param>
+        /// <param name="detail">詳細</param>
+        public void WriteLog(string time, string command, string detail)
         {
             try
             {
-                var errorLines = new List<string>();
-                var logContent = _logBuffer.ToString();
+                var logEntry = string.IsNullOrEmpty(command) 
+                    ? $"[{time}] {detail}"
+                    : $"[{time}] {command}: {detail}";
                 
-                if (string.IsNullOrEmpty(logContent))
-                    return errorLines;
+                _logBuffer.AppendLine(logEntry);
+                LogEntryCount++;
                 
-                var lines = logContent.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-                
-                // 後ろから検索してエラー行を取得
-                for (int i = lines.Length - 1; i >= 0 && errorLines.Count < maxLines; i--)
+                // ログが長すぎる場合は古い部分を削除
+                if (_logBuffer.Length > MAX_LOG_LENGTH)
                 {
-                    var line = lines[i];
-                    
-                    // エラーを示すキーワードを含む行を検索
-                    if (line.Contains("❌") || 
-                        line.Contains("エラー") || 
-                        line.Contains("失敗") || 
-                        line.Contains("見つかりません") ||
-                        line.Contains("Exception") ||
-                        line.Contains("Error"))
-                    {
-                        errorLines.Add(line);
-                    }
+                    var lines = _logBuffer.ToString().Split('\n');
+                    var keepLines = lines.Skip(lines.Length / 2).ToArray();
+                    _logBuffer.Clear();
+                    _logBuffer.AppendLine(string.Join("\n", keepLines));
+                    _logger.LogDebug("ログバッファをトリムしました: {Lines}行保持", keepLines.Length);
                 }
                 
-                // 順序を元に戻す（時系列順）
-                errorLines.Reverse();
+                Log = _logBuffer.ToString();
                 
-                _logger?.LogDebug("最近のエラー行を取得: {Count}件", errorLines.Count);
+                // 詳細ログは除く
+                if (!detail.Contains("PropertyChanged") && !detail.Contains("プロパティ"))
+                {
+                    _logger.LogDebug("ログエントリ追加: {Entry}", logEntry);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ログ書き込み中にエラーが発生しました: {Detail}", detail);
+            }
+        }
+
+        /// <summary>
+        /// 最近のエラーログ行を取得
+        /// </summary>
+        /// <param name="count">取得する行数（デフォルト5行）</param>
+        /// <returns>エラーを含むログ行のリスト</returns>
+        public List<string> GetRecentErrorLines(int count = 5)
+        {
+            try
+            {
+                var lines = Log.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var errorLines = lines
+                    .Where(line => line.Contains("❌") || line.Contains("エラー") || line.Contains("Error") || 
+                                  line.Contains("失敗") || line.Contains("Exception"))
+                    .TakeLast(count)
+                    .ToList();
+                    
+                _logger.LogDebug("最近のエラーログ取得: {Count}行", errorLines.Count);
                 return errorLines;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "最近のエラー行取得中にエラーが発生しました");
+                _logger.LogError(ex, "エラーログ取得中にエラーが発生しました");
                 return new List<string>();
             }
         }
 
         /// <summary>
-        /// ログ統計情報を取得
+        /// ログをファイルに保存
         /// </summary>
-        public string GetLogStatistics()
+        /// <param name="filePath">保存先ファイルパス</param>
+        public void SaveToFile(string filePath)
         {
             try
             {
-                var stats = $"エントリ数: {LogEntryCount}, 文字数: {_logBuffer.Length}, " +
-                           $"最大サイズ: {MAX_LOG_LENGTH:N0}文字";
+                _logger.LogInformation("ログをファイルに保存します: {FilePath}", filePath);
                 
-                _logger?.LogDebug("ログ統計: {Statistics}", stats);
-                return stats;
+                System.IO.File.WriteAllText(filePath, Log);
+                
+                _logger.LogInformation("ログファイル保存が完了しました: {EntryCount}件", LogEntryCount);
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "ログ統計取得中にエラーが発生しました");
-                return "統計取得エラー";
+                _logger.LogError(ex, "ログファイル保存中にエラーが発生しました: {FilePath}", filePath);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// ログの統計情報を取得
+        /// </summary>
+        public (int TotalLines, int ErrorLines, int WarningLines, int InfoLines) GetLogStatistics()
+        {
+            try
+            {
+                var lines = Log.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var totalLines = lines.Length;
+                var errorLines = lines.Count(line => line.Contains("❌") || line.Contains("エラー") || line.Contains("Error"));
+                var warningLines = lines.Count(line => line.Contains("⚠️") || line.Contains("警告") || line.Contains("Warning"));
+                var infoLines = lines.Count(line => line.Contains("ℹ️") || line.Contains("情報") || line.Contains("Info"));
+                
+                _logger.LogDebug("ログ統計: Total={Total}, Error={Error}, Warning={Warning}, Info={Info}", 
+                    totalLines, errorLines, warningLines, infoLines);
+                    
+                return (totalLines, errorLines, warningLines, infoLines);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ログ統計取得中にエラーが発生しました");
+                return (0, 0, 0, 0);
             }
         }
     }

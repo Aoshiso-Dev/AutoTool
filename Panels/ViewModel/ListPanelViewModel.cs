@@ -19,7 +19,7 @@ namespace MacroPanels.ViewModel
 {
     public partial class ListPanelViewModel : ObservableObject
     {
-        private readonly ILogger<ListPanelViewModel>? _logger;
+        private readonly ILogger<ListPanelViewModel> _logger;
         private CommandHistoryManager? _commandHistory;
 
         [ObservableProperty] 
@@ -45,13 +45,9 @@ namespace MacroPanels.ViewModel
             }
         }
 
-        // レガシーサポート用コンストラクタ
-        public ListPanelViewModel()
-        {
-            Initialize();
-        }
-
-        // DI対応コンストラクタ
+        /// <summary>
+        /// DI対応コンストラクタ
+        /// </summary>
         public ListPanelViewModel(ILogger<ListPanelViewModel> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -64,15 +60,15 @@ namespace MacroPanels.ViewModel
         {
             try
             {
-                _logger?.LogDebug("ListPanelViewModel の初期化を開始します");
+                _logger.LogDebug("ListPanelViewModel の初期化を開始します");
                 
                 RegisterPropertyChangedEvents();
                 
-                _logger?.LogDebug("ListPanelViewModel の初期化が完了しました");
+                _logger.LogDebug("ListPanelViewModel の初期化が完了しました");
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "ListPanelViewModel の初期化中にエラーが発生しました");
+                _logger.LogError(ex, "ListPanelViewModel の初期化中にエラーが発生しました");
                 throw;
             }
         }
@@ -263,6 +259,18 @@ namespace MacroPanels.ViewModel
                     }
                     
                     CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+                    
+                    // 削除後に選択状態の変更を通知
+                    if (SelectedItem != null)
+                    {
+                        WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(SelectedItem));
+                    }
+                    else
+                    {
+                        // アイテムがない場合はnullを送信
+                        WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(null));
+                    }
+                    
                     _logger?.LogDebug("アイテムを削除しました: {ItemType} at {Index}", item.ItemType, index);
                 }
             }
@@ -431,6 +439,17 @@ namespace MacroPanels.ViewModel
                     SelectedItem = CommandList.Items.ElementAtOrDefault(index);
                 }
                 
+                // 削除後に選択状態の変更を通知
+                if (SelectedItem != null)
+                {
+                    WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(SelectedItem));
+                }
+                else
+                {
+                    // アイテムがない場合はnullを送信
+                    WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(null));
+                }
+                
                 _logger?.LogInformation("アイテムを削除しました: {ItemType} (残り {Count}件)", 
                     itemType, CommandList.Items.Count);
             }
@@ -452,6 +471,9 @@ namespace MacroPanels.ViewModel
                 CommandList.Clear();
                 SelectedLineNumber = 0;
                 SelectedItem = null;
+                
+                // 全クリア後にEditPanelにnullを通知
+                WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(null));
                 
                 _logger?.LogInformation("全アイテムをクリアしました: {Count}件削除", count);
             }
