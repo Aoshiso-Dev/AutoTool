@@ -26,6 +26,8 @@ namespace MacroPanels.ViewModel.Helpers
 
         // マウス・キーボード関連
         public MultiInterfacePropertyAccessor<System.Windows.Input.MouseButton> MouseButton { get; }
+        public MultiInterfacePropertyAccessor<bool> UseBackgroundClick { get; }
+        public MultiInterfacePropertyAccessor<int> BackgroundClickMethod { get; }
         public PropertyAccessor<IHotkeyItem, bool> Ctrl { get; }
         public PropertyAccessor<IHotkeyItem, bool> Alt { get; }
         public PropertyAccessor<IHotkeyItem, bool> Shift { get; }
@@ -125,6 +127,16 @@ namespace MacroPanels.ViewModel.Helpers
                 .AddInterface<IClickImageItem>(x => x.Button)
                 .AddInterface<IClickItem>(x => x.Button)
                 .AddInterface<IClickImageAIItem>(x => x.Button);
+
+            UseBackgroundClick = new MultiInterfacePropertyAccessor<bool>(false)
+                .AddInterface<IClickImageItem>(x => x.UseBackgroundClick)
+                .AddInterface<IClickItem>(x => x.UseBackgroundClick)
+                .AddInterface<IClickImageAIItem>(x => x.UseBackgroundClick);
+
+            BackgroundClickMethod = new MultiInterfacePropertyAccessor<int>(0)
+                .AddInterface<IClickImageItem>(x => x.BackgroundClickMethod)
+                .AddInterface<IClickItem>(x => x.BackgroundClickMethod)
+                .AddInterface<IClickImageAIItem>(x => x.BackgroundClickMethod);
 
             Ctrl = new PropertyAccessor<IHotkeyItem, bool>(x => x.Ctrl, false);
             Alt = new PropertyAccessor<IHotkeyItem, bool>(x => x.Alt, false);

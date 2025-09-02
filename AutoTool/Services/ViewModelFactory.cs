@@ -1,14 +1,14 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
-using MacroPanels.ViewModel;
 using AutoTool.ViewModel;
+using AutoTool.ViewModel.Panels;
 
 namespace AutoTool.Services
 {
     /// <summary>
-    /// ViewModelファクトリの実装
+    /// Phase 5完全統合版：ViewModelファクトリ
+    /// MacroPanels依存を削除し、AutoTool統合版のみ使用
     /// </summary>
-    public class ViewModelFactory : IViewModelFactory
+    public class ViewModelFactory : AutoTool.ViewModel.IViewModelFactory
     {
         private readonly IServiceProvider _serviceProvider;
 
@@ -17,34 +17,29 @@ namespace AutoTool.Services
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
-        public T Create<T>() where T : class
+        public AutoTool.ViewModel.Panels.ButtonPanelViewModel CreateButtonPanelViewModel()
         {
-            return _serviceProvider.GetRequiredService<T>();
+            return _serviceProvider.GetRequiredService<AutoTool.ViewModel.Panels.ButtonPanelViewModel>();
         }
 
-        public ButtonPanelViewModel CreateButtonPanelViewModel()
+        public AutoTool.ViewModel.Panels.ListPanelViewModel CreateListPanelViewModel()
         {
-            return _serviceProvider.GetRequiredService<ButtonPanelViewModel>();
+            return _serviceProvider.GetRequiredService<AutoTool.ViewModel.Panels.ListPanelViewModel>();
         }
 
-        public ListPanelViewModel CreateListPanelViewModel()
+        public AutoTool.ViewModel.Panels.EditPanelViewModel CreateEditPanelViewModel()
         {
-            return _serviceProvider.GetRequiredService<ListPanelViewModel>();
+            return _serviceProvider.GetRequiredService<AutoTool.ViewModel.Panels.EditPanelViewModel>();
         }
 
-        public EditPanelViewModel CreateEditPanelViewModel()
+        public AutoTool.ViewModel.Panels.LogPanelViewModel CreateLogPanelViewModel()
         {
-            return _serviceProvider.GetRequiredService<EditPanelViewModel>();
+            return _serviceProvider.GetRequiredService<AutoTool.ViewModel.Panels.LogPanelViewModel>();
         }
 
-        public LogPanelViewModel CreateLogPanelViewModel()
+        public AutoTool.ViewModel.Panels.FavoritePanelViewModel CreateFavoritePanelViewModel()
         {
-            return _serviceProvider.GetRequiredService<LogPanelViewModel>();
-        }
-
-        public FavoritePanelViewModel CreateFavoritePanelViewModel()
-        {
-            return _serviceProvider.GetRequiredService<FavoritePanelViewModel>();
+            return _serviceProvider.GetRequiredService<AutoTool.ViewModel.Panels.FavoritePanelViewModel>();
         }
     }
 }

@@ -36,7 +36,6 @@
     <ProjectReference Include="..\LogHelper\LogHelper.csproj" />
     <ProjectReference Include="..\OCRHelper\OCRHelper.csproj" />
     <ProjectReference Include="..\OpenCVHelper\OpenCVHelper.csproj" />
-    <ProjectReference Include="..\Panels\MacroPanels.csproj" />
     <ProjectReference Include="..\WindowInfoHelper\WindowHelper.csproj" />
     <ProjectReference Include="..\XmlSerializer\XmlSerializer.csproj" />
     <ProjectReference Include="..\YoloV8DetectHelper\YoLoWinLib.csproj" />

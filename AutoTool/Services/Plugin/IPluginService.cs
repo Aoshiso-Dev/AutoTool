@@ -1,84 +1,62 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using MacroPanels.Command.Interface;
 
 namespace AutoTool.Services.Plugin
 {
     /// <summary>
-    /// プラグインシステムのインターフェース
+    /// Phase 5統合版：プラグインシステムのインターフェース
     /// </summary>
     public interface IPluginService
     {
         /// <summary>
+        /// プラグインが読み込まれた時のイベント
+        /// </summary>
+        event EventHandler<PluginLoadedEventArgs>? PluginLoaded;
+        
+        /// <summary>
+        /// プラグインがアンロードされた時のイベント
+        /// </summary>
+        event EventHandler<PluginUnloadedEventArgs>? PluginUnloaded;
+
+        /// <summary>
         /// プラグインを読み込み
         /// </summary>
         Task LoadPluginAsync(string pluginPath);
-
+        
         /// <summary>
         /// 全てのプラグインを読み込み
         /// </summary>
         Task LoadAllPluginsAsync();
-
+        
         /// <summary>
         /// プラグインをアンロード
         /// </summary>
         Task UnloadPluginAsync(string pluginId);
-
+        
         /// <summary>
         /// 読み込み済みプラグイン一覧を取得
         /// </summary>
         IEnumerable<IPluginInfo> GetLoadedPlugins();
-
+        
         /// <summary>
         /// プラグインを取得
         /// </summary>
         T? GetPlugin<T>(string pluginId) where T : class, IPlugin;
-
+        
         /// <summary>
-        /// コマンドプラグインからコマンドを作成
+        /// コマンドプラグインからコマンドを作成（Phase 5統合版）
         /// </summary>
-        ICommand? CreatePluginCommand(string pluginId, string commandId, ICommand? parent, object? settings);
-
+        object? CreatePluginCommand(string pluginId, string commandId, object? parent, object? settings);
+        
         /// <summary>
         /// 利用可能なプラグインコマンドを取得
         /// </summary>
         IEnumerable<IPluginCommandInfo> GetAvailablePluginCommands();
-
-        /// <summary>
-        /// プラグイン読み込みイベント
-        /// </summary>
-        event EventHandler<PluginLoadedEventArgs> PluginLoaded;
-
-        /// <summary>
-        /// プラグインアンロードイベント
-        /// </summary>
-        event EventHandler<PluginUnloadedEventArgs> PluginUnloaded;
     }
 
     /// <summary>
-    /// プラグインの基本インターフェース
-    /// </summary>
-    public interface IPlugin
-    {
-        /// <summary>
-        /// プラグイン情報
-        /// </summary>
-        IPluginInfo Info { get; }
-
-        /// <summary>
-        /// プラグイン初期化
-        /// </summary>
-        Task InitializeAsync();
-
-        /// <summary>
-        /// プラグイン終了
-        /// </summary>
-        Task ShutdownAsync();
-    }
-
-    /// <summary>
-    /// プラグイン情報インターフェース
+    /// Phase 5統合版：プラグイン情報インターフェース
     /// </summary>
     public interface IPluginInfo
     {
@@ -87,12 +65,12 @@ namespace AutoTool.Services.Plugin
         string Version { get; }
         string Description { get; }
         string Author { get; }
-        DateTime LoadedAt { get; }
+        DateTime LoadedAt { get; set; }
         PluginStatus Status { get; set; }
     }
 
     /// <summary>
-    /// プラグインステータス
+    /// Phase 5統合版：プラグインステータス
     /// </summary>
     public enum PluginStatus
     {
@@ -106,59 +84,25 @@ namespace AutoTool.Services.Plugin
     }
 
     /// <summary>
-    /// プラグイン読み込みイベント引数
+    /// Phase 5統合版：プラグイン読み込みイベント引数
     /// </summary>
     public class PluginLoadedEventArgs : EventArgs
     {
         public IPluginInfo PluginInfo { get; }
-
-        public PluginLoadedEventArgs(IPluginInfo pluginInfo)
-        {
-            PluginInfo = pluginInfo;
-        }
+        public PluginLoadedEventArgs(IPluginInfo pluginInfo) => PluginInfo = pluginInfo;
     }
 
     /// <summary>
-    /// プラグインアンロードイベント引数
+    /// Phase 5統合版：プラグインアンロードイベント引数
     /// </summary>
     public class PluginUnloadedEventArgs : EventArgs
     {
         public string PluginId { get; }
-
-        public PluginUnloadedEventArgs(string pluginId)
-        {
-            PluginId = pluginId;
-        }
+        public PluginUnloadedEventArgs(string pluginId) => PluginId = pluginId;
     }
 
     /// <summary>
-    /// コマンドプラグインの専用インターフェース
-    /// </summary>
-    public interface ICommandPlugin : IPlugin
-    {
-        /// <summary>
-        /// プラグインが提供するコマンド一覧
-        /// </summary>
-        IEnumerable<IPluginCommandInfo> GetAvailableCommands();
-
-        /// <summary>
-        /// コマンドを作成
-        /// </summary>
-        ICommand CreateCommand(string commandId, ICommand? parent, object? settings);
-
-        /// <summary>
-        /// コマンド設定の型を取得
-        /// </summary>
-        Type? GetCommandSettingsType(string commandId);
-
-        /// <summary>
-        /// プラグインコマンドが有効かどうか
-        /// </summary>
-        bool IsCommandAvailable(string commandId);
-    }
-
-    /// <summary>
-    /// プラグインコマンド情報
+    /// Phase 5統合版：プラグインコマンド情報
     /// </summary>
     public interface IPluginCommandInfo
     {
@@ -198,23 +142,29 @@ namespace AutoTool.Services.Plugin
         Type? SettingsType { get; }
         
         /// <summary>
-        /// アイコン（オプション）
+        /// アイコンパス（オプション）
         /// </summary>
         string? IconPath { get; }
     }
 
     /// <summary>
-    /// プラグインコマンド情報の実装クラス
+    /// Phase 5統合版：プラグインの基底インターフェース
     /// </summary>
-    public class PluginCommandInfo : IPluginCommandInfo
+    public interface IPlugin
     {
-        public string Id { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string Category { get; set; } = "プラグイン";
-        public string PluginId { get; set; } = string.Empty;
-        public Type CommandType { get; set; } = typeof(object);
-        public Type? SettingsType { get; set; }
-        public string? IconPath { get; set; }
+        /// <summary>
+        /// プラグイン情報
+        /// </summary>
+        IPluginInfo Info { get; }
+        
+        /// <summary>
+        /// プラグイン初期化
+        /// </summary>
+        Task InitializeAsync();
+        
+        /// <summary>
+        /// プラグイン終了
+        /// </summary>
+        Task ShutdownAsync();
     }
 }

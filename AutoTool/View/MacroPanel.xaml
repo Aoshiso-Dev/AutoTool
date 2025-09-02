@@ -2,128 +2,207 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:panels="clr-namespace:MacroPanels.View;assembly=MacroPanels"
-             xmlns:converter="clr-namespace:MacroPanels.View.Converter;assembly=MacroPanels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:AutoTool.View.Converters"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="1200" 
-             HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-             Background="{DynamicResource AppBackground}">
+             d:DesignHeight="600" d:DesignWidth="1000"
+             Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+    
+    <!-- Phase 5完全統合版：MacroPanels参照を削除 -->
     
     <UserControl.Resources>
-        <!-- モダンなスタイル定義 -->
-        <Style x:Key="ModernTabControlStyle" TargetType="TabControl">
-            <Setter Property="Background" Value="{DynamicResource PanelBackground}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="4"/>
-        </Style>
-        
-        <Style x:Key="ModernTabItemStyle" TargetType="TabItem">
-            <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="Margin" Value="0,0,2,0"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{DynamicResource AppForeground}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="Border" 
-                                Background="Transparent" 
-                                BorderBrush="{DynamicResource BorderBrush}" 
-                                BorderThickness="1,1,1,0" 
-                                CornerRadius="4,4,0,0"
-                                Margin="0,0,2,0">
-                            <ContentPresenter x:Name="ContentSite"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Center"
-                                            ContentSource="Header"
-                                            Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource AccentBrush}"/>
-                                <Setter Property="Foreground" Value="White"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource ButtonHoverBackground}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="ModernGridSplitterStyle" TargetType="GridSplitter">
-            <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="VerticalAlignment" Value="Stretch"/>
-            <Setter Property="ShowsPreview" Value="True"/>
-            <Setter Property="ResizeBehavior" Value="PreviousAndNext"/>
-            <Setter Property="ResizeDirection" Value="Columns"/>
-            <Setter Property="Cursor" Value="SizeWE"/>
-        </Style>
+        <ResourceDictionary>
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+            <converters:InvertBooleanConverter x:Key="InvertBoolean"/>
+            <converters:RunningStatusConverter x:Key="RunningStatusConverter"/>
+            
+            <!-- データテンプレート -->
+            <DataTemplate x:Key="CommandItemTemplate">
+                <Grid Margin="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="30"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" Text="{Binding LineNumber}" 
+                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{Binding NestLevel}" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray"/>
+                    <TextBlock Grid.Column="2" Text="{Binding ItemType}" 
+                               HorizontalAlignment="Left" VerticalAlignment="Center" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="3" Text="{Binding Description}" 
+                               HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="4" Text="{Binding Comment}" 
+                               HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="DarkGreen"/>
+                </Grid>
+            </DataTemplate>
+        </ResourceDictionary>
     </UserControl.Resources>
-    
-    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-        <DockPanel LastChildFill="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            
-            <!-- ButtonPanel - DI対応完了 -->
-            <panels:ButtonPanel DockPanel.Dock="Top" 
-                              DataContext="{Binding ButtonPanelViewModel}" 
-                              Margin="6" HorizontalAlignment="Stretch"/>
-            
-            <!-- メインコンテンツエリア -->
-            <Grid Margin="6">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" MinWidth="400"/>
-                    <ColumnDefinition Width="8"/>
-                    <ColumnDefinition Width="*" MinWidth="400"/>
-                </Grid.ColumnDefinitions>
 
-                <!-- 左側：リスト系パネル -->
-                <TabControl Grid.Column="0" 
-                           SelectedIndex="{Binding SelectedListTabIndex}" 
-                           Style="{StaticResource ModernTabControlStyle}"
-                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    
-                    <TabItem Header="📋 マクロリスト" Style="{StaticResource ModernTabItemStyle}"
-                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                        <panels:ListPanel DataContext="{Binding ListPanelViewModel}" 
-                                        Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    </TabItem>
-                    
-                    <TabItem Header="⭐ お気に入り" Style="{StaticResource ModernTabItemStyle}"
-                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                        <panels:FavoritePanel DataContext="{Binding FavoritePanelViewModel}" 
-                                            Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    </TabItem>
-                    
-                </TabControl>
+    <!-- メインコンテンツGrid -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-                <!-- GridSplitter -->
-                <GridSplitter Grid.Column="1" Style="{StaticResource ModernGridSplitterStyle}"/>
-
-                <!-- 右側：編集・ログパネル -->
-                <TabControl Grid.Column="2" 
-                           Style="{StaticResource ModernTabControlStyle}"
-                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    
-                    <TabItem Header="⚙️ コマンド設定" Style="{StaticResource ModernTabItemStyle}"
-                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                        <panels:EditPanel DataContext="{Binding EditPanelViewModel}" 
-                                        Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    </TabItem>
-                    
-                    <TabItem Header="📄 実行ログ" Style="{StaticResource ModernTabItemStyle}"
-                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                        <panels:LogPanel DataContext="{Binding LogPanelViewModel}" 
-                                       Margin="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    </TabItem>
-                    
-                </TabControl>
-                
-            </Grid>
+        <!-- ツールバー -->
+        <DockPanel Grid.Row="0" LastChildFill="False">
+            <!-- Phase 5: AutoTool統合版ButtonPanelに相当するコントロール -->
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="5">
+                <Button Content="実行" Command="{Binding RunCommand}" Margin="2" Padding="10,5"/>
+                <Button Content="停止" Command="{Binding StopCommand}" Margin="2" Padding="10,5"/>
+                <Separator Width="10"/>
+                <Button Content="保存" Command="{Binding SaveCommand}" Margin="2" Padding="10,5"/>
+                <Button Content="読込" Command="{Binding LoadCommand}" Margin="2" Padding="10,5"/>
+                <Button Content="クリア" Command="{Binding ClearCommand}" Margin="2" Padding="10,5"/>
+                <Separator Width="10"/>
+                <ComboBox ItemsSource="{Binding ItemTypes}" 
+                          SelectedItem="{Binding SelectedItemType}"
+                          DisplayMemberPath="DisplayName"
+                          Width="150" Margin="2"/>
+                <Button Content="追加" Command="{Binding AddCommand}" Margin="2" Padding="10,5"/>
+                <Separator Width="10"/>
+                <Button Content="↑" Command="{Binding UpCommand}" Margin="2" Padding="10,5"/>
+                <Button Content="↓" Command="{Binding DownCommand}" Margin="2" Padding="10,5"/>
+                <Button Content="削除" Command="{Binding DeleteCommand}" Margin="2" Padding="10,5"/>
+                <Separator Width="10"/>
+                <Button Content="元に戻す" Command="{Binding UndoCommand}" Margin="2" Padding="10,5"/>
+                <Button Content="やり直し" Command="{Binding RedoCommand}" Margin="2" Padding="10,5"/>
+            </StackPanel>
         </DockPanel>
+
+        <!-- メインコンテンツエリア -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="3*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左側：タブパネル -->
+            <TabControl Grid.Column="0">
+                <TabItem Header="コマンドリスト">
+                    <Grid>
+                        <!-- Phase 5: AutoTool統合版ListPanelに相当するコントロール -->
+                        <ListBox ItemsSource="{Binding ListPanelViewModel.Items}"
+                                 SelectedItem="{Binding ListPanelViewModel.SelectedItem}"
+                                 SelectedIndex="{Binding ListPanelViewModel.SelectedIndex}"
+                                 ItemTemplate="{StaticResource CommandItemTemplate}"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="お気に入り">
+                    <!-- Phase 5: AutoTool統合版FavoritePanelに相当するコントロール -->
+                    <Grid>
+                        <TextBlock Text="お気に入り機能 (Phase 5統合版で実装予定)" 
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="Gray"/>
+
+            <!-- 右側：編集・ログパネル -->
+            <TabControl Grid.Column="2">
+                <TabItem Header="編集">
+                    <!-- Phase 5: AutoTool統合版EditPanelに相当するコントロール -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10" IsEnabled="{Binding EditPanelViewModel.IsNotNullItem}">
+                            <TextBlock Text="コマンド編集パネル (Phase 5統合版)" FontWeight="Bold" Margin="0,0,0,10"/>
+                            
+                            <!-- 基本情報 -->
+                            <GroupBox Header="基本情報" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        
+                                        <Label Grid.Row="0" Grid.Column="0" Content="タイプ:"/>
+                                        <ComboBox Grid.Row="0" Grid.Column="1" 
+                                                  ItemsSource="{Binding EditPanelViewModel.ItemTypes}"
+                                                  SelectedItem="{Binding EditPanelViewModel.SelectedItemTypeObj}"
+                                                  DisplayMemberPath="DisplayName"
+                                                  Margin="5"/>
+                                        
+                                        <Label Grid.Row="1" Grid.Column="0" Content="コメント:"/>
+                                        <TextBox Grid.Row="1" Grid.Column="1" 
+                                                 Text="{Binding EditPanelViewModel.Comment, UpdateSourceTrigger=PropertyChanged}"
+                                                 Margin="5"/>
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- ウィンドウ情報 -->
+                            <GroupBox Header="ウィンドウ情報" Margin="0,0,0,10"
+                                      Visibility="{Binding EditPanelViewModel.IsNotNullItem, Converter={StaticResource BoolToVisibility}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    
+                                    <Label Grid.Row="0" Grid.Column="0" Content="タイトル:"/>
+                                    <TextBox Grid.Row="0" Grid.Column="1" 
+                                             Text="{Binding EditPanelViewModel.WindowTitle, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="5"/>
+                                    
+                                    <Label Grid.Row="1" Grid.Column="0" Content="クラス名:"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" 
+                                             Text="{Binding EditPanelViewModel.WindowClassName, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="5"/>
+                                </Grid>
+                            </GroupBox>
+
+                            <!-- 実行状態表示 -->
+                            <GroupBox Header="実行状態" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding EditPanelViewModel.IsRunning, Converter={StaticResource RunningStatusConverter}}" 
+                                               FontWeight="Bold" Margin="5"/>
+                                    <TextBlock Text="{Binding EditPanelViewModel.ListCount, StringFormat='項目数: {0}'}" Margin="5"/>
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="ログ">
+                    <!-- Phase 5: AutoTool統合版LogPanelに相当するコントロール -->
+                    <Grid>
+                        <ListBox ItemsSource="{Binding LogPanelViewModel.LogItems}"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="11"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+            <!-- ロード中オーバーレイ -->
+            <Border Grid.RowSpan="2" Grid.ColumnSpan="3" Background="#80000000" 
+                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Phase 5完全統合処理中..." Foreground="White" FontSize="16" HorizontalAlignment="Center"/>
+                    <ProgressBar IsIndeterminate="True" Width="200" Height="20" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

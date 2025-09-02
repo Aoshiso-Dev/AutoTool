@@ -1,153 +1,148 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using MacroPanels.Command.Interface;
-using MacroPanels.Command.Class;
-using MacroPanels.Plugin;
+using AutoTool.Model.List.Interface;
+using AutoTool.Services.Plugin;
 
 namespace AutoTool.Services.Plugin
 {
     /// <summary>
-    /// プラグインコマンドの基底クラス
-    /// プラグイン開発者が継承して独自のコマンドを作成する
+    /// Phase 5完全統合版：プラグインコマンドベースクラス
+    /// MacroPanels依存を削除し、AutoTool統合版のみ使用
     /// </summary>
-    public abstract class PluginCommandBase : BaseCommand
+    public abstract class PluginCommandBase : ICommandListItem
     {
-        /// <summary>
-        /// プラグイン情報
-        /// </summary>
-        public MacroPanels.Plugin.IPluginInfo PluginInfo { get; }
+        // ICommandListItemの実装
+        public string ItemType { get; set; } = string.Empty;
+        public string Comment { get; set; } = string.Empty;
+        public bool IsEnable { get; set; } = true;
+        public int LineNumber { get; set; }
+        public int NestLevel { get; set; }
+        public virtual string Description { get; set; } = string.Empty;
+        
+        // Phase 5: ICommandListItemの不足プロパティを追加
+        public bool IsRunning { get; set; } = false;
+        public bool IsSelected { get; set; } = false;
+        public bool IsInLoop { get; set; } = false;
+        public bool IsInIf { get; set; } = false;
+        public int Progress { get; set; } = 0;
 
-        /// <summary>
-        /// コマンド情報
-        /// </summary>
-        public MacroPanels.Plugin.IPluginCommandInfo CommandInfo { get; }
+        // プラグイン情報
+        public IPluginInfo PluginInfo { get; }
+        public IPluginCommandInfo CommandInfo { get; }
 
-        protected PluginCommandBase(MacroPanels.Plugin.IPluginInfo pluginInfo, MacroPanels.Plugin.IPluginCommandInfo commandInfo, 
-            MacroPanels.Command.Interface.ICommand? parent = null, object? settings = null) 
-            : base(parent, settings)
+        protected PluginCommandBase(IPluginInfo pluginInfo, IPluginCommandInfo commandInfo)
         {
             PluginInfo = pluginInfo ?? throw new ArgumentNullException(nameof(pluginInfo));
             CommandInfo = commandInfo ?? throw new ArgumentNullException(nameof(commandInfo));
-            Description = $"[{pluginInfo.Name}] {commandInfo.Name}";
+            ItemType = commandInfo.Id;
+        }
+
+        protected virtual string GetDescription()
+        {
+            return $"[{PluginInfo.Name}] {CommandInfo.Name}";
+        }
+
+        public virtual ICommandListItem Clone()
+        {
+            // Phase 5: 基本的なクローン実装
+            var clone = (PluginCommandBase)Activator.CreateInstance(GetType(), PluginInfo, CommandInfo)!;
+            clone.ItemType = this.ItemType;
+            clone.Comment = this.Comment;
+            clone.IsEnable = this.IsEnable;
+            clone.LineNumber = this.LineNumber;
+            clone.NestLevel = this.NestLevel;
+            return clone;
         }
 
         /// <summary>
-        /// プラグインコマンドの実際の実行処理
-        /// 派生クラスで実装する
+        /// プラグインコマンドの実行処理（派生クラスで実装）
         /// </summary>
-        protected abstract Task<bool> DoExecutePluginAsync(CancellationToken cancellationToken);
+        public abstract void Execute();
 
         /// <summary>
-        /// BaseCommandの実行処理をオーバーライド
+        /// プラグインコマンドの検証処理（派生クラスで実装）
         /// </summary>
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        public virtual bool Validate()
         {
-            try
-            {
-                LogMessage($"プラグインコマンド開始: {PluginInfo.Name}.{CommandInfo.Name}");
-                
-                var result = await DoExecutePluginAsync(cancellationToken);
-                
-                LogMessage($"プラグインコマンド終了: {PluginInfo.Name}.{CommandInfo.Name} - {(result ? "成功" : "失敗")}");
-                
-                return result;
-            }
-            catch (Exception ex)
-            {
-                LogMessage($"? プラグインコマンドエラー: {ex.Message}");
-                throw;
-            }
+            return true;
         }
 
         /// <summary>
-        /// プラグイン設定を取得（型安全）
+        /// プラグインコマンドの初期化処理
         /// </summary>
-        protected T? GetPluginSettings<T>() where T : class
+        public virtual void Initialize()
         {
-            return Settings as T;
+            // デフォルトでは何もしない
         }
 
         /// <summary>
-        /// プラグイン設定の検証
+        /// プラグインコマンドのクリーンアップ処理
         /// </summary>
-        protected virtual void ValidatePluginSettings()
+        public virtual void Cleanup()
         {
-            // 基底クラスでは何もしない（派生クラスでオーバーライド）
+            // デフォルトでは何もしない
         }
 
-        /// <summary>
-        /// ファイル検証をオーバーライド
-        /// </summary>
-        protected override void ValidateFiles()
+        public override string ToString()
         {
-            base.ValidateFiles();
-            ValidatePluginSettings();
+            return $"[{LineNumber}] {Description}: {Comment}";
         }
     }
 
     /// <summary>
-    /// プラグインコマンドファクトリーの基底クラス
-    /// プラグイン開発者が継承してコマンド作成ロジックを実装する
+    /// Phase 5完全統合版：プラグインコマンドファクトリーベースクラス
     /// </summary>
     public abstract class PluginCommandFactoryBase
     {
         /// <summary>
         /// プラグイン情報
         /// </summary>
-        public MacroPanels.Plugin.IPluginInfo PluginInfo { get; }
+        public IPluginInfo PluginInfo { get; }
 
-        protected PluginCommandFactoryBase(MacroPanels.Plugin.IPluginInfo pluginInfo)
+        protected PluginCommandFactoryBase(IPluginInfo pluginInfo)
         {
             PluginInfo = pluginInfo ?? throw new ArgumentNullException(nameof(pluginInfo));
         }
 
         /// <summary>
-        /// 利用可能なコマンド一覧を取得
-        /// 派生クラスで実装する
+        /// 利用可能なコマンド一覧を取得（派生クラスで実装）
         /// </summary>
-        public abstract IEnumerable<MacroPanels.Plugin.IPluginCommandInfo> GetAvailableCommands();
+        public abstract IEnumerable<IPluginCommandInfo> GetAvailableCommands();
 
         /// <summary>
-        /// コマンドを作成
-        /// 派生クラスで実装する
+        /// コマンドを作成（派生クラスで実装）
         /// </summary>
-        public abstract MacroPanels.Command.Interface.ICommand CreateCommand(string commandId, MacroPanels.Command.Interface.ICommand? parent, object? settings);
+        public abstract object CreateCommand(string commandId, object? parent, object? settings);
 
         /// <summary>
         /// コマンド設定の型を取得
-        /// 派生クラスで実装する
         /// </summary>
-        public abstract Type? GetCommandSettingsType(string commandId);
+        public virtual Type? GetCommandSettingsType(string commandId)
+        {
+            var commandInfo = GetAvailableCommands().FirstOrDefault(c => c.Id == commandId);
+            return commandInfo?.SettingsType;
+        }
 
         /// <summary>
-        /// プラグインコマンドが利用可能かどうか
-        /// 派生クラスでオーバーライド可
+        /// コマンドが利用可能かどうか
         /// </summary>
         public virtual bool IsCommandAvailable(string commandId)
         {
             return GetAvailableCommands().Any(c => c.Id == commandId);
         }
-    }
 
-    /// <summary>
-    /// 簡単なプラグインコマンド情報作成のためのヘルパー
-    /// </summary>
-    public static class PluginCommandHelper
-    {
         /// <summary>
-        /// プラグインコマンド情報を作成
+        /// プラグインコマンド情報を作成するヘルパーメソッド
         /// </summary>
-        public static MacroPanels.Plugin.IPluginCommandInfo CreateCommandInfo(
-            string id, 
-            string name, 
-            string description, 
+        protected static IPluginCommandInfo CreateCommandInfo(
+            string id,
+            string name,
+            string description,
+            string category,
             string pluginId,
             Type commandType,
             Type? settingsType = null,
-            string category = "プラグイン",
             string? iconPath = null)
         {
             return new PluginCommandInfoImpl
@@ -162,27 +157,12 @@ namespace AutoTool.Services.Plugin
                 IconPath = iconPath
             };
         }
-
-        /// <summary>
-        /// デフォルト設定オブジェクトを作成
-        /// </summary>
-        public static T? CreateDefaultSettings<T>() where T : class, new()
-        {
-            try
-            {
-                return new T();
-            }
-            catch
-            {
-                return null;
-            }
-        }
     }
 
     /// <summary>
-    /// プラグインコマンド情報の内部実装
+    /// Phase 5完全統合版：プラグインコマンド情報実装クラス
     /// </summary>
-    internal class PluginCommandInfoImpl : MacroPanels.Plugin.IPluginCommandInfo
+    internal class PluginCommandInfoImpl : IPluginCommandInfo
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;

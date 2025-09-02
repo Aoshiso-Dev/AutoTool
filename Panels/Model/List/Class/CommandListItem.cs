@@ -105,8 +105,8 @@ namespace MacroPanels.List.Class
                 var baseDesc = Description;
                 if (!string.IsNullOrWhiteSpace(Comment))
                 {
-                    return string.IsNullOrWhiteSpace(baseDesc) 
-                        ? $"💬 {Comment}" 
+                    return string.IsNullOrWhiteSpace(baseDesc)
+                        ? $"💬 {Comment}"
                         : $"{baseDesc} 💬 {Comment}";
                 }
                 return baseDesc;
@@ -123,8 +123,8 @@ namespace MacroPanels.List.Class
         /// </summary>
         protected static string FormatWindowTarget(string windowTitle, string windowClassName, string defaultName = "グローバル")
         {
-            return string.IsNullOrEmpty(windowTitle) && string.IsNullOrEmpty(windowClassName) 
-                ? defaultName 
+            return string.IsNullOrEmpty(windowTitle) && string.IsNullOrEmpty(windowClassName)
+                ? defaultName
                 : $"{windowTitle}[{windowClassName}]";
         }
 
@@ -245,8 +245,32 @@ namespace MacroPanels.List.Class
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private bool _useBackgroundClick = false;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private int _backgroundClickMethod = 0; // 0=SendMessage,1=PostMessage,2=AutoDetectChild,3=TryAll,4=GameDirectInput,5=GameFullscreen,6=GameLowLevel,7=GameVirtualMouse
 
-        new public string Description => $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / パス:{FormatFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
+        private string GetBgMethodTag()
+        {
+            if (!UseBackgroundClick) return string.Empty;
+            string name = BackgroundClickMethod switch
+            {
+                0 => "Send",
+                1 => "Post",
+                2 => "Child",
+                3 => "TryAll",
+                4 => "GDirect",
+                5 => "GFull",
+                6 => "GLow",
+                7 => "GVirtual",
+                _ => "?"
+            };
+            return $" [BG:{name}]";
+        }
+
+        new public string Description => $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / パス:{FormatFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}{GetBgMethodTag()}";
 
         public ClickImageItem() { }
 
@@ -262,6 +286,8 @@ namespace MacroPanels.List.Class
                 Button = item.Button;
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
+                UseBackgroundClick = item.UseBackgroundClick;
+                BackgroundClickMethod = item.BackgroundClickMethod;
             }
         }
 
@@ -348,8 +374,32 @@ namespace MacroPanels.List.Class
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowClassName = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private bool _useBackgroundClick = false;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private int _backgroundClickMethod = 0; // 0=SendMessage,1=PostMessage,2=AutoDetectChild,3=TryAll,4=GameDirectInput,5=GameFullscreen,6=GameLowLevel,7=GameVirtualMouse
 
-        new public string Description => $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / X座標:{X} / Y座標:{Y} / ボタン:{Button}";
+        private string GetBgMethodTag()
+        {
+            if (!UseBackgroundClick) return string.Empty;
+            string name = BackgroundClickMethod switch
+            {
+                0 => "Send",
+                1 => "Post",
+                2 => "Child",
+                3 => "TryAll",
+                4 => "GDirect",
+                5 => "GFull",
+                6 => "GLow",
+                7 => "GVirtual",
+                _ => "?"
+            };
+            return $" [BG:{name}]";
+        }
+
+        new public string Description => $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / X座標:{X} / Y座標:{Y} / ボタン:{Button}{GetBgMethodTag()}";
 
         public ClickItem() { }
 
@@ -362,6 +412,8 @@ namespace MacroPanels.List.Class
                 Button = item.Button;
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
+                UseBackgroundClick = item.UseBackgroundClick;
+                BackgroundClickMethod = item.BackgroundClickMethod;
             }
         }
 
@@ -896,9 +948,33 @@ namespace MacroPanels.List.Class
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private bool _useBackgroundClick = false;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private int _backgroundClickMethod = 0; // 0=SendMessage,1=PostMessage,2=AutoDetectChild,3=TryAll,4=GameDirectInput,5=GameFullscreen,6=GameLowLevel,7=GameVirtualMouse
+
+        private string GetBgMethodTag()
+        {
+            if (!UseBackgroundClick) return string.Empty;
+            string name = BackgroundClickMethod switch
+            {
+                0 => "Send",
+                1 => "Post",
+                2 => "Child",
+                3 => "TryAll",
+                4 => "GDirect",
+                5 => "GFull",
+                6 => "GLow",
+                7 => "GVirtual",
+                _ => "?"
+            };
+            return $" [BG:{name}]";
+        }
 
         new public string Description =>
-            $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / モデル:{FormatFileName(ModelPath)} / クラスID:{ClassID} / 閾値:{ConfThreshold} / ボタン:{Button}";
+            $"対象：{FormatWindowTarget(WindowTitle, WindowClassName)} / モデル:{FormatFileName(ModelPath)} / クラスID:{ClassID} / 閾値:{ConfThreshold} / ボタン:{Button}{GetBgMethodTag()}";
 
         public ClickImageAIItem() { }
         public ClickImageAIItem(ClickImageAIItem? item = null) : base(item)
@@ -912,6 +988,8 @@ namespace MacroPanels.List.Class
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
                 Button = item.Button;
+                UseBackgroundClick = item.UseBackgroundClick;
+                BackgroundClickMethod = item.BackgroundClickMethod;
             }
         }
 

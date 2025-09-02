@@ -1,24 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.IO;
+using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using MacroPanels.Command.Interface;
-using OpenCVHelper;
 using CommunityToolkit.Mvvm.Messaging;
 using MacroPanels.Command.Message;
-using System.Net.Mail;
+using OpenCVHelper;
 using KeyHelper;
 using MouseHelper;
-using System.IO;
 using YoloWinLib;
-using System.Collections.Concurrent;
-using System.Windows.Media;
 
 namespace MacroPanels.Command.Class
 {
@@ -32,12 +29,14 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// コマンドの基底クラス
+    /// コマンドの基底クラス（DI対応）
     /// </summary>
     public abstract class BaseCommand : ICommand
     {
         // プライベートフィールド
         private readonly List<ICommand> _children = new();
+        protected readonly ILogger? _logger;
+        protected readonly IServiceProvider? _serviceProvider;
 
         // ICommandインターフェースの実装
         public int LineNumber { get; set; }
@@ -53,11 +52,13 @@ namespace MacroPanels.Command.Class
         public event EventHandler? OnFinishCommand;
         public event EventHandler<string>? OnDoingCommand;
 
-        protected BaseCommand(ICommand? parent = null, object? settings = null)
+        protected BaseCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
         {
             Parent = parent;
             Settings = settings;
             NestLevel = parent?.NestLevel + 1 ?? 0;
+            _serviceProvider = serviceProvider;
+            _logger = serviceProvider?.GetService<ILogger<BaseCommand>>();
             
             // メッセージング設定
             OnStartCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
@@ -188,6 +189,7 @@ namespace MacroPanels.Command.Class
             catch (Exception ex)
             {
                 LogMessage($"❌ 実行エラー: {ex.Message}");
+                _logger?.LogError(ex, "コマンド実行中にエラーが発生しました: {Description}", Description);
                 WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
                 return false;
             }
@@ -243,6 +245,28 @@ namespace MacroPanels.Command.Class
         {
             OnDoingCommand?.Invoke(this, message);
             WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, message));
+            _logger?.LogInformation("{Message}", message);
+
+            // ファイル出力は MacroPanelViewModel 側(Start/Doing/Finishメッセージ受信)で一元管理
+        }
+
+        /// <summary>
+        /// サービスを取得
+        /// </summary>
+        protected T? GetService<T>() where T : class
+        {
+            return _serviceProvider?.GetService<T>();
+        }
+
+        /// <summary>
+        /// 必須サービスを取得
+        /// </summary>
+        protected T GetRequiredService<T>() where T : class
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("ServiceProvider が設定されていません");
+            
+            return _serviceProvider.GetRequiredService<T>();
         }
     }
 
@@ -251,7 +275,7 @@ namespace MacroPanels.Command.Class
     /// </summary>
     public class RootCommand : BaseCommand, IRootCommand
     {
-        public RootCommand() : base(null, null)
+        public RootCommand(IServiceProvider? serviceProvider = null) : base(null, null, serviceProvider)
         {
             Description = "ルートコマンド";
         }
@@ -267,7 +291,7 @@ namespace MacroPanels.Command.Class
     /// </summary>
     public class NothingCommand : BaseCommand, IRootCommand
     {
-        public NothingCommand() : base(null, null)
+        public NothingCommand(IServiceProvider? serviceProvider = null) : base(null, null, serviceProvider)
         {
             Description = "何もしない";
         }
@@ -279,13 +303,14 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// 画像待機コマンド
+    /// 画像待機コマンド（DI対応）
     /// </summary>
     public class WaitImageCommand : BaseCommand, IWaitImageCommand
     {
         public new IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings!;
 
-        public WaitImageCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public WaitImageCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "画像待機";
         }
@@ -330,16 +355,31 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// 画像クリックコマンド
+    /// 画像クリックコマンド（DI対応）
     /// </summary>
     public class ClickImageCommand : BaseCommand, IClickImageCommand
     {
         public new IClickImageCommandSettings Settings => (IClickImageCommandSettings)base.Settings!;
 
-        public ClickImageCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public ClickImageCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "画像クリック";
         }
+
+        // 背景クリック方式名取得
+        private static string GetBgMethodName(int method) => method switch
+        {
+            0 => "SendMessage",
+            1 => "PostMessage",
+            2 => "AutoDetectChild",
+            3 => "TryAll",
+            4 => "GameDirectInput",
+            5 => "GameFullscreen",
+            6 => "GameLowLevel",
+            7 => "GameVirtualMouse",
+            _ => $"Unknown({method})"
+        };
 
         protected override void ValidateFiles()
         {
@@ -366,9 +406,9 @@ namespace MacroPanels.Command.Class
                 if (point != null)
                 {
                     await ExecuteMouseClick(point.Value.X, point.Value.Y, settings.Button, 
-                        settings.WindowTitle, settings.WindowClassName);
-                    
-                    LogMessage($"画像をクリックしました。({point.Value.X}, {point.Value.Y})");
+                        settings.WindowTitle, settings.WindowClassName, settings.UseBackgroundClick, settings.BackgroundClickMethod);
+                    var extra = settings.UseBackgroundClick ? $"[BG:{GetBgMethodName(settings.BackgroundClickMethod)}]" : string.Empty;
+                    LogMessage($"画像をクリックしました。{extra} ({point.Value.X}, {point.Value.Y})");
                     return true;
                 }
 
@@ -382,34 +422,56 @@ namespace MacroPanels.Command.Class
             return false;
         }
 
-        private static async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button, 
-            string windowTitle, string windowClassName)
+        private async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button, 
+            string windowTitle, string windowClassName, bool useBackgroundClick, int backgroundMethod)
         {
-            switch (button)
+            if (useBackgroundClick)
             {
-                case System.Windows.Input.MouseButton.Left:
-                    await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
-                    break;
-                case System.Windows.Input.MouseButton.Right:
-                    await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
-                    break;
-                case System.Windows.Input.MouseButton.Middle:
-                    await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
-                    break;
-                default:
-                    throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                var method = (MouseHelper.Input.BackgroundClickMethod)backgroundMethod;
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.BackgroundClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.BackgroundRightClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.BackgroundMiddleClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    default:
+                        throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                }
+            }
+            else
+            {
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    default:
+                        throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                }
             }
         }
     }
 
     /// <summary>
-    /// ホットキーコマンド
+    /// ホットキーコマンド（DI対応）
     /// </summary>
     public class HotkeyCommand : BaseCommand, IHotkeyCommand
     {
         public new IHotkeyCommandSettings Settings => (IHotkeyCommandSettings)base.Settings!;
 
-        public HotkeyCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public HotkeyCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "ホットキー";
         }
@@ -429,16 +491,30 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// クリックコマンド
+    /// クリックコマンド（DI対応）
     /// </summary>
     public class ClickCommand : BaseCommand, IClickCommand
     {
         public new IClickCommandSettings Settings => (IClickCommandSettings)base.Settings!;
 
-        public ClickCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public ClickCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "クリック";
         }
+
+        private static string GetBgMethodName(int method) => method switch
+        {
+            0 => "SendMessage",
+            1 => "PostMessage",
+            2 => "AutoDetectChild",
+            3 => "TryAll",
+            4 => "GameDirectInput",
+            5 => "GameFullscreen",
+            6 => "GameLowLevel",
+            7 => "GameVirtualMouse",
+            _ => $"Unknown({method})"
+        };
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
@@ -446,43 +522,65 @@ namespace MacroPanels.Command.Class
             if (settings == null) return false;
 
             await ExecuteMouseClick(settings.X, settings.Y, settings.Button,
-                settings.WindowTitle, settings.WindowClassName);
+                settings.WindowTitle, settings.WindowClassName, settings.UseBackgroundClick, settings.BackgroundClickMethod);
 
             var target = string.IsNullOrEmpty(settings.WindowTitle) && string.IsNullOrEmpty(settings.WindowClassName)
                 ? "グローバル" : $"{settings.WindowTitle}[{settings.WindowClassName}]";
-            
-            LogMessage($"クリックしました。対象: {target} ({settings.X}, {settings.Y})");
+            var clickType = settings.UseBackgroundClick ? $"バックグラウンドクリック[{GetBgMethodName(settings.BackgroundClickMethod)}]" : "クリック";
+            LogMessage($"{clickType}しました。対象: {target} ({settings.X}, {settings.Y})");
             return true;
         }
 
-        private static async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button,
-            string windowTitle, string windowClassName)
+        private async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button,
+            string windowTitle, string windowClassName, bool useBackgroundClick, int backgroundMethod)
         {
-            switch (button)
+            if (useBackgroundClick)
             {
-                case System.Windows.Input.MouseButton.Left:
-                    await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
-                    break;
-                case System.Windows.Input.MouseButton.Right:
-                    await MouseHelper.Input.RightClickAsync(x, y, windowClassName);
-                    break;
-                case System.Windows.Input.MouseButton.Middle:
-                    await MouseHelper.Input.MiddleClickAsync(x, y, windowClassName);
-                    break;
-                default:
-                    throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                var method = (MouseHelper.Input.BackgroundClickMethod)backgroundMethod;
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.BackgroundClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.BackgroundRightClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.BackgroundMiddleClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    default:
+                        throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                }
+            }
+            else
+            {
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    default:
+                        throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                }
             }
         }
     }
 
     /// <summary>
-    /// 待機コマンド
+    /// 待機コマンド（DI対応）
     /// </summary>
     public class WaitCommand : BaseCommand, IWaitCommand
     {
         public new IWaitCommandSettings Settings => (IWaitCommandSettings)base.Settings!;
 
-        public WaitCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public WaitCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "待機";
         }
@@ -508,13 +606,14 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// ループコマンド
+    /// ループコマンド（DI対応）
     /// </summary>
     public class LoopCommand : BaseCommand, ILoopCommand
     {
         public new ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings!;
 
-        public LoopCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public LoopCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "ループ";
         }
@@ -577,11 +676,12 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// If文の基底クラス
+    /// If文の基底クラス（DI対応）
     /// </summary>
     public abstract class IfCommand : BaseCommand
     {
-        protected IfCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        protected IfCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
         }
 
@@ -599,13 +699,14 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// 画像存在確認If文
+    /// 画像存在確認If文（DI対応）
     /// </summary>
     public class IfImageExistCommand : IfCommand, IIfImageExistCommand
     {
         public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings!;
 
-        public IfImageExistCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public IfImageExistCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "画像存在確認";
         }
@@ -640,13 +741,14 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// 画像非存在確認If文
+    /// 画像非存在確認If文（DI対応）
     /// </summary>
     public class IfImageNotExistCommand : IfCommand, IIfImageNotExistCommand
     {
         public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings!;
 
-        public IfImageNotExistCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public IfImageNotExistCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "画像非存在確認";
         }
@@ -681,13 +783,14 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// AI画像存在確認If文
+    /// AI画像存在確認If文（DI対応）
     /// </summary>
     public class IfImageExistAICommand : IfCommand, IIfImageExistAICommand
     {
         public new IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings!;
 
-        public IfImageExistAICommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public IfImageExistAICommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "AI画像存在確認";
         }
@@ -733,13 +836,14 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// AI画像非存在確認If文
+    /// AI画像非存在確認If文（DI対応）
     /// </summary>
     public class IfImageNotExistAICommand : IfCommand, IIfImageNotExistAICommand
     {
         public new IIfImageNotExistAISettings Settings => (IIfImageNotExistAISettings)base.Settings!;
 
-        public IfImageNotExistAICommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public IfImageNotExistAICommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "AI画像非存在確認";
         }
@@ -783,15 +887,18 @@ namespace MacroPanels.Command.Class
     }
 
     /// <summary>
-    /// 変数条件確認If文
+    /// 変数条件確認If文（DI対応）
     /// </summary>
     public class IfVariableCommand : IfCommand, IIfVariableCommand
     {
+        private readonly IVariableStore? _variableStore;
         public new IIfVariableCommandSettings Settings => (IIfVariableCommandSettings)base.Settings!;
 
-        public IfVariableCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public IfVariableCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "変数条件確認";
+            _variableStore = GetService<IVariableStore>();
         }
 
         protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
@@ -804,7 +911,7 @@ namespace MacroPanels.Command.Class
                 throw new Exception("If内に要素がありません。");
             }
 
-            var lhs = VariableStore.Get(settings.Name) ?? string.Empty;
+            var lhs = _variableStore?.Get(settings.Name) ?? string.Empty;
             var rhs = settings.Value ?? string.Empty;
 
             bool result = Evaluate(lhs, rhs, settings.Operator);
@@ -846,10 +953,11 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    // 終了コマンド類
+    // 終了コマンド類（DI対応）
     public class IfEndCommand : BaseCommand
     {
-        public IfEndCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public IfEndCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "If終了";
         }
@@ -863,7 +971,8 @@ namespace MacroPanels.Command.Class
 
     public class LoopEndCommand : BaseCommand
     {
-        public LoopEndCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public LoopEndCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "ループ終了";
         }
@@ -877,7 +986,8 @@ namespace MacroPanels.Command.Class
 
     public class LoopBreakCommand : BaseCommand, ILoopBreakCommand
     {
-        public LoopBreakCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public LoopBreakCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "ループ中断";
         }
@@ -891,12 +1001,13 @@ namespace MacroPanels.Command.Class
         }
     }
 
-    // その他のコマンド
+    // その他のコマンド（DI対応）
     public class ExecuteCommand : BaseCommand, IExecuteCommand
     {
         public new IExecuteCommandSettings Settings => (IExecuteCommandSettings)base.Settings!;
 
-        public ExecuteCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public ExecuteCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "プログラム実行";
         }
@@ -945,11 +1056,14 @@ namespace MacroPanels.Command.Class
 
     public class SetVariableCommand : BaseCommand, ISetVariableCommand
     {
+        private readonly IVariableStore? _variableStore;
         public new ISetVariableCommandSettings Settings => (ISetVariableCommandSettings)base.Settings!;
 
-        public SetVariableCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public SetVariableCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "変数設定";
+            _variableStore = GetService<IVariableStore>();
         }
 
         protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
@@ -957,7 +1071,7 @@ namespace MacroPanels.Command.Class
             var settings = Settings;
             if (settings == null) return Task.FromResult(false);
 
-            VariableStore.Set(settings.Name, settings.Value);
+            _variableStore?.Set(settings.Name, settings.Value);
             LogMessage($"変数を設定しました。{settings.Name} = \"{settings.Value}\"");
             return Task.FromResult(true);
         }
@@ -965,11 +1079,14 @@ namespace MacroPanels.Command.Class
 
     public class SetVariableAICommand : BaseCommand, ISetVariableAICommand
     {
+        private readonly IVariableStore? _variableStore;
         public new ISetVariableAICommandSettings Settings => (ISetVariableAICommandSettings)base.Settings!;
 
-        public SetVariableAICommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public SetVariableAICommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "AI変数設定";
+            _variableStore = GetService<IVariableStore>();
         }
 
         protected override void ValidateFiles()
@@ -992,7 +1109,7 @@ namespace MacroPanels.Command.Class
 
             if (det.Count == 0)
             {
-                VariableStore.Set(settings.Name, "-1");
+                _variableStore?.Set(settings.Name, "-1");
                 LogMessage($"画像が見つかりませんでした。{settings.Name}に-1をセットしました。");
             }
             else
@@ -1002,12 +1119,12 @@ namespace MacroPanels.Command.Class
                     case "Class":
                         // 最高スコアのものをセット
                         var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
-                        VariableStore.Set(settings.Name, best.ClassId.ToString());
+                        _variableStore?.Set(settings.Name, best.ClassId.ToString());
                         LogMessage($"画像が見つかりました。{settings.Name}に{best.ClassId}をセットしました。");
                         break;
                     case "Count":
                         // 検出された数をセット
-                        VariableStore.Set(settings.Name, det.Count.ToString());
+                        _variableStore?.Set(settings.Name, det.Count.ToString());
                         LogMessage($"画像が{det.Count}個見つかりました。{settings.Name}に{det.Count}をセットしました。");
                         break;
                     default:
@@ -1023,7 +1140,8 @@ namespace MacroPanels.Command.Class
     {
         public new IScreenshotCommandSettings Settings => (IScreenshotCommandSettings)base.Settings!;
 
-        public ScreenshotCommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public ScreenshotCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "スクリーンショット";
         }
@@ -1076,10 +1194,24 @@ namespace MacroPanels.Command.Class
     {
         public new IClickImageAICommandSettings Settings => (IClickImageAICommandSettings)base.Settings!;
 
-        public ClickImageAICommand(ICommand? parent = null, object? settings = null) : base(parent, settings)
+        public ClickImageAICommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+            : base(parent, settings, serviceProvider)
         {
             Description = "AI画像クリック";
         }
+
+        private static string GetBgMethodName(int method) => method switch
+        {
+            0 => "SendMessage",
+            1 => "PostMessage",
+            2 => "AutoDetectChild",
+            3 => "TryAll",
+            4 => "GameDirectInput",
+            5 => "GameFullscreen",
+            6 => "GameLowLevel",
+            7 => "GameVirtualMouse",
+            _ => $"Unknown({method})"
+        };
 
         protected override void ValidateFiles()
         {
@@ -1097,38 +1229,20 @@ namespace MacroPanels.Command.Class
 
             YoloWin.Init(settings.ModelPath, 640, true);
 
-            // AI検出を実行
             var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
-
-            // 指定クラスIDが検出された場合にクリック
             var targetDetections = det.Where(d => d.ClassId == settings.ClassID).ToList();
 
             if (targetDetections.Count > 0)
             {
-                // 最も信頼度の高い検出結果を選択
                 var best = targetDetections.OrderByDescending(d => d.Score).First();
-
-                // 検出領域の中心座標を計算
                 int centerX = (int)(best.Rect.X + best.Rect.Width / 2);
                 int centerY = (int)(best.Rect.Y + best.Rect.Height / 2);
 
-                // マウスクリックを実行（非同期）
-                switch (settings.Button)
-                {
-                    case System.Windows.Input.MouseButton.Left:
-                        await MouseHelper.Input.ClickAsync(centerX, centerY, settings.WindowTitle, settings.WindowClassName);
-                        break;
-                    case System.Windows.Input.MouseButton.Right:
-                        await MouseHelper.Input.RightClickAsync(centerX, centerY, settings.WindowTitle, settings.WindowClassName);
-                        break;
-                    case System.Windows.Input.MouseButton.Middle:
-                        await MouseHelper.Input.MiddleClickAsync(centerX, centerY, settings.WindowTitle, settings.WindowClassName);
-                        break;
-                    default:
-                        throw new Exception("マウスボタンが不正です。");
-                }
+                await ExecuteMouseClick(centerX, centerY, settings.Button, 
+                    settings.WindowTitle, settings.WindowClassName, settings.UseBackgroundClick, settings.BackgroundClickMethod);
 
-                LogMessage($"AI画像クリックが完了しました。({centerX}, {centerY}) ClassId: {best.ClassId}, Score: {best.Score:F2}");
+                var clickType = settings.UseBackgroundClick ? $"バックグラウンドAI画像クリック[{GetBgMethodName(settings.BackgroundClickMethod)}]" : "AI画像クリック";
+                LogMessage($"{clickType}が完了しました。({centerX}, {centerY}) ClassId: {best.ClassId}, Score: {best.Score:F2}");
                 return true;
             }
 
@@ -1138,25 +1252,98 @@ namespace MacroPanels.Command.Class
             LogMessage($"クラスID {settings.ClassID} の画像が見つかりませんでした。");
             return false;
         }
+
+        private async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button,
+            string windowTitle, string windowClassName, bool useBackgroundClick, int backgroundMethod)
+        {
+            if (useBackgroundClick)
+            {
+                var method = (MouseHelper.Input.BackgroundClickMethod)backgroundMethod;
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.BackgroundClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.BackgroundRightClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.BackgroundMiddleClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    default:
+                        throw new Exception("マウスボタンが不正です。");
+                }
+            }
+            else
+            {
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    default:
+                        throw new Exception("マウスボタンが不正です。");
+                }
+            }
+        }
     }
 
-    // 共有変数ストア
-    internal static class VariableStore
+    /// <summary>
+    /// 変数ストアのインターフェース（DI対応）
+    /// </summary>
+    namespace MacroPanels.Command.Interface
     {
-        private static readonly ConcurrentDictionary<string, string> s_vars = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// 変数ストアのインターフェース
+        /// </summary>
+        public interface IVariableStore
+        {
+            void Set(string name, string value);
+            string? Get(string name);
+            void Clear();
+        }
+    }
 
-        public static void Set(string name, string value)
+    /// <summary>
+    /// 変数ストアの実装（DI対応）
+    /// </summary>
+    public class VariableStore : IVariableStore
+    {
+        private readonly ConcurrentDictionary<string, string> _vars = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ILogger<VariableStore>? _logger;
+
+        public VariableStore(ILogger<VariableStore>? logger = null)
+        {
+            _logger = logger;
+        }
+
+        public void Set(string name, string value)
         {
             if (string.IsNullOrWhiteSpace(name)) return;
-            s_vars[name] = value ?? string.Empty;
+            
+            _vars[name] = value ?? string.Empty;
+            _logger?.LogDebug("変数設定: {Name} = {Value}", name, value);
         }
 
-        public static string? Get(string name)
+        public string? Get(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return null;
-            return s_vars.TryGetValue(name, out var v) ? v : null;
+            
+            var result = _vars.TryGetValue(name, out var v) ? v : null;
+            _logger?.LogDebug("変数取得: {Name} = {Value}", name, result ?? "null");
+            return result;
         }
 
-        public static void Clear() => s_vars.Clear();
+        public void Clear() 
+        {
+            _vars.Clear();
+            _logger?.LogDebug("変数ストアをクリアしました");
+        }
     }
 }

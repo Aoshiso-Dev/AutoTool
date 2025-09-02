@@ -18,10 +18,10 @@ using Microsoft.Extensions.Logging;
 
 namespace MacroPanels.ViewModel
 {
+    [Obsolete("Phase 3で統合版に移行。AutoTool.ViewModel.Panels.ButtonPanelViewModelを使用してください", false)]
     public partial class ButtonPanelViewModel : ObservableObject
     {
         private readonly ILogger<ButtonPanelViewModel> _logger;
-        private readonly ICommandRegistry _commandRegistry;
 
         [ObservableProperty]
         private bool _isRunning = false;
@@ -33,10 +33,9 @@ namespace MacroPanels.ViewModel
         private CommandDisplayItem? _selectedItemType;
 
         // DI対応コンストラクタ
-        public ButtonPanelViewModel(ILogger<ButtonPanelViewModel> logger, ICommandRegistry commandRegistry)
+        public ButtonPanelViewModel(ILogger<ButtonPanelViewModel> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
             _logger.LogInformation("ButtonPanelViewModel をDI対応で初期化しています");
             
             InitializeItemTypes();
@@ -48,18 +47,54 @@ namespace MacroPanels.ViewModel
             {
                 _logger.LogDebug("アイテムタイプの初期化を開始します");
 
-                var displayItems = _commandRegistry.GetCommandDefinitions()
-                    .Select(def => new CommandDisplayItem
+                // CommandRegistryを初期化
+                CommandRegistry.Initialize();
+                _logger.LogDebug("CommandRegistry.Initialize() 完了");
+
+                // EditPanelViewModelと同じ方法でアイテムタイプを取得
+                var orderedTypeNames = CommandRegistry.GetOrderedTypeNames();
+                _logger.LogDebug("GetOrderedTypeNames()で取得した型名数: {Count}", orderedTypeNames?.Count() ?? 0);
+
+                var displayItems = orderedTypeNames?
+                    .Select(typeName => new CommandDisplayItem
                     {
-                        TypeName = def.TypeName,
-                        DisplayName = def.DisplayName
+                        TypeName = typeName,
+                        DisplayName = CommandRegistry.DisplayOrder.GetDisplayName(typeName),
+                        Category = CommandRegistry.DisplayOrder.GetCategoryName(typeName)
                     })
-                    .ToList();
+                    .ToList() ?? new List<CommandDisplayItem>();
+                
+                _logger.LogDebug("作成したdisplayItems数: {Count}", displayItems.Count);
                 
                 ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
                 SelectedItemType = ItemTypes.FirstOrDefault();
                 
                 _logger.LogDebug("アイテムタイプの初期化が完了しました: {Count}個", ItemTypes.Count);
+                _logger.LogDebug("選択されたアイテム: {DisplayName}", SelectedItemType?.DisplayName ?? "なし");
+                
+                // デバッグ用：最初の数項目をログ出力
+                for (int i = 0; i < Math.Min(5, ItemTypes.Count); i++)
+                {
+                    var item = ItemTypes[i];
+                    _logger.LogDebug("ItemType[{Index}]: {DisplayName} ({TypeName})", i, item.DisplayName, item.TypeName);
+                }
+
+                // さらに詳細なデバッグ情報
+                if (ItemTypes.Count == 0)
+                {
+                    _logger.LogError("ItemTypesが空です！CommandRegistryの状態を確認します。");
+                    
+                    // CommandRegistryの状態をチェック
+                    var allTypes = CommandRegistry.GetOrderedTypeNames();
+                    if (allTypes == null)
+                    {
+                        _logger.LogError("CommandRegistry.GetOrderedTypeNames() が null を返しました");
+                    }
+                    else
+                    {
+                        _logger.LogError("CommandRegistry.GetOrderedTypeNames() は {Count} 個の型を返しました", allTypes.Count());
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -151,6 +186,34 @@ namespace MacroPanels.ViewModel
         {
             _logger.LogDebug("削除コマンドを送信します");
             WeakReferenceMessenger.Default.Send(new DeleteMessage());
+        }
+
+        [RelayCommand]
+        public void Undo() 
+        {
+            try
+            {
+                _logger.LogDebug("元に戻すコマンドを送信します");
+                WeakReferenceMessenger.Default.Send(new UndoMessage());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "元に戻すコマンドの処理中にエラーが発生しました");
+            }
+        }
+
+        [RelayCommand]
+        public void Redo() 
+        {
+            try
+            {
+                _logger.LogDebug("やり直しコマンドを送信します");
+                WeakReferenceMessenger.Default.Send(new RedoMessage());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "やり直しコマンドの処理中にエラーが発生しました");
+            }
         }
 
         public void SetRunningState(bool isRunning) 

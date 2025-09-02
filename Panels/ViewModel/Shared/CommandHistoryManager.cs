@@ -36,13 +36,15 @@ namespace MacroPanels.ViewModel.Shared
         /// </summary>
         public void ExecuteCommand(IUndoRedoCommand command)
         {
+            System.Diagnostics.Debug.WriteLine($"[CommandHistory] ExecuteCommand開始: {command.Description}");
+
             command.Execute();
             _undoStack.Push(command);
 
             // Redoスタックをクリア（新しいコマンドが実行されたため）
             _redoStack.Clear();
 
-            // 履歴の制限チェック
+            // 履歴の数制限チェック
             while (_undoStack.Count > MaxHistoryCount)
             {
                 var oldCommands = _undoStack.ToArray();
@@ -53,34 +55,49 @@ namespace MacroPanels.ViewModel.Shared
                 }
             }
 
+            System.Diagnostics.Debug.WriteLine($"[CommandHistory] ExecuteCommand完了: UndoStack={_undoStack.Count}, RedoStack={_redoStack.Count}");
             OnHistoryChanged();
         }
 
         /// <summary>
-        /// Undo操作を実行
+        /// Undo処理を実行
         /// </summary>
         public void Undo()
         {
-            if (!CanUndo) return;
+            if (!CanUndo)
+            {
+                System.Diagnostics.Debug.WriteLine("[CommandHistory] Undo失敗: UndoStackが空です");
+                return;
+            }
 
             var command = _undoStack.Pop();
+            System.Diagnostics.Debug.WriteLine($"[CommandHistory] Undo実行: {command.Description}");
+
             command.Undo();
             _redoStack.Push(command);
 
+            System.Diagnostics.Debug.WriteLine($"[CommandHistory] Undo完了: UndoStack={_undoStack.Count}, RedoStack={_redoStack.Count}");
             OnHistoryChanged();
         }
 
         /// <summary>
-        /// Redo操作を実行
+        /// Redo処理を実行
         /// </summary>
         public void Redo()
         {
-            if (!CanRedo) return;
+            if (!CanRedo)
+            {
+                System.Diagnostics.Debug.WriteLine("[CommandHistory] Redo失敗: RedoStackが空です");
+                return;
+            }
 
             var command = _redoStack.Pop();
+            System.Diagnostics.Debug.WriteLine($"[CommandHistory] Redo実行: {command.Description}");
+
             command.Execute();
             _undoStack.Push(command);
 
+            System.Diagnostics.Debug.WriteLine($"[CommandHistory] Redo完了: UndoStack={_undoStack.Count}, RedoStack={_redoStack.Count}");
             OnHistoryChanged();
         }
 
@@ -89,8 +106,13 @@ namespace MacroPanels.ViewModel.Shared
         /// </summary>
         public void Clear()
         {
+            var undoCount = _undoStack.Count;
+            var redoCount = _redoStack.Count;
+
             _undoStack.Clear();
             _redoStack.Clear();
+
+            System.Diagnostics.Debug.WriteLine($"[CommandHistory] Clear実行: 削除されたUndo={undoCount}, Redo={redoCount}");
             OnHistoryChanged();
         }
 

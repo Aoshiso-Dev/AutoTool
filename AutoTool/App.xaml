@@ -3,6 +3,30 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:AutoTool">
     <Application.Resources>
-         
+        <!-- キーボードショートカット用のリソース -->
+        <RoutedUICommand x:Key="UndoCommand" Text="元に戻す">
+            <RoutedUICommand.InputGestures>
+                <KeyGesture>Ctrl+Z</KeyGesture>
+            </RoutedUICommand.InputGestures>
+        </RoutedUICommand>
+        
+        <RoutedUICommand x:Key="RedoCommand" Text="やり直し">
+            <RoutedUICommand.InputGestures>
+                <KeyGesture>Ctrl+Y</KeyGesture>
+                <KeyGesture>Ctrl+Shift+Z</KeyGesture>
+            </RoutedUICommand.InputGestures>
+        </RoutedUICommand>
+
+        <RoutedUICommand x:Key="SaveCommand" Text="保存">
+            <RoutedUICommand.InputGestures>
+                <KeyGesture>Ctrl+S</KeyGesture>
+            </RoutedUICommand.InputGestures>
+        </RoutedUICommand>
+
+        <RoutedUICommand x:Key="OpenCommand" Text="開く">
+            <RoutedUICommand.InputGestures>
+                <KeyGesture>Ctrl+O</KeyGesture>
+            </RoutedUICommand.InputGestures>
+        </RoutedUICommand>
     </Application.Resources>
 </Application>

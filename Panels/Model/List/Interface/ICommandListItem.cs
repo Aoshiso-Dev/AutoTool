@@ -48,6 +48,8 @@ namespace MacroPanels.Model.List.Interface
         public System.Windows.Input.MouseButton Button { get; set; }
         public string WindowTitle { get; set; }
         public string WindowClassName { get; set; }
+        public bool UseBackgroundClick { get; set; }
+        public int BackgroundClickMethod { get; set; }
     }
 
     public interface IHotkeyItem : ICommandListItem
@@ -67,6 +69,8 @@ namespace MacroPanels.Model.List.Interface
         public int Y { get; set; }
         public string WindowTitle { get; set; }
         public string WindowClassName { get; set; }
+        public bool UseBackgroundClick { get; set; }
+        public int BackgroundClickMethod { get; set; }
     }
 
     public interface IWaitItem : ICommandListItem
@@ -145,6 +149,8 @@ namespace MacroPanels.Model.List.Interface
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
         System.Windows.Input.MouseButton Button { get; set; }
+        bool UseBackgroundClick { get; set; }
+        int BackgroundClickMethod { get; set; }
     }
 
     public interface IExecuteItem : ICommandListItem

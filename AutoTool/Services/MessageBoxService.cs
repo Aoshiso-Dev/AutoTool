@@ -1,8 +1,18 @@
 using System.Windows;
-using AutoTool.ViewModel;
 
 namespace AutoTool.Services
 {
+    /// <summary>
+    /// Phase 5完全統合版：メッセージサービスインターフェース
+    /// </summary>
+    public interface IMessageService
+    {
+        void ShowError(string message, string title = "エラー");
+        void ShowWarning(string message, string title = "警告");
+        void ShowInformation(string message, string title = "情報");
+        bool ShowConfirmation(string message, string title = "確認");
+    }
+
     /// <summary>
     /// MessageBoxを使用したメッセージサービスの実装
     /// </summary>

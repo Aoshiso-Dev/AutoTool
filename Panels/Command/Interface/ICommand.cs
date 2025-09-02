@@ -75,6 +75,16 @@ namespace MacroPanels.Command.Interface
         event System.EventHandler? OnStartCommand;
     }
 
+    /// <summary>
+    /// 変数ストアのインターフェース
+    /// </summary>
+    public interface IVariableStore
+    {
+        void Set(string name, string value);
+        string? Get(string name);
+        void Clear();
+    }
+
     public interface IRootCommand : ICommand { }
     public interface IIfCommand : ICommand { }
     public interface IWaitImageCommand : ICommand { new IWaitImageCommandSettings Settings { get; } }

@@ -7,20 +7,21 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using MacroPanels.ViewModel;
-using MacroPanels.Message;
-using MacroPanels.Plugin;
-using MacroPanels.ViewModel.Shared;
+using AutoTool.ViewModel;
+using AutoTool.Message; // Phase 5統合版Message
+using AutoTool.Services.Plugin; // Phase 5統合版PluginService
+using AutoTool.ViewModel.Shared; // Phase 5統合版CommandHistoryManager
 using Microsoft.Extensions.Logging;
 using AutoTool.Services.Configuration;
 using AutoTool.Services.Theme;
 using AutoTool.Services.Performance;
-using AutoTool.ViewModel; // DI,Pluginブランチの内容を採用
+using Microsoft.Win32;
 
 namespace AutoTool
 {
     /// <summary>
-    /// メインウィンドウのビューモデル
+    /// Phase 5完全統合版：MainWindowViewModel
+    /// MacroPanels依存を完全排除し、AutoTool統合版のみ使用
     /// </summary>
     public partial class MainWindowViewModel : ObservableObject
     {
@@ -29,9 +30,9 @@ namespace AutoTool
         private readonly IConfigurationService? _configurationService;
         private readonly IThemeService? _themeService;
         private readonly IPerformanceService? _performanceService;
-        private readonly MacroPanels.Plugin.IPluginService? _pluginService;
+        private readonly AutoTool.Services.Plugin.IPluginService? _pluginService; // Phase 5統合版
 
-        // マクロパネルのビューモデル（DI,Plugin統合版の名前空間を使用）
+        // マクロパネルのビューモデル（完全統合版）
         [ObservableProperty]
         private AutoTool.ViewModel.MacroPanelViewModel? _macroPanelViewModel;
 
@@ -46,7 +47,7 @@ namespace AutoTool
         private WindowState _windowState = WindowState.Normal;
 
         [ObservableProperty]
-        private string _title = "AutoTool - マクロ自動化ツール";
+        private string _title = "AutoTool - マクロ自動化ツール (Phase 5完全統合)";
 
         // ステータス
         [ObservableProperty]
@@ -65,18 +66,93 @@ namespace AutoTool
         [ObservableProperty]
         private string _cpuUsage = "0%";
 
-        // プラグイン情報
+        // プラグイン情報（Phase 5統合版インターフェース使用）
         [ObservableProperty]
-        private ObservableCollection<IPluginInfo> _loadedPlugins = new();
+        private ObservableCollection<AutoTool.Services.Plugin.IPluginInfo> _loadedPlugins = new();
 
         [ObservableProperty]
-        private ObservableCollection<IPluginCommandInfo> _availableCommands = new();
+        private ObservableCollection<AutoTool.Services.Plugin.IPluginCommandInfo> _availableCommands = new();
 
         [ObservableProperty]
         private int _pluginCount;
 
         [ObservableProperty]
         private int _commandCount;
+
+        // タブ選択インデックス
+        [ObservableProperty]
+        private int _selectedTabIndex = 0;
+
+        // ファイル関連
+        private string? _currentMacroFilePath;
+
+        // 最近使ったファイル
+        private ObservableCollection<RecentFileEntry> _recentFiles = new();
+        public ObservableCollection<RecentFileEntry> RecentFiles
+        {
+            get => _recentFiles;
+            set { if (_recentFiles != value) { _recentFiles = value; OnPropertyChanged(nameof(RecentFiles)); } }
+        }
+
+        private bool _isFileOpened;
+        public bool IsFileOpened
+        {
+            get => _isFileOpened;
+            set { if (_isFileOpened != value) { _isFileOpened = value; OnPropertyChanged(nameof(IsFileOpened)); OnPropertyChanged(nameof(MenuItemHeader_SaveFile)); } }
+        }
+
+        // ファイル操作が可能か（実行中でない && ViewModel初期化済み）
+        public bool IsFileOperationEnable
+        {
+            get
+            {
+                if (MacroPanelViewModel == null) return true;
+                return !MacroPanelViewModel.IsRunning;
+            }
+        }
+
+        // IsRunning プロパティの公開（タイプセーフ）
+        public bool IsRunning
+        {
+            get
+            {
+                return MacroPanelViewModel?.IsRunning ?? false;
+            }
+        }
+
+        // メニュー表示用ヘッダ
+        public string MenuItemHeader_SaveFile => IsFileOpened ? "上書き保存 (_S)" : "保存 (_S)";
+        public string MenuItemHeader_SaveFileAs => "名前を付けて保存 (_A)";
+
+        // 最近ファイル用エントリ
+        public class RecentFileEntry
+        {
+            public string FileName { get; set; } = string.Empty;
+            public string FilePath { get; set; } = string.Empty;
+        }
+
+        // MacroPanelViewModel の状態変更監視（タイプセーフ）
+        partial void OnMacroPanelViewModelChanged(AutoTool.ViewModel.MacroPanelViewModel? oldValue, AutoTool.ViewModel.MacroPanelViewModel? newValue)
+        {
+            if (oldValue != null)
+            {
+                oldValue.PropertyChanged -= MacroPanel_PropertyChanged;
+            }
+            if (newValue != null)
+            {
+                newValue.PropertyChanged += MacroPanel_PropertyChanged;
+            }
+            OnPropertyChanged(nameof(IsFileOperationEnable));
+        }
+
+        private void MacroPanel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(AutoTool.ViewModel.MacroPanelViewModel.IsRunning))
+            {
+                OnPropertyChanged(nameof(IsFileOperationEnable));
+                OnPropertyChanged(nameof(IsRunning));
+            }
+        }
 
         #region コンストラクタ
 
@@ -92,7 +168,7 @@ namespace AutoTool
         }
 
         /// <summary>
-        /// 実行時用コンストラクタ
+        /// 実行時用コンストラクタ（Phase 5完全統合版）
         /// </summary>
         public MainWindowViewModel(
             ILogger<MainWindowViewModel> logger,
@@ -100,7 +176,7 @@ namespace AutoTool
             IThemeService themeService,
             IPerformanceService performanceService,
             AutoTool.ViewModel.MacroPanelViewModel macroPanelViewModel,
-            MacroPanels.Plugin.IPluginService pluginService)
+            AutoTool.Services.Plugin.IPluginService pluginService) // Phase 5統合版
         {
             _logger = logger;
             _configurationService = configurationService;
@@ -114,7 +190,7 @@ namespace AutoTool
 
         #endregion
 
-        #region 初期化メソッド
+        #region 初期化
 
         /// <summary>
         /// デザインモード用の初期化
@@ -123,11 +199,11 @@ namespace AutoTool
         {
             try
             {
-                StatusMessage = "デザインモード";
-                Title = "AutoTool - デザインモード";
+                this.StatusMessage = "デザインモード";
+                this.Title = "AutoTool - デザインモード (Phase 5完全統合)";
                 
-                // デザインモード用のダミーデータ
-                MacroPanelViewModel = new AutoTool.ViewModel.MacroPanelViewModel(logger: null, null, null, null);
+                // デザインモードでは簡単な初期化のみ
+                // MacroPanelViewModel = null; // デザインモードでは作成しない
 
                 // デザインモード用のダミープラグイン情報
                 LoadedPlugins.Add(new DesignTimePluginInfo("StandardCommands", "標準コマンドプラグイン", "1.0.0"));
@@ -136,92 +212,72 @@ namespace AutoTool
             }
             catch (Exception ex)
             {
-                StatusMessage = $"デザインモード初期化エラー: {ex.Message}";
+                this.StatusMessage = $"デザインモード初期化エラー: {ex.Message}";
             }
         }
 
         /// <summary>
-        /// 実行時の初期化
+        /// 実行時の初期化（Phase 5完全統合版）
         /// </summary>
         private void InitializeRuntime()
         {
             try
             {
-                _logger?.LogInformation("MainWindowViewModel 初期化開始");
+                _logger?.LogInformation("Phase 5完全統合MainWindowViewModel 初期化開始");
 
-                // メッセージング設定
                 SetupMessaging();
-
-                // プラグインイベントの設定
                 SetupPluginEvents();
-
-                // 設定の読み込み
                 LoadSettings();
-
-                // テーマの適用
                 ApplyTheme();
-
-                // パフォーマンス監視開始
                 StartPerformanceMonitoring();
-
-                // プラグイン情報の初期化
                 UpdatePluginInfo();
 
-                // CommandHistoryManagerの初期化と設定
-                InitializeCommandHistory();
-
-                StatusMessage = "初期化完了";
-                _logger?.LogInformation("MainWindowViewModel 初期化完了");
+                this.StatusMessage = "Phase 5完全統合初期化完了";
+                _logger?.LogInformation("Phase 5完全統合MainWindowViewModel 初期化完了");
             }
             catch (Exception ex)
             {
                 var errorMessage = $"初期化エラー: {ex.Message}";
-                StatusMessage = errorMessage;
-                _logger?.LogError(ex, "MainWindowViewModel 初期化中にエラーが発生しました");
+                this.StatusMessage = errorMessage;
+                _logger?.LogError(ex, "Phase 5完全統合MainWindowViewModel 初期化中にエラーが発生しました");
             }
         }
 
         /// <summary>
-        /// CommandHistoryManagerの初期化と設定
-        /// </summary>
-        private void InitializeCommandHistory()
-        {
-            try
-            {
-                // CommandHistoryManagerを作成してMacroPanelViewModelに設定
-                var commandHistory = new CommandHistoryManager();
-                MacroPanelViewModel?.SetCommandHistory(commandHistory);
-                
-                _logger?.LogDebug("CommandHistoryManagerを初期化し、MacroPanelViewModelに設定しました");
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "CommandHistoryManager初期化中にエラーが発生しました");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// メッセージング設定
+        /// メッセージング設定（Phase 5統合版）
         /// </summary>
         private void SetupMessaging()
         {
-            // アプリケーション終了メッセージの受信
             WeakReferenceMessenger.Default.Register<ExitApplicationMessage>(this, (r, m) =>
             {
                 Application.Current.Shutdown();
             });
 
-            // ステータスメッセージの受信
-            WeakReferenceMessenger.Default.Register<StatusMessage>(this, (r, m) =>
+            WeakReferenceMessenger.Default.Register<AppStatusMessage>(this, (r, m) =>
             {
                 StatusMessage = m.Message;
             });
+            
+            // Phase 5: AutoTool統合版メッセージを使用
+            WeakReferenceMessenger.Default.Register<AutoTool.Message.UndoMessage>(this, (r, m) =>
+            {
+                if (MacroPanelViewModel != null)
+                {
+                    WeakReferenceMessenger.Default.Send(new AutoTool.Message.UndoMessage());
+                    _logger?.LogDebug("Phase 5統合Undoメッセージを転送しました");
+                }
+            });
+            
+            WeakReferenceMessenger.Default.Register<AutoTool.Message.RedoMessage>(this, (r, m) =>
+            {
+                if (MacroPanelViewModel != null)
+                {
+                    WeakReferenceMessenger.Default.Send(new AutoTool.Message.RedoMessage());
+                    _logger?.LogDebug("Phase 5統合Redoメッセージを転送しました");
+                }
+            });
         }
 
-        /// <summary>
-        /// プラグインイベントの設定
-        /// </summary>
         private void SetupPluginEvents()
         {
             if (_pluginService != null)
@@ -231,35 +287,26 @@ namespace AutoTool
             }
         }
 
-        /// <summary>
-        /// プラグイン読み込み時の処理
-        /// </summary>
-        private void OnPluginLoaded(object? sender, PluginLoadedEventArgs e)
+        private void OnPluginLoaded(object? sender, AutoTool.Services.Plugin.PluginLoadedEventArgs e)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
                 UpdatePluginInfo();
-                StatusMessage = $"プラグインが読み込まれました: {e.PluginInfo.Name}";
+                this.StatusMessage = $"プラグインが読み込まれました: {e.PluginInfo.Name}";
                 _logger?.LogInformation("プラグイン読み込み通知: {PluginName}", e.PluginInfo.Name);
             });
         }
 
-        /// <summary>
-        /// プラグインアンロード時の処理
-        /// </summary>
-        private void OnPluginUnloaded(object? sender, PluginUnloadedEventArgs e)
+        private void OnPluginUnloaded(object? sender, AutoTool.Services.Plugin.PluginUnloadedEventArgs e)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
                 UpdatePluginInfo();
-                StatusMessage = $"プラグインがアンロードされました: {e.PluginId}";
+                this.StatusMessage = $"プラグインがアンロードされました: {e.PluginId}";
                 _logger?.LogInformation("プラグインアンロード通知: {PluginId}", e.PluginId);
             });
         }
 
-        /// <summary>
-        /// プラグイン情報の更新
-        /// </summary>
         private void UpdatePluginInfo()
         {
             if (_pluginService != null)
@@ -281,34 +328,23 @@ namespace AutoTool
 
                 PluginCount = plugins.Count;
                 CommandCount = commands.Count;
-
-                _logger?.LogDebug("プラグイン情報更新: {PluginCount}個のプラグイン, {CommandCount}個のコマンド", 
-                    PluginCount, CommandCount);
             }
         }
 
-        /// <summary>
-        /// 設定の読み込み
-        /// </summary>
         private void LoadSettings()
         {
             try
             {
                 if (_configurationService != null)
                 {
-                    // ウィンドウサイズの復元
                     WindowWidth = _configurationService.GetValue("WindowWidth", 1200.0);
                     WindowHeight = _configurationService.GetValue("WindowHeight", 800.0);
                     
-                    // テーマ設定の復元
                     var themeString = _configurationService.GetValue("Theme", "Light");
                     if (Enum.TryParse<AppTheme>(themeString, out var theme))
                     {
                         CurrentTheme = theme;
                     }
-
-                    _logger?.LogDebug("設定読み込み完了: Width={Width}, Height={Height}, Theme={Theme}",
-                        WindowWidth, WindowHeight, CurrentTheme);
                 }
             }
             catch (Exception ex)
@@ -317,15 +353,11 @@ namespace AutoTool
             }
         }
 
-        /// <summary>
-        /// テーマの適用
-        /// </summary>
         private void ApplyTheme()
         {
             try
             {
                 _themeService?.SetTheme(CurrentTheme);
-                _logger?.LogDebug("テーマ適用完了: {Theme}", CurrentTheme);
             }
             catch (Exception ex)
             {
@@ -333,9 +365,6 @@ namespace AutoTool
             }
         }
 
-        /// <summary>
-        /// パフォーマンス監視開始
-        /// </summary>
         private void StartPerformanceMonitoring()
         {
             try
@@ -344,7 +373,6 @@ namespace AutoTool
                 {
                     _performanceService.StartMonitoring();
                     
-                    // パフォーマンス情報の定期更新
                     var timer = new System.Windows.Threading.DispatcherTimer
                     {
                         Interval = TimeSpan.FromSeconds(2)
@@ -352,8 +380,6 @@ namespace AutoTool
                     
                     timer.Tick += (s, e) => UpdatePerformanceInfo();
                     timer.Start();
-
-                    _logger?.LogDebug("パフォーマンス監視開始");
                 }
             }
             catch (Exception ex)
@@ -362,9 +388,6 @@ namespace AutoTool
             }
         }
 
-        /// <summary>
-        /// パフォーマンス情報の更新
-        /// </summary>
         private void UpdatePerformanceInfo()
         {
             try
@@ -384,7 +407,41 @@ namespace AutoTool
 
         #endregion
 
-        #region コマンド
+        #region コマンド（Phase 5統合版）
+        
+        [RelayCommand]
+        private void Undo()
+        {
+            try
+            {
+                _logger?.LogDebug("Phase 5統合MainWindow: 元に戻すコマンド実行開始");
+                WeakReferenceMessenger.Default.Send(new AutoTool.Message.UndoMessage());
+                _logger?.LogDebug("Phase 5統合MainWindow: Undoメッセージ送信完了");
+                this.StatusMessage = "元に戻しました";
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "元に戻すコマンド実行中にエラーが発生しました");
+                this.StatusMessage = $"元に戻す操作エラー: {ex.Message}";
+            }
+        }
+        
+        [RelayCommand]
+        private void Redo()
+        {
+            try
+            {
+                _logger?.LogDebug("Phase 5統合MainWindow: やり直しコマンド実行開始");
+                WeakReferenceMessenger.Default.Send(new AutoTool.Message.RedoMessage());
+                _logger?.LogDebug("Phase 5統合MainWindow: Redoメッセージ送信完了");
+                this.StatusMessage = "やり直しました";
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "やり直しコマンド実行中にエラーが発生しました");
+                this.StatusMessage = $"やり直し操作エラー: {ex.Message}";
+            }
+        }
 
         [RelayCommand]
         private void ChangeTheme(string? themeName)
@@ -395,17 +452,14 @@ namespace AutoTool
                 {
                     CurrentTheme = theme;
                     ApplyTheme();
-                    
-                    // 設定を保存
                     _configurationService?.SetValue("Theme", CurrentTheme.ToString());
-                    
                     _logger?.LogInformation("テーマ変更: {Theme}", CurrentTheme);
                 }
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "テーマ変更中にエラーが発生しました: {Theme}", themeName);
-                StatusMessage = $"テーマ変更エラー: {ex.Message}";
+                this.StatusMessage = $"テーマ変更エラー: {ex.Message}";
             }
         }
 
@@ -415,7 +469,7 @@ namespace AutoTool
             try
             {
                 var aboutMessage = $"""
-                    AutoTool - マクロ自動化ツール
+                    AutoTool - マクロ自動化ツール (Phase 5完全統合版)
                     
                     バージョン: 1.0.0
                     .NET 8.0
@@ -424,12 +478,11 @@ namespace AutoTool
                     利用可能なコマンド: {CommandCount}個
                     
                     開発者: AutoTool Development Team
+                    統合状況: Phase 5完全統合完了
                     """;
 
                 MessageBox.Show(aboutMessage, "AutoToolについて", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
-
-                _logger?.LogDebug("Aboutダイアログを表示しました");
             }
             catch (Exception ex)
             {
@@ -440,17 +493,8 @@ namespace AutoTool
         [RelayCommand]
         private void RefreshPerformance()
         {
-            try
-            {
-                UpdatePerformanceInfo();
-                StatusMessage = "パフォーマンス情報を更新しました";
-                _logger?.LogDebug("パフォーマンス情報を手動更新しました");
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "パフォーマンス情報更新中にエラーが発生しました");
-                StatusMessage = $"パフォーマンス更新エラー: {ex.Message}";
-            }
+            UpdatePerformanceInfo();
+            this.StatusMessage = "パフォーマンス情報を更新しました";
         }
 
         [RelayCommand]
@@ -459,21 +503,19 @@ namespace AutoTool
             try
             {
                 IsLoading = true;
-                StatusMessage = "プラグインを再読み込み中...";
+                this.StatusMessage = "プラグインを再読み込み中...";
 
                 if (_pluginService != null)
                 {
                     await _pluginService.LoadAllPluginsAsync();
                     UpdatePluginInfo();
-                    StatusMessage = $"プラグイン再読み込み完了: {PluginCount}個のプラグイン";
+                    this.StatusMessage = $"プラグイン再読み込み完了: {PluginCount}個のプラグイン";
                 }
-
-                _logger?.LogInformation("プラグイン再読み込み完了");
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "プラグイン再読み込み中にエラーが発生しました");
-                StatusMessage = $"プラグイン再読み込みエラー: {ex.Message}";
+                this.StatusMessage = $"プラグイン再読み込みエラー: {ex.Message}";
             }
             finally
             {
@@ -486,7 +528,7 @@ namespace AutoTool
         {
             try
             {
-                var pluginInfo = "読み込み済みプラグイン:\n\n";
+                var pluginInfo = "読み込み済みプラグイン (Phase 5統合版):\n\n";
                 
                 if (LoadedPlugins.Any())
                 {
@@ -522,8 +564,6 @@ namespace AutoTool
 
                 MessageBox.Show(pluginInfo, "プラグイン情報", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
-
-                _logger?.LogDebug("プラグイン情報を表示しました");
             }
             catch (Exception ex)
             {
@@ -546,22 +586,20 @@ namespace AutoTool
                 if (dialog.ShowDialog() == true)
                 {
                     IsLoading = true;
-                    StatusMessage = $"プラグインを読み込み中: {Path.GetFileName(dialog.FileName)}";
+                    this.StatusMessage = $"プラグインを読み込み中: {Path.GetFileName(dialog.FileName)}";
 
                     if (_pluginService != null)
                     {
                         await _pluginService.LoadPluginAsync(dialog.FileName);
                         UpdatePluginInfo();
-                        StatusMessage = $"プラグイン読み込み完了: {Path.GetFileName(dialog.FileName)}";
+                        this.StatusMessage = $"プラグイン読み込み完了: {Path.GetFileName(dialog.FileName)}";
                     }
-
-                    _logger?.LogInformation("プラグインファイル読み込み完了: {FileName}", dialog.FileName);
                 }
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "プラグインファイル読み込み中にエラーが発生しました");
-                StatusMessage = $"プラグイン読み込みエラー: {ex.Message}";
+                this.StatusMessage = $"プラグイン読み込みエラー: {ex.Message}";
                 MessageBox.Show($"プラグインの読み込みに失敗しました:\n{ex.Message}", 
                     "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -571,13 +609,177 @@ namespace AutoTool
             }
         }
 
+        [RelayCommand]
+        private void OpenFile(string? path = null)
+        {
+            try
+            {
+                if (MacroPanelViewModel == null) return;
+
+                // 実行中は不可
+                if (!IsFileOperationEnable)
+                {
+                    this.StatusMessage = "実行中は開けません";
+                    return;
+                }
+
+                string? filePath = path;
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    var dlg = new OpenFileDialog
+                    {
+                        Title = "マクロファイルを開く",
+                        Filter = "Macro Files (*.macro)|*.macro|All Files (*.*)|*.*",
+                        CheckFileExists = true,
+                        Multiselect = false
+                    };
+                    if (dlg.ShowDialog() == true)
+                    {
+                        filePath = dlg.FileName;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
+
+                // タイプセーフなメソッド呼び出し
+                MacroPanelViewModel.LoadMacroFile(filePath);
+                _currentMacroFilePath = filePath;
+                IsFileOpened = true;
+                AddRecentFile(filePath);
+                this.StatusMessage = $"開きました: {Path.GetFileName(filePath)}";
+                _logger?.LogInformation("マクロファイルを開きました: {File}", filePath);
+
+                // メニュー表示を更新
+                OnPropertyChanged(nameof(MenuItemHeader_SaveFile));
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "マクロファイルの読み込みに失敗しました");
+                MessageBox.Show($"ファイルを開けませんでした:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
+        private void SaveFile()
+        {
+            try
+            {
+                if (MacroPanelViewModel == null) return;
+                if (!IsFileOpened || string.IsNullOrEmpty(_currentMacroFilePath))
+                {
+                    SaveFileAs();
+                    return;
+                }
+
+                // タイプセーフなメソッド呼び出し
+                MacroPanelViewModel.SaveMacroFile(_currentMacroFilePath);
+                this.StatusMessage = $"保存しました: {Path.GetFileName(_currentMacroFilePath)}";
+                _logger?.LogInformation("マクロファイルを保存しました: {File}", _currentMacroFilePath);
+                AddRecentFile(_currentMacroFilePath);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "マクロファイルの保存に失敗しました");
+                MessageBox.Show($"ファイルを保存できませんでした:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
+        private void SaveFileAs()
+        {
+            try
+            {
+                if (MacroPanelViewModel == null) return;
+
+                var dlg = new SaveFileDialog
+                {
+                    Title = "名前を付けて保存",
+                    Filter = "Macro Files (*.macro)|*.macro|All Files (*.*)|*.*",
+                    OverwritePrompt = true,
+                    AddExtension = true,
+                    DefaultExt = ".macro",
+                    FileName = string.IsNullOrEmpty(_currentMacroFilePath) ? "macro1.macro" : Path.GetFileName(_currentMacroFilePath)
+                };
+                if (dlg.ShowDialog() == true)
+                {
+                    // タイプセーフなメソッド呼び出し
+                    MacroPanelViewModel.SaveMacroFile(dlg.FileName);
+                    _currentMacroFilePath = dlg.FileName;
+                    IsFileOpened = true;
+                    AddRecentFile(dlg.FileName);
+                    this.StatusMessage = $"保存しました: {Path.GetFileName(dlg.FileName)}";
+                    _logger?.LogInformation("マクロファイルを保存しました: {File}", dlg.FileName);
+                    OnPropertyChanged(nameof(MenuItemHeader_SaveFile));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "マクロファイルの保存(名前を付けて)に失敗しました");
+                MessageBox.Show($"ファイルを保存できませんでした:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
+        private void Exit()
+        {
+            try
+            {
+                _logger?.LogDebug("アプリケーション終了コマンドを実行します");
+                SaveWindowSettings();
+                Application.Current.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "アプリケーション終了中にエラーが発生しました");
+            }
+        }
+
+        [RelayCommand]
+        private void OpenAppDir()
+        {
+            try
+            {
+                var appPath = AppContext.BaseDirectory;
+                _logger?.LogDebug("アプリケーションディレクトリを開きます: {Path}", appPath);
+                System.Diagnostics.Process.Start("explorer.exe", appPath);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "アプリケーションディレクトリを開く操作に失敗しました");
+                this.StatusMessage = $"フォルダを開けませんでした: {ex.Message}";
+            }
+        }
+
         #endregion
 
-        #region パブリックメソッド
+        #region ヘルパーメソッド
 
-        /// <summary>
-        /// ウィンドウ設定を保存
-        /// </summary>
+        private void AddRecentFile(string path)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(path)) return;
+                var existing = RecentFiles.FirstOrDefault(r => string.Equals(r.FilePath, path, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    RecentFiles.Remove(existing);
+                }
+                RecentFiles.Insert(0, new RecentFileEntry { FileName = Path.GetFileName(path), FilePath = path });
+
+                // 上限 10 件
+                while (RecentFiles.Count > 10)
+                {
+                    RecentFiles.RemoveAt(RecentFiles.Count - 1);
+                }
+
+                OnPropertyChanged(nameof(RecentFiles));
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "最近使ったファイルリスト更新でエラー");
+            }
+        }
+
         public void SaveWindowSettings()
         {
             try
@@ -594,14 +796,10 @@ namespace AutoTool
             }
         }
 
-        /// <summary>
-        /// リソースのクリーンアップ
-        /// </summary>
         public void Cleanup()
         {
             try
             {
-                // プラグインイベントの解除
                 if (_pluginService != null)
                 {
                     _pluginService.PluginLoaded -= OnPluginLoaded;
@@ -611,7 +809,7 @@ namespace AutoTool
                 _performanceService?.StopMonitoring();
                 WeakReferenceMessenger.Default.UnregisterAll(this);
                 
-                _logger?.LogDebug("MainWindowViewModel クリーンアップ完了");
+                _logger?.LogDebug("Phase 5完全統合MainWindowViewModel クリーンアップ完了");
             }
             catch (Exception ex)
             {
@@ -619,57 +817,30 @@ namespace AutoTool
             }
         }
 
-        #endregion
-
-        #region ヘルパーメソッド
-
-        /// <summary>
-        /// デザインモードかどうかを判定
-        /// </summary>
         private static bool IsInDesignMode()
-        {
-            return System.ComponentModel.DesignerProperties.GetIsInDesignMode(new DependencyObject());
-        }
+            => System.ComponentModel.DesignerProperties.GetIsInDesignMode(new DependencyObject());
 
         #endregion
     }
 
-    #region メッセージクラス
-
-    /// <summary>
-    /// アプリケーション終了メッセージ
-    /// </summary>
+    #region メッセージクラス（Phase 5統合版）
     public class ExitApplicationMessage
     {
         public string Reason { get; }
-
-        public ExitApplicationMessage(string reason = "")
-        {
-            Reason = reason;
-        }
+        public ExitApplicationMessage(string reason = "") => Reason = reason;
     }
 
-    /// <summary>
-    /// ステータスメッセージ
-    /// </summary>
-    public class StatusMessage
+    public class AppStatusMessage
     {
         public string Message { get; }
-
-        public StatusMessage(string message)
-        {
-            Message = message;
-        }
+        public AppStatusMessage(string message) => Message = message;
     }
-
+    
+    // Phase 5: 重複削除（AutoTool.Message.UndoMessage/RedoMessageを使用）
     #endregion
 
-    #region デザインタイム用クラス
-
-    /// <summary>
-    /// デザインタイム用プラグイン情報
-    /// </summary>
-    public class DesignTimePluginInfo : IPluginInfo
+    #region デザインタイム用クラス（Phase 5統合版）
+    public class DesignTimePluginInfo : AutoTool.Services.Plugin.IPluginInfo
     {
         public string Id { get; }
         public string Name { get; }
@@ -677,8 +848,8 @@ namespace AutoTool
         public string Description { get; }
         public string Author { get; }
         public DateTime LoadedAt { get; set; }
-        public PluginStatus Status { get; set; }
-
+        public AutoTool.Services.Plugin.PluginStatus Status { get; set; }
+        
         public DesignTimePluginInfo(string id, string name, string version)
         {
             Id = id;
@@ -687,9 +858,8 @@ namespace AutoTool
             Description = "デザインタイム用ダミープラグイン";
             Author = "Design Time";
             LoadedAt = DateTime.Now;
-            Status = PluginStatus.Active;
+            Status = AutoTool.Services.Plugin.PluginStatus.Active;
         }
     }
-
     #endregion
 }

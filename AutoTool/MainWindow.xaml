@@ -4,112 +4,149 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AutoTool"
-        xmlns:macroPanels="clr-namespace:MacroPanels.View;assembly=MacroPanels"
         xmlns:vm="clr-namespace:AutoTool.ViewModel"
         xmlns:panel="clr-namespace:AutoTool.View"
-        mc:Ignorable="d"
+        xmlns:view="clr-namespace:AutoTool.View"
         xmlns:converters="clr-namespace:AutoTool.View.Converters"
-        Title="{Binding AutoToolTitle}"
-        MinWidth="600" MinHeight="400">
-    <!-- Width/Heightを削除し、MinWidth/MinHeightを追加 -->
+        mc:Ignorable="d"
+        Title="{Binding Title}" 
+        MinWidth="600" MinHeight="400"
+        Height="{Binding WindowHeight, Mode=TwoWay}" 
+        Width="{Binding WindowWidth, Mode=TwoWay}"
+        WindowState="{Binding WindowState, Mode=TwoWay}"
+        Closing="Window_Closing">
 
     <Window.Resources>
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
         <converters:RunningStatusConverter x:Key="RunningStatusConverter"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </Window.Resources>
 
-    <!-- キーボードショートカットの設定 -->
+    <!-- キーボードショートカットの設定 (Phase 5完全統合対応) -->
     <Window.InputBindings>
         <!-- ファイル操作 -->
         <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveFileCommand}"/>
         <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding SaveFileAsCommand}"/>
         <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenFileCommand}"/>
-        
-        <!-- 編集操作 -->
-        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}"/>
-        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}"/>
-        <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}"/>
-        
-        <!-- 今後拡張可能なショートカット -->
-        <!-- <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding NewFileCommand}"/> -->
-        <!-- <KeyBinding Key="F5" Command="{Binding RefreshCommand}"/> -->
+        <!-- Undo/Redo操作 (Phase 5完全統合DI対応) -->
+        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}" />
+        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}" />
+        <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}" />
     </Window.InputBindings>
-
+    
     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- メニューバー (Phase 5完全統合ViewModelサポート) -->
         <Menu Grid.Row="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
-            <MenuItem DockPanel.Dock="Left" Header="ファイル">
-                <MenuItem Header="開く (_O)" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}" InputGestureText="Ctrl+O"/>
-                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFile, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOpened}" InputGestureText="Ctrl+S"/>
-                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFileAs, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileAsCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}" InputGestureText="Ctrl+Shift+S"/>
+            <MenuItem Header="ファイル(_F)">
+                <MenuItem Header="開く(_O)" Command="{Binding OpenFileCommand}" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="{Binding MenuItemHeader_SaveFile}" Command="{Binding SaveFileCommand}" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="{Binding MenuItemHeader_SaveFileAs}" Command="{Binding SaveFileAsCommand}" InputGestureText="Ctrl+Shift+S"/>
                 <Separator/>
-                <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}" IsEnabled="{Binding IsFileOperationEnable}">
+                <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}">
                     <MenuItem.ItemTemplate>
                         <DataTemplate>
                             <MenuItem Header="{Binding FileName}" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding FilePath}" />
                         </DataTemplate>
                     </MenuItem.ItemTemplate>
                 </MenuItem>
+                <Separator/>
+                <MenuItem Header="設定" />
+                <Separator/>
+                <MenuItem Header="終了(_X)" Command="{Binding ExitCommand}" InputGestureText="Alt+F4"/>
             </MenuItem>
-            <MenuItem Header="編集">
-                <MenuItem Header="元に戻す (_U)" Command="{Binding UndoCommand}" InputGestureText="Ctrl+Z">
-                    <MenuItem.ToolTip>
-                        <TextBlock Text="{Binding CommandHistory.UndoDescription, StringFormat='元に戻す: {0}'}"/>
-                    </MenuItem.ToolTip>
-                </MenuItem>
-                <MenuItem Header="やり直し (_R)" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y">
-                    <MenuItem.ToolTip>
-                        <TextBlock Text="{Binding CommandHistory.RedoDescription, StringFormat='やり直し: {0}'}"/>
-                    </MenuItem.ToolTip>
-                </MenuItem>
+            <MenuItem Header="編集(_E)">
+                <!-- Phase 5完全統合DI対応Undo/Redo -->
+                <MenuItem Header="元に戻す(_U)" Command="{Binding UndoCommand}" InputGestureText="Ctrl+Z"/>
+                <MenuItem Header="やり直し(_R)" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y"/>
+                <Separator/>
+                <MenuItem Header="切り取り(_T)" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
+                <MenuItem Header="コピー(_C)" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
+                <MenuItem Header="貼り付け(_P)" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
+                <MenuItem Header="削除(_D)" Command="ApplicationCommands.Delete" InputGestureText="Delete"/>
             </MenuItem>
-            <MenuItem DockPanel.Dock="Right" Header="ヘルプ" HorizontalAlignment="Right">
-                <MenuItem Header="アプリのフォルダを開く" Command="{Binding OpenAppDirCommand}"/>
-                <MenuItem Header="バージョン情報" Command="{Binding VersionInfoCommand}"/>
+            <MenuItem Header="表示(_V)">
+                <MenuItem Header="テーマ(_T)">
+                    <MenuItem Header="ライト" Command="{Binding ChangeThemeCommand}" CommandParameter="Light" />
+                    <MenuItem Header="ダーク" Command="{Binding ChangeThemeCommand}" CommandParameter="Dark" />
+                    <MenuItem Header="システム設定に合わせる" Command="{Binding ChangeThemeCommand}" CommandParameter="Auto" />
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="パフォーマンス情報を更新" Command="{Binding RefreshPerformanceCommand}" />
+            </MenuItem>
+            <MenuItem Header="プラグイン(_P)">
+                <MenuItem Header="プラグインの読み込み..." Command="{Binding LoadPluginFileCommand}" />
+                <MenuItem Header="全プラグインの再読み込み" Command="{Binding RefreshPluginsCommand}" />
+                <Separator/>
+                <MenuItem Header="プラグイン情報の表示" Command="{Binding ShowPluginInfoCommand}" />
+            </MenuItem>
+            <MenuItem Header="ツール(_T)">
+                <MenuItem Header="アプリケーションフォルダを開く" Command="{Binding OpenAppDirCommand}" />
+            </MenuItem>
+            <MenuItem Header="ヘルプ(_H)">
+                <MenuItem Header="バージョン情報(_A)..." Command="{Binding ShowAboutCommand}" />
             </MenuItem>
         </Menu>
 
-        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <TabItem Header="マクロ">
-                <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <!-- ツールバー (Phase 5完全統合ViewModel対応) -->
+        <ToolBarTray Grid.Row="1">
+            <ToolBar IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
+                <Button Content="開く" Command="{Binding OpenFileCommand}" ToolTip="ファイルを開く (Ctrl+O)" />
+                <Button Content="保存" Command="{Binding SaveFileCommand}" ToolTip="ファイルを保存 (Ctrl+S)" />
+                <Separator />
+                <!-- Phase 5完全統合DI対応Undo/Redo -->
+                <Button Content="元に戻す" Command="{Binding UndoCommand}" ToolTip="元に戻す (Ctrl+Z)"/>
+                <Button Content="やり直し" Command="{Binding RedoCommand}" ToolTip="やり直し (Ctrl+Y)"/>
+            </ToolBar>
+        </ToolBarTray>
+
+        <!-- メインコンテンツ (Phase 5完全統合対応) -->
+        <TabControl Grid.Row="2" SelectedIndex="{Binding SelectedTabIndex}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TabItem Header="マクロ (Phase 5完全統合)">
+                <Grid>
+                    <!-- ロード中インジケータ -->
+                    <Border Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="Phase 5完全統合ViewModel読み込み中..." Foreground="White" FontSize="20" HorizontalAlignment="Center" />
+                            <ProgressBar IsIndeterminate="True" Width="200" Height="20" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- メインコンテンツ (Phase 5完全統合MacroPanelViewModel使用) -->
+                    <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                </Grid>
             </TabItem>
-            <!--
-            <TabItem Header="モニタリング">
-                <panel:MonitoringPanel DataContext="{Binding MacroPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </TabItem>
-            -->
         </TabControl>
 
-        <!-- ステータスバー -->
-        <StatusBar Grid.Row="2" Height="25">
+        <!-- ステータスバー (Phase 5完全統合対応) -->
+        <StatusBar Grid.Row="3" Height="25">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusMessage}" />
             </StatusBarItem>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Undo: " Visibility="{Binding CommandHistory.CanUndo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text="{Binding CommandHistory.UndoDescription}" FontStyle="Italic" 
-                               Visibility="{Binding CommandHistory.CanUndo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text=" | " Margin="5,0" 
-                               Visibility="{Binding CommandHistory.CanRedo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text="Redo: " Visibility="{Binding CommandHistory.CanRedo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text="{Binding CommandHistory.RedoDescription}" FontStyle="Italic" 
-                               Visibility="{Binding CommandHistory.CanRedo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                </StackPanel>
-            </StatusBarItem>
+            <Separator />
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="メモリ: " />
+                    <TextBlock Text="{Binding MemoryUsage}" Margin="0,0,10,0" />
+                    <TextBlock Text="CPU: " />
+                    <TextBlock Text="{Binding CpuUsage}" Margin="0,0,10,0" />
                     <TextBlock Text="実行状態: " />
-                    <TextBlock Text="{Binding IsRunning, Converter={StaticResource RunningStatusConverter}}" />
+                    <!-- Phase 5完全統合ViewModel対応 -->
+                    <TextBlock Text="{Binding MacroPanelViewModel.IsRunning, Converter={StaticResource RunningStatusConverter}}" Margin="0,0,10,0" />
+                    <TextBlock Text="プラグイン: " />
+                    <TextBlock Text="{Binding PluginCount}" Margin="0,0,5,0" />
+                    <TextBlock Text="個 / コマンド: " />
+                    <TextBlock Text="{Binding CommandCount}" Margin="0,0,5,0" />
+                    <TextBlock Text="個 (Phase 5完全統合)" />
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>
-
     </Grid>
 </Window>

@@ -1,360 +1,235 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Loader;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using AutoTool.Services.Configuration;
-using MacroPanels.Command.Interface;
-using MacroPanels.Plugin;
+using AutoTool.Services.Plugin;
 
 namespace AutoTool.Services.Plugin
 {
     /// <summary>
-    /// プラグインサービスの実装
+    /// Phase 5完全統合版：プラグインサービス
+    /// MacroPanels依存を削除し、AutoTool統合版のみ使用
     /// </summary>
-    public class PluginService : MacroPanels.Plugin.IPluginService
+    public class PluginService : AutoTool.Services.Plugin.IPluginService
     {
         private readonly ILogger<PluginService> _logger;
-        private readonly IConfigurationService _configurationService;
-        private readonly ConcurrentDictionary<string, LoadedPlugin> _loadedPlugins;
-        private readonly ConcurrentDictionary<string, MacroPanels.Plugin.IPluginCommandInfo> _availableCommands;
-        private readonly string _pluginsDirectory;
+        private readonly ConcurrentDictionary<string, IPlugin> _loadedPlugins;
+        private readonly ConcurrentDictionary<string, IPluginCommandInfo> _availableCommands;
 
-        public event EventHandler<MacroPanels.Plugin.PluginLoadedEventArgs>? PluginLoaded;
-        public event EventHandler<MacroPanels.Plugin.PluginUnloadedEventArgs>? PluginUnloaded;
+        // Phase 5統合版イベント
+        public event EventHandler<PluginLoadedEventArgs>? PluginLoaded;
+        public event EventHandler<PluginUnloadedEventArgs>? PluginUnloaded;
 
-        public PluginService(ILogger<PluginService> logger, IConfigurationService configurationService)
+        public PluginService(ILogger<PluginService> logger)
         {
-            _logger = logger;
-            _configurationService = configurationService;
-            _loadedPlugins = new ConcurrentDictionary<string, LoadedPlugin>();
-            _availableCommands = new ConcurrentDictionary<string, MacroPanels.Plugin.IPluginCommandInfo>();
-            
-            _pluginsDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "AutoTool", "Plugins");
-
-            EnsurePluginDirectoryExists();
-            _logger.LogInformation("PluginService 初期化完了: {PluginDirectory}", _pluginsDirectory);
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _loadedPlugins = new ConcurrentDictionary<string, IPlugin>();
+            _availableCommands = new ConcurrentDictionary<string, IPluginCommandInfo>();
         }
 
-        /// <summary>
-        /// プラグインを読み込み
-        /// </summary>
         public async Task LoadPluginAsync(string pluginPath)
         {
-            if (string.IsNullOrWhiteSpace(pluginPath))
-                throw new ArgumentException("Plugin path cannot be null or empty", nameof(pluginPath));
-
-            if (!File.Exists(pluginPath))
-                throw new FileNotFoundException($"Plugin file not found: {pluginPath}");
-
             try
             {
-                _logger.LogInformation("プラグインを読み込み中: {PluginPath}", pluginPath);
+                _logger.LogInformation("Phase 5統合版プラグイン読み込み開始: {PluginPath}", pluginPath);
 
-                // アセンブリ読み込みコンテキストを作成
-                var loadContext = new AssemblyLoadContext(Path.GetFileNameWithoutExtension(pluginPath), true);
-                var assembly = loadContext.LoadFromAssemblyPath(pluginPath);
-
-                // IPlugin実装型を検索
-                var pluginTypes = assembly.GetTypes()
-                    .Where(t => typeof(MacroPanels.Plugin.IPlugin).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
-                    .ToList();
-
-                if (!pluginTypes.Any())
+                if (string.IsNullOrEmpty(pluginPath) || !File.Exists(pluginPath))
                 {
-                    _logger.LogWarning("プラグインアセンブリにIPlugin実装型が見つかりません: {PluginPath}", pluginPath);
-                    return;
+                    throw new FileNotFoundException($"プラグインファイルが見つかりません: {pluginPath}");
                 }
+
+                var assembly = Assembly.LoadFrom(pluginPath);
+                var pluginTypes = assembly.GetTypes()
+                    .Where(t => t.IsClass && !t.IsAbstract && typeof(IPlugin).IsAssignableFrom(t))
+                    .ToList();
 
                 foreach (var pluginType in pluginTypes)
                 {
-                    await LoadPluginInstance(pluginType, loadContext, pluginPath);
-                }
+                    try
+                    {
+                        var plugin = (IPlugin)Activator.CreateInstance(pluginType)!;
+                        await plugin.InitializeAsync();
 
-                _logger.LogInformation("プラグイン読み込み完了: {PluginPath}, 読み込み済み型数: {TypeCount}", 
-                    pluginPath, pluginTypes.Count);
+                        _loadedPlugins.TryAdd(plugin.Info.Id, plugin);
+                        
+                        // イベント発火
+                        PluginLoaded?.Invoke(this, new PluginLoadedEventArgs(plugin.Info));
+                        
+                        _logger.LogInformation("Phase 5統合版プラグイン読み込み完了: {PluginId}", plugin.Info.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "プラグインインスタンス作成エラー: {PluginType}", pluginType.Name);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "プラグイン読み込み中にエラーが発生: {PluginPath}", pluginPath);
+                _logger.LogError(ex, "Phase 5統合版プラグイン読み込みエラー: {PluginPath}", pluginPath);
                 throw;
             }
         }
 
-        /// <summary>
-        /// 全てのプラグインを読み込み
-        /// </summary>
         public async Task LoadAllPluginsAsync()
         {
             try
             {
-                _logger.LogInformation("全プラグインの読み込みを開始");
+                _logger.LogInformation("Phase 5統合版全プラグイン読み込み開始");
 
-                if (!Directory.Exists(_pluginsDirectory))
+                var pluginDirectory = Path.Combine(AppContext.BaseDirectory, "Plugins");
+                if (!Directory.Exists(pluginDirectory))
                 {
-                    _logger.LogInformation("プラグインディレクトリが存在しません: {Directory}", _pluginsDirectory);
+                    _logger.LogWarning("プラグインディレクトリが存在しません: {PluginDirectory}", pluginDirectory);
                     return;
                 }
 
-                var pluginFiles = Directory.GetFiles(_pluginsDirectory, "*.dll", SearchOption.AllDirectories);
-                _logger.LogInformation("プラグインファイル発見: {Count}個", pluginFiles.Length);
-
-                var loadTasks = pluginFiles.Select(LoadPluginAsync);
-                await Task.WhenAll(loadTasks);
-
-                _logger.LogInformation("全プラグインの読み込み完了: {LoadedCount}個", _loadedPlugins.Count);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "全プラグイン読み込み中にエラーが発生しました");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// プラグインをアンロード
-        /// </summary>
-        public async Task UnloadPluginAsync(string pluginId)
-        {
-            if (string.IsNullOrWhiteSpace(pluginId))
-                throw new ArgumentException("Plugin ID cannot be null or empty", nameof(pluginId));
-
-            try
-            {
-                if (_loadedPlugins.TryRemove(pluginId, out var loadedPlugin))
+                var pluginFiles = Directory.GetFiles(pluginDirectory, "*.dll", SearchOption.AllDirectories);
+                foreach (var pluginFile in pluginFiles)
                 {
-                    _logger.LogInformation("プラグインをアンロード中: {PluginId}", pluginId);
-
-                    loadedPlugin.Info.Status = MacroPanels.Plugin.PluginStatus.Unloading;
-
-                    // コマンドプラグインの場合、コマンド情報も削除
-                    if (loadedPlugin.Instance is MacroPanels.Plugin.ICommandPlugin commandPlugin)
-                    {
-                        var commandsToRemove = _availableCommands.Where(kvp => kvp.Value.PluginId == pluginId)
-                            .Select(kvp => kvp.Key)
-                            .ToList();
-
-                        foreach (var commandId in commandsToRemove)
-                        {
-                            _availableCommands.TryRemove(commandId, out _);
-                        }
-
-                        _logger.LogDebug("プラグインコマンドを削除: {CommandCount}個", commandsToRemove.Count);
-                    }
-
-                    // プラグインのシャットダウン処理
                     try
                     {
-                        await loadedPlugin.Instance.ShutdownAsync();
+                        await LoadPluginAsync(pluginFile);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "プラグインシャットダウン中にエラー: {PluginId}", pluginId);
+                        _logger.LogWarning(ex, "プラグインファイル読み込みスキップ: {PluginFile}", pluginFile);
                     }
-
-                    // アセンブリ読み込みコンテキストをアンロード
-                    loadedPlugin.LoadContext?.Unload();
-
-                    PluginUnloaded?.Invoke(this, new MacroPanels.Plugin.PluginUnloadedEventArgs(pluginId));
-                    _logger.LogInformation("プラグインアンロード完了: {PluginId}", pluginId);
                 }
-                else
-                {
-                    _logger.LogWarning("アンロード対象のプラグインが見つかりません: {PluginId}", pluginId);
-                }
+
+                _logger.LogInformation("Phase 5統合版全プラグイン読み込み完了: {Count}個", _loadedPlugins.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "プラグインアンロード中にエラー: {PluginId}", pluginId);
+                _logger.LogError(ex, "Phase 5統合版全プラグイン読み込みエラー");
                 throw;
             }
         }
 
-        /// <summary>
-        /// 読み込み済みプラグイン一覧を取得
-        /// </summary>
-        public IEnumerable<MacroPanels.Plugin.IPluginInfo> GetLoadedPlugins()
+        public async Task UnloadPluginAsync(string pluginId)
+        {
+            try
+            {
+                if (_loadedPlugins.TryRemove(pluginId, out var plugin))
+                {
+                    await plugin.ShutdownAsync();
+                    
+                    // プラグイン関連のコマンドも削除
+                    var commandsToRemove = _availableCommands
+                        .Where(kvp => kvp.Value.PluginId == pluginId)
+                        .Select(kvp => kvp.Key)
+                        .ToList();
+
+                    foreach (var commandId in commandsToRemove)
+                    {
+                        _availableCommands.TryRemove(commandId, out _);
+                    }
+
+                    // イベント発火
+                    PluginUnloaded?.Invoke(this, new PluginUnloadedEventArgs(pluginId));
+                    
+                    _logger.LogInformation("Phase 5統合版プラグインアンロード完了: {PluginId}", pluginId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Phase 5統合版プラグインアンロードエラー: {PluginId}", pluginId);
+                throw;
+            }
+        }
+
+        public IEnumerable<IPluginInfo> GetLoadedPlugins()
         {
             return _loadedPlugins.Values.Select(p => p.Info).ToList();
         }
 
-        /// <summary>
-        /// プラグインを取得
-        /// </summary>
-        public T? GetPlugin<T>(string pluginId) where T : class, MacroPanels.Plugin.IPlugin
+        public T? GetPlugin<T>(string pluginId) where T : class, IPlugin
         {
-            if (_loadedPlugins.TryGetValue(pluginId, out var loadedPlugin))
+            if (_loadedPlugins.TryGetValue(pluginId, out var plugin))
             {
-                return loadedPlugin.Instance as T;
+                return plugin as T;
             }
             return null;
         }
 
-        /// <summary>
-        /// コマンドプラグインからコマンドを作成
-        /// </summary>
-        public ICommand? CreatePluginCommand(string pluginId, string commandId, ICommand? parent, object? settings)
+        public object? CreatePluginCommand(string pluginId, string commandId, object? parent, object? settings)
         {
             try
             {
-                var plugin = GetPlugin<MacroPanels.Plugin.ICommandPlugin>(pluginId);
-                if (plugin == null)
+                _logger.LogDebug("Phase 5統合版プラグインコマンド作成: {PluginId}.{CommandId}", pluginId, commandId);
+
+                if (_availableCommands.TryGetValue($"{pluginId}.{commandId}", out var commandInfo))
                 {
-                    _logger.LogWarning("コマンドプラグインが見つかりません: {PluginId}", pluginId);
-                    return null;
+                    var command = Activator.CreateInstance(commandInfo.CommandType);
+                    _logger.LogDebug("Phase 5統合版プラグインコマンド作成完了: {CommandType}", commandInfo.CommandType.Name);
+                    return command;
                 }
 
-                if (!plugin.IsCommandAvailable(commandId))
-                {
-                    _logger.LogWarning("コマンドが利用できません: {PluginId}.{CommandId}", pluginId, commandId);
-                    return null;
-                }
-
-                var command = plugin.CreateCommand(commandId, parent, settings);
-                _logger.LogDebug("プラグインコマンド作成成功: {PluginId}.{CommandId}", pluginId, commandId);
-                
-                return command;
+                _logger.LogWarning("Phase 5統合版プラグインコマンドが見つかりません: {PluginId}.{CommandId}", pluginId, commandId);
+                return null;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "プラグインコマンド作成エラー: {PluginId}.{CommandId}", pluginId, commandId);
+                _logger.LogError(ex, "Phase 5統合版プラグインコマンド作成エラー: {PluginId}.{CommandId}", pluginId, commandId);
                 return null;
             }
         }
 
-        /// <summary>
-        /// 利用可能なプラグインコマンドを取得
-        /// </summary>
-        public IEnumerable<MacroPanels.Plugin.IPluginCommandInfo> GetAvailablePluginCommands()
+        public IEnumerable<IPluginCommandInfo> GetAvailablePluginCommands()
         {
             return _availableCommands.Values.ToList();
         }
 
-        /// <summary>
-        /// プラグインインスタンスを読み込み
-        /// </summary>
-        private async Task LoadPluginInstance(Type pluginType, AssemblyLoadContext loadContext, string pluginPath)
+        public void Dispose()
         {
             try
             {
-                _logger.LogDebug("プラグインインスタンスを作成: {PluginType}", pluginType.FullName);
+                _logger.LogInformation("Phase 5統合版PluginService のDispose処理を開始します");
 
-                var pluginInstance = Activator.CreateInstance(pluginType) as MacroPanels.Plugin.IPlugin;
-                if (pluginInstance == null)
-                {
-                    _logger.LogWarning("プラグインインスタンスの作成に失敗: {PluginType}", pluginType.FullName);
-                    return;
-                }
+                var unloadTasks = _loadedPlugins.Keys.Select(pluginId => UnloadPluginAsync(pluginId));
+                Task.WaitAll(unloadTasks.ToArray(), TimeSpan.FromSeconds(30));
 
-                var pluginInfo = new PluginInfo
-                {
-                    Id = pluginInstance.Info.Id,
-                    Name = pluginInstance.Info.Name,
-                    Version = pluginInstance.Info.Version,
-                    Description = pluginInstance.Info.Description,
-                    Author = pluginInstance.Info.Author,
-                    LoadedAt = DateTime.UtcNow,
-                    Status = MacroPanels.Plugin.PluginStatus.Initializing
-                };
+                _loadedPlugins.Clear();
+                _availableCommands.Clear();
 
-                var loadedPlugin = new LoadedPlugin
-                {
-                    Instance = pluginInstance,
-                    Info = pluginInfo,
-                    LoadContext = loadContext,
-                    AssemblyPath = pluginPath
-                };
-
-                // プラグイン初期化
-                await pluginInstance.InitializeAsync();
-                pluginInfo.Status = MacroPanels.Plugin.PluginStatus.Active;
-
-                // コマンドプラグインの場合、コマンド情報を登録
-                if (pluginInstance is MacroPanels.Plugin.ICommandPlugin commandPlugin)
-                {
-                    RegisterCommandPluginCommands(commandPlugin);
-                }
-
-                _loadedPlugins[pluginInfo.Id] = loadedPlugin;
-
-                PluginLoaded?.Invoke(this, new MacroPanels.Plugin.PluginLoadedEventArgs(pluginInfo));
-                _logger.LogInformation("プラグインインスタンス作成完了: {PluginId} ({PluginName})", 
-                    pluginInfo.Id, pluginInfo.Name);
+                _logger.LogInformation("Phase 5統合版PluginService のDispose処理が完了しました");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "プラグインインスタンス作成エラー: {PluginType}", pluginType.FullName);
-                throw;
+                _logger.LogError(ex, "Phase 5統合版PluginService のDispose処理中にエラーが発生しました");
             }
         }
+    }
 
-        /// <summary>
-        /// コマンドプラグインのコマンドを登録
-        /// </summary>
-        private void RegisterCommandPluginCommands(MacroPanels.Plugin.ICommandPlugin commandPlugin)
-        {
-            try
-            {
-                var commands = commandPlugin.GetAvailableCommands();
-                foreach (var commandInfo in commands)
-                {
-                    var fullCommandId = $"{commandInfo.PluginId}.{commandInfo.Id}";
-                    _availableCommands[fullCommandId] = commandInfo;
-                    
-                    _logger.LogDebug("プラグインコマンド登録: {FullCommandId} ({Name})", 
-                        fullCommandId, commandInfo.Name);
-                }
+    /// <summary>
+    /// Phase 5統合版：プラグイン情報実装クラス
+    /// </summary>
+    public class PluginInfo : IPluginInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Author { get; set; } = string.Empty;
+        public DateTime LoadedAt { get; set; } = DateTime.Now;
+        public PluginStatus Status { get; set; } = PluginStatus.NotLoaded;
+    }
 
-                _logger.LogInformation("コマンドプラグイン登録完了: {PluginId}, コマンド数: {CommandCount}", 
-                    commandPlugin.Info.Id, commands.Count());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンドプラグイン登録エラー: {PluginId}", commandPlugin.Info.Id);
-            }
-        }
-
-        /// <summary>
-        /// プラグインディレクトリが存在することを確認
-        /// </summary>
-        private void EnsurePluginDirectoryExists()
-        {
-            if (!Directory.Exists(_pluginsDirectory))
-            {
-                Directory.CreateDirectory(_pluginsDirectory);
-                _logger.LogDebug("プラグインディレクトリを作成: {Directory}", _pluginsDirectory);
-            }
-        }
-
-        /// <summary>
-        /// 読み込み済みプラグイン情報
-        /// </summary>
-        private class LoadedPlugin
-        {
-            public MacroPanels.Plugin.IPlugin Instance { get; set; } = null!;
-            public PluginInfo Info { get; set; } = null!;
-            public AssemblyLoadContext? LoadContext { get; set; }
-            public string AssemblyPath { get; set; } = string.Empty;
-        }
-
-        /// <summary>
-        /// プラグイン情報の実装
-        /// </summary>
-        private class PluginInfo : MacroPanels.Plugin.IPluginInfo
-        {
-            public string Id { get; set; } = string.Empty;
-            public string Name { get; set; } = string.Empty;
-            public string Version { get; set; } = string.Empty;
-            public string Description { get; set; } = string.Empty;
-            public string Author { get; set; } = string.Empty;
-            public DateTime LoadedAt { get; set; }
-            public MacroPanels.Plugin.PluginStatus Status { get; set; }
-        }
+    /// <summary>
+    /// Phase 5統合版：プラグインコマンド情報実装クラス
+    /// </summary>
+    public class PluginCommandInfo : IPluginCommandInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string PluginId { get; set; } = string.Empty;
+        public Type CommandType { get; set; } = typeof(object);
+        public Type? SettingsType { get; set; }
+        public string? IconPath { get; set; }
     }
 }

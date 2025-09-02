@@ -1,88 +1,80 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Messaging;
-using MacroPanels.List.Class;
-using System.Windows;
-using MacroPanels.Command.Class;
-using MacroPanels.Command.Interface;
-using MacroPanels.Command.Message;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
-using MacroPanels.ViewModel.Shared;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
-using AutoTool.Services;
-using AutoTool.Services.Performance;
-using MacroPanels.ViewModel;
-using MacroPanels.Message;
-using MacroPanels.Model.MacroFactory;
-using MacroPanels.Model.List.Interface;
-using LogHelper;
+using AutoTool.Model.List.Interface;
+using AutoTool.Model.List.Class;
+using AutoTool.Model.CommandDefinition;
+using AutoTool.ViewModel.Shared;
+using AutoTool.ViewModel.Panels;
+using AutoTool.Message;
+using AutoTool.Model.MacroFactory;
+using System.Threading;
+using System.Diagnostics;
 
 namespace AutoTool.ViewModel
 {
     /// <summary>
-    /// ViewModelファクトリのインターフェース
+    /// Phase 5完全統合版：ViewModelファクトリインターフェース
     /// </summary>
     public interface IViewModelFactory
     {
-        T Create<T>() where T : class;
-        ButtonPanelViewModel CreateButtonPanelViewModel();
-        ListPanelViewModel CreateListPanelViewModel();
-        EditPanelViewModel CreateEditPanelViewModel();
-        LogPanelViewModel CreateLogPanelViewModel();
-        FavoritePanelViewModel CreateFavoritePanelViewModel();
+        AutoTool.ViewModel.Panels.ButtonPanelViewModel CreateButtonPanelViewModel();
+        AutoTool.ViewModel.Panels.ListPanelViewModel CreateListPanelViewModel();
+        AutoTool.ViewModel.Panels.EditPanelViewModel CreateEditPanelViewModel();
+        AutoTool.ViewModel.Panels.LogPanelViewModel CreateLogPanelViewModel();
+        AutoTool.ViewModel.Panels.FavoritePanelViewModel CreateFavoritePanelViewModel();
     }
 
     /// <summary>
-    /// メッセージサービスのインターフェース
-    /// </summary>
-    public interface IMessageService
-    {
-        void ShowError(string message, string title = "エラー");
-        void ShowWarning(string message, string title = "警告");
-        void ShowInformation(string message, string title = "情報");
-        bool ShowConfirmation(string message, string title = "確認");
-    }
-
-    /// <summary>
-    /// マクロパネルのViewModel（DI完全対応版）
-    /// コマンド追加・削除・編集・移動機能をUndo/Redo対応で実装
+    /// Phase 5完全統合版：マクロパネルビューモデル（実際の実行機能付き）
+    /// MacroPanels依存を完全削除し、AutoTool統合版のみ使用
     /// </summary>
     public partial class MacroPanelViewModel : ObservableObject
     {
+        #region プライベートフィールド
+
         private readonly ILogger<MacroPanelViewModel> _logger;
         private readonly IViewModelFactory _viewModelFactory;
-        private readonly IMessageService _messageService;
-        private readonly IPerformanceService _performanceService;
-        private CancellationTokenSource? _cts;
-        private MacroPanels.ViewModel.Shared.CommandHistoryManager? _commandHistory;
+        private readonly CommandHistoryManager _commandHistory;
+        private CancellationTokenSource? _cancellationTokenSource;
+
+        // Phase 5統合版パネルViewModels
+        private AutoTool.ViewModel.Panels.ButtonPanelViewModel? _buttonPanelViewModel;
+        private AutoTool.ViewModel.Panels.ListPanelViewModel? _listPanelViewModel;
+        private AutoTool.ViewModel.Panels.EditPanelViewModel? _editPanelViewModel;
+        private AutoTool.ViewModel.Panels.LogPanelViewModel? _logPanelViewModel;
+        private AutoTool.ViewModel.Panels.FavoritePanelViewModel? _favoritePanelViewModel;
+
+        #endregion
+
+        #region パブリックプロパティ
+
+        // Phase 5統合版パネルViewModels公開プロパティ
+        public AutoTool.ViewModel.Panels.ButtonPanelViewModel? ButtonPanelViewModel => _buttonPanelViewModel;
+        public AutoTool.ViewModel.Panels.ListPanelViewModel? ListPanelViewModel => _listPanelViewModel;
+        public AutoTool.ViewModel.Panels.EditPanelViewModel? EditPanelViewModel => _editPanelViewModel;
+        public AutoTool.ViewModel.Panels.LogPanelViewModel? LogPanelViewModel => _logPanelViewModel;
+        public AutoTool.ViewModel.Panels.FavoritePanelViewModel? FavoritePanelViewModel => _favoritePanelViewModel;
+
+        // Phase 5統合版共有サービス
+        public CommandHistoryManager CommandHistory => _commandHistory;
 
         [ObservableProperty]
         private bool _isRunning = false;
 
         [ObservableProperty]
-        private ButtonPanelViewModel _buttonPanelViewModel = null!;
+        private bool _isLoading = false;
 
         [ObservableProperty]
-        private ListPanelViewModel _listPanelViewModel = null!;
-
-        [ObservableProperty]
-        private EditPanelViewModel _editPanelViewModel = null!;
-
-        [ObservableProperty]
-        private LogPanelViewModel _logPanelViewModel = null!;
-
-        [ObservableProperty]
-        private FavoritePanelViewModel _favoritePanelViewModel = null!;
-
-        [ObservableProperty]
-        private int _selectedListTabIndex = 0;
-
-        [ObservableProperty]
-        private string _executionStatus = "待機中";
+        private string _statusMessage = "Phase 5完全統合版準備完了";
 
         [ObservableProperty]
         private int _currentCommandIndex = 0;
@@ -90,863 +82,403 @@ namespace AutoTool.ViewModel
         [ObservableProperty]
         private int _totalCommands = 0;
 
-        // DI対応コンストラクタ（必須）
+        #endregion
+
+        #region コンストラクタ
+
+        /// <summary>
+        /// Phase 5完全統合版コンストラクタ
+        /// </summary>
         public MacroPanelViewModel(
             ILogger<MacroPanelViewModel> logger,
             IViewModelFactory viewModelFactory,
-            IMessageService messageService,
-            IPerformanceService performanceService)
+            CommandHistoryManager commandHistory)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _viewModelFactory = viewModelFactory ?? throw new ArgumentNullException(nameof(viewModelFactory));
-            _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-            _performanceService = performanceService ?? throw new ArgumentNullException(nameof(performanceService));
-
-            _logger.LogInformation("MacroPanelViewModel: DI対応コンストラクタで初期化開始");
+            _commandHistory = commandHistory ?? throw new ArgumentNullException(nameof(commandHistory));
 
             InitializeViewModels();
-            RegisterMessages();
+            SetupMessaging();
 
-            _logger.LogInformation("MacroPanelViewModel: DI対応で初期化完了");
+            _logger.LogInformation("Phase 5完全統合MacroPanelViewModel初期化完了");
         }
 
+        #endregion
+
+        #region 初期化
+
+        /// <summary>
+        /// Phase 5統合版ViewModels初期化
+        /// </summary>
         private void InitializeViewModels()
         {
             try
             {
-                _logger.LogDebug("ViewModelの初期化を開始します");
+                _buttonPanelViewModel = _viewModelFactory.CreateButtonPanelViewModel();
+                _listPanelViewModel = _viewModelFactory.CreateListPanelViewModel();
+                _editPanelViewModel = _viewModelFactory.CreateEditPanelViewModel();
+                _logPanelViewModel = _viewModelFactory.CreateLogPanelViewModel();
+                _favoritePanelViewModel = _viewModelFactory.CreateFavoritePanelViewModel();
 
-                // DIファクトリを使用してViewModelを作成
-                ButtonPanelViewModel = _viewModelFactory.CreateButtonPanelViewModel();
-                ListPanelViewModel = _viewModelFactory.CreateListPanelViewModel();
-                EditPanelViewModel = _viewModelFactory.CreateEditPanelViewModel();
-                LogPanelViewModel = _viewModelFactory.CreateLogPanelViewModel();
-                FavoritePanelViewModel = _viewModelFactory.CreateFavoritePanelViewModel();
-
-                _logger.LogDebug("ViewModelの初期化が完了しました");
+                _logger.LogDebug("Phase 5統合版全ViewModels作成完了");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ViewModelの初期化中にエラーが発生しました");
+                _logger.LogError(ex, "Phase 5統合版ViewModels初期化エラー");
                 throw;
             }
         }
 
         /// <summary>
-        /// CommandHistoryManagerを設定
+        /// Phase 5統合版メッセージング設定
         /// </summary>
-        public void SetCommandHistory(MacroPanels.ViewModel.Shared.CommandHistoryManager commandHistory)
-        {
-            _commandHistory = commandHistory ?? throw new ArgumentNullException(nameof(commandHistory));
-            _logger.LogDebug("CommandHistoryManagerが設定されました");
-
-            // ListPanelViewModelにも設定
-            ListPanelViewModel?.SetCommandHistory(commandHistory);
-        }
-
-        /// <summary>
-        /// メッセージ登録
-        /// </summary>
-        private void RegisterMessages()
+        private void SetupMessaging()
         {
             try
             {
-                _logger.LogDebug("メッセージ登録を開始します");
-
-                // From ButtonPanelViewModel
-                WeakReferenceMessenger.Default.Register<RunMessage>(this, async (sender, message) =>
+                // Phase 5: AutoTool統合版メッセージを使用
+                WeakReferenceMessenger.Default.Register<UndoMessage>(this, (r, m) =>
                 {
-                    await PrepareAndRun();
-                });
-
-                WeakReferenceMessenger.Default.Register<StopMessage>(this, (sender, message) =>
-                {
-                    StopExecution();
-                });
-
-                WeakReferenceMessenger.Default.Register<SaveMessage>(this, (sender, message) =>
-                {
-                    ListPanelViewModel?.Save();
-                    LogPanelViewModel?.WriteLog("ファイルを保存しました");
-                });
-
-                WeakReferenceMessenger.Default.Register<LoadMessage>(this, (sender, message) =>
-                {
-                    LoadCommands();
-                });
-
-                WeakReferenceMessenger.Default.Register<ClearMessage>(this, (sender, message) =>
-                {
-                    ClearAllCommands();
-                });
-
-                WeakReferenceMessenger.Default.Register<AddMessage>(this, (sender, message) =>
-                {
-                    var itemType = (message as AddMessage)?.ItemType;
-                    if (itemType != null)
+                    try
                     {
-                        AddCommand(itemType);
-                    }
-                });
-
-                WeakReferenceMessenger.Default.Register<UpMessage>(this, (sender, message) =>
-                {
-                    MoveCommandUp();
-                });
-
-                WeakReferenceMessenger.Default.Register<DownMessage>(this, (sender, message) =>
-                {
-                    MoveCommandDown();
-                });
-
-                WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (sender, message) =>
-                {
-                    DeleteSelectedCommand();
-                });
-
-                // From ListPanelViewModel
-                WeakReferenceMessenger.Default.Register<ChangeSelectedMessage>(this, (sender, message) =>
-                {
-                    var item = (message as ChangeSelectedMessage)?.Item;
-                    EditPanelViewModel?.SetItem(item);
-                });
-
-                // From EditPanelViewModel
-                WeakReferenceMessenger.Default.Register<EditCommandMessage>(this, (sender, message) =>
-                {
-                    var item = (message as EditCommandMessage)?.Item;
-                    if (item != null)
-                    {
-                        EditCommand(item);
-                    }
-                });
-
-                WeakReferenceMessenger.Default.Register<RefreshListViewMessage>(this, (sender, message) =>
-                {
-                    RefreshListPanel();
-                });
-
-                // From Commands - 実行状況の監視
-                WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (sender, message) =>
-                {
-                    LogCommandStart(message as StartCommandMessage);
-                });
-
-                WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (sender, message) =>
-                {
-                    LogCommandFinish(message as FinishCommandMessage);
-                });
-
-                WeakReferenceMessenger.Default.Register<DoingCommandMessage>(this, (sender, message) =>
-                {
-                    LogCommandProgress(message as DoingCommandMessage);
-                });
-
-                WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (sender, message) =>
-                {
-                    UpdateCommandProgress(message as UpdateProgressMessage);
-                });
-
-                // From Other
-                WeakReferenceMessenger.Default.Register<LogMessage>(this, (sender, message) =>
-                {
-                    var logText = (message as LogMessage)?.Text;
-                    if (!string.IsNullOrEmpty(logText))
-                    {
-                        LogPanelViewModel?.WriteLog(logText);
-                        GlobalLogger.Instance.Write(logText);
-                    }
-                });
-
-                _logger.LogDebug("メッセージ登録が完了しました");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "メッセージ登録中にエラーが発生しました");
-            }
-        }
-
-        #region コマンド操作メソッド
-
-        /// <summary>
-        /// コマンドを追加（Undo/Redo対応 + UI更新）
-        /// </summary>
-        /// <param name="itemType">追加するコマンドタイプ</param>
-        public void AddCommand(string itemType)
-        {
-            try
-            {
-                _logger.LogDebug("コマンド追加: {ItemType}", itemType);
-
-                if (_commandHistory == null)
-                {
-                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
-                }
-
-                // 新しいアイテムを作成
-                var newItem = MacroPanels.Model.CommandDefinition.CommandRegistry.CreateCommandItem(itemType);
-                if (newItem != null)
-                {
-                    var targetIndex = Math.Max(0, ListPanelViewModel.SelectedLineNumber + 1);
-                    var addCommand = new MacroPanels.ViewModel.Shared.AddItemCommand(
-                        newItem,
-                        targetIndex,
-                        (item, index) =>
+                        if (_commandHistory.CanUndo)
                         {
-                            ListPanelViewModel.InsertAt(index, item);
-                            RefreshAllPanels();
-                        },
-                        (index) =>
-                        {
-                            ListPanelViewModel.RemoveAt(index);
-                            RefreshAllPanels();
+                            _commandHistory.Undo();
+                            _statusMessage = "元に戻しました";
+                            _logger.LogDebug("Phase 5統合版Undo実行完了");
                         }
-                    );
-                    _commandHistory.ExecuteCommand(addCommand);
-
-                    LogPanelViewModel?.WriteLog($"コマンド追加: {itemType} (位置: {targetIndex})");
-                    _logger.LogInformation("コマンド追加完了: {ItemType} at {Index}", itemType, targetIndex);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンド追加中にエラーが発生しました: {ItemType}", itemType);
-                _messageService.ShowError($"コマンドの追加に失敗しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 選択されたコマンドを削除（Undo/Redo対応 + UI更新）
-        /// </summary>
-        public void DeleteSelectedCommand()
-        {
-            try
-            {
-                if (ListPanelViewModel == null) return;
-
-                var selectedItem = ListPanelViewModel.SelectedItem;
-                var selectedIndex = ListPanelViewModel.SelectedLineNumber;
-
-                if (selectedItem == null)
-                {
-                    _logger.LogDebug("削除対象のアイテムが選択されていません");
-                    return;
-                }
-
-                if (_commandHistory == null)
-                {
-                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
-                }
-
-                _logger.LogDebug("コマンド削除: インデックス {Index}", selectedIndex);
-
-                var removeCommand = new MacroPanels.ViewModel.Shared.RemoveItemCommand(
-                    selectedItem.Clone(),
-                    selectedIndex,
-                    (item, index) =>
-                    {
-                        ListPanelViewModel.InsertAt(index, item);
-                        RefreshAllPanels();
-                        // 削除取り消し時にEditPanelに復元されたアイテムを設定
-                        EditPanelViewModel?.SetItem(ListPanelViewModel.SelectedItem);
-                    },
-                    (index) =>
-                    {
-                        ListPanelViewModel.RemoveAt(index);
-                        RefreshAllPanels();
-                        // 削除時にEditPanelに新しい選択アイテムを設定
-                        EditPanelViewModel?.SetItem(ListPanelViewModel.SelectedItem);
                     }
-                );
-                _commandHistory.ExecuteCommand(removeCommand);
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Phase 5統合版Undo実行エラー");
+                        _statusMessage = $"元に戻しエラー: {ex.Message}";
+                    }
+                });
 
-                LogPanelViewModel?.WriteLog($"コマンド削除: インデックス {selectedIndex}");
-                _logger.LogInformation("コマンド削除完了: index {Index}", selectedIndex);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンド削除中にエラーが発生しました");
-                _messageService.ShowError($"コマンドの削除に失敗しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 全コマンドをクリア（Undo/Redo対応 + UI更新）
-        /// </summary>
-        public void ClearAllCommands()
-        {
-            try
-            {
-                if (ListPanelViewModel == null) return;
-
-                _logger.LogDebug("全コマンドクリア実行");
-
-                if (_commandHistory == null)
+                WeakReferenceMessenger.Default.Register<RedoMessage>(this, (r, m) =>
                 {
-                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
-                }
-
-                var currentItems = ListPanelViewModel.CommandList?.Items?.ToList();
-                if (currentItems != null && currentItems.Any())
-                {
-                    var clearCommand = new MacroPanels.ViewModel.Shared.ClearAllCommand(
-                        currentItems,
-                        () =>
+                    try
+                    {
+                        if (_commandHistory.CanRedo)
                         {
-                            ListPanelViewModel.Clear();
-                            RefreshAllPanels();
-                        },
-                        (items) =>
-                        {
-                            RestoreItems(items);
-                            RefreshAllPanels();
+                            _commandHistory.Redo();
+                            _statusMessage = "やり直しました";
+                            _logger.LogDebug("Phase 5統合版Redo実行完了");
                         }
-                    );
-                    _commandHistory.ExecuteCommand(clearCommand);
-
-                    LogPanelViewModel?.WriteLog($"全コマンドクリア: {currentItems.Count}件削除");
-                    _logger.LogInformation("全コマンドクリア完了: {Count}件", currentItems.Count);
-                }
-
-                // ファイル読み込み後は履歴をクリア
-                _commandHistory?.Clear();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "全コマンドクリア中にエラーが発生しました");
-                _messageService.ShowError($"コマンドのクリアに失敗しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// コマンドを上に移動（Undo/Redo対応 + UI更新）
-        /// </summary>
-        public void MoveCommandUp()
-        {
-            try
-            {
-                if (ListPanelViewModel == null) return;
-
-                var fromIndex = ListPanelViewModel.SelectedLineNumber;
-                var toIndex = fromIndex - 1;
-
-                if (toIndex < 0)
-                {
-                    _logger.LogDebug("最上位アイテムのため上移動できません");
-                    return;
-                }
-
-                if (_commandHistory == null)
-                {
-                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
-                }
-
-                _logger.LogDebug("コマンド上移動: {From} → {To}", fromIndex, toIndex);
-
-                var moveCommand = new MacroPanels.ViewModel.Shared.MoveItemCommand(
-                    fromIndex, toIndex,
-                    (from, to) =>
-                    {
-                        ListPanelViewModel.MoveItem(from, to);
-                        ListPanelViewModel.SelectedLineNumber = to;
-                        RefreshListPanel();
                     }
-                );
-                _commandHistory.ExecuteCommand(moveCommand);
-
-                LogPanelViewModel?.WriteLog($"コマンド上移動: {fromIndex} → {toIndex}");
-                _logger.LogInformation("コマンド上移動完了: {From} → {To}", fromIndex, toIndex);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンド上移動中にエラーが発生しました");
-                _messageService.ShowError($"コマンドの移動に失敗しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// コマンドを下に移動（Undo/Redo対応 + UI更新）
-        /// </summary>
-        public void MoveCommandDown()
-        {
-            try
-            {
-                if (ListPanelViewModel == null) return;
-
-                var fromIndex = ListPanelViewModel.SelectedLineNumber;
-                var toIndex = fromIndex + 1;
-
-                if (toIndex >= ListPanelViewModel.GetCount())
-                {
-                    _logger.LogDebug("最下位アイテムのため下移動できません");
-                    return;
-                }
-
-                if (_commandHistory == null)
-                {
-                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
-                }
-
-                _logger.LogDebug("コマンド下移動: {From} → {To}", fromIndex, toIndex);
-
-                var moveCommand = new MacroPanels.ViewModel.Shared.MoveItemCommand(
-                    fromIndex, toIndex,
-                    (from, to) =>
+                    catch (Exception ex)
                     {
-                        ListPanelViewModel.MoveItem(from, to);
-                        ListPanelViewModel.SelectedLineNumber = to;
-                        RefreshListPanel();
+                        _logger.LogError(ex, "Phase 5統合版Redo実行エラー");
+                        _statusMessage = $"やり直しエラー: {ex.Message}";
                     }
-                );
-                _commandHistory.ExecuteCommand(moveCommand);
+                });
 
-                LogPanelViewModel?.WriteLog($"コマンド下移動: {fromIndex} → {toIndex}");
-                _logger.LogInformation("コマンド下移動完了: {From} → {To}", fromIndex, toIndex);
+                // 実行制御メッセージ
+                WeakReferenceMessenger.Default.Register<RunMessage>(this, async (r, m) =>
+                {
+                    await RunMacroAsync();
+                });
+
+                WeakReferenceMessenger.Default.Register<StopMessage>(this, (r, m) =>
+                {
+                    StopMacro();
+                });
+
+                // コマンド実行関連メッセージ
+                WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (r, m) =>
+                {
+                    LogCommandStart(m);
+                });
+
+                WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (r, m) =>
+                {
+                    LogCommandFinish(m);
+                });
+
+                WeakReferenceMessenger.Default.Register<DoingCommandMessage>(this, (r, m) =>
+                {
+                    LogCommandProgress(m);
+                });
+
+                // 選択変更メッセージ
+                WeakReferenceMessenger.Default.Register<ChangeSelectedMessage>(this, (r, m) =>
+                {
+                    _editPanelViewModel?.SetItem(m.Item);
+                });
+
+                _logger.LogDebug("Phase 5統合版メッセージング設定完了");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "コマンド下移動中にエラーが発生しました");
-                _messageService.ShowError($"コマンドの移動に失敗しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// コマンドを編集（Undo/Redo対応 + UI更新）
-        /// </summary>
-        /// <param name="item">編集されたアイテム</param>
-        public void EditCommand(ICommandListItem item)
-        {
-            try
-            {
-                if (ListPanelViewModel == null || item == null) return;
-
-                var oldItem = ListPanelViewModel.SelectedItem;
-                var index = item.LineNumber - 1;
-
-                if (oldItem == null)
-                {
-                    _logger.LogDebug("編集対象のアイテムが選択されていません");
-                    return;
-                }
-
-                if (_commandHistory == null)
-                {
-                    throw new InvalidOperationException("CommandHistoryManagerが設定されていません");
-                }
-
-                _logger.LogDebug("コマンド編集: インデックス {Index}", index);
-
-                var editCommand = new MacroPanels.ViewModel.Shared.EditItemCommand(
-                    oldItem, item, index,
-                    (editedItem, editIndex) =>
-                    {
-                        ListPanelViewModel.ReplaceAt(editIndex, editedItem);
-                        RefreshListPanel();
-                    }
-                );
-                _commandHistory.ExecuteCommand(editCommand);
-
-                LogPanelViewModel?.WriteLog($"コマンド編集: インデックス {index}");
-                _logger.LogInformation("コマンド編集完了: index {Index}", index);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンド編集中にエラーが発生しました");
-                _messageService.ShowError($"コマンドの編集に失敗しました: {ex.Message}");
+                _logger.LogError(ex, "Phase 5統合版メッセージング設定エラー");
             }
         }
 
         #endregion
 
-        #region UI更新メソッド
+        #region Phase 5統合版マクロ実行機能
 
         /// <summary>
-        /// ListPanelの表示を強制更新
+        /// Phase 5統合版：マクロ実行
         /// </summary>
-        private void RefreshListPanel()
+        [RelayCommand]
+        public async Task RunMacroAsync()
         {
             try
             {
-                ListPanelViewModel?.Refresh();
-                _logger.LogDebug("ListPanelを更新しました");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ListPanel更新中にエラーが発生しました");
-            }
-        }
+                if (IsRunning) return;
 
-        /// <summary>
-        /// 全パネルの表示を更新
-        /// </summary>
-        private void RefreshAllPanels()
-        {
-            try
-            {
-                RefreshListPanel();
-                EditPanelViewModel?.SetListCount(ListPanelViewModel?.GetCount() ?? 0);
+                IsRunning = true;
+                _statusMessage = "Phase 5統合版マクロ実行中...";
+                _logger.LogInformation("Phase 5統合版マクロ実行開始");
 
-                // プロパティ変更通知を送信
-                OnPropertyChanged(nameof(ListPanelViewModel));
-                OnPropertyChanged(nameof(EditPanelViewModel));
-
-                _logger.LogDebug("全パネルを更新しました");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "パネル更新中にエラーが発生しました");
-            }
-        }
-
-        #endregion
-
-        #region 実行・制御メソッド
-
-        /// <summary>
-        /// 実行準備とマクロ実行
-        /// </summary>
-        private async Task PrepareAndRun()
-        {
-            try
-            {
-                // 各ViewModelの準備
-                ListPanelViewModel?.Prepare();
-                EditPanelViewModel?.Prepare();
-                LogPanelViewModel?.Prepare();
-                FavoritePanelViewModel?.Prepare();
-                ButtonPanelViewModel?.Prepare();
-
-                // 実行状態に設定
+                // 全ViewModelの実行状態を設定
                 SetAllViewModelsRunningState(true);
 
-                await Run();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "実行準備中にエラーが発生しました");
-                _messageService.ShowError($"実行準備に失敗しました: {ex.Message}");
-                SetAllViewModelsRunningState(false);
-            }
-        }
-
-        /// <summary>
-        /// 実行停止
-        /// </summary>
-        private void StopExecution()
-        {
-            try
-            {
-                _logger.LogInformation("マクロ実行停止要求");
-
-                _cts?.Cancel();
-                SetAllViewModelsRunningState(false);
-
-                LogPanelViewModel?.WriteLog("=== マクロ実行停止 ===");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "実行停止中にエラーが発生しました");
-            }
-        }
-
-        /// <summary>
-        /// 全ViewModelの実行状態を設定
-        /// </summary>
-        private void SetAllViewModelsRunningState(bool isRunning)
-        {
-            IsRunning = isRunning;
-            ExecutionStatus = isRunning ? "実行中" : "待機中";
-
-            ButtonPanelViewModel?.SetRunningState(isRunning);
-            EditPanelViewModel?.SetRunningState(isRunning);
-            FavoritePanelViewModel?.SetRunningState(isRunning);
-            ListPanelViewModel?.SetRunningState(isRunning);
-            LogPanelViewModel?.SetRunningState(isRunning);
-
-            _logger.LogDebug("全ViewModelの実行状態を設定: {IsRunning}", isRunning);
-        }
-
-        /// <summary>
-        /// メインのマクロ実行（修正版 - ファイル検証エラー対応）
-        /// </summary>
-        public async Task Run()
-        {
-            IEnumerable<ICommandListItem>? listItems = null;
-
-            try
-            {
-                _logger.LogInformation("マクロ実行開始");
-
-                // ListPanelViewModelとCommandListの存在確認を詳細に行う
-                if (ListPanelViewModel == null)
+                // コマンドリストを取得
+                var commandItems = _listPanelViewModel?.Items?.ToList();
+                if (commandItems == null || !commandItems.Any())
                 {
-                    _logger.LogError("ListPanelViewModelがnullです");
-                    _messageService.ShowError("ListPanelViewModelが初期化されていません");
+                    _statusMessage = "実行するコマンドがありません";
+                    _logger.LogWarning("実行するコマンドがありません");
                     return;
                 }
 
-                if (ListPanelViewModel.CommandList == null)
-                {
-                    _logger.LogError("CommandListがnullです");
-                    _messageService.ShowError("CommandListが初期化されていません");
-                    return;
-                }
+                // キャンセレーショントークンを設定
+                _cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = _cancellationTokenSource.Token;
 
-                listItems = ListPanelViewModel.CommandList.Items;
-                if (listItems == null)
-                {
-                    _logger.LogError("CommandList.Itemsがnullです");
-                    _messageService.ShowError("コマンドリストのアイテムが初期化されていません");
-                    return;
-                }
-
-                var commandArray = listItems.ToArray();
-                _logger.LogDebug("コマンド数チェック: {Count}件", commandArray.Length);
-
-                if (!commandArray.Any())
-                {
-                    _logger.LogWarning("実行するコマンドがありません（リストが空）");
-                    _messageService.ShowWarning("実行するコマンドがありません");
-                    return;
-                }
-
-                // 各コマンドの詳細をログ出力（デバッグ用）
-                for (int i = 0; i < commandArray.Length; i++)
-                {
-                    var cmd = commandArray[i];
-                    _logger.LogDebug("コマンド[{Index}]: {Type}, LineNumber: {LineNumber}",
-                        i, cmd?.GetType().Name ?? "null", cmd?.LineNumber ?? -1);
-                }
-
-                var macro = MacroFactory.CreateMacro(commandArray) as LoopCommand;
-                if (macro == null)
-                {
-                    _logger.LogError("MacroFactory.CreateMacroがnullを返しました");
-                    _messageService.ShowError("マクロの作成に失敗しました");
-                    return;
-                }
-
-                SetAllViewModelsRunningState(true);
-                _cts = new CancellationTokenSource();
-
-                TotalCommands = commandArray.Length;
+                TotalCommands = commandItems.Count;
                 CurrentCommandIndex = 0;
 
-                _logger.LogInformation("マクロ実行開始: {TotalCommands}件のコマンドを実行します", TotalCommands);
-                LogPanelViewModel?.WriteLog($"=== マクロ実行開始 ({TotalCommands}件) ===");
+                _logPanelViewModel?.WriteLog($"=== マクロ実行開始 ({TotalCommands}件) ===");
 
-                var result = await macro.Execute(_cts.Token);
+                // MacroFactoryを使用してコマンドを作成
+                var macro = MacroFactory.CreateMacro(commandItems);
+
+                // マクロを実行
+                var stopwatch = Stopwatch.StartNew();
+                var result = await Task.Run(() => macro.Execute(cancellationToken), cancellationToken);
+                stopwatch.Stop();
 
                 if (result)
                 {
-                    _logger.LogInformation("マクロ実行完了");
-                    LogPanelViewModel?.WriteLog("=== マクロ実行完了 ===");
+                    _statusMessage = $"Phase 5統合版マクロ実行完了 ({stopwatch.ElapsedMilliseconds}ms)";
+                    _logPanelViewModel?.WriteLog($"=== マクロ実行完了 ({stopwatch.ElapsedMilliseconds}ms) ===");
+                    _logger.LogInformation("Phase 5統合版マクロ実行完了");
                 }
                 else
                 {
-                    _logger.LogWarning("マクロ実行が失敗で終了しました");
-                    LogPanelViewModel?.WriteLog("=== マクロ実行失敗 ===");
-
-                    // エラーの詳細を表示（LogPanelの最後の数行から取得）
-                    var errorLines = LogPanelViewModel?.GetRecentErrorLines() ?? new List<string>();
-                    if (errorLines.Any())
-                    {
-                        var errorMessage = string.Join("\n", errorLines.Take(3)); // 最新の3行まで
-                        _messageService.ShowError($"マクロ実行中にエラーが発生しました:\n\n{errorMessage}\n\n詳細はログパネルを確認してください。");
-                    }
-                    else
-                    {
-                        _messageService.ShowError("マクロ実行中にエラーが発生しました。\n詳細はログパネルを確認してください。");
-                    }
+                    _statusMessage = "Phase 5統合版マクロ実行失敗";
+                    _logPanelViewModel?.WriteLog("=== マクロ実行失敗 ===");
+                    _logger.LogWarning("Phase 5統合版マクロ実行失敗");
                 }
             }
             catch (OperationCanceledException)
             {
-                _logger.LogInformation("マクロ実行がキャンセルされました");
-                LogPanelViewModel?.WriteLog("=== マクロ実行キャンセル ===");
+                _statusMessage = "Phase 5統合版マクロ実行キャンセル";
+                _logPanelViewModel?.WriteLog("=== マクロ実行キャンセル ===");
+                _logger.LogInformation("Phase 5統合版マクロ実行キャンセル");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "マクロ実行中にエラーが発生しました");
-                LogPanelViewModel?.WriteLog($"❌ 致命的エラー: {ex.Message}");
-
-                if (_cts != null && !_cts.Token.IsCancellationRequested)
-                {
-                    // ファイル関連エラーの場合は詳細なメッセージを表示
-                    string errorMessage;
-                    if (ex is FileNotFoundException || ex is DirectoryNotFoundException)
-                    {
-                        errorMessage = $"ファイル/フォルダが見つかりません:\n\n{ex.Message}\n\n" +
-                                     "設定パネルでファイルパスを確認してください。";
-                    }
-                    else
-                    {
-                        errorMessage = $"マクロ実行中にエラーが発生しました:\n\n{ex.Message}";
-                    }
-
-                    _messageService.ShowError(errorMessage);
-                }
+                _logger.LogError(ex, "Phase 5統合版マクロ実行エラー");
+                _statusMessage = $"実行エラー: {ex.Message}";
+                _logPanelViewModel?.WriteLog($"❌ マクロ実行エラー: {ex.Message}");
             }
             finally
             {
-                // 実行状態をリセット
-                if (listItems != null)
-                {
-                    var runningItems = listItems.Where(x => x.IsRunning).ToList();
-                    runningItems.ForEach(x => x.IsRunning = false);
-                }
-
-                var progressItems = ListPanelViewModel?.CommandList?.Items?.ToList();
-                progressItems?.ForEach(x => x.Progress = 0);
-
-                _cts?.Dispose();
-                _cts = null;
-
+                IsRunning = false;
                 SetAllViewModelsRunningState(false);
                 CurrentCommandIndex = 0;
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = null;
             }
         }
-
-        #endregion
-
-        #region ログ・監視メソッド
-
-        private void LogCommandStart(StartCommandMessage? message)
-        {
-            if (message?.Command == null) return;
-
-            var command = message.Command;
-            var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
-            var commandName = command.GetType().ToString().Split('.').Last().Replace("Command", "").PadRight(20, ' ');
-
-            var settingDict = command.Settings?.GetType().GetProperties().ToDictionary(x => x.Name, x => x.GetValue(command.Settings, null));
-            var logString = string.Empty;
-            if (settingDict != null)
-            {
-                foreach (var setting in settingDict)
-                {
-                    logString += $"({setting.Key} = {setting.Value}), ";
-                }
-            }
-
-            LogPanelViewModel?.WriteLog(lineNumber, commandName, logString);
-            GlobalLogger.Instance.Write(lineNumber, commandName, logString);
-
-            var commandItem = ListPanelViewModel?.GetItem(command.LineNumber);
-            if (commandItem != null)
-            {
-                commandItem.Progress = 0;
-                commandItem.IsRunning = true;
-                CurrentCommandIndex = command.LineNumber;
-            }
-        }
-
-        private void LogCommandFinish(FinishCommandMessage? message)
-        {
-            if (message?.Command == null) return;
-
-            var command = message.Command;
-            var commandItem = ListPanelViewModel?.GetItem(command.LineNumber);
-            if (commandItem != null)
-            {
-                commandItem.Progress = 0;
-                commandItem.IsRunning = false;
-            }
-        }
-
-        private void LogCommandProgress(DoingCommandMessage? message)
-        {
-            if (message?.Command == null) return;
-
-            var command = message.Command;
-            var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
-            var commandName = command.GetType().ToString().Split('.').Last().Replace("Command", "").PadRight(20, ' ');
-            var detail = message.Detail;
-
-            LogPanelViewModel?.WriteLog(lineNumber, commandName, detail);
-            GlobalLogger.Instance.Write(lineNumber, commandName, detail);
-        }
-
-        private void UpdateCommandProgress(UpdateProgressMessage? message)
-        {
-            if (message?.Command == null) return;
-
-            var command = message.Command;
-            var progress = message.Progress;
-
-            var commandItem = ListPanelViewModel?.GetItem(command.LineNumber);
-            if (commandItem != null)
-            {
-                commandItem.Progress = progress;
-            }
-        }
-
-        #endregion
-
-        #region ファイル操作メソッド
 
         /// <summary>
-        /// コマンドを読み込み
+        /// Phase 5統合版：マクロ停止
         /// </summary>
-        private void LoadCommands()
+        [RelayCommand]
+        public void StopMacro()
         {
             try
             {
-                ListPanelViewModel?.Load();
-                RefreshAllPanels();
+                if (!IsRunning) return;
 
-                // ファイル読み込み後は履歴をクリア
-                _commandHistory?.Clear();
-
-                var commandCount = ListPanelViewModel?.GetCount() ?? 0;
-                LogPanelViewModel?.WriteLog($"コマンドファイル読み込み完了: {commandCount}件");
-                _logger.LogInformation("コマンド読み込み完了: {Count}件", commandCount);
+                _cancellationTokenSource?.Cancel();
+                _statusMessage = "Phase 5統合版マクロ停止中...";
+                _logger.LogInformation("Phase 5統合版マクロ停止要求");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "コマンド読み込み中にエラーが発生しました");
-                _messageService.ShowError($"コマンドの読み込みに失敗しました: {ex.Message}");
+                _logger.LogError(ex, "Phase 5統合版マクロ停止エラー");
+                _statusMessage = $"停止エラー: {ex.Message}";
             }
         }
 
-        public void SetRunningState(bool isRunning)
+        private void SetAllViewModelsRunningState(bool isRunning)
         {
-            SetAllViewModelsRunningState(isRunning);
+            _buttonPanelViewModel?.SetRunningState(isRunning);
+            _listPanelViewModel?.SetRunningState(isRunning);
+            _editPanelViewModel?.SetRunningState(isRunning);
+            _logPanelViewModel?.SetRunningState(isRunning);
+            _favoritePanelViewModel?.SetRunningState(isRunning);
+
+            _logger.LogDebug("全ViewModelの実行状態を設定: {IsRunning}", isRunning);
         }
 
-        public void SaveMacroFile(string filePath) => ListPanelViewModel?.Save(filePath);
+        #endregion
 
+        #region ログ・監視機能
+
+        private void LogCommandStart(StartCommandMessage message)
+        {
+            try
+            {
+                var command = message.Command;
+                CurrentCommandIndex = command.LineNumber;
+                
+                _logPanelViewModel?.WriteLog($"[{command.LineNumber:D2}] {command.Description} 開始");
+                _logger.LogDebug("コマンド開始: Line={Line}, Description={Description}", command.LineNumber, command.Description);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "コマンド開始ログ出力エラー");
+            }
+        }
+
+        private void LogCommandFinish(FinishCommandMessage message)
+        {
+            try
+            {
+                var command = message.Command;
+                _logPanelViewModel?.WriteLog($"[{command.LineNumber:D2}] {command.Description} 完了");
+                _logger.LogDebug("コマンド完了: Line={Line}, Description={Description}", command.LineNumber, command.Description);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "コマンド完了ログ出力エラー");
+            }
+        }
+
+        private void LogCommandProgress(DoingCommandMessage message)
+        {
+            try
+            {
+                var command = message.Command;
+                _logPanelViewModel?.WriteLog($"[{command.LineNumber:D2}] {message.Detail}");
+                _logger.LogDebug("コマンド進行: Line={Line}, Detail={Detail}", command.LineNumber, message.Detail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "コマンド進行ログ出力エラー");
+            }
+        }
+
+        #endregion
+
+        #region コマンド編集
+
+        /// <summary>
+        /// Phase 5統合版：コマンド編集
+        /// </summary>
+        public void EditCommand(ICommandListItem item)
+        {
+            try
+            {
+                if (item == null || _editPanelViewModel == null) return;
+
+                // Phase 5: 編集プロパティの設定（簡易実装）
+                _statusMessage = $"編集中: {item.ItemType}";
+                _logger.LogDebug("Phase 5統合版コマンド編集開始: {ItemType}", item.ItemType);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Phase 5統合版コマンド編集エラー");
+                _statusMessage = $"編集エラー: {ex.Message}";
+            }
+        }
+
+        #endregion
+
+        #region ファイル操作
+
+        /// <summary>
+        /// Phase 5統合版：マクロファイル読み込み
+        /// </summary>
         public void LoadMacroFile(string filePath)
         {
-            ListPanelViewModel?.Load(filePath);
-            RefreshAllPanels();
+            try
+            {
+                _isLoading = true;
+                _statusMessage = $"ファイル読み込み中: {Path.GetFileName(filePath)}";
 
-            // ファイル読み込み後は履歴をクリア
-            _commandHistory?.Clear();
+                _listPanelViewModel?.Load(filePath);
+                _commandHistory.Clear(); // ファイル読み込み後は履歴をクリア
+
+                _statusMessage = $"読み込み完了: {Path.GetFileName(filePath)}";
+                _logger.LogInformation("Phase 5統合版マクロファイル読み込み: {File}", filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Phase 5統合版マクロファイル読み込みエラー: {File}", filePath);
+                _statusMessage = $"読み込みエラー: {ex.Message}";
+                throw;
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+
+        /// <summary>
+        /// Phase 5統合版：マクロファイル保存
+        /// </summary>
+        public void SaveMacroFile(string filePath)
+        {
+            try
+            {
+                _isLoading = true;
+                _statusMessage = $"ファイル保存中: {Path.GetFileName(filePath)}";
+
+                _listPanelViewModel?.Save(filePath);
+
+                _statusMessage = $"保存完了: {Path.GetFileName(filePath)}";
+                _logger.LogInformation("Phase 5統合版マクロファイル保存: {File}", filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Phase 5統合版マクロファイル保存エラー: {File}", filePath);
+                _statusMessage = $"保存エラー: {ex.Message}";
+                throw;
+            }
+            finally
+            {
+                _isLoading = false;
+            }
         }
 
         #endregion
 
-        #region ヘルパーメソッド
+        #region クリーンアップ
 
         /// <summary>
-        /// アイテムリストを復元（Undo用）
+        /// Phase 5統合版：リソースクリーンアップ
         /// </summary>
-        private void RestoreItems(IEnumerable<ICommandListItem> items)
+        public void Cleanup()
         {
             try
             {
-                ListPanelViewModel?.Clear();
-                foreach (var item in items)
-                {
-                    ListPanelViewModel?.AddItem(item.Clone());
-                }
-
-                _logger.LogDebug("アイテムリストを復元しました: {Count}件", items.Count());
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                WeakReferenceMessenger.Default.UnregisterAll(this);
+                _logger.LogDebug("Phase 5統合版MacroPanelViewModel クリーンアップ完了");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "アイテム復元中にエラーが発生しました");
+                _logger.LogError(ex, "Phase 5統合版MacroPanelViewModel クリーンアップエラー");
             }
         }
 

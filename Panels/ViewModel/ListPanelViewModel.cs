@@ -20,7 +20,7 @@ namespace MacroPanels.ViewModel
     public partial class ListPanelViewModel : ObservableObject
     {
         private readonly ILogger<ListPanelViewModel> _logger;
-        private CommandHistoryManager? _commandHistory;
+        private readonly CommandHistoryManager _commandHistory;
 
         [ObservableProperty] 
         private CommandList _commandList = new();
@@ -48,9 +48,10 @@ namespace MacroPanels.ViewModel
         /// <summary>
         /// DI対応コンストラクタ
         /// </summary>
-        public ListPanelViewModel(ILogger<ListPanelViewModel> logger)
+        public ListPanelViewModel(ILogger<ListPanelViewModel> logger, CommandHistoryManager commandHistory)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _commandHistory = commandHistory ?? throw new ArgumentNullException(nameof(commandHistory));
             _logger.LogInformation("ListPanelViewModel をDI対応で初期化しています");
             
             Initialize();
@@ -126,15 +127,6 @@ namespace MacroPanels.ViewModel
             {
                 _logger?.LogError(ex, "実行行番号変更中にエラーが発生しました");
             }
-        }
-
-        /// <summary>
-        /// CommandHistoryManagerを設定
-        /// </summary>
-        public void SetCommandHistory(CommandHistoryManager? commandHistory)
-        {
-            _commandHistory = commandHistory;
-            _logger?.LogDebug("CommandHistoryManager を設定しました");
         }
 
         /// <summary>

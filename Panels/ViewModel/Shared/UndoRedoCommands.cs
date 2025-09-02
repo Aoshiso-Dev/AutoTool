@@ -30,12 +30,16 @@ namespace MacroPanels.ViewModel.Shared
 
         public void Execute()
         {
+            System.Diagnostics.Debug.WriteLine($"[AddItemCommand] Execute開始: {Description}");
             _doAction(_item, _index);
+            System.Diagnostics.Debug.WriteLine($"[AddItemCommand] Execute完了: {Description}");
         }
 
         public void Undo()
         {
+            System.Diagnostics.Debug.WriteLine($"[AddItemCommand] Undo開始: {Description}");
             _undoAction(_index);
+            System.Diagnostics.Debug.WriteLine($"[AddItemCommand] Undo完了: {Description}");
         }
     }
 
@@ -65,12 +69,16 @@ namespace MacroPanels.ViewModel.Shared
 
         public void Execute()
         {
+            System.Diagnostics.Debug.WriteLine($"[RemoveItemCommand] Execute開始: {Description}");
             _doAction(_index);
+            System.Diagnostics.Debug.WriteLine($"[RemoveItemCommand] Execute完了: {Description}");
         }
 
         public void Undo()
         {
+            System.Diagnostics.Debug.WriteLine($"[RemoveItemCommand] Undo開始: {Description}");
             _undoAction(_item, _index);
+            System.Diagnostics.Debug.WriteLine($"[RemoveItemCommand] Undo完了: {Description}");
         }
     }
 

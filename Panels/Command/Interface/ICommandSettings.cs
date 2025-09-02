@@ -37,6 +37,8 @@ namespace MacroPanels.Command.Interface
         MouseButton Button { get; set; }
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
+        bool UseBackgroundClick { get; set; }
+        int BackgroundClickMethod { get; set; }
     }
 
     public interface IHotkeyCommandSettings : ICommandSettings
@@ -56,6 +58,8 @@ namespace MacroPanels.Command.Interface
         int Y { get; set; }
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
+        bool UseBackgroundClick { get; set; }
+        int BackgroundClickMethod { get; set; }
     }
 
     public interface IWaitCommandSettings : ICommandSettings
@@ -148,6 +152,8 @@ namespace MacroPanels.Command.Interface
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
         MouseButton Button { get; set; }
+        bool UseBackgroundClick { get; set; }
+        int BackgroundClickMethod { get; set; }
     }
 
     // Screenshot command

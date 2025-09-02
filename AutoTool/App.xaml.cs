@@ -2,12 +2,15 @@
 using System.Configuration;
 using System.Data;
 using System.Windows;
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using AutoTool.Services;
 using AutoTool.Services.Safety;
 using AutoTool.Services.Configuration;
+using AutoTool.Logging; // 追加: ファイルロガー
 
 namespace AutoTool
 {
@@ -27,7 +30,8 @@ namespace AutoTool
             try
             {
                 System.Diagnostics.Debug.WriteLine("=== App.OnStartup 開始 ===");
-                
+                // Settings.json (全体設定 + Logging) を生成/確保
+                EnsureSettingsFile();
                 // 例外ハンドラーを早期に設定
                 this.DispatcherUnhandledException += Application_DispatcherUnhandledException;
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -55,7 +59,16 @@ namespace AutoTool
                 await _host.StartAsync();
 
                 // プラグインシステムを初期化
-                await serviceProvider.InitializePluginSystemAsync();
+                var pluginService = serviceProvider.GetService<AutoTool.Services.Plugin.IPluginService>();
+                if (pluginService != null)
+                {
+                    await pluginService.LoadAllPluginsAsync();
+                    _logger.LogInformation("プラグインシステム初期化完了");
+                }
+
+                // Phase 5統合版：MacroFactoryとCommandRegistryの初期化
+                AutoTool.Model.MacroFactory.MacroFactory.SetServiceProvider(serviceProvider);
+                AutoTool.Model.CommandDefinition.CommandRegistry.Initialize();
 
                 // メインウィンドウを作成して表示
                 var mainWindow = new MainWindow();
@@ -192,27 +205,63 @@ namespace AutoTool
         }
 
         /// <summary>
-        /// ホストビルダーの作成
+        /// Settings.json (全設定 + Logging) を exe ディレクトリに生成。旧 appsettings.json (AppData) が存在し新設定が無い場合は移行。
+        /// </summary>
+        private void EnsureSettingsFile()
+        {
+            try
+            {
+                var exeDir = AppContext.BaseDirectory;
+                var settingsPath = Path.Combine(exeDir, "Settings.json");
+
+                // 旧形式 (AppData) から移行
+                var oldPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AutoTool", "appsettings.json");
+                if (!File.Exists(settingsPath) && File.Exists(oldPath))
+                {
+                    try
+                    {
+                        File.Copy(oldPath, settingsPath, overwrite: false);
+                    }
+                    catch { /* ignore */ }
+                }
+
+                if (!File.Exists(settingsPath))
+                {
+                    var sample = "{\n  \"Logging\": {\n    \"LogLevel\": {\n      \"Default\": \"Information\",\n      \"Microsoft\": \"Warning\",\n      \"Microsoft.Hosting.Lifetime\": \"Information\",\n      \"AutoTool\": \"Debug\"\n    }\n  },\n  \"App\": {\n    \"Theme\": \"Light\",\n    \"Language\": \"ja-JP\",\n    \"AutoSave\": true,\n    \"AutoSaveInterval\": 300\n  },\n  \"Macro\": {\n    \"DefaultTimeout\": 5000,\n    \"DefaultInterval\": 100\n  },\n  \"UI\": {\n    \"GridSplitterPosition\": 0.5,\n    \"TabIndex\": { \n      \"List\": 0,\n      \"Edit\": 0\n    }\n  }\n}";
+                    File.WriteAllText(settingsPath, sample);
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        /// <summary>
+        /// ホストビルダー (Settings.json を統合設定として使用)
         /// </summary>
         private static IHostBuilder CreateHostBuilder()
         {
             return Host.CreateDefaultBuilder()
-                .ConfigureLogging(logging =>
+                .ConfigureAppConfiguration((ctx, cfg) =>
+                {
+                    cfg.SetBasePath(AppContext.BaseDirectory);
+                    cfg.AddJsonFile("Settings.json", optional: true, reloadOnChange: true);
+                    // 環境変数/コマンドラインも反映可能に
+                    cfg.AddEnvironmentVariables(prefix: "AUTOTOOL_");
+                })
+                .ConfigureLogging((ctx, logging) =>
                 {
                     logging.ClearProviders();
+                    logging.SetMinimumLevel(LogLevel.Trace);
+                    logging.AddConfiguration(ctx.Configuration.GetSection("Logging"));
                     logging.AddConsole();
                     logging.AddDebug();
-                    logging.SetMinimumLevel(LogLevel.Information);
+                    logging.AddSimpleFile();
+                    var configured = ctx.Configuration["Logging:LogLevel:Default"] ?? "(null)";
+                    System.Diagnostics.Debug.WriteLine($"[Logging] Configured Default LogLevel = {configured}");
                 })
                 .ConfigureServices((context, services) =>
                 {
-                    // AutoToolのサービスを登録
                     services.AddAutoToolServices();
-
-                    // ViewModelの登録
                     services.AddTransient<MainWindowViewModel>();
-
-                    // その他の必要なサービスをここに追加
                 });
         }
     }

@@ -70,6 +70,8 @@ namespace MacroPanels.Command.Class
         public int Timeout { get; set; } = 5000;
         public int Interval { get; set; } = 500;
         public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
+        public bool UseBackgroundClick { get; set; } = false;
+        public int BackgroundClickMethod { get; set; } = 0; // 0 = SendMessage, 1 = PostMessage, 2 = AutoDetectChild, 3 = TryAll
     }
 
     public class HotkeyCommandSettings : WindowTargetCommandSettings, IHotkeyCommandSettings
@@ -85,6 +87,8 @@ namespace MacroPanels.Command.Class
         public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
         public int X { get; set; }
         public int Y { get; set; }
+        public bool UseBackgroundClick { get; set; } = false;
+        public int BackgroundClickMethod { get; set; } = 0; // 0 = SendMessage, 1 = PostMessage, 2 = AutoDetectChild, 3 = TryAll
     }
 
     public class WaitCommandSettings : ICommandSettings, IWaitCommandSettings
@@ -173,6 +177,8 @@ namespace MacroPanels.Command.Class
     public class ClickImageAICommandSettings : AIDetectionCommandSettings, IClickImageAICommandSettings
     {
         public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
+        public bool UseBackgroundClick { get; set; } = false;
+        public int BackgroundClickMethod { get; set; } = 0; // 0 = SendMessage, 1 = PostMessage, 2 = AutoDetectChild, 3 = TryAll
         
         // Validateはベースクラスで実装済み
     }

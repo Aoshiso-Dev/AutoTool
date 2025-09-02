@@ -422,8 +422,42 @@
                                           Foreground="Black" Background="White"/>
                                 <StackPanel.Visibility>
                                     <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                        <Binding Path="IsClickImageAIItem"/>
                                         <Binding Path="IsClickImageItem"/>
+                                        <Binding Path="IsClickImageAIItem"/>
+                                        <Binding Path="IsClickItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+
+                            <!-- バックグラウンドクリックの設定 -->
+                            <StackPanel Margin="0,5">
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="バックグラウンドクリック:" Width="120" VerticalAlignment="Center" Foreground="Black"/>
+                                    <CheckBox IsChecked="{Binding UseBackgroundClick, UpdateSourceTrigger=PropertyChanged}" 
+                                              Foreground="Black" 
+                                              ToolTip="バックグラウンドでクリックを実行します（対象ウィンドウを前面に持ってこずにクリック）"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="バックグラウンド方式:" Width="120" VerticalAlignment="Center" Foreground="Black"/>
+                                    <ComboBox SelectedIndex="{Binding BackgroundClickMethod, UpdateSourceTrigger=PropertyChanged}" 
+                                              Width="200" Margin="5,0"
+                                              Foreground="Black" Background="White"
+                                              IsEnabled="{Binding UseBackgroundClick}"
+                                              ToolTip="バックグラウンドクリックの実行方式を選択">
+                                        <ComboBoxItem Content="SendMessage (同期)"/>
+                                        <ComboBoxItem Content="PostMessage (非同期)"/>
+                                        <ComboBoxItem Content="AutoDetectChild (子ウィンドウ自動検出)"/>
+                                        <ComboBoxItem Content="TryAll (全方式試行)"/>
+                                        <ComboBoxItem Content="GameDirectInput (ゲーム向けDirectInput)"/>
+                                        <ComboBoxItem Content="GameFullscreen (ゲーム向けフルスクリーン)"/>
+                                        <ComboBoxItem Content="GameLowLevel (ゲーム向け低レベル)"/>
+                                        <ComboBoxItem Content="GameVirtualMouse (ゲーム向け仮想マウス)"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsClickImageItem"/>
+                                        <Binding Path="IsClickImageAIItem"/>
                                         <Binding Path="IsClickItem"/>
                                     </MultiBinding>
                                 </StackPanel.Visibility>
