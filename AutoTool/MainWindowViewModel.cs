@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using MacroPanels.ViewModel;
 using MacroPanels.Message;
 using MacroPanels.Plugin;
+using MacroPanels.ViewModel.Shared;
 using Microsoft.Extensions.Logging;
 using AutoTool.Services.Configuration;
 using AutoTool.Services.Theme;
@@ -166,6 +167,9 @@ namespace AutoTool
                 // プラグイン情報の初期化
                 UpdatePluginInfo();
 
+                // CommandHistoryManagerの初期化と設定
+                InitializeCommandHistory();
+
                 StatusMessage = "初期化完了";
                 _logger?.LogInformation("MainWindowViewModel 初期化完了");
             }
@@ -174,6 +178,26 @@ namespace AutoTool
                 var errorMessage = $"初期化エラー: {ex.Message}";
                 StatusMessage = errorMessage;
                 _logger?.LogError(ex, "MainWindowViewModel 初期化中にエラーが発生しました");
+            }
+        }
+
+        /// <summary>
+        /// CommandHistoryManagerの初期化と設定
+        /// </summary>
+        private void InitializeCommandHistory()
+        {
+            try
+            {
+                // CommandHistoryManagerを作成してMacroPanelViewModelに設定
+                var commandHistory = new CommandHistoryManager();
+                MacroPanelViewModel?.SetCommandHistory(commandHistory);
+                
+                _logger?.LogDebug("CommandHistoryManagerを初期化し、MacroPanelViewModelに設定しました");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "CommandHistoryManager初期化中にエラーが発生しました");
+                throw;
             }
         }
 
