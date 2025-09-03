@@ -4,8 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AutoTool"
-        xmlns:vm="clr-namespace:AutoTool.ViewModel"
-        xmlns:panel="clr-namespace:AutoTool.View"
         xmlns:view="clr-namespace:AutoTool.View"
         xmlns:converters="clr-namespace:AutoTool.View.Converters"
         mc:Ignorable="d"
@@ -104,6 +102,9 @@
                 <!-- Phase 5完全統合DI対応Undo/Redo -->
                 <Button Content="元に戻す" Command="{Binding UndoCommand}" ToolTip="元に戻す (Ctrl+Z)"/>
                 <Button Content="やり直し" Command="{Binding RedoCommand}" ToolTip="やり直し (Ctrl+Y)"/>
+                <Separator />
+                <Button Content="実行" Command="{Binding RunMacroCommand}" />
+                <Button Content="停止" Command="{Binding StopMacroCommand}" />
             </ToolBar>
         </ToolBarTray>
 
@@ -119,8 +120,8 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- メインコンテンツ (Phase 5完全統合MacroPanelViewModel使用) -->
-                    <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <!-- 旧 MacroPanel を廃止し、ここに直接 UI を配置する場合は別PRで -->
+                    <TextBlock Text="MacroPanel は廃止されました。" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.4" />
                 </Grid>
             </TabItem>
         </TabControl>
@@ -138,8 +139,7 @@
                     <TextBlock Text="CPU: " />
                     <TextBlock Text="{Binding CpuUsage}" Margin="0,0,10,0" />
                     <TextBlock Text="実行状態: " />
-                    <!-- Phase 5完全統合ViewModel対応 -->
-                    <TextBlock Text="{Binding MacroPanelViewModel.IsRunning, Converter={StaticResource RunningStatusConverter}}" Margin="0,0,10,0" />
+                    <TextBlock Text="{Binding IsRunning, Converter={StaticResource RunningStatusConverter}}" Margin="0,0,10,0" />
                     <TextBlock Text="プラグイン: " />
                     <TextBlock Text="{Binding PluginCount}" Margin="0,0,5,0" />
                     <TextBlock Text="個 / コマンド: " />
