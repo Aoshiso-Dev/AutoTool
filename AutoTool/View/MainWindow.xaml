@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AutoTool"
         xmlns:view="clr-namespace:AutoTool.View"
+        xmlns:panels="clr-namespace:AutoTool.View.Panels"
         xmlns:converters="clr-namespace:AutoTool.View.Converters"
         mc:Ignorable="d"
         Title="{Binding Title}" 
@@ -15,19 +16,26 @@
         Closing="Window_Closing">
 
     <Window.Resources>
-        <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
-        <converters:RunningStatusConverter x:Key="RunningStatusConverter"/>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/AutoTool;component/Styles/ListPanelStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Local Converters -->
+            <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
+            <converters:RunningStatusConverter x:Key="RunningStatusConverter"/>
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        </ResourceDictionary>
     </Window.Resources>
 
-    <!-- キーボードショートカットの設定 -->
+    <!-- Keyboard shortcuts -->
     <Window.InputBindings>
-        <!-- ファイル操作 -->
+        <!-- File operations -->
         <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveFileCommand}"/>
         <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding SaveFileAsCommand}"/>
         <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenFileCommand}"/>
-        <!-- Undo/Redo操作 -->
+        <!-- Undo/Redo operations -->
         <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}" />
         <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}" />
         <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}" />
@@ -41,7 +49,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- メニューバー -->
+        <!-- Menu Bar -->
         <Menu Grid.Row="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
             <MenuItem Header="ファイル(_F)">
                 <MenuItem Header="開く(_O)" Command="{Binding OpenFileCommand}" InputGestureText="Ctrl+O"/>
@@ -92,10 +100,10 @@
             </MenuItem>
         </Menu>
 
-        <!-- ツールバー（ボタンパネル統合） -->
+        <!-- Toolbar with integrated button panel -->
         <ToolBarTray Grid.Row="1">
             <ToolBar IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
-                <!-- ファイル操作 -->
+                <!-- File operations -->
                 <Button Content="開く" Command="{Binding OpenFileCommand}" ToolTip="ファイルを開く (Ctrl+O)" />
                 <Button Content="保存" Command="{Binding SaveFileCommand}" ToolTip="ファイルを保存 (Ctrl+S)" />
                 <Separator />
@@ -105,7 +113,7 @@
                 <Button Content="やり直し" Command="{Binding RedoCommand}" ToolTip="やり直し (Ctrl+Y)"/>
                 <Separator />
                 
-                <!-- 実行制御 -->
+                <!-- Execution control -->
                 <Button Command="{Binding RunMacroCommand}" Width="100" Margin="2" Foreground="White">
                     <Button.Style>
                         <Style TargetType="Button">
@@ -122,7 +130,7 @@
                 </Button>
                 <Separator />
                 
-                <!-- リスト操作 -->
+                <!-- List operations -->
                 <ComboBox ItemsSource="{Binding ItemTypes}" 
                           SelectedItem="{Binding SelectedItemType}" 
                           DisplayMemberPath="DisplayName"
@@ -147,31 +155,28 @@
                         Width="50" Height="Auto" Margin="2"/>
                 <Separator />
                 
-                <!-- デバッグ用テストボタン -->
+                <!-- Debug test buttons -->
                 <Button Content="TEST" Command="{Binding AddTestCommandCommand}" 
                         IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
                         Width="50" Height="Auto" Margin="2" 
                         Background="Orange" Foreground="White"
                         ToolTip="テストコマンド追加（デバッグ用）"/>
-                        
-                <!-- 別パターンでもテスト -->
-                <Button Content="TEST2" Click="TestButton_Click"
+                <Button Content="実行テスト" Command="{Binding TestExecutionHighlightCommand}" 
                         IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                        Width="50" Height="Auto" Margin="2" 
-                        Background="Red" Foreground="White"
-                        ToolTip="テストコマンド追加（クリックイベント版）"/>
-                        
-                <!-- さらにシンプルなテスト -->
-                <Button Content="SIMPLE" Click="SimpleTest_Click"
-                        Width="60" Height="Auto" Margin="2" 
-                        Background="Blue" Foreground="White"
-                        ToolTip="最もシンプルなテスト"/>
+                        Width="70" Height="Auto" Margin="2" 
+                        Background="Purple" Foreground="White"
+                        ToolTip="実行ハイライトテスト（デバッグ用）"/>
+                <Button Content="状態確認" Click="DebugStateButton_Click"
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
+                        Width="70" Height="Auto" Margin="2" 
+                        Background="Navy" Foreground="White"
+                        ToolTip="実行状態確認（デバッグ用）"/>
             </ToolBar>
         </ToolBarTray>
 
-        <!-- メインコンテンツ -->
+        <!-- Main Content -->
         <Grid Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <!-- ロード中インジケータ -->
+            <!-- Loading Indicator -->
             <Border Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="読み込み中..." Foreground="White" FontSize="20" HorizontalAlignment="Center" />
@@ -179,17 +184,17 @@
                 </StackPanel>
             </Border>
 
-            <!-- メインパネル（3分割レイアウト） -->
+            <!-- Main Panel (3-column layout) -->
             <Grid Visibility="{Binding IsLoading, Converter={StaticResource InvertBooleanConverter}}">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" MinWidth="300"/>
+                    <ColumnDefinition Width="*" MinWidth="350"/>
                     <ColumnDefinition Width="5"/>
                     <ColumnDefinition Width="300" MinWidth="250"/>
                     <ColumnDefinition Width="5"/>
                     <ColumnDefinition Width="250" MinWidth="200"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- 左パネル：コマンドリスト -->
+                <!-- Left Panel: Enhanced Command List with Progress -->
                 <Grid Grid.Column="0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -198,85 +203,39 @@
                         <RowDefinition Height="150" MinHeight="100"/>
                     </Grid.RowDefinitions>
 
-                    <!-- コマンドリストヘッダー -->
+                    <!-- Command List Header -->
                     <Border Grid.Row="0" Background="LightGray" Padding="5">
-                        <TextBlock Text="コマンドリスト" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📋 コマンドリスト" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CommandCount, StringFormat=' ({0}個)'}" 
+                                       FontSize="11" Foreground="#666" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
                     </Border>
 
-                    <!-- コマンドリスト -->
-                    <DataGrid Grid.Row="1"
-                              ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" 
-                              SelectedIndex="{Binding SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                              SelectionMode="Single" 
-                              HeadersVisibility="Column" 
-                              CanUserAddRows="False" 
-                              AutoGenerateColumns="False" 
-                              EnableRowVirtualization="True" 
-                              EnableColumnVirtualization="True" 
-                              VerticalScrollBarVisibility="Visible"
-                              HorizontalScrollBarVisibility="Auto"
-                              CanUserReorderColumns="False"
-                              CanUserSortColumns="False">
+                    <!-- Enhanced Command List with ListPanelView -->
+                    <panels:ListPanelView Grid.Row="1" x:Name="CommandListPanel"/>
 
-                        <DataGrid.Columns>
-                            <!-- 有効チェック -->
-                            <DataGridTemplateColumn Header="✓" Width="30">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                                  IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InvertBooleanConverter}}" 
-                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-
-                            <!-- 行番号 -->
-                            <DataGridTemplateColumn Header="#" Width="40">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding LineNumber}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-
-                            <!-- コマンド -->
-                            <DataGridTemplateColumn Header="コマンド" Width="*">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding ItemType}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                            <TextBox Text="{Binding Comment, UpdateSourceTrigger=PropertyChanged}" 
-                                                     Background="Transparent" BorderThickness="0" FontSize="10" FontStyle="Italic"
-                                                     IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InvertBooleanConverter}}"
-                                                     Margin="0,2,0,0"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-
-                    <!-- 分割線 -->
+                    <!-- Splitter -->
                     <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
                                   Background="LightGray" ShowsPreview="True"/>
 
-                    <!-- ログパネル -->
+                    <!-- Log Panel -->
                     <Grid Grid.Row="3">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <!-- ログヘッダー -->
+                        <!-- Log Header -->
                         <Border Grid.Row="0" Background="LightGray" Padding="5">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="実行ログ" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="📝 実行ログ" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <Button Content="クリア" Command="{Binding ClearLogCommand}" 
                                         Width="50" Height="20" Margin="10,0,0,0" FontSize="10"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- ログリスト -->
+                        <!-- Log List -->
                         <ListBox Grid.Row="1" 
                                  ItemsSource="{Binding LogEntries}"
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
@@ -290,27 +249,27 @@
                     </Grid>
                 </Grid>
 
-                <!-- 分割線1 -->
+                <!-- Splitter 1 -->
                 <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
                               Background="LightGray" ShowsPreview="True"/>
 
-                <!-- 中央パネル：エディット -->
+                <!-- Center Panel: Edit -->
                 <Grid Grid.Column="2">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- エディットヘッダー -->
+                    <!-- Edit Header -->
                     <Border Grid.Row="0" Background="LightGray" Padding="5">
-                        <TextBlock Text="コマンド設定" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="⚙️ コマンド設定" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </Border>
 
-                    <!-- エディット内容 -->
+                    <!-- Edit Content -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" 
                                   Margin="10" Padding="5">
                         <StackPanel DataContext="{Binding}">
-                            <!-- アイテム未選択メッセージ -->
+                            <!-- No items message -->
                             <StackPanel Visibility="{Binding IsListEmpty, Converter={StaticResource BoolToVisibilityConverter}}" 
                                         Margin="0,20">
                                 <TextBlock Text="📝 リストにコマンドを追加してください" 
@@ -327,15 +286,15 @@
                                            FontSize="11" Foreground="DarkGray" Margin="0,5,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
 
-                            <!-- 設定項目（アイテムが選択されている場合のみ表示） -->
+                            <!-- Settings (shown when item is selected) -->
                             <StackPanel Visibility="{Binding IsNotNullItem, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <!-- コマンドタイプ -->
+                                <!-- Command Type -->
                                 <StackPanel Orientation="Horizontal" Margin="0,5">
                                     <TextBlock Text="コマンド:" Width="80" VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding SelectedItem.ItemType}" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
 
-                                <!-- コメント設定 -->
+                                <!-- Comment Settings -->
                                 <StackPanel Margin="0,10">
                                     <TextBlock Text="コメント:" Margin="0,0,0,5"/>
                                     <TextBox Text="{Binding SelectedItem.Comment, UpdateSourceTrigger=PropertyChanged}" 
@@ -343,16 +302,16 @@
                                              VerticalScrollBarVisibility="Auto"/>
                                 </StackPanel>
 
-                                <!-- 詳細設定項目 -->
+                                <!-- Detailed Settings -->
                                 <StackPanel Margin="0,10">
                                     <TextBlock Text="詳細設定:" Margin="0,0,0,5" FontWeight="Bold"/>
                                     
-                                    <!-- 説明表示 -->
+                                    <!-- Description -->
                                     <TextBox Text="{Binding SelectedItem.Description, Mode=OneWay}" 
                                              Height="40" TextWrapping="Wrap" IsReadOnly="True"
                                              Background="LightGray" Margin="0,0,0,10"/>
                                     
-                                    <!-- 将来の詳細設定実装予定 -->
+                                    <!-- Future detailed settings -->
                                     <Border BorderBrush="LightBlue" BorderThickness="1" Padding="10" Margin="0,10">
                                         <StackPanel>
                                             <TextBlock Text="🚧 詳細設定項目" FontWeight="Bold" Foreground="DarkBlue"/>
@@ -368,27 +327,27 @@
                     </ScrollViewer>
                 </Grid>
 
-                <!-- 分割線2 -->
+                <!-- Splitter 2 -->
                 <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
                               Background="LightGray" ShowsPreview="True"/>
 
-                <!-- 右パネル：お気に入り・設定 -->
+                <!-- Right Panel: Favorites & Settings -->
                 <Grid Grid.Column="4">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- お気に入りヘッダー -->
+                    <!-- Favorites Header -->
                     <Border Grid.Row="0" Background="LightGray" Padding="5">
-                        <TextBlock Text="お気に入り" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="⭐ お気に入り" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </Border>
 
-                    <!-- お気に入り内容 -->
+                    <!-- Favorites Content -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" 
                                   Margin="10" Padding="5">
                         <StackPanel>
-                            <!-- お気に入り機能の説明 -->
+                            <!-- Favorites feature description -->
                             <Border BorderBrush="LightGreen" BorderThickness="1" Padding="10" Margin="0,10">
                                 <StackPanel>
                                     <TextBlock Text="⭐ お気に入り機能" FontWeight="Bold" Foreground="DarkGreen"/>
@@ -399,7 +358,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- 設定機能の説明 -->
+                            <!-- Settings feature description -->
                             <Border BorderBrush="LightCoral" BorderThickness="1" Padding="10" Margin="0,10">
                                 <StackPanel>
                                     <TextBlock Text="⚙️ 設定機能" FontWeight="Bold" Foreground="DarkRed"/>
@@ -409,13 +368,26 @@
                                                FontSize="11" Foreground="DarkRed" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
+
+                            <!-- Progress info panel -->
+                            <Border BorderBrush="LightBlue" BorderThickness="1" Padding="10" Margin="0,10">
+                                <StackPanel>
+                                    <TextBlock Text="📊 実行進捗情報" FontWeight="Bold" Foreground="DarkBlue"/>
+                                    <TextBlock Text="{Binding ProgressText}" 
+                                               FontSize="12" Foreground="DarkBlue" Margin="0,5"/>
+                                    <TextBlock Text="{Binding CurrentExecutingDescription}" 
+                                               FontSize="11" Foreground="DarkBlue" TextWrapping="Wrap" Margin="0,2"/>
+                                    <TextBlock Text="{Binding EstimatedTimeRemaining, StringFormat='残り時間: {0}'}" 
+                                               FontSize="10" Foreground="DarkBlue" Margin="0,2"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
             </Grid>
         </Grid>
 
-        <!-- ステータスバー -->
+        <!-- Status Bar -->
         <StatusBar Grid.Row="3" Height="25">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusMessage}" />

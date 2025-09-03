@@ -1,31 +1,108 @@
 using System;
 using AutoTool.Model.List.Interface;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AutoTool.Model.List.Type
 {
     /// <summary>
-    /// Phase 5統合版：基本コマンドアイテムクラス
-    /// 一時的なスタブ実装、後で具体的なコマンドクラスに置き換え予定
+    /// Phase 5完全版：基本コマンドアイテムクラス（INotifyPropertyChanged対応）
+    /// 一時的なスタブで、最終的な具体的なコマンドクラスに置き換える予定
     /// </summary>
-    public class BasicCommandItem : ICommandListItem
+    public class BasicCommandItem : ObservableObject, ICommandListItem
     {
-        public string ItemType { get; set; } = string.Empty;
-        public string Comment { get; set; } = string.Empty;
-        public bool IsEnable { get; set; } = true;
-        public int LineNumber { get; set; }
-        public int NestLevel { get; set; }
-        public virtual string Description { get; set; } = string.Empty;
+        private string _itemType = string.Empty;
+        private string _comment = string.Empty;
+        private bool _isEnable = true;
+        private int _lineNumber;
+        private int _nestLevel;
+        private string _description = string.Empty;
+        private bool _isRunning = false;
+        private bool _isSelected = false;
+        private bool _isInLoop = false;
+        private bool _isInIf = false;
+        private int _progress = 0;
+        private string _windowTitle = string.Empty;
+        private string _windowClassName = string.Empty;
+
+        public string ItemType 
+        { 
+            get => _itemType; 
+            set => SetProperty(ref _itemType, value);
+        }
+
+        public string Comment 
+        { 
+            get => _comment; 
+            set => SetProperty(ref _comment, value);
+        }
+
+        public bool IsEnable 
+        { 
+            get => _isEnable; 
+            set => SetProperty(ref _isEnable, value);
+        }
+
+        public int LineNumber 
+        { 
+            get => _lineNumber; 
+            set => SetProperty(ref _lineNumber, value);
+        }
+
+        public int NestLevel 
+        { 
+            get => _nestLevel; 
+            set => SetProperty(ref _nestLevel, value);
+        }
+
+        public virtual string Description 
+        { 
+            get => _description; 
+            set => SetProperty(ref _description, value);
+        }
         
-        // Phase 5: ICommandListItemの不足プロパティを追加
-        public bool IsRunning { get; set; } = false;
-        public bool IsSelected { get; set; } = false;
-        public bool IsInLoop { get; set; } = false;
-        public bool IsInIf { get; set; } = false;
-        public int Progress { get; set; } = 0;
+        // Phase 5: ICommandListItemの必須プロパティを追加
+        public bool IsRunning 
+        { 
+            get => _isRunning; 
+            set => SetProperty(ref _isRunning, value);
+        }
+
+        public bool IsSelected 
+        { 
+            get => _isSelected; 
+            set => SetProperty(ref _isSelected, value);
+        }
+
+        public bool IsInLoop 
+        { 
+            get => _isInLoop; 
+            set => SetProperty(ref _isInLoop, value);
+        }
+
+        public bool IsInIf 
+        { 
+            get => _isInIf; 
+            set => SetProperty(ref _isInIf, value);
+        }
+
+        public int Progress 
+        { 
+            get => _progress; 
+            set => SetProperty(ref _progress, value);
+        }
         
-        // Phase 5: 一時的なプロパティ（具体的な実装クラスで正しく実装予定）
-        public virtual string WindowTitle { get; set; } = string.Empty;
-        public virtual string WindowClassName { get; set; } = string.Empty;
+        // Phase 5: 一時的なプロパティ（具体的な実装クラスで正式対応する予定）
+        public virtual string WindowTitle 
+        { 
+            get => _windowTitle; 
+            set => SetProperty(ref _windowTitle, value);
+        }
+
+        public virtual string WindowClassName 
+        { 
+            get => _windowClassName; 
+            set => SetProperty(ref _windowClassName, value);
+        }
 
         public BasicCommandItem()
         {
@@ -87,7 +164,7 @@ namespace AutoTool.Model.List.Type
                 "Execute" => "プログラム実行",
                 "SetVariable" => "変数設定",
                 "SetVariable_AI" => "AI変数設定",
-                "IF_Variable" => "変数条件判定",
+                "IF_Variable" => "変数条件分岐",
                 "Screenshot" => "スクリーンショット",
                 _ => ItemType
             };
@@ -100,7 +177,7 @@ namespace AutoTool.Model.List.Type
     }
 
     /// <summary>
-    /// Phase 5統合版：If系コマンド用インターフェース
+    /// Phase 5完全版：If系コマンド用インターフェース
     /// </summary>
     public interface IIfItem : ICommandListItem
     {
@@ -108,7 +185,7 @@ namespace AutoTool.Model.List.Type
     }
 
     /// <summary>
-    /// Phase 5統合版：IfEnd用インターフェース
+    /// Phase 5完全版：IfEnd用インターフェース
     /// </summary>
     public interface IIfEndItem : ICommandListItem
     {
@@ -116,7 +193,7 @@ namespace AutoTool.Model.List.Type
     }
 
     /// <summary>
-    /// Phase 5統合版：Loop系コマンド用インターフェース
+    /// Phase 5完全版：Loop系コマンド用インターフェース
     /// </summary>
     public interface ILoopItem : ICommandListItem
     {
@@ -124,7 +201,7 @@ namespace AutoTool.Model.List.Type
     }
 
     /// <summary>
-    /// Phase 5統合版：LoopEnd用インターフェース
+    /// Phase 5完全版：LoopEnd用インターフェース
     /// </summary>
     public interface ILoopEndItem : ICommandListItem
     {
@@ -132,11 +209,17 @@ namespace AutoTool.Model.List.Type
     }
 
     /// <summary>
-    /// Phase 5統合版：拡張BasicCommandItem（ペアリング対応）
+    /// Phase 5完全版：拡張BasicCommandItem（ペアリング対応）
     /// </summary>
     public class PairableCommandItem : BasicCommandItem, IIfItem, IIfEndItem, ILoopItem, ILoopEndItem
     {
-        public ICommandListItem? Pair { get; set; }
+        private ICommandListItem? _pair;
+
+        public ICommandListItem? Pair 
+        { 
+            get => _pair; 
+            set => SetProperty(ref _pair, value);
+        }
 
         public PairableCommandItem() : base() { }
 

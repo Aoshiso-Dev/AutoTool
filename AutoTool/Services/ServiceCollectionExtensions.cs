@@ -6,7 +6,10 @@ using AutoTool.ViewModel.Panels;
 using AutoTool.List.Class;
 using AutoTool.Model.List.Type;
 using AutoTool.Model.CommandDefinition;
+using AutoTool.Model.List.Interface;
 using AutoTool.Helpers;
+using System.Text.Json;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace AutoTool.Services
 {
@@ -28,16 +31,37 @@ namespace AutoTool.Services
                 builder.SetMinimumLevel(LogLevel.Debug);
             });
 
+            // Messaging設定
+            services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+
             // プラグインサービス
             services.AddSingleton<IPluginService, PluginService>();
 
-            // ViewModelの登録
-            services.AddTransient<MainWindowViewModel>();
-            services.AddTransient<FavoritePanelViewModel>();
+            // ファイルサービス
+            services.AddSingleton<IRecentFileService, RecentFileService>();
+
+            // ViewModelの登録（シングルトン）
+            services.AddSingleton<MainWindowViewModel>();
+            services.AddSingleton<FavoritePanelViewModel>();
+            services.AddSingleton<ListPanelViewModel>();
 
             // モデルの登録
             services.AddTransient<CommandList>();
             services.AddTransient<BasicCommandItem>();
+
+            // JSON設定の登録
+            services.AddSingleton<JsonSerializerOptions>(provider =>
+            {
+                return new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    PropertyNameCaseInsensitive = true
+                };
+            });
+
+            // CommandListItemファクトリーパターンの追加
+            services.AddSingleton<ICommandListItemFactory, CommandListItemFactory>();
 
             // JsonSerializerHelperにロガーを設定
             services.AddSingleton<IServiceProvider>(provider =>
@@ -49,6 +73,92 @@ namespace AutoTool.Services
             });
 
             return services;
+        }
+    }
+
+    /// <summary>
+    /// CommandListItemファクトリーインターフェース
+    /// </summary>
+    public interface ICommandListItemFactory
+    {
+        ICommandListItem? CreateItem(string itemType);
+    }
+
+    /// <summary>
+    /// CommandListItemファクトリー実装
+    /// </summary>
+    public class CommandListItemFactory : ICommandListItemFactory
+    {
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<CommandListItemFactory> _logger;
+
+        public CommandListItemFactory(IServiceProvider serviceProvider, ILogger<CommandListItemFactory> logger)
+        {
+            _serviceProvider = serviceProvider;
+            _logger = logger;
+        }
+
+        public ICommandListItem? CreateItem(string itemType)
+        {
+            try
+            {
+                _logger.LogDebug("CommandListItemFactory.CreateItem開始: {ItemType}", itemType);
+                
+                // CommandRegistryからタイプマッピングを取得
+                var itemTypes = CommandRegistry.GetTypeMapping();
+                if (itemTypes.TryGetValue(itemType, out var type))
+                {
+                    _logger.LogDebug("CommandRegistryからタイプ取得: {Type}", type.Name);
+                    
+                    // DIコンテナからインスタンスを取得を試みる
+                    var serviceInstance = _serviceProvider.GetService(type);
+                    if (serviceInstance is ICommandListItem item)
+                    {
+                        item.ItemType = itemType;
+                        item.IsEnable = true;
+                        
+                        _logger.LogDebug("DIコンテナで作成成功: {ActualType}", item.GetType().Name);
+                        return item;
+                    }
+                    
+                    // DIで取得できない場合はActivatorで作成
+                    if (Activator.CreateInstance(type) is ICommandListItem fallbackItem)
+                    {
+                        fallbackItem.ItemType = itemType;
+                        fallbackItem.IsEnable = true;
+                        
+                        _logger.LogDebug("Activatorで作成成功: {ActualType}", fallbackItem.GetType().Name);
+                        return fallbackItem;
+                    }
+                }
+
+                _logger.LogWarning("CommandRegistryで作成失敗、BasicCommandItemで代替: {ItemType}", itemType);
+
+                // 最終フォールバック：BasicCommandItem
+                var basicItem = _serviceProvider.GetService<BasicCommandItem>();
+                if (basicItem == null)
+                {
+                    basicItem = new BasicCommandItem();
+                    _logger.LogWarning("BasicCommandItemもDIから取得できないため、直接作成しました");
+                }
+                
+                basicItem.ItemType = itemType;
+                basicItem.IsEnable = true;
+                
+                _logger.LogDebug("BasicCommandItemで作成完了");
+                return basicItem;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CommandListItemFactory.CreateItem中にエラーが発生: {ItemType}", itemType);
+                
+                // 緊急フォールバック
+                return new BasicCommandItem 
+                { 
+                    ItemType = itemType, 
+                    IsEnable = true
+                };
+            }
         }
     }
 }

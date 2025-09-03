@@ -250,7 +250,7 @@ namespace AutoTool.ViewModel.Panels
         {
             WeakReferenceMessenger.Default.Register<ChangeSelectedMessage>(this, (r, m) => 
             {
-                Item = m.Item;
+                Item = m.SelectedItem;
             });
         }
 

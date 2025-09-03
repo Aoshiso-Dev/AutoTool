@@ -15,18 +15,23 @@ using System.IO;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.Input;
 using AutoTool.List.Class; // CommandListクラス用
+using System.Windows; // Thickness用
+using System.Threading.Tasks; // Task用
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AutoTool.ViewModel.Panels
 {
     /// <summary>
-    /// Phase 5完全統合版：ListPanelViewModel（コマンド管理強化）
+    /// Phase 5完全統合版：ListPanelViewModel（DI対応版）
     /// </summary>
     public partial class ListPanelViewModel : ObservableObject
     {
         private readonly ILogger<ListPanelViewModel> _logger;
+        private readonly IServiceProvider _serviceProvider;
         private readonly ObservableCollection<ICommandListItem> _items = new();
         private readonly Stack<CommandListOperation> _undoStack = new();
         private readonly Stack<CommandListOperation> _redoStack = new();
+        private int _completedCommands = 0;
 
         [ObservableProperty]
         private bool _isRunning = false;
@@ -46,23 +51,111 @@ namespace AutoTool.ViewModel.Panels
         [ObservableProperty]
         private int _totalItems = 0;
 
+        // プログレスバー関連プロパティ
+        [ObservableProperty]
+        private int _totalProgress = 0;
+
+        [ObservableProperty]
+        private int _currentProgress = 0;
+
+        [ObservableProperty]
+        private string _progressText = "";
+
+        [ObservableProperty]
+        private bool _showProgress = false;
+
+        [ObservableProperty]
+        private ICommandListItem? _currentExecutingItem;
+
+        partial void OnCurrentExecutingItemChanged(ICommandListItem? value)
+        {
+            try
+            {
+                _logger.LogDebug("CurrentExecutingItem変更: {OldItem} -> {NewItem}", 
+                    _currentExecutingItem?.ItemType ?? "null", 
+                    value?.ItemType ?? "null");
+                
+                // 関連プロパティの更新通知
+                OnPropertyChanged(nameof(CurrentExecutingDescription));
+                
+                // UIの強制更新
+                OnPropertyChanged(nameof(Items));
+                
+                _logger.LogDebug("CurrentExecutingItem変更完了: {Description}", CurrentExecutingDescription);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CurrentExecutingItem変更処理中にエラー");
+            }
+        }
+
         public ObservableCollection<ICommandListItem> Items => _items;
         public bool CanUndo => _undoStack.Count > 0;
         public bool CanRedo => _redoStack.Count > 0;
         public bool HasItems => Items.Count > 0;
 
-        public ListPanelViewModel(ILogger<ListPanelViewModel> logger)
+        /// <summary>
+        /// プログレス率を取得（パーセンテージ）
+        /// </summary>
+        public double ProgressPercentage => TotalProgress > 0 ? (double)CurrentProgress / TotalProgress * 100 : 0;
+
+        /// <summary>
+        /// 残り時間の推定（簡易版）
+        /// </summary>
+        public string EstimatedTimeRemaining
+        {
+            get
+            {
+                if (TotalProgress <= 0 || CurrentProgress <= 0) return "不明";
+                
+                var remaining = TotalProgress - CurrentProgress;
+                if (remaining <= 0) return "完了";
+                
+                // 簡易的な推定（実際の実装では実行時間を記録する必要あり）
+                var estimatedSeconds = remaining * 2; // 1コマンドあたり2秒と仮定
+                return $"約{estimatedSeconds}秒";
+            }
+        }
+
+        /// <summary>
+        /// 現在実行中のコマンドの説明を取得
+        /// </summary>
+        public string CurrentExecutingDescription
+        {
+            get
+            {
+                if (CurrentExecutingItem == null) return "";
+                
+                var displayName = CommandRegistry.DisplayOrder.GetDisplayName(CurrentExecutingItem.ItemType) ?? CurrentExecutingItem.ItemType;
+                var comment = !string.IsNullOrEmpty(CurrentExecutingItem.Comment) ? $"({CurrentExecutingItem.Comment})" : "";
+                return $"実行中: {displayName} {comment}";
+            }
+        }
+
+        /// <summary>
+        /// DI対応コンストラクタ
+        /// </summary>
+        public ListPanelViewModel(ILogger<ListPanelViewModel> logger, IServiceProvider serviceProvider)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             
             SetupMessaging();
-            _logger.LogInformation("Phase 5統合版ListPanelViewModel を初期化しています");
+            _logger.LogInformation("DI対応ListPanelViewModel を初期化しています");
 
             // コレクション変更の監視
             _items.CollectionChanged += (s, e) =>
             {
                 TotalItems = _items.Count;
                 HasUnsavedChanges = true;
+                
+                // プロパティ変更通知の強化
+                OnPropertyChanged(nameof(Items));
+                OnPropertyChanged(nameof(TotalItems));
+                OnPropertyChanged(nameof(HasItems));
+                
+                // MainWindowViewModelにアイテム数変更を通知
+                WeakReferenceMessenger.Default.Send(new ItemCountChangedMessage(_items.Count));
                 
                 // コレクション変更後に少し遅延してペアリング更新
                 Task.Delay(50).ContinueWith(_ =>
@@ -82,24 +175,31 @@ namespace AutoTool.ViewModel.Panels
         private void SetupMessaging()
         {
             // コマンド操作メッセージの処理
-            WeakReferenceMessenger.Default.Register<AddMessage>(this, (r, m) => Add(m.ItemType));
-            WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (r, m) => Delete());
-            WeakReferenceMessenger.Default.Register<UpMessage>(this, (r, m) => MoveUp());
-            WeakReferenceMessenger.Default.Register<DownMessage>(this, (r, m) => MoveDown());
-            WeakReferenceMessenger.Default.Register<ClearMessage>(this, (r, m) => Clear());
-            WeakReferenceMessenger.Default.Register<UndoMessage>(this, (r, m) => Undo());
-            WeakReferenceMessenger.Default.Register<RedoMessage>(this, (r, m) => Redo());
+            WeakReferenceMessenger.Default.Register<AddMessage>(this, (r, m) => AddInternal(m.ItemType));
+            WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (r, m) => DeleteInternal());
+            WeakReferenceMessenger.Default.Register<UpMessage>(this, (r, m) => MoveUpInternal());
+            WeakReferenceMessenger.Default.Register<DownMessage>(this, (r, m) => MoveDownInternal());
+            WeakReferenceMessenger.Default.Register<ClearMessage>(this, (r, m) => ClearInternal());
+            WeakReferenceMessenger.Default.Register<UndoMessage>(this, (r, m) => UndoInternal());
+            WeakReferenceMessenger.Default.Register<RedoMessage>(this, (r, m) => RedoInternal());
             
             // アイテムタイプ変更メッセージの処理
-            WeakReferenceMessenger.Default.Register<ChangeItemTypeMessage>(this, (r, m) => ChangeItemType(m.OldItem, m.NewItem));
+            // WeakReferenceMessenger.Default.Register<ChangeItemTypeMessage>(this, (r, m) => ChangeItemType(m.OldItem, m.NewItem)); // 一時的にコメントアウト
             
             // リストビュー更新メッセージの処理
-            WeakReferenceMessenger.Default.Register<RefreshListViewMessage>(this, (r, m) => RefreshList());
+            // WeakReferenceMessenger.Default.Register<RefreshListViewMessage>(this, (r, m) => RefreshList()); // 一時的にコメントアウト
             
             // コマンド実行状態メッセージの処理
             WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (r, m) => OnCommandStarted(m));
             WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (r, m) => OnCommandFinished(m));
             WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (r, m) => OnProgressUpdated(m));
+            
+            // ファイル操作メッセージの処理
+            WeakReferenceMessenger.Default.Register<LoadFileMessage>(this, (r, m) => LoadFileInternal(m.FilePath));
+            WeakReferenceMessenger.Default.Register<SaveFileMessage>(this, (r, m) => SaveFileInternal(m.FilePath));
+            
+            // マクロ実行状態メッセージの処理
+            // WeakReferenceMessenger.Default.Register<MacroExecutionStateMessage>(this, (r, m) => SetRunningState(m.IsRunning)); // 一時的にコメントアウト
         }
 
         partial void OnSelectedItemChanged(ICommandListItem? value)
@@ -111,10 +211,37 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        #region コマンド操作
+        #region 外部からアクセス可能なメソッド
+
+        /// <summary>
+        /// 外部からアクセス可能なアイテム追加メソッド
+        /// </summary>
+        public void Add(string itemType)
+        {
+            try
+            {
+                _logger.LogDebug("外部Add呼び出し: {ItemType}", itemType);
+                AddInternal(itemType);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "外部Add呼び出し中にエラー: {ItemType}", itemType);
+            }
+        }
+
+        public void Delete() => DeleteInternal();
+        public void MoveUp() => MoveUpInternal();
+        public void MoveDown() => MoveDownInternal();
+        public void Clear() => ClearInternal();
+        public void Undo() => UndoInternal();
+        public void Redo() => RedoInternal();
+
+        #endregion
+
+        #region 内部実装メソッド
 
         [RelayCommand]
-        private void Add(string itemType)
+        private void AddInternal(string itemType)
         {
             try
             {
@@ -132,12 +259,31 @@ namespace AutoTool.ViewModel.Panels
                     Description = $"アイテム追加: {itemType}"
                 };
 
+                _logger.LogDebug("アイテム追加前のItems数: {Count}", Items.Count);
+                
                 Items.Insert(insertIndex, newItem);
+                
+                _logger.LogDebug("アイテム追加後のItems数: {Count}", Items.Count);
+                
                 SelectedIndex = insertIndex;
                 SelectedItem = newItem;
                 
                 RecordOperation(operation);
                 StatusMessage = $"{itemType}を追加しました";
+                
+                // プロパティ変更通知を明示的に発火
+                OnPropertyChanged(nameof(Items));
+                OnPropertyChanged(nameof(TotalItems));
+                OnPropertyChanged(nameof(HasItems));
+                OnPropertyChanged(nameof(SelectedItem));
+                OnPropertyChanged(nameof(SelectedIndex));
+                
+                // MainWindowViewModelにアイテム数変更を通知
+                WeakReferenceMessenger.Default.Send(new ItemCountChangedMessage(Items.Count));
+                
+                // MainWindowViewModelに選択変更を通知
+                WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(newItem));
+                
                 _logger.LogInformation("アイテムを追加しました: {ItemType} (合計 {Count}件)", itemType, Items.Count);
             }
             catch (Exception ex)
@@ -148,7 +294,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         [RelayCommand]
-        private void Delete()
+        private void DeleteInternal()
         {
             if (SelectedItem == null)
             {
@@ -206,7 +352,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         [RelayCommand]
-        private void MoveUp()
+        private void MoveUpInternal()
         {
             if (SelectedItem == null || SelectedIndex <= 0)
             {
@@ -245,7 +391,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         [RelayCommand]
-        private void MoveDown()
+        private void MoveDownInternal()
         {
             if (SelectedItem == null || SelectedIndex >= Items.Count - 1)
             {
@@ -284,7 +430,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         [RelayCommand]
-        private void Clear()
+        private void ClearInternal()
         {
             if (Items.Count == 0)
             {
@@ -324,12 +470,8 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        #endregion
-
-        #region Undo/Redo機能
-
         [RelayCommand(CanExecute = nameof(CanUndo))]
-        private void Undo()
+        private void UndoInternal()
         {
             if (!CanUndo) return;
 
@@ -376,7 +518,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         [RelayCommand(CanExecute = nameof(CanRedo))]
-        private void Redo()
+        private void RedoInternal()
         {
             if (!CanRedo) return;
 
@@ -421,120 +563,348 @@ namespace AutoTool.ViewModel.Panels
 
         #endregion
 
-        #region アイテムタイプ変更
+        #region プログレス管理
 
         /// <summary>
-        /// アイテムタイプを変更
+        /// マクロ実行開始時のプログレス初期化
         /// </summary>
-        private void ChangeItemType(ICommandListItem oldItem, ICommandListItem newItem)
+        public void InitializeProgress()
         {
             try
             {
-                var index = Items.IndexOf(oldItem);
-                if (index >= 0)
-                {
-                    // 元のアイテムを保存（Undo用）
-                    var operation = new CommandListOperation
-                    {
-                        Type = OperationType.Replace,
-                        Index = index,
-                        Item = oldItem.Clone(),
-                        NewItem = newItem.Clone(),
-                        Description = $"タイプ変更: {oldItem.ItemType} -> {newItem.ItemType}"
-                    };
-
-                    // アイテムを置換
-                    Items[index] = newItem;
-                    SelectedIndex = index;
-                    SelectedItem = newItem;
-
-                    // 行番号とネストレベルを更新
-                    UpdateLineNumbers();
-
-                    RecordOperation(operation);
-                    StatusMessage = $"タイプを変更しました: {oldItem.ItemType} -> {newItem.ItemType}";
-                    
-                    // EditPanelに新しいアイテムを通知
-                    WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(newItem));
-
-                    _logger.LogInformation("アイテムタイプを変更しました: {OldType} -> {NewType} (行 {LineNumber})", 
-                        oldItem.ItemType, newItem.ItemType, newItem.LineNumber);
-                }
-                else
-                {
-                    _logger.LogWarning("変更対象のアイテムが見つかりませんでした");
-                    StatusMessage = "変更対象のアイテムが見つかりませんでした";
-                }
+                TotalProgress = Items.Count(i => i.IsEnable);
+                CurrentProgress = 0;
+                ShowProgress = TotalProgress > 0;
+                ProgressText = ShowProgress ? $"0 / {TotalProgress}" : "";
+                CurrentExecutingItem = null;
+                
+                _logger.LogDebug("プログレス初期化: 総数={TotalProgress}", TotalProgress);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "アイテムタイプ変更中にエラーが発生しました");
-                StatusMessage = $"タイプ変更エラー: {ex.Message}";
+                _logger.LogError(ex, "プログレス初期化中にエラー");
             }
         }
 
         /// <summary>
-        /// リストビューを強制更新
+        /// プログレス更新
         /// </summary>
-        private void RefreshList()
+        public void UpdateProgress(int completed)
         {
             try
             {
-                // すべてのプロパティ変更通知を発火
-                OnPropertyChanged(nameof(Items));
-                OnPropertyChanged(nameof(SelectedItem));
-                OnPropertyChanged(nameof(SelectedIndex));
-                OnPropertyChanged(nameof(TotalItems));
-                OnPropertyChanged(nameof(HasItems));
-
-                // 各アイテムの描画プロパティを更新
-                for (int i = 0; i < Items.Count; i++)
+                CurrentProgress = Math.Min(completed, TotalProgress);
+                ProgressText = $"{CurrentProgress} / {TotalProgress}";
+                
+                if (CurrentProgress >= TotalProgress)
                 {
-                    var item = Items[i];
-                    if (item != null)
-                    {
-                        // ItemTypeプロパティの変更通知を発火してUI更新
-                        var currentType = item.ItemType;
-                        item.ItemType = currentType; // 同じ値を再設定して通知発火
-                    }
+                    ShowProgress = false;
+                    ProgressText = "完了";
+                    CurrentExecutingItem = null;
                 }
-
-                StatusMessage = "リストを更新しました";
-                _logger.LogDebug("リストビューを強制更新しました");
+                
+                _logger.LogTrace("プログレス更新: {Current}/{Total}", CurrentProgress, TotalProgress);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "リスト更新中にエラーが発生しました");
-                StatusMessage = $"更新エラー: {ex.Message}";
+                _logger.LogError(ex, "プログレス更新中にエラー");
+            }
+        }
+
+        /// <summary>
+        /// プログレス完了処理
+        /// </summary>
+        public void CompleteProgress()
+        {
+            try
+            {
+                CurrentProgress = TotalProgress;
+                ShowProgress = false;
+                ProgressText = "完了";
+                CurrentExecutingItem = null;
+                
+                _logger.LogDebug("プログレス完了");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "プログレス完了処理中にエラー");
+            }
+        }
+
+        /// <summary>
+        /// プログレス中断処理
+        /// </summary>
+        public void CancelProgress()
+        {
+            try
+            {
+                ShowProgress = false;
+                ProgressText = "中断";
+                CurrentExecutingItem = null;
+                
+                _logger.LogDebug("プログレス中断");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "プログレス中断処理中にエラー");
             }
         }
 
         #endregion
 
-        #region ヘルパーメソッド
+        #region ファイル操作（DI対応）
+
+        /// <summary>
+        /// メッセージからのファイル読み込み
+        /// </summary>
+        private void LoadFileInternal(string filePath)
+        {
+            try
+            {
+                Load(filePath);
+                // MainWindowViewModelにアイテム数変更を通知
+                WeakReferenceMessenger.Default.Send(new ItemCountChangedMessage(Items.Count));
+                // ログメッセージを送信
+                WeakReferenceMessenger.Default.Send(new LogMessage("Info", $"ファイル読み込み完了: {Path.GetFileName(filePath)} ({Items.Count}件)"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ファイル読み込み中にエラー: {FilePath}", filePath);
+                WeakReferenceMessenger.Default.Send(new LogMessage("Error", $"ファイル読み込み失敗: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// メッセージからのファイル保存
+        /// </summary>
+        private void SaveFileInternal(string filePath)
+        {
+            try
+            {
+                Save(filePath);
+                // ログメッセージを送信
+                WeakReferenceMessenger.Default.Send(new LogMessage("Info", $"ファイル保存完了: {Path.GetFileName(filePath)} ({Items.Count}件)"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ファイル保存中にエラー: {FilePath}", filePath);
+                WeakReferenceMessenger.Default.Send(new LogMessage("Error", $"ファイル保存失敗: {ex.Message}"));
+            }
+        }
+
+        public void Load(string filePath)
+        {
+            try
+            {
+                StatusMessage = "ファイル読み込み中...";
+                
+                if (System.IO.File.Exists(filePath))
+                {
+                    // CommandListをDIから取得
+                    var commandListService = _serviceProvider.GetService<CommandList>();
+                    if (commandListService == null)
+                    {
+                        // フォールバック：直接作成
+                        commandListService = new CommandList();
+                        _logger.LogWarning("CommandListサービスが見つからないため、直接作成しました");
+                    }
+                    
+                    commandListService.Load(filePath);
+                    
+                    _logger.LogInformation("ファイル読み込み成功: {Count}件", commandListService.Items.Count);
+                    
+                    // ObservableCollectionを破壊せずに内容を更新
+                    Items.Clear();
+                    foreach (var item in commandListService.Items)
+                    {
+                        Items.Add(item);
+                    }
+                    
+                    SelectedIndex = Items.Count > 0 ? 0 : -1;
+                    SelectedItem = Items.FirstOrDefault();
+                    
+                    HasUnsavedChanges = false;
+                    StatusMessage = $"ファイルを読み込みました: {Path.GetFileName(filePath)} ({Items.Count}件)";
+                    _logger.LogInformation("ファイルを読み込みました: {FilePath} ({Count}件)", filePath, Items.Count);
+                }
+                else
+                {
+                    _logger.LogWarning("ファイルが存在しません: {FilePath}", filePath);
+                    Items.Clear();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ファイル読み込み中にエラーが発生しました: {FilePath}", filePath);
+                StatusMessage = $"読み込みエラー: {ex.Message}";
+                throw;
+            }
+        }
+
+        public void Save(string filePath)
+        {
+            try
+            {
+                StatusMessage = "ファイル保存中...";
+                
+                // JsonSerializerOptionsをDIから取得
+                var jsonOptions = _serviceProvider.GetService<JsonSerializerOptions>();
+                if (jsonOptions == null)
+                {
+                    // フォールバック：デフォルト設定
+                    jsonOptions = new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    };
+                    _logger.LogWarning("JsonSerializerOptionsサービスが見つからないため、デフォルト設定を使用しました");
+                }
+                
+                // 保存用のデータを準備
+                var saveData = Items.Select(item => new Dictionary<string, object?>
+                {
+                    ["ItemType"] = item.ItemType,
+                    ["LineNumber"] = item.LineNumber,
+                    ["Comment"] = item.Comment,
+                    ["IsEnable"] = item.IsEnable,
+                    ["Description"] = item.Description
+                }).ToList();
+                
+                var json = System.Text.Json.JsonSerializer.Serialize(saveData, jsonOptions);
+                
+                var directory = System.IO.Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !System.IO.Directory.Exists(directory))
+                {
+                    System.IO.Directory.CreateDirectory(directory);
+                }
+                
+                System.IO.File.WriteAllText(filePath, json);
+                HasUnsavedChanges = false;
+                
+                StatusMessage = $"ファイルを保存しました: {Path.GetFileName(filePath)} ({Items.Count}件)";
+                _logger.LogInformation("ファイルを保存しました: {FilePath} ({Count}件)", filePath, Items.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ファイル保存中にエラーが発生しました: {FilePath}", filePath);
+                StatusMessage = $"保存エラー: {ex.Message}";
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region ヘルパーメソッド（DI対応）
 
         private ICommandListItem CreateItem(string itemType)
         {
-            // CommandRegistryを使用してアイテムを作成
-            var itemTypes = CommandRegistry.GetTypeMapping();
-            if (itemTypes.TryGetValue(itemType, out var type))
+            try
             {
-                if (Activator.CreateInstance(type) is ICommandListItem item)
+                _logger.LogDebug("CreateItem開始: {ItemType}", itemType);
+                
+                // FactoryパターンでCommandListItemを作成
+                var factory = _serviceProvider.GetService<AutoTool.Services.ICommandListItemFactory>();
+                if (factory != null)
                 {
-                    item.LineNumber = Items.Count + 1;
-                    item.ItemType = itemType;
-                    return item;
+                    var item = factory.CreateItem(itemType);
+                    if (item != null)
+                    {
+                        item.LineNumber = Items.Count + 1;
+                        if (string.IsNullOrEmpty(item.Comment))
+                        {
+                            item.Comment = $"新しい{itemType}コマンド";
+                        }
+                        if (string.IsNullOrEmpty(item.Description))
+                        {
+                            item.Description = $"{itemType}コマンド";
+                        }
+                        
+                        _logger.LogDebug("Factoryで作成成功: {ActualType}", item.GetType().Name);
+                        return item;
+                    }
                 }
-            }
+                
+                _logger.LogWarning("Factoryが見つからないか作成失敗、フォールバック実行: {ItemType}", itemType);
+                
+                // フォールバック：CommandRegistryを直接使用
+                var itemTypes = CommandRegistry.GetTypeMapping();
+                if (itemTypes.TryGetValue(itemType, out var type))
+                {
+                    _logger.LogDebug("CommandRegistryからタイプ取得: {Type}", type.Name);
+                    
+                    // DIコンテナからインスタンスを取得を試みる
+                    var serviceInstance = _serviceProvider.GetService(type);
+                    if (serviceInstance is ICommandListItem item)
+                    {
+                        item.LineNumber = Items.Count + 1;
+                        item.ItemType = itemType;
+                        item.IsEnable = true;
+                        if (string.IsNullOrEmpty(item.Comment))
+                        {
+                            item.Comment = $"新しい{itemType}コマンド";
+                        }
+                        if (string.IsNullOrEmpty(item.Description))
+                        {
+                            item.Description = $"{itemType}コマンド";
+                        }
+                        
+                        _logger.LogDebug("DIコンテナで作成成功: {ActualType}", item.GetType().Name);
+                        return item;
+                    }
+                    
+                    // DIで取得できない場合はActivatorで作成
+                    if (Activator.CreateInstance(type) is ICommandListItem fallbackItem)
+                    {
+                        fallbackItem.LineNumber = Items.Count + 1;
+                        fallbackItem.ItemType = itemType;
+                        fallbackItem.IsEnable = true;
+                        if (string.IsNullOrEmpty(fallbackItem.Comment))
+                        {
+                            fallbackItem.Comment = $"新しい{itemType}コマンド";
+                        }
+                        if (string.IsNullOrEmpty(fallbackItem.Description))
+                        {
+                            fallbackItem.Description = $"{itemType}コマンド";
+                        }
+                        
+                        _logger.LogDebug("Activatorで作成成功: {ActualType}", fallbackItem.GetType().Name);
+                        return fallbackItem;
+                    }
+                }
 
-            // フォールバックとして基本的なアイテムを作成
-            return new BasicCommandItem 
-            { 
-                ItemType = itemType, 
-                LineNumber = Items.Count + 1,
-                Comment = $"新しい{itemType}コマンド",
-                Description = $"{itemType}コマンド"
-            };
+                _logger.LogWarning("CommandRegistryで作成失敗、BasicCommandItemで代替: {ItemType}", itemType);
+
+                // 最終フォールバック：BasicCommandItem
+                var basicItem = _serviceProvider.GetService<BasicCommandItem>();
+                if (basicItem == null)
+                {
+                    basicItem = new BasicCommandItem();
+                    _logger.LogWarning("BasicCommandItemもDIから取得できないため、直接作成しました");
+                }
+                
+                basicItem.ItemType = itemType;
+                basicItem.LineNumber = Items.Count + 1;
+                basicItem.Comment = $"新しい{itemType}コマンド";
+                basicItem.Description = $"{itemType}コマンド";
+                basicItem.IsEnable = true;
+                
+                _logger.LogDebug("BasicCommandItemで作成完了");
+                return basicItem;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CreateItem中にエラーが発生: {ItemType}", itemType);
+                
+                // 緊急フォールバック
+                return new BasicCommandItem 
+                { 
+                    ItemType = itemType, 
+                    LineNumber = Items.Count + 1,
+                    Comment = $"エラー復旧: {itemType}",
+                    Description = "エラーから復旧したアイテム",
+                    IsEnable = true
+                };
+            }
         }
 
         private void UpdateLineNumbers()
@@ -578,9 +948,6 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        /// <summary>
-        /// ネストレベルを内部計算
-        /// </summary>
         private void UpdateNestLevelInternal()
         {
             try
@@ -612,9 +979,6 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        /// <summary>
-        /// すべてのPairプロパティをクリア
-        /// </summary>
         private void ClearAllPairs()
         {
             try
@@ -631,9 +995,6 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        /// <summary>
-        /// ペアリングを内部実行
-        /// </summary>
         private void UpdatePairingInternal()
         {
             try
@@ -706,64 +1067,6 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        /// <summary>
-        /// ネストレベルを更新
-        /// </summary>
-        private void UpdateNestLevel()
-        {
-            try
-            {
-                _logger.LogDebug("ネストレベル更新開始");
-                UpdateNestLevelInternal();
-                _logger.LogDebug("ネストレベル更新完了");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ネストレベル更新中にエラーが発生しました");
-            }
-        }
-
-        /// <summary>
-        /// ループアイテムのペアリング（従来のメソッドは簡素化）
-        /// </summary>
-        private void PairLoopItems()
-        {
-            // CommandListクラスのPairLoopItemsを使用するため、
-            // このメソッドは UpdateLineNumbers() 内で実行される
-            _logger.LogDebug("LoopペアリングはUpdateLineNumbers内で実行されます");
-        }
-
-        /// <summary>
-        /// IFアイテムのペアリング（従来のメソッドは簡素化）
-        /// </summary>
-        private void PairIfItems()
-        {
-            // CommandListクラスのPairIfItemsを使用するため、
-            // このメソッドは UpdateLineNumbers() 内で実行される
-            _logger.LogDebug("IfペアリングはUpdateLineNumbers内で実行されます");
-        }
-
-        /// <summary>
-        /// ループペアリングをクリア（非推奨）
-        /// </summary>
-        private void ClearLoopPairing()
-        {
-            // CommandListクラスで自動処理されるため不要
-            _logger.LogDebug("LoopペアリングクリアはCommandListで自動処理されます");
-        }
-
-        /// <summary>
-        /// IFペアリングをクリア（非推奨）
-        /// </summary>
-        private void ClearIfPairing()
-        {
-            // CommandListクラスで自動処理されるため不要
-            _logger.LogDebug("IfペアリングクリアはCommandListで自動処理されます");
-        }
-
-        /// <summary>
-        /// ペアプロパティを設定
-        /// </summary>
         private void SetPairProperty(ICommandListItem item, ICommandListItem? pair)
         {
             try
@@ -772,26 +1075,14 @@ namespace AutoTool.ViewModel.Panels
                 if (pairProperty != null && pairProperty.CanWrite)
                 {
                     pairProperty.SetValue(item, pair);
-                    var pairLineText = pair?.LineNumber.ToString() ?? "null";
-                    _logger.LogTrace("ペアプロパティ設定成功: {ItemType} ({Type}) Line:{LineNumber} -> {PairLine}", 
-                        item.ItemType, item.GetType().Name, item.LineNumber, pairLineText);
-                }
-                else
-                {
-                    _logger.LogDebug("ペアプロパティなし: {ItemType} ({Type}) Line:{LineNumber}", 
-                        item.ItemType, item.GetType().Name, item.LineNumber);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "ペアプロパティ設定に失敗: {ItemType} ({Type}) Line:{LineNumber}", 
-                    item.ItemType, item.GetType().Name, item.LineNumber);
+                _logger.LogWarning(ex, "ペアプロパティ設定に失敗: {ItemType}", item.ItemType);
             }
         }
 
-        /// <summary>
-        /// プロパティ値を取得
-        /// </summary>
         private T GetPropertyValue<T>(ICommandListItem item, string propertyName)
         {
             try
@@ -811,9 +1102,6 @@ namespace AutoTool.ViewModel.Panels
             return default(T)!;
         }
 
-        /// <summary>
-        /// プロパティ値を設定
-        /// </summary>
         private void SetPropertyValue(ICommandListItem item, string propertyName, object? value)
         {
             try
@@ -830,61 +1118,39 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        /// <summary>
-        /// 開始コマンドかどうかを判定
-        /// </summary>
-        private bool IsStartCommand(string itemType)
+        private bool IsStartCommand(string itemType) => itemType switch
         {
-            return itemType switch
-            {
-                "Loop" => true,
-                "IF_ImageExist" => true,
-                "IF_ImageNotExist" => true,
-                "IF_ImageExist_AI" => true,
-                "IF_ImageNotExist_AI" => true,
-                "IF_Variable" => true,
-                _ => false
-            };
-        }
+            "Loop" => true,
+            "IF_ImageExist" => true,
+            "IF_ImageNotExist" => true,
+            "IF_ImageExist_AI" => true,
+            "IF_ImageNotExist_AI" => true,
+            "IF_Variable" => true,
+            _ => false
+        };
 
-        /// <summary>
-        /// 終了コマンドかどうかを判定
-        /// </summary>
-        private bool IsEndCommand(string itemType)
+        private bool IsEndCommand(string itemType) => itemType switch
         {
-            return itemType switch
-            {
-                "Loop_End" => true,
-                "IF_End" => true,
-                _ => false
-            };
-        }
+            "Loop_End" => true,
+            "IF_End" => true,
+            _ => false
+        };
 
-        /// <summary>
-        /// IFコマンドかどうかを判定
-        /// </summary>
-        private bool IsIfCommand(string itemType)
+        private bool IsIfCommand(string itemType) => itemType switch
         {
-            return itemType switch
-            {
-                "IF_ImageExist" => true,
-                "IF_ImageNotExist" => true,
-                "IF_ImageExist_AI" => true,
-                "IF_ImageNotExist_AI" => true,
-                "IF_Variable" => true,
-                _ => false
-            };
-        }
+            "IF_ImageExist" => true,
+            "IF_ImageNotExist" => true,
+            "IF_ImageExist_AI" => true,
+            "IF_ImageNotExist_AI" => true,
+            "IF_Variable" => true,
+            _ => false
+        };
 
-        /// <summary>
-        /// 操作を記録（Undo/Redo用）
-        /// </summary>
         private void RecordOperation(CommandListOperation operation)
         {
             _undoStack.Push(operation);
-            _redoStack.Clear(); // 新しい操作が行われたらRedoスタックをクリア
+            _redoStack.Clear();
             
-            // スタックサイズ制限（メモリ効率）
             const int maxUndoSteps = 100;
             while (_undoStack.Count > maxUndoSteps)
             {
@@ -897,249 +1163,36 @@ namespace AutoTool.ViewModel.Panels
 
         #endregion
 
-        #region ファイル操作
+        #region コマンド実行状態管理
 
-        public void Load(string filePath)
-        {
-            try
-            {
-                StatusMessage = "ファイル読み込み中...";
-                
-                if (System.IO.File.Exists(filePath))
-                {
-                    // CommandListクラスを使用してファイル読み込み
-                    var tempCommandList = new AutoTool.List.Class.CommandList();
-                    tempCommandList.Load(filePath);
-                    
-                    _logger.LogInformation("ファイル読み込み成功: {Count}件", tempCommandList.Items.Count);
-                    
-                    // 読み込まれたアイテムの型情報をログ出力
-                    foreach (var item in tempCommandList.Items.Take(5)) // 最初の5件だけログ
-                    {
-                        _logger.LogDebug("読み込みアイテム: Type={Type}, ItemType={ItemType}, Comment={Comment}", 
-                            item.GetType().Name, item.ItemType, item.Comment);
-                        
-                        // Pairプロパティの存在確認
-                        var pairProperty = item.GetType().GetProperty("Pair");
-                        if (pairProperty != null)
-                        {
-                            _logger.LogDebug("Pairプロパティ存在: {ItemType}", item.ItemType);
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Pairプロパティなし: {ItemType} ({Type})", item.ItemType, item.GetType().Name);
-                        }
-                    }
-                    
-                    // ObservableCollectionを破壊せずに内容を更新
-                    Items.Clear();
-                    foreach (var item in tempCommandList.Items)
-                    {
-                        Items.Add(item);
-                    }
-                    
-                    // 読み込み後にペアリング更新
-                    UpdateLineNumbers();
-                    
-                    _logger.LogInformation("CommandListクラスを使用してファイル読み込み完了: {Count}件", Items.Count);
-                }
-                else
-                {
-                    _logger.LogWarning("ファイルが存在しません: {FilePath}", filePath);
-                    
-                    // ファイルが存在しない場合はクリア
-                    Items.Clear();
-                }
-                
-                SelectedIndex = Items.Count > 0 ? 0 : -1;
-                SelectedItem = Items.FirstOrDefault();
-                
-                // 履歴をクリア
-                _undoStack.Clear();
-                _redoStack.Clear();
-                HasUnsavedChanges = false;
-                
-                StatusMessage = $"ファイルを読み込みました: {Path.GetFileName(filePath)} ({Items.Count}件)";
-                _logger.LogInformation("ファイルを読み込みました: {FilePath} ({Count}件)", filePath, Items.Count);
-                
-                OnPropertyChanged(nameof(CanUndo));
-                OnPropertyChanged(nameof(CanRedo));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ファイル読み込み中にエラーが発生しました: {FilePath}", filePath);
-                StatusMessage = $"読み込みエラー: {ex.Message}";
-                throw;
-            }
-        }
-
-        public void Save(string filePath)
-        {
-            try
-            {
-                StatusMessage = "ファイル保存中...";
-                
-                // 保存用のデータを準備
-                var saveData = Items.Select(item => new Dictionary<string, object?>
-                {
-                    ["ItemType"] = item.ItemType,
-                    ["LineNumber"] = item.LineNumber,
-                    ["Comment"] = item.Comment,
-                    ["IsEnable"] = item.IsEnable,
-                    ["Description"] = item.Description
-                    // 必要に応じて他のプロパティも追加
-                }).ToList();
-                
-                var options = new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                };
-                
-                var json = System.Text.Json.JsonSerializer.Serialize(saveData, options);
-                
-                var directory = System.IO.Path.GetDirectoryName(filePath);
-                if (!string.IsNullOrEmpty(directory) && !System.IO.Directory.Exists(directory))
-                {
-                    System.IO.Directory.CreateDirectory(directory);
-                }
-                
-                System.IO.File.WriteAllText(filePath, json);
-                HasUnsavedChanges = false;
-                
-                StatusMessage = $"ファイルを保存しました: {Path.GetFileName(filePath)} ({Items.Count}件)";
-                _logger.LogInformation("ファイルを保存しました: {FilePath} ({Count}件)", filePath, Items.Count);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ファイル保存中にエラーが発生しました: {FilePath}", filePath);
-                StatusMessage = $"保存エラー: {ex.Message}";
-                throw;
-            }
-        }
-
-        #endregion
-
-        #region 検証・統計
-
-        /// <summary>
-        /// コマンドリストの検証
-        /// </summary>
-        [RelayCommand]
-        private void ValidateCommands()
-        {
-            try
-            {
-                var errors = new List<string>();
-                var warnings = new List<string>();
-
-                for (int i = 0; i < Items.Count; i++)
-                {
-                    var item = Items[i];
-                    
-                    // 基本検証
-                    if (string.IsNullOrEmpty(item.ItemType))
-                    {
-                        errors.Add($"行 {i + 1}: アイテムタイプが設定されていません");
-                    }
-
-                    // ペア検証（Loop、If系）
-                    if (item.ItemType.StartsWith("Loop") && !item.ItemType.EndsWith("_End") && !item.ItemType.EndsWith("_Break"))
-                    {
-                        // TODO: ペア検証ロジック
-                    }
-                }
-
-                if (errors.Count > 0)
-                {
-                    StatusMessage = $"検証エラー: {errors.Count}件";
-                    WeakReferenceMessenger.Default.Send(new ValidationMessage("Error", string.Join("\n", errors), true));
-                }
-                else if (warnings.Count > 0)
-                {
-                    StatusMessage = $"検証警告: {warnings.Count}件";
-                    WeakReferenceMessenger.Default.Send(new ValidationMessage("Warning", string.Join("\n", warnings)));
-                }
-                else
-                {
-                    StatusMessage = "検証完了: 問題ありません";
-                    WeakReferenceMessenger.Default.Send(new ValidationMessage("Success", "コマンドリストに問題はありません"));
-                }
-
-                _logger.LogInformation("コマンドリスト検証完了: エラー{ErrorCount}件, 警告{WarningCount}件", errors.Count, warnings.Count);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンドリスト検証中にエラーが発生しました");
-                StatusMessage = $"検証エラー: {ex.Message}";
-            }
-        }
-
-        /// <summary>
-        /// 統計情報の取得
-        /// </summary>
-        public CommandListStats GetStats()
-        {
-            var stats = new CommandListStats
-            {
-                TotalItems = Items.Count,
-                EnabledItems = Items.Count(i => i.IsEnable),
-                DisabledItems = Items.Count(i => !i.IsEnable),
-                ItemTypeStats = Items.GroupBy(i => i.ItemType).ToDictionary(g => g.Key, g => g.Count())
-            };
-
-            return stats;
-        }
-
-        #endregion
-
-        public void SetRunningState(bool isRunning) 
-        {
-            IsRunning = isRunning;
-            StatusMessage = isRunning ? "実行中..." : "準備完了";
-            _logger.LogDebug("実行状態を設定: {IsRunning}", isRunning);
-        }
-
-        /// <summary>
-        /// 準備処理
-        /// </summary>
-        public void Prepare()
-        {
-            try
-            {
-                _logger.LogDebug("ListPanelViewModel の準備処理を実行します");
-                
-                // 実行関連の状態をリセット
-                foreach (var item in Items)
-                {
-                    item.IsRunning = false;
-                    item.Progress = 0;
-                }
-                
-                StatusMessage = "準備完了";
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ListPanelViewModel 準備処理中にエラーが発生しました");
-            }
-        }
-
-        #region コマンド実行状態処理
-
-        /// <summary>
-        /// コマンド開始処理
-        /// </summary>
         private void OnCommandStarted(StartCommandMessage message)
         {
             try
             {
-                // LineNumberでアイテムを特定してIsRunning=trueに設定
-                var item = Items.FirstOrDefault(x => x.LineNumber == message.Command.LineNumber);
+                // より柔軟な検索ロジック
+                var item = FindMatchingItem(message.LineNumber, message.ItemType);
+                
                 if (item != null)
                 {
                     item.IsRunning = true;
                     item.Progress = 0;
-                    _logger.LogDebug("コマンド開始: Line {LineNumber} - {ItemType}", item.LineNumber, item.ItemType);
+                    CurrentExecutingItem = item;
+                    
+                    _logger.LogDebug("コマンド開始: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType})", 
+                        item.LineNumber, message.LineNumber, item.ItemType, message.ItemType);
+                }
+                else
+                {
+                    _logger.LogWarning("コマンド開始: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}", 
+                        message.LineNumber, message.ItemType);
+                    
+                    // デバッグ情報を出力
+                    _logger.LogDebug("現在のアイテム一覧:");
+                    foreach (var debugItem in Items.Take(10))
+                    {
+                        _logger.LogDebug("  Line {LineNumber}: {ItemType} (IsEnable: {IsEnable})", 
+                            debugItem.LineNumber, debugItem.ItemType, debugItem.IsEnable);
+                    }
                 }
             }
             catch (Exception ex)
@@ -1148,29 +1201,44 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        /// <summary>
-        /// コマンド完了処理
-        /// </summary>
         private void OnCommandFinished(FinishCommandMessage message)
         {
             try
             {
-                // LineNumberでアイテムを特定してIsRunning=falseに設定
-                var item = Items.FirstOrDefault(x => x.LineNumber == message.Command.LineNumber);
+                var item = FindMatchingItem(message.LineNumber, message.ItemType);
+                
                 if (item != null)
                 {
                     item.IsRunning = false;
-                    item.Progress = 100; // 完了時は100%
-                    _logger.LogDebug("コマンド完了: Line {LineNumber} - {ItemType}", item.LineNumber, item.ItemType);
+                    item.Progress = 100;
                     
-                    // 少し遅延してProgressをクリア
+                    if (item.IsEnable)
+                    {
+                        _completedCommands++;
+                        UpdateProgress(_completedCommands);
+                    }
+                    
+                    _logger.LogDebug("コマンド完了: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType})", 
+                        item.LineNumber, message.LineNumber, item.ItemType, message.ItemType);
+                    
+                    // CurrentExecutingItemをクリア
+                    if (CurrentExecutingItem == item)
+                    {
+                        CurrentExecutingItem = null;
+                    }
+                    
                     Task.Delay(1000).ContinueWith(_ => 
                     {
-                        if (!item.IsRunning) // まだ実行中でなければクリア
+                        if (!item.IsRunning)
                         {
                             item.Progress = 0;
                         }
                     });
+                }
+                else
+                {
+                    _logger.LogWarning("コマンド完了: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}", 
+                        message.LineNumber, message.ItemType);
                 }
             }
             catch (Exception ex)
@@ -1179,19 +1247,28 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        /// <summary>
-        /// 進捗更新処理
-        /// </summary>
         private void OnProgressUpdated(UpdateProgressMessage message)
         {
             try
             {
-                // LineNumberでアイテムを特定してProgressを更新
-                var item = Items.FirstOrDefault(x => x.LineNumber == message.Command.LineNumber);
+                var item = FindMatchingItem(message.LineNumber, message.ItemType);
+                
                 if (item != null && item.IsRunning)
                 {
                     item.Progress = message.Progress;
-                    _logger.LogTrace("進捗更新: Line {LineNumber} - {Progress}%", item.LineNumber, message.Progress);
+                    
+                    _logger.LogTrace("進捗更新: Line {LineNumber} ({MessageLineNumber}) - {Progress}% - {ItemType} ({MessageItemType})", 
+                        item.LineNumber, message.LineNumber, message.Progress, item.ItemType, message.ItemType);
+                }
+                else if (item == null)
+                {
+                    _logger.LogTrace("進捗更新: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}", 
+                        message.LineNumber, message.ItemType);
+                }
+                else if (!item.IsRunning)
+                {
+                    _logger.LogTrace("進捗更新: アイテムが実行中ではありません - Line {LineNumber}, Type {ItemType}, IsRunning: {IsRunning}", 
+                        item.LineNumber, item.ItemType, item.IsRunning);
                 }
             }
             catch (Exception ex)
@@ -1200,107 +1277,175 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        #endregion
-
-        #region ペアリング処理
-
         /// <summary>
-        /// ペアリングを更新
+        /// メッセージに対応するアイテムを検索
         /// </summary>
-        private void UpdatePairing()
+        private ICommandListItem? FindMatchingItem(int messageLineNumber, string messageItemType)
         {
-            try
+            // 1. 正確な一致を優先
+            var exactMatch = Items.FirstOrDefault(x => 
+                x.LineNumber == messageLineNumber && x.ItemType == messageItemType);
+            if (exactMatch != null)
             {
-                if (_items.Count > 0)
-                {
-                    _logger.LogDebug("ペアリング更新開始");
-                    UpdatePairingInternal();
-                    _logger.LogDebug("ペアリング更新完了");
-                }
+                return exactMatch;
             }
-            catch (Exception ex)
+
+            // 2. LineNumberが一致するもの
+            var lineMatch = Items.FirstOrDefault(x => x.LineNumber == messageLineNumber);
+            if (lineMatch != null)
             {
-                _logger.LogError(ex, "ペアリング更新中にエラーが発生しました");
+                return lineMatch;
             }
+
+            // 3. ItemTypeが一致し、LineNumberが近いもの（±2の範囲）
+            var typeAndNearLineMatch = Items.FirstOrDefault(x => 
+                x.ItemType == messageItemType && 
+                Math.Abs(x.LineNumber - messageLineNumber) <= 2);
+            if (typeAndNearLineMatch != null)
+            {
+                return typeAndNearLineMatch;
+            }
+
+            // 4. 実行中のアイテムがあればそれを優先
+            var runningItem = Items.FirstOrDefault(x => x.IsRunning);
+            if (runningItem != null && runningItem.ItemType == messageItemType)
+            {
+                return runningItem;
+            }
+
+            return null;
         }
 
         #endregion
 
-        #region デバッグ用メソッド
+        #region 不足していたメソッドの実装
 
-        /// <summary>
-        /// ペアリング状況をデバッグ出力
-        /// </summary>
-        [RelayCommand]
-        private void DebugPairing()
+        private void ChangeItemType(ICommandListItem oldItem, ICommandListItem newItem)
         {
             try
             {
-                _logger.LogInformation("=== ペアリング状況デバッグ開始 ===");
+                var index = Items.IndexOf(oldItem);
+                if (index >= 0)
+                {
+                    var operation = new CommandListOperation
+                    {
+                        Type = OperationType.Replace,
+                        Index = index,
+                        Item = oldItem.Clone(),
+                        NewItem = newItem.Clone(),
+                        Description = $"タイプ変更: {oldItem.ItemType} -> {newItem.ItemType}"
+                    };
+
+                    Items[index] = newItem;
+                    SelectedIndex = index;
+                    SelectedItem = newItem;
+
+                    UpdateLineNumbers();
+                    RecordOperation(operation);
+                    StatusMessage = $"タイプを変更しました: {oldItem.ItemType} -> {newItem.ItemType}";
+                    
+                    WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(newItem));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "アイテムタイプ変更中にエラーが発生しました");
+                StatusMessage = $"タイプ変更エラー: {ex.Message}";
+            }
+        }
+
+        private void RefreshList()
+        {
+            try
+            {
+                OnPropertyChanged(nameof(Items));
+                OnPropertyChanged(nameof(SelectedItem));
+                OnPropertyChanged(nameof(SelectedIndex));
+                OnPropertyChanged(nameof(TotalItems));
+                OnPropertyChanged(nameof(HasItems));
+
+                StatusMessage = "リストを更新しました";
+                _logger.LogDebug("リストビューを強制更新しました");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "リスト更新中にエラーが発生しました");
+                StatusMessage = $"更新エラー: {ex.Message}";
+            }
+        }
+
+        public void SetRunningState(bool isRunning) 
+        {
+            IsRunning = isRunning;
+            StatusMessage = isRunning ? "実行中..." : "準備完了";
+            _logger.LogDebug("実行状態を設定: {IsRunning}", isRunning);
+            
+            if (!isRunning)
+            {
+                if (ShowProgress)
+                {
+                    CompleteProgress();
+                }
                 
                 foreach (var item in Items)
                 {
-                    var itemTypeName = item.GetType().Name;
-                    var pairProperty = item.GetType().GetProperty("Pair");
-                    var hasPairProperty = pairProperty != null;
-                    
-                    var pairInfo = "なし";
-                    if (hasPairProperty)
-                    {
-                        var pairValue = pairProperty?.GetValue(item) as ICommandListItem;
-                        pairInfo = pairValue?.LineNumber.ToString() ?? "null";
-                    }
-                    else
-                    {
-                        pairInfo = "プロパティなし";
-                    }
-                    
-                    _logger.LogInformation("行{LineNumber}: {ItemType} ({TypeName}) ネスト:{NestLevel} -> ペア:{PairInfo}", 
-                        item.LineNumber, item.ItemType, itemTypeName, item.NestLevel, pairInfo);
+                    item.IsRunning = false;
+                    item.Progress = 0;
                 }
-                
-                // 統計情報
-                var totalItems = Items.Count;
-                var basicCommandItems = Items.Count(i => i.GetType() == typeof(BasicCommandItem));
-                var itemsWithPairProperty = Items.Count(i => i.GetType().GetProperty("Pair") != null);
-                var loopItems = Items.Count(i => i.ItemType == "Loop");
-                var loopEndItems = Items.Count(i => i.ItemType == "Loop_End");
-                var ifItems = Items.Count(i => IsIfCommand(i.ItemType));
-                var ifEndItems = Items.Count(i => i.ItemType == "IF_End");
-                
-                _logger.LogInformation("=== 統計情報 ===");
-                _logger.LogInformation("総アイテム数: {Total}", totalItems);
-                _logger.LogInformation("BasicCommandItem数: {Basic}", basicCommandItems);
-                _logger.LogInformation("Pairプロパティあり: {WithPair}", itemsWithPairProperty);
-                _logger.LogInformation("Loop数: {Loop}, Loop_End数: {LoopEnd}", loopItems, loopEndItems);
-                _logger.LogInformation("If数: {If}, IF_End数: {IfEnd}", ifItems, ifEndItems);
-                
-                _logger.LogInformation("=== ペアリング状況デバッグ終了 ===");
-                StatusMessage = "ペアリング状況をログに出力しました";
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ペアリングデバッグ中にエラー");
-                StatusMessage = $"ペアリングデバッグエラー: {ex.Message}";
+                CurrentExecutingItem = null;
             }
         }
 
-        /// <summary>
-        /// 手動でペアリング更新を実行
-        /// </summary>
-        [RelayCommand]
-        private void ForceUpdatePairing()
+        public void TestExecutionStateDisplay()
         {
             try
             {
-                _logger.LogInformation("手動ペアリング更新を実行");
-                UpdateLineNumbers();
-                StatusMessage = "ペアリングを手動更新しました";
+                _logger.LogInformation("=== 実行状態表示テスト開始 ===");
+                
+                if (Items.Count == 0)
+                {
+                    _logger.LogWarning("テスト対象のアイテムがありません");
+                    return;
+                }
+
+                var testItem = Items.First();
+                _logger.LogInformation("テスト対象アイテム: {ItemType} (行{LineNumber})", testItem.ItemType, testItem.LineNumber);
+
+                testItem.IsRunning = true;
+                testItem.Progress = 50;
+                CurrentExecutingItem = testItem;
+
+                OnPropertyChanged(nameof(Items));
+                OnPropertyChanged(nameof(CurrentExecutingItem));
+                OnPropertyChanged(nameof(CurrentExecutingDescription));
+                
+                _logger.LogInformation("=== 実行状態表示テスト完了 ===");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "手動ペアリング更新中にエラー");
-                StatusMessage = $"ペアリング更新エラー: {ex.Message}";
+                _logger.LogError(ex, "実行状態表示テスト中にエラー");
+            }
+        }
+
+        public void DebugItemStates()
+        {
+            try
+            {
+                _logger.LogInformation("=== アイテム状態一覧 ===");
+                _logger.LogInformation("総アイテム数: {Count}", Items.Count);
+                _logger.LogInformation("CurrentExecutingItem: {Item}", CurrentExecutingItem?.ItemType ?? "null");
+
+                for (int i = 0; i < Items.Count; i++)
+                {
+                    var item = Items[i];
+                    _logger.LogInformation("  [{Index}] {ItemType} (行{LineNumber}) - IsRunning:{IsRunning}, Progress:{Progress}%", 
+                        i, item.ItemType, item.LineNumber, item.IsRunning, item.Progress);
+                }
+                _logger.LogInformation("=== アイテム状態一覧完了 ===");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "アイテム状態表示中にエラー");
             }
         }
 
@@ -1309,9 +1454,6 @@ namespace AutoTool.ViewModel.Panels
 
     #region 補助クラス
 
-    /// <summary>
-    /// コマンドリスト操作の記録
-    /// </summary>
     public class CommandListOperation
     {
         public OperationType Type { get; set; }
@@ -1324,9 +1466,6 @@ namespace AutoTool.ViewModel.Panels
         public DateTime Timestamp { get; set; } = DateTime.Now;
     }
 
-    /// <summary>
-    /// 操作タイプ
-    /// </summary>
     public enum OperationType
     {
         Add,
@@ -1337,9 +1476,6 @@ namespace AutoTool.ViewModel.Panels
         Replace
     }
 
-    /// <summary>
-    /// コマンドリスト統計
-    /// </summary>
     public class CommandListStats
     {
         public int TotalItems { get; set; }

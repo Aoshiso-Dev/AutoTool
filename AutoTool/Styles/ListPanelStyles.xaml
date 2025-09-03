@@ -1,0 +1,152 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:converters="clr-namespace:AutoTool.Converters">
+
+    <!-- Converter Resources -->
+    <converters:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter"/>
+    <converters:NestLevelToDisplayTextConverter x:Key="NestLevelToDisplayTextConverter"/>
+    <converters:ExecutionStateToBackgroundConverter x:Key="ExecutionStateToBackgroundConverter"/>
+    <converters:ExecutionStateToIconConverter x:Key="ExecutionStateToIconConverter"/>
+    <converters:ProgressVisibilityConverter x:Key="ProgressVisibilityConverter"/>
+    <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    <converters:PairLineNumberConverter x:Key="PairLineNumberConverter"/>
+    <converters:CommentDisplayConverter x:Key="CommentDisplayConverter"/>
+    <converters:ProgressPercentageConverter x:Key="ProgressPercentageConverter"/>
+    <converters:BoolToFontWeightConverter x:Key="BoolToFontWeightConverter"/>
+    <converters:RunningStateToColorConverter x:Key="RunningStateToColorConverter"/>
+    <converters:RunningStateToTextConverter x:Key="RunningStateToTextConverter"/>
+    <converters:ProgressToScaleConverter x:Key="ProgressToScaleConverter"/>
+
+    <!-- ListBoxItem Style -->
+    <Style x:Key="CommandListItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="Margin" Value="{Binding ., Converter={StaticResource NestLevelToMarginConverter}}"/>
+        <Setter Property="Padding" Value="5,3"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="BorderBrush" Value="#E0E0E0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Border" 
+                            Margin="{TemplateBinding Margin}"
+                            Padding="{TemplateBinding Padding}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            CornerRadius="3">
+                        <Border.Background>
+                            <MultiBinding Converter="{StaticResource ExecutionStateToBackgroundConverter}">
+                                <Binding Path="."/>
+                                <Binding Path="DataContext.CurrentExecutingItem" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                            </MultiBinding>
+                        </Border.Background>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Execution State Icon -->
+                            <TextBlock Grid.Column="0" 
+                                       Text="{Binding ., Converter={StaticResource ExecutionStateToIconConverter}}"
+                                       Margin="0,0,5,0"
+                                       VerticalAlignment="Center"
+                                       FontFamily="Segoe UI Symbol"
+                                       FontSize="12">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard RepeatBehavior="Forever">
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                             From="1.0" To="0.3" Duration="0:0:1"
+                                                                             AutoReverse="True"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                             To="1.0" Duration="0:0:0.2"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            
+                            <!-- Line Number with Pairing Info -->
+                            <TextBlock Grid.Column="1" 
+                                       Text="{Binding ., Converter={StaticResource PairLineNumberConverter}}"
+                                       Margin="0,0,5,0"
+                                       VerticalAlignment="Center"
+                                       FontFamily="Consolas"
+                                       FontSize="11"
+                                       Foreground="#666"/>
+                            
+                            <!-- Command Name + Comment -->
+                            <StackPanel Grid.Column="2" 
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ., Converter={StaticResource NestLevelToDisplayTextConverter}}"
+                                           VerticalAlignment="Center"
+                                           FontWeight="{Binding IsEnable, Converter={StaticResource BoolToFontWeightConverter}}"/>
+                                <TextBlock Text="{Binding ., Converter={StaticResource CommentDisplayConverter}}"
+                                           VerticalAlignment="Center"
+                                           Foreground="#888"
+                                           FontStyle="Italic"/>
+                            </StackPanel>
+                            
+                            <!-- Progress Bar -->
+                            <ProgressBar Grid.Column="3"
+                                         Width="80"
+                                         Height="4"
+                                         Margin="5,0,0,0"
+                                         VerticalAlignment="Center"
+                                         Value="{Binding Progress}"
+                                         Maximum="100"
+                                         Visibility="{Binding ., Converter={StaticResource ProgressVisibilityConverter}}"
+                                         Background="#E0E0E0"
+                                         Foreground="#4CAF50"/>
+                        </Grid>
+                    </Border>
+                    
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Border" Property="Background">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="#3399FF" Opacity="0.3"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="#E3F2FD"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <DataTrigger Binding="{Binding IsEnable}" Value="False">
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Progress Panel Style -->
+    <Style x:Key="ProgressPanelStyle" TargetType="{x:Type StackPanel}">
+        <Setter Property="Orientation" Value="Vertical"/>
+        <Setter Property="Margin" Value="10"/>
+        <Setter Property="Background" Value="#F5F5F5"/>
+        <Setter Property="Visibility" Value="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+    </Style>
+
+</ResourceDictionary>

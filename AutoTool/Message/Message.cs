@@ -80,6 +80,29 @@ namespace AutoTool.Message
         }
     }
 
+    // 新しいファイル操作メッセージ（MainWindow用）
+    public class LoadFileMessage
+    {
+        public string FilePath { get; }
+        public DateTime Timestamp { get; } = DateTime.Now;
+
+        public LoadFileMessage(string filePath)
+        {
+            FilePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
+        }
+    }
+
+    public class SaveFileMessage
+    {
+        public string FilePath { get; }
+        public DateTime Timestamp { get; } = DateTime.Now;
+
+        public SaveFileMessage(string filePath)
+        {
+            FilePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
+        }
+    }
+
     // Undo/Redo メッセージ
     public class UndoMessage
     {
@@ -91,26 +114,130 @@ namespace AutoTool.Message
         public DateTime Timestamp { get; } = DateTime.Now;
     }
 
-    // コマンド実行関連メッセージ
+    // 状態変更メッセージ
+    public class ChangeSelectedMessage
+    {
+        public ICommandListItem? SelectedItem { get; }
+        public DateTime Timestamp { get; } = DateTime.Now;
+
+        public ChangeSelectedMessage(ICommandListItem? selectedItem)
+        {
+            SelectedItem = selectedItem;
+        }
+    }
+
+    // アイテム数変更メッセージ
+    public class ItemCountChangedMessage
+    {
+        public int Count { get; }
+        public DateTime Timestamp { get; } = DateTime.Now;
+
+        public ItemCountChangedMessage(int count)
+        {
+            Count = count;
+        }
+    }
+
+    // マクロ実行状態メッセージ
+    public class MacroExecutionStateMessage
+    {
+        public bool IsRunning { get; }
+        public DateTime Timestamp { get; } = DateTime.Now;
+
+        public MacroExecutionStateMessage(bool isRunning)
+        {
+            IsRunning = isRunning;
+        }
+    }
+
+    // コマンド実行関連メッセージ（修正版）
     public class StartCommandMessage
     {
         public ICommand Command { get; }
+        public int LineNumber { get; }
+        public string ItemType { get; }
         public DateTime Timestamp { get; } = DateTime.Now;
 
         public StartCommandMessage(ICommand command)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
+            LineNumber = command.LineNumber;
+            ItemType = GetItemTypeFromCommand(command);
+        }
+
+        /// <summary>
+        /// コマンドからItemTypeを正確に取得
+        /// </summary>
+        private static string GetItemTypeFromCommand(ICommand command)
+        {
+            return command.GetType().Name switch
+            {
+                "WaitImageCommand" => "Wait_Image",
+                "ClickImageCommand" => "Click_Image", 
+                "ClickImageAICommand" => "Click_Image_AI",
+                "HotkeyCommand" => "Hotkey",
+                "ClickCommand" => "Click",
+                "WaitCommand" => "Wait",
+                "LoopCommand" => "Loop",
+                "LoopBreakCommand" => "Loop_Break",
+                "LoopEndCommand" => "Loop_End",
+                "IfImageExistCommand" => "IF_ImageExist",
+                "IfImageNotExistCommand" => "IF_ImageNotExist",
+                "IfImageExistAICommand" => "IF_ImageExist_AI",
+                "IfImageNotExistAICommand" => "IF_ImageNotExist_AI",
+                "IfVariableCommand" => "IF_Variable",
+                "IfEndCommand" => "IF_End",
+                "ExecuteCommand" => "Execute",
+                "SetVariableCommand" => "SetVariable",
+                "SetVariableAICommand" => "SetVariable_AI",
+                "ScreenshotCommand" => "Screenshot",
+                _ => command.GetType().Name.Replace("Command", "")
+            };
         }
     }
 
     public class FinishCommandMessage
     {
         public ICommand Command { get; }
+        public int LineNumber { get; }
+        public string ItemType { get; }
         public DateTime Timestamp { get; } = DateTime.Now;
 
         public FinishCommandMessage(ICommand command)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
+            LineNumber = command.LineNumber;
+            ItemType = GetItemTypeFromCommand(command);
+        }
+
+        /// <summary>
+        /// コマンドからItemTypeを正確に取得
+        /// </summary>
+        private static string GetItemTypeFromCommand(ICommand command)
+        {
+            return command.GetType().Name switch
+            {
+                "WaitImageCommand" => "Wait_Image",
+                "ClickImageCommand" => "Click_Image", 
+                "ClickImageAICommand" => "Click_Image_AI",
+                "HotkeyCommand" => "Hotkey",
+                "ClickCommand" => "Click",
+                "WaitCommand" => "Wait",
+                "LoopCommand" => "Loop",
+                "LoopBreakCommand" => "Loop_Break",
+                "LoopEndCommand" => "Loop_End",
+                "IfImageExistCommand" => "IF_ImageExist",
+                "IfImageNotExistCommand" => "IF_ImageNotExist",
+                "IfImageExistAICommand" => "IF_ImageExist_AI",
+                "IfImageNotExistAICommand" => "IF_ImageNotExist_AI",
+                "IfVariableCommand" => "IF_Variable",
+                "IfEndCommand" => "IF_End",
+                "ExecuteCommand" => "Execute",
+                "SetVariableCommand" => "SetVariable",
+                "SetVariableAICommand" => "SetVariable_AI",
+                "ScreenshotCommand" => "Screenshot",
+                _ => command.GetType().Name.Replace("Command", "")
+            };
         }
     }
 
@@ -118,12 +245,46 @@ namespace AutoTool.Message
     {
         public ICommand Command { get; }
         public string Detail { get; }
+        public int LineNumber { get; }
+        public string ItemType { get; }
         public DateTime Timestamp { get; } = DateTime.Now;
 
         public DoingCommandMessage(ICommand command, string detail)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
             Detail = detail ?? string.Empty;
+            LineNumber = command.LineNumber;
+            ItemType = GetItemTypeFromCommand(command);
+        }
+
+        /// <summary>
+        /// コマンドからItemTypeを正確に取得
+        /// </summary>
+        private static string GetItemTypeFromCommand(ICommand command)
+        {
+            return command.GetType().Name switch
+            {
+                "WaitImageCommand" => "Wait_Image",
+                "ClickImageCommand" => "Click_Image", 
+                "ClickImageAICommand" => "Click_Image_AI",
+                "HotkeyCommand" => "Hotkey",
+                "ClickCommand" => "Click",
+                "WaitCommand" => "Wait",
+                "LoopCommand" => "Loop",
+                "LoopBreakCommand" => "Loop_Break",
+                "LoopEndCommand" => "Loop_End",
+                "IfImageExistCommand" => "IF_ImageExist",
+                "IfImageNotExistCommand" => "IF_ImageNotExist",
+                "IfImageExistAICommand" => "IF_ImageExist_AI",
+                "IfImageNotExistAICommand" => "IF_ImageNotExist_AI",
+                "IfVariableCommand" => "IF_Variable",
+                "IfEndCommand" => "IF_End",
+                "ExecuteCommand" => "Execute",
+                "SetVariableCommand" => "SetVariable",
+                "SetVariableAICommand" => "SetVariable_AI",
+                "ScreenshotCommand" => "Screenshot",
+                _ => command.GetType().Name.Replace("Command", "")
+            };
         }
     }
 
@@ -141,17 +302,53 @@ namespace AutoTool.Message
         }
     }
 
-    // 進捗更新メッセージ
+    /// <summary>
+    /// 進捗更新メッセージ（修正版）
+    /// </summary>
     public class UpdateProgressMessage
     {
         public ICommand Command { get; }
         public int Progress { get; }
+        public int LineNumber { get; }
+        public string ItemType { get; }        
         public DateTime Timestamp { get; } = DateTime.Now;
 
         public UpdateProgressMessage(ICommand command, int progress)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
             Progress = Math.Max(0, Math.Min(100, progress));
+            LineNumber = command.LineNumber;
+            ItemType = GetItemTypeFromCommand(command);
+        }
+
+        /// <summary>
+        /// コマンドからItemTypeを正確に取得
+        /// </summary>
+        private static string GetItemTypeFromCommand(ICommand command)
+        {
+            return command.GetType().Name switch
+            {
+                "WaitImageCommand" => "Wait_Image",
+                "ClickImageCommand" => "Click_Image", 
+                "ClickImageAICommand" => "Click_Image_AI",
+                "HotkeyCommand" => "Hotkey",
+                "ClickCommand" => "Click",
+                "WaitCommand" => "Wait",
+                "LoopCommand" => "Loop",
+                "LoopBreakCommand" => "Loop_Break",
+                "LoopEndCommand" => "Loop_End",
+                "IfImageExistCommand" => "IF_ImageExist",
+                "IfImageNotExistCommand" => "IF_ImageNotExist",
+                "IfImageExistAICommand" => "IF_ImageExist_AI",
+                "IfImageNotExistAICommand" => "IF_ImageNotExist_AI",
+                "IfVariableCommand" => "IF_Variable",
+                "IfEndCommand" => "IF_End",
+                "ExecuteCommand" => "Execute",
+                "SetVariableCommand" => "SetVariable",
+                "SetVariableAICommand" => "SetVariable_AI",
+                "ScreenshotCommand" => "Screenshot",
+                _ => command.GetType().Name.Replace("Command", "")
+            };
         }
     }
 
@@ -192,18 +389,6 @@ namespace AutoTool.Message
             SuccessfulCommands = successful;
             FailedCommands = failed;
             ExecutionTime = executionTime;
-        }
-    }
-
-    // 選択変更メッセージ
-    public class ChangeSelectedMessage
-    {
-        public ICommandListItem? Item { get; }
-        public DateTime Timestamp { get; } = DateTime.Now;
-
-        public ChangeSelectedMessage(ICommandListItem? item)
-        {
-            Item = item;
         }
     }
 

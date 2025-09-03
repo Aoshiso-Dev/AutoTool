@@ -1,0 +1,311 @@
+<UserControl x:Class="AutoTool.View.Panels.ListPanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:AutoTool.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="400">
+    
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/AutoTool;component/Styles/ListPanelStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Converters -->
+            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+            <converters:ProgressPercentageConverter x:Key="ProgressPercentageConverter"/>
+            <converters:RunningStateToColorConverter x:Key="RunningStateToColorConverter"/>
+            <converters:RunningStateToTextConverter x:Key="RunningStateToTextConverter"/>
+            <converters:ExecutionStateToBackgroundConverter x:Key="ExecutionStateToBackgroundConverter"/>
+            <converters:ExecutionStateToIconConverter x:Key="ExecutionStateToIconConverter"/>
+            <converters:ProgressVisibilityConverter x:Key="ProgressVisibilityConverter"/>
+            <converters:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter"/>
+            <converters:NestLevelToDisplayTextConverter x:Key="NestLevelToDisplayTextConverter"/>
+            <converters:CommentDisplayConverter x:Key="CommentDisplayConverter"/>
+            <converters:PairLineNumberConverter x:Key="PairLineNumberConverter"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Progress Display Area -->
+            <RowDefinition Height="*"/>    <!-- Command List -->
+            <RowDefinition Height="Auto"/> <!-- Status Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- Progress Display Area -->
+        <Border Grid.Row="0" 
+                Background="#F5F5F5" 
+                BorderBrush="#E0E0E0" 
+                BorderThickness="0,0,0,1"
+                Visibility="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel Margin="10,5">
+                <!-- Overall Progress Bar -->
+                <Grid Margin="0,0,0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <ProgressBar Grid.Column="0"
+                                 Height="20"
+                                 Margin="0,0,10,0">
+                        <ProgressBar.Value>
+                            <MultiBinding Converter="{StaticResource ProgressPercentageConverter}">
+                                <Binding Path="CurrentProgress"/>
+                                <Binding Path="TotalProgress"/>
+                            </MultiBinding>
+                        </ProgressBar.Value>
+                    </ProgressBar>
+                    
+                    <TextBlock Grid.Column="1" 
+                               Text="{Binding ProgressText}"
+                               VerticalAlignment="Center"
+                               FontFamily="Consolas"
+                               FontSize="11"/>
+                </Grid>
+                
+                <!-- Currently Executing Command Info -->
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="?" 
+                               Foreground="#4CAF50"
+                               FontFamily="Segoe UI Symbol"
+                               Margin="0,0,5,0"/>
+                    <TextBlock Text="{Binding CurrentExecutingDescription}"
+                               FontSize="11"
+                               Foreground="#666"/>
+                </StackPanel>
+                
+                <!-- Estimated Remaining Time -->
+                <TextBlock Text="{Binding EstimatedTimeRemaining, StringFormat='Remaining: {0}'}"
+                           FontSize="10"
+                           Foreground="#888"
+                           HorizontalAlignment="Right"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Command List -->
+        <ListBox Grid.Row="1"
+                 ItemsSource="{Binding Items}"
+                 SelectedItem="{Binding SelectedItem}"
+                 SelectedIndex="{Binding SelectedIndex}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 BorderThickness="0"
+                 Background="White">
+            
+            <!-- ListBox Item Style with Execution State -->
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0,1"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Border Name="ItemBorder"
+                                        Padding="{TemplateBinding Padding}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        BorderBrush="{TemplateBinding BorderBrush}">
+                                    <Border.Background>
+                                        <MultiBinding Converter="{StaticResource ExecutionStateToBackgroundConverter}">
+                                            <Binding Path="."/>
+                                            <Binding Path="DataContext.CurrentExecutingItem" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                        </MultiBinding>
+                                    </Border.Background>
+                                    <ContentPresenter/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#007ACC"/>
+                                        <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#E1E1E1"/>
+                                        <Setter TargetName="ItemBorder" Property="BorderThickness" Value="1"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            
+            <!-- Custom ItemTemplate with Enhanced Display -->
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="{Binding Converter={StaticResource NestLevelToMarginConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/> <!-- Line Number -->
+                            <ColumnDefinition Width="Auto"/> <!-- Execution Icon -->
+                            <ColumnDefinition Width="Auto"/> <!-- Enable Checkbox -->
+                            <ColumnDefinition Width="*"/>    <!-- Command Text -->
+                            <ColumnDefinition Width="Auto"/> <!-- Individual Progress -->
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/> <!-- Progress Bar Row -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Line Number with Pairing Info -->
+                        <TextBlock Grid.Column="0" Grid.Row="0"
+                                   Text="{Binding Converter={StaticResource PairLineNumberConverter}}"
+                                   Width="40"
+                                   TextAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontFamily="Consolas"
+                                   FontSize="10"
+                                   Foreground="#666"
+                                   Margin="5,0"/>
+
+                        <!-- Execution State Icon -->
+                        <TextBlock Grid.Column="1" Grid.Row="0"
+                                   Text="{Binding Converter={StaticResource ExecutionStateToIconConverter}}"
+                                   Width="20"
+                                   TextAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontFamily="Segoe UI Symbol"
+                                   FontSize="12"
+                                   Margin="2,0"/>
+
+                        <!-- Enable Checkbox -->
+                        <CheckBox Grid.Column="2" Grid.Row="0"
+                                  IsChecked="{Binding IsEnable}"
+                                  VerticalAlignment="Center"
+                                  Margin="5,0"/>
+
+                        <!-- Command Display Text with Comment -->
+                        <StackPanel Grid.Column="3" Grid.Row="0"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    Margin="5,2">
+                            <TextBlock Text="{Binding Converter={StaticResource NestLevelToDisplayTextConverter}}"
+                                       VerticalAlignment="Center"
+                                       FontWeight="{Binding IsEnable, Converter={StaticResource BoolToFontWeightConverter}}"/>
+                            <TextBlock Text="{Binding Converter={StaticResource CommentDisplayConverter}}"
+                                       VerticalAlignment="Center"
+                                       FontStyle="Italic"
+                                       Foreground="#888"
+                                       FontSize="11"/>
+                        </StackPanel>
+
+                        <!-- Individual Progress Indicator -->
+                        <TextBlock Grid.Column="4" Grid.Row="0"
+                                   Text="{Binding Progress, StringFormat='{}{0}%'}"
+                                   VerticalAlignment="Center"
+                                   FontFamily="Consolas"
+                                   FontSize="10"
+                                   Foreground="#666"
+                                   Margin="5,0"
+                                   Visibility="{Binding IsRunning, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                        <!-- Individual Progress Bar -->
+                        <ProgressBar Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="5"
+                                     Height="3"
+                                     Margin="5,0,5,2"
+                                     Value="{Binding Progress}"
+                                     Visibility="{Binding Converter={StaticResource ProgressVisibilityConverter}}"
+                                     Foreground="#4CAF50"
+                                     Background="#E0E0E0"/>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+            
+            <!-- Empty State Display -->
+            <ListBox.Style>
+                <Style TargetType="ListBox">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Items.Count}" Value="0">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBox">
+                                        <Border Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}">
+                                            <StackPanel VerticalAlignment="Center" 
+                                                        HorizontalAlignment="Center"
+                                                        Opacity="0.6">
+                                                <TextBlock Text="??" 
+                                                           FontSize="48" 
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,0,0,10"/>
+                                                <TextBlock Text="No Commands" 
+                                                           FontSize="14"
+                                                           HorizontalAlignment="Center"
+                                                           Foreground="#666"/>
+                                                <TextBlock Text="Add commands from the left panel" 
+                                                           FontSize="12"
+                                                           HorizontalAlignment="Center"
+                                                           Foreground="#999"
+                                                           Margin="0,5,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ListBox.Style>
+        </ListBox>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" 
+                Background="#F8F8F8" 
+                BorderBrush="#E0E0E0" 
+                BorderThickness="0,1,0,0">
+            <Grid Margin="10,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Status Message -->
+                <TextBlock Grid.Column="0" 
+                           Text="{Binding StatusMessage}"
+                           VerticalAlignment="Center"
+                           FontSize="11"/>
+                
+                <!-- Execution State Icon -->
+                <StackPanel Grid.Column="1" 
+                            Orientation="Horizontal"
+                            Margin="0,0,10,0">
+                    <Ellipse Width="8" Height="8" 
+                             VerticalAlignment="Center"
+                             Margin="0,0,5,0">
+                        <Ellipse.Fill>
+                            <SolidColorBrush>
+                                <SolidColorBrush.Color>
+                                    <MultiBinding Converter="{StaticResource RunningStateToColorConverter}">
+                                        <Binding Path="IsRunning"/>
+                                        <Binding Path="ShowProgress"/>
+                                    </MultiBinding>
+                                </SolidColorBrush.Color>
+                            </SolidColorBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <TextBlock VerticalAlignment="Center"
+                               FontSize="11">
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{StaticResource RunningStateToTextConverter}">
+                                <Binding Path="IsRunning"/>
+                                <Binding Path="ShowProgress"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+                
+                <!-- Item Count -->
+                <TextBlock Grid.Column="2" 
+                           Text="{Binding TotalItems, StringFormat='{}{0} items'}"
+                           VerticalAlignment="Center"
+                           FontSize="11"
+                           Foreground="#666"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

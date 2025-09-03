@@ -345,7 +345,7 @@ namespace AutoTool.Command.Class
             ExecutionStats.StartTime = DateTime.Now;
             ExecutionStats.TotalCommands++;
 
-            _logger?.LogDebug("[Execute] コマンド実行開始: {Description}", Description);
+            _logger?.LogDebug("[Execute] コマンド実行開始メッセージ送信: {Description} (Line: {LineNumber})", Description, LineNumber);
             OnStartCommand?.Invoke(this, EventArgs.Empty);
             WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
 
@@ -374,6 +374,7 @@ namespace AutoTool.Command.Class
                 ExecutionStats.EndTime = DateTime.Now;
                 ExecutionStats.TotalExecutionTime = ExecutionStats.EndTime.Value - ExecutionStats.StartTime;
 
+                _logger?.LogDebug("[Execute] コマンド完了メッセージ送信: {Description} (Line: {LineNumber})", Description, LineNumber);
                 WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
                 return result;
             }
@@ -425,7 +426,7 @@ namespace AutoTool.Command.Class
                     ExecutionStats.EndTime = DateTime.Now;
                     ExecutionStats.TotalExecutionTime = ExecutionStats.EndTime.Value - ExecutionStats.StartTime;
                 }
-                _logger?.LogDebug("[Execute] 実行終了: {Description}", Description);
+                _logger?.LogDebug("[Execute] 実行終了: {Description} (Line: {LineNumber})", Description, LineNumber);
             }
         }
 
@@ -449,6 +450,14 @@ namespace AutoTool.Command.Class
                     baseChild.SetExecutionContext(_executionContext);
                 }
 
+                // 子コマンドのLineNumberが設定されていない場合、親から継承
+                if (child.LineNumber <= 0 && this.LineNumber > 0)
+                {
+                    child.LineNumber = this.LineNumber;
+                    _logger?.LogDebug("[ExecuteChildrenAsync] 子コマンドにLineNumber設定: {ChildType} -> Line {LineNumber}", 
+                        child.GetType().Name, child.LineNumber);
+                }
+
                 var result = await child.Execute(cancellationToken);
                 if (!result)
                     return false;
@@ -457,14 +466,17 @@ namespace AutoTool.Command.Class
         }
 
         /// <summary>
-        /// 進捗報告
+        /// 進捗報告（改良版）
         /// </summary>
         protected void ReportProgress(double elapsedMilliseconds, double totalMilliseconds)
         {
-            int progress = totalMilliseconds <= 0 ? 100 :
+            int trend = totalMilliseconds <= 0 ? 100 :
                 Math.Max(0, Math.Min(100, (int)Math.Round((elapsedMilliseconds / totalMilliseconds) * 100)));
 
-            WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(this, progress));
+            _logger?.LogTrace("[ReportProgress] 進捗報告: {Progress}% ({Elapsed}/{Total}ms) - {Description} (Line: {LineNumber})", 
+                trend, elapsedMilliseconds, totalMilliseconds, Description, LineNumber);
+
+            WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(this, trend));
         }
 
         /// <summary>
@@ -951,13 +963,25 @@ namespace AutoTool.Command.Class
         }
 
         /// <summary>
-        /// 子コマンドを順次実行（LoopBreakException対応版）
+        /// 子コマンドを順次実行（LoopBreakException対応版・LineNumber同期強化）
         /// </summary>
         protected new async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
         {
             foreach (var child in Children)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                // 子コマンドのLineNumberを確実に設定
+                if (child.LineNumber <= 0)
+                {
+                    // LoopCommandの次の行から順番に設定
+                    var parentLineNumber = this.LineNumber;
+                    var childIndex = Children.ToList().IndexOf(child);
+                    child.LineNumber = parentLineNumber + childIndex + 1;
+                    
+                    _logger?.LogDebug("[LoopCommand.ExecuteChildrenAsync] 子コマンドLineNumber設定: {ChildType} -> Line {LineNumber}", 
+                        child.GetType().Name, child.LineNumber);
+                }
 
                 try
                 {
