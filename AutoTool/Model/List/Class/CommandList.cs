@@ -1,24 +1,29 @@
+using AutoTool.Model.CommandDefinition;
+using AutoTool.Model.List.Class;
+using CommunityToolkit.Mvvm.ComponentModel;
+using AutoTool.Command.Class;
+using AutoTool.Command.Interface;
+using AutoTool.List.Class;
+using AutoTool.Model.List.Interface;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using CommunityToolkit.Mvvm.ComponentModel;
-using AutoTool.Model.List.Interface;
-using AutoTool.Model.CommandDefinition;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using AutoTool.Model.MacroFactory;
+using AutoTool.Services.Configuration;
+using AutoTool.Helpers;
 
-namespace AutoTool.Model.List.Class
+namespace AutoTool.List.Class
 {
-    /// <summary>
-    /// Phase 5統合版：コマンドリストクラス
-    /// </summary>
-    public partial class CommandList : ObservableObject, ICommandList
+    public partial class CommandList : ObservableObject
     {
         [ObservableProperty]
         private ObservableCollection<ICommandListItem> _items = new();
-
-        // インターフェースの明示的な実装
-        ObservableCollection<ICommandListItem> ICommandList.Items => Items;
 
         public ICommandListItem this[int index]
         {
@@ -69,10 +74,10 @@ namespace AutoTool.Model.List.Class
 
         public void Override(int index, ICommandListItem item)
         {
-            if(item == null)
+            if (item == null)
                 throw new ArgumentNullException(nameof(item));
 
-            if(index < 0 || index >= Items.Count)
+            if (index < 0 || index >= Items.Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             Items[index] = item;
@@ -136,7 +141,7 @@ namespace AutoTool.Model.List.Class
         }
 
         /// <summary>
-        /// 共通のペアリング処理（Phase 5統合版）
+        /// 共通のペアリング処理
         /// </summary>
         private void PairItems<TStart, TEnd>(Func<ICommandListItem, bool> startPredicate, Func<ICommandListItem, bool> endPredicate)
             where TStart : class
@@ -204,79 +209,43 @@ namespace AutoTool.Model.List.Class
         {
             var cloneItems = Clone();
 
-            // Phase 5: AutoTool統合版のJSONシリアライザーを使用
-            var json = System.Text.Json.JsonSerializer.Serialize(cloneItems, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(filePath, json);
+            JsonSerializerHelper.SerializeToFile(cloneItems, filePath);
         }
 
         public void Load(string filePath)
         {
-            try
+            var deserializedItems = JsonSerializerHelper.DeserializeFromFile<ObservableCollection<ICommandListItem>>(filePath);
+            if (deserializedItems != null)
             {
-                if (File.Exists(filePath))
-                {
-                    var json = File.ReadAllText(filePath);
-                    var deserializedItems = System.Text.Json.JsonSerializer.Deserialize<ObservableCollection<ICommandListItem>>(json);
-                    
-                    if (deserializedItems != null)
-                    {
-                        Items.Clear();
+                Items.Clear();
 
-                        foreach (var item in deserializedItems)
+                foreach (var item in deserializedItems)
+                {
+                    // CommandRegistry を使用して自動的に適切な型を作成
+                    var itemType = CommandRegistry.GetItemType(item.ItemType);
+                    if (itemType != null)
+                    {
+                        try
                         {
-                            // CommandRegistry を使用して自動的に適切な型を作成
-                            var newItem = CommandRegistry.CreateCommandItem(item.ItemType);
-                            if (newItem != null)
-                            {
-                                // プロパティをコピー
-                                newItem.Comment = item.Comment;
-                                newItem.IsEnable = item.IsEnable;
-                                // 必要に応じて他のプロパティもコピー
-                                Add(newItem);
-                            }
-                            else
-                            {
-                                throw new InvalidDataException($"不明な ItemType: {item.ItemType}");
-                            }
+                            // デシリアライズされたデータから新しいアイテムを作成
+                            var newItem = (ICommandListItem)Activator.CreateInstance(itemType, item)!;
+                            Add(newItem);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new InvalidDataException($"型 {item.ItemType} のアイテム作成に失敗しました: {ex.Message}");
                         }
                     }
-
-                    CalculateNestLevel();
-                    PairIfItems();
-                    PairLoopItems();
+                    else
+                    {
+                        throw new InvalidDataException($"不明な ItemType: {item.ItemType}");
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"ファイル読み込み中にエラーが発生しました: {ex.Message}", ex);
-            }
-        }
-    }
 
-    /// <summary>
-    /// Phase 5統合版：コマンドリストインターフェース
-    /// </summary>
-    public interface ICommandList
-    {
-        ObservableCollection<ICommandListItem> Items { get; }
-        ICommandListItem this[int index] { get; set; }
-        
-        void Add(ICommandListItem item);
-        void Remove(ICommandListItem item);
-        void RemoveAt(int index);
-        void Insert(int index, ICommandListItem item);
-        void Override(int index, ICommandListItem item);
-        void Clear();
-        void Move(int oldIndex, int newIndex);
-        void Copy(int oldIndex, int newIndex);
-        
-        void ReorderItems();
-        void CalculateNestLevel();
-        void PairIfItems();
-        void PairLoopItems();
-        
-        IEnumerable<ICommandListItem> Clone();
-        void Save(string filePath);
-        void Load(string filePath);
+            CalculateNestLevel();
+            PairIfItems();
+            PairLoopItems();
+        }
     }
 }

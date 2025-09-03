@@ -4,7 +4,7 @@ using AutoTool.Model.List.Interface;
 namespace AutoTool.ViewModel.Helpers
 {
     /// <summary>
-    /// Phase 5完全統合版：EditPanelプロパティ管理クラス
+    /// EditPanelプロパティ管理クラス
     /// MacroPanels依存を削除し、基本機能のみ実装
     /// </summary>
     public class EditPanelPropertyManager
@@ -15,7 +15,7 @@ namespace AutoTool.ViewModel.Helpers
 
         public EditPanelPropertyManager()
         {
-            // Phase 5: 基本的なプロパティアクセサーのみ実装
+            // 基本的なプロパティアクセサーのみ実装
             WindowTitle = new PropertyAccessor<ICommandListItem, string>(
                 GetWindowTitle, 
                 SetWindowTitle, 
@@ -29,7 +29,7 @@ namespace AutoTool.ViewModel.Helpers
 
         private string GetWindowTitle(ICommandListItem? item)
         {
-            // Phase 5: BasicCommandItemからWindowTitleを取得
+            // BasicCommandItemからWindowTitleを取得
             if (item is AutoTool.Model.List.Type.BasicCommandItem basicItem)
             {
                 return basicItem.WindowTitle;
@@ -39,7 +39,7 @@ namespace AutoTool.ViewModel.Helpers
 
         private void SetWindowTitle(ICommandListItem? item, string value)
         {
-            // Phase 5: BasicCommandItemのWindowTitleを設定
+            // BasicCommandItemにWindowTitleを設定
             if (item is AutoTool.Model.List.Type.BasicCommandItem basicItem)
             {
                 basicItem.WindowTitle = value ?? string.Empty;
@@ -48,7 +48,7 @@ namespace AutoTool.ViewModel.Helpers
 
         private string GetWindowClassName(ICommandListItem? item)
         {
-            // Phase 5: BasicCommandItemからWindowClassNameを取得
+            // BasicCommandItemからWindowClassNameを取得
             if (item is AutoTool.Model.List.Type.BasicCommandItem basicItem)
             {
                 return basicItem.WindowClassName;
@@ -58,7 +58,7 @@ namespace AutoTool.ViewModel.Helpers
 
         private void SetWindowClassName(ICommandListItem? item, string value)
         {
-            // Phase 5: BasicCommandItemのWindowClassNameを設定
+            // BasicCommandItemにWindowClassNameを設定
             if (item is AutoTool.Model.List.Type.BasicCommandItem basicItem)
             {
                 basicItem.WindowClassName = value ?? string.Empty;

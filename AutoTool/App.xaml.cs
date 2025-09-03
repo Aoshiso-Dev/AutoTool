@@ -66,16 +66,21 @@ namespace AutoTool
                     _logger.LogInformation("プラグインシステム初期化完了");
                 }
 
-                // Phase 5統合版：MacroFactoryとCommandRegistryの初期化
+                // MacroFactoryとCommandRegistryの初期化
                 AutoTool.Model.MacroFactory.MacroFactory.SetServiceProvider(serviceProvider);
                 AutoTool.Model.CommandDefinition.CommandRegistry.Initialize();
 
                 // メインウィンドウを作成して表示
-                var mainWindow = new MainWindow();
+                var mainWindowViewModel = serviceProvider.GetRequiredService<MainWindowViewModel>();
+                var mainWindow = new MainWindow
+                {
+                    DataContext = mainWindowViewModel
+                };
                 MainWindow = mainWindow;
                 mainWindow.Show();
 
                 System.Diagnostics.Debug.WriteLine("=== App.OnStartup 完了 ===");
+                _logger.LogInformation("MainWindow作成とDataContext設定完了");
             }
             catch (Exception ex)
             {
@@ -260,8 +265,17 @@ namespace AutoTool
                 })
                 .ConfigureServices((context, services) =>
                 {
-                    services.AddAutoToolServices();
-                    services.AddTransient<MainWindowViewModel>();
+                    try
+                    {
+                        services.AddAutoToolServices();
+                        services.AddTransient<MainWindowViewModel>();
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Service registration error: {ex.Message}");
+                        // 最低限のサービスのみ登録
+                        services.AddSingleton<Microsoft.Extensions.Logging.ILoggerFactory, Microsoft.Extensions.Logging.LoggerFactory>();
+                    }
                 });
         }
     }

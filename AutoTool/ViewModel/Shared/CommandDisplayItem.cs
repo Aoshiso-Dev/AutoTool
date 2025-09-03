@@ -26,4 +26,22 @@ namespace AutoTool.ViewModel.Shared
             return TypeName.GetHashCode();
         }
     }
+
+    /// <summary>
+    /// 演算子アイテム
+    /// </summary>
+    public class OperatorItem
+    {
+        public string Key { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// AI検出モードアイテム
+    /// </summary>
+    public class AIDetectModeItem
+    {
+        public string Key { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
 }

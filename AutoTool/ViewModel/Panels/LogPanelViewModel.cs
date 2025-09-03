@@ -1,107 +1,113 @@
-using System;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
 
 namespace AutoTool.ViewModel.Panels
 {
     /// <summary>
-    /// Phase 5完全統合版：LogPanelViewModel（実際のログ出力機能付き）
-    /// MacroPanels依存を削除し、AutoTool統合版のみ使用
+    /// Phase 5完全統合版：LogPanelViewModel
     /// </summary>
     public partial class LogPanelViewModel : ObservableObject
     {
         private readonly ILogger<LogPanelViewModel> _logger;
-        private readonly object _lockObject = new object();
+        private readonly StringBuilder _logBuffer = new();
+        private const int MAX_LOG_LENGTH = 50000;
 
         [ObservableProperty]
         private bool _isRunning = false;
 
         [ObservableProperty]
-        private ObservableCollection<string> _logEntries = new();
+        private ObservableCollection<string> _logItems = new();
 
         [ObservableProperty]
-        private bool _autoScroll = true;
+        private int _logEntryCount = 0;
 
-        [ObservableProperty]
-        private int _maxLogEntries = 1000;
-
-        /// <summary>
-        /// Phase 5完全統合版コンストラクタ
-        /// </summary>
         public LogPanelViewModel(ILogger<LogPanelViewModel> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            // コレクションの変更通知を有効にする
-            BindingOperations.EnableCollectionSynchronization(_logEntries, _lockObject);
-
-            WriteLog("Phase 5完全統合版LogPanelViewModel初期化完了");
-            _logger.LogInformation("Phase 5完全統合版LogPanelViewModel初期化完了");
+            _logger.LogInformation("Phase 5統合版LogPanelViewModel を初期化しています");
+            
+            WriteLog("=== ログパネル初期化完了 ===");
         }
 
         /// <summary>
-        /// ログエントリを追加
+        /// ログを書き込み（標準形式）
         /// </summary>
-        public void WriteLog(string message)
+        public void WriteLog(string text)
+        {
+            WriteLog(DateTime.Now.ToString("HH:mm:ss.fff"), "", text);
+        }
+
+        /// <summary>
+        /// ログを書き込み（詳細形式）
+        /// </summary>
+        public void WriteLog(string time, string command, string detail)
         {
             try
             {
-                var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                var logEntry = $"[{timestamp}] {message}";
-
-                lock (_lockObject)
+                var logEntry = string.IsNullOrEmpty(command) 
+                    ? $"[{time}] {detail}"
+                    : $"[{time}] {command}: {detail}";
+                
+                LogItems.Add(logEntry);
+                LogEntryCount++;
+                
+                // ログが多すぎる場合は古い部分を削除
+                if (LogItems.Count > 1000)
                 {
-                    // UIスレッドで実行
-                    System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                    var itemsToRemove = LogItems.Take(500).ToList();
+                    foreach (var item in itemsToRemove)
                     {
-                        LogEntries.Add(logEntry);
-
-                        // ログエントリ数の制限
-                        while (LogEntries.Count > MaxLogEntries)
-                        {
-                            LogEntries.RemoveAt(0);
-                        }
-                    });
+                        LogItems.Remove(item);
+                    }
+                    _logger.LogDebug("ログアイテムをトリムしました: {Count}行保持", LogItems.Count);
                 }
-
-                _logger.LogDebug("ログエントリ追加: {Message}", message);
+                
+                // 詳細ログは除く
+                if (!detail.Contains("PropertyChanged") && !detail.Contains("プロパティ"))
+                {
+                    _logger.LogDebug("ログエントリ追加: {Entry}", logEntry);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ログエントリ追加中にエラーが発生しました: {Message}", message);
+                _logger.LogError(ex, "ログ書き込み中にエラーが発生しました");
             }
         }
 
-        /// <summary>
-        /// ログエントリを追加（行番号とコマンド名付き）
-        /// </summary>
-        public void WriteLog(string lineNumber, string commandName, string detail)
+        public void SetRunningState(bool isRunning) 
         {
-            var message = $"{lineNumber} {commandName} {detail}";
-            WriteLog(message);
+            IsRunning = isRunning;
+            _logger.LogDebug("実行状態を設定: {IsRunning}", isRunning);
+            
+            if (isRunning)
+            {
+                WriteLog("=== マクロ実行開始 ===");
+            }
+            else
+            {
+                WriteLog("=== マクロ実行終了 ===");
+            }
         }
 
         /// <summary>
         /// ログをクリア
         /// </summary>
-        public void ClearLog()
+        public void Clear()
         {
             try
             {
-                lock (_lockObject)
-                {
-                    System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        LogEntries.Clear();
-                    });
-                }
-
-                WriteLog("ログをクリアしました");
-                _logger.LogDebug("ログをクリアしました");
+                _logger.LogDebug("ログを手動クリアします");
+                
+                LogItems.Clear();
+                LogEntryCount = 0;
+                
+                WriteLog("=== ログクリア ===");
+                
+                _logger.LogDebug("ログクリアが完了しました");
             }
             catch (Exception ex)
             {
@@ -110,80 +116,21 @@ namespace AutoTool.ViewModel.Panels
         }
 
         /// <summary>
-        /// 最近のエラーログを取得
+        /// 準備処理
         /// </summary>
-        public System.Collections.Generic.List<string> GetRecentErrorLines()
-        {
-            try
-            {
-                lock (_lockObject)
-                {
-                    return LogEntries
-                        .Where(entry => entry.Contains("?") || entry.Contains("エラー") || entry.Contains("失敗"))
-                        .TakeLast(5)
-                        .ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "エラーログ取得中にエラーが発生しました");
-                return new System.Collections.Generic.List<string>();
-            }
-        }
-
-        /// <summary>
-        /// ログファイルにエクスポート
-        /// </summary>
-        public void ExportToFile(string filePath)
-        {
-            try
-            {
-                var allLogs = string.Join(Environment.NewLine, LogEntries);
-                System.IO.File.WriteAllText(filePath, allLogs);
-                
-                WriteLog($"ログファイルにエクスポート完了: {filePath}");
-                _logger.LogInformation("ログファイルエクスポート完了: {FilePath}", filePath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ログファイルエクスポート中にエラーが発生しました: {FilePath}", filePath);
-                WriteLog($"? ログファイルエクスポートエラー: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// ログエントリの統計情報を取得
-        /// </summary>
-        public (int Total, int Errors, int Warnings) GetLogStatistics()
-        {
-            try
-            {
-                lock (_lockObject)
-                {
-                    var total = LogEntries.Count;
-                    var errors = LogEntries.Count(entry => entry.Contains("?") || entry.Contains("エラー"));
-                    var warnings = LogEntries.Count(entry => entry.Contains("?") || entry.Contains("警告"));
-                    
-                    return (total, errors, warnings);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ログ統計情報取得中にエラーが発生しました");
-                return (0, 0, 0);
-            }
-        }
-
-        public void SetRunningState(bool isRunning)
-        {
-            IsRunning = isRunning;
-            _logger.LogDebug("実行状態を設定: {IsRunning}", isRunning);
-        }
-
         public void Prepare()
         {
-            WriteLog("Phase 5完全統合LogPanelViewModel準備完了");
-            _logger.LogDebug("Phase 5完全統合LogPanelViewModel準備完了");
+            try
+            {
+                _logger.LogDebug("LogPanelViewModel の準備処理を実行します");
+                
+                // 必要に応じて準備処理を追加
+                WriteLog("=== ログパネル準備完了 ===");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "LogPanelViewModel 準備処理中にエラーが発生しました");
+            }
         }
     }
 }

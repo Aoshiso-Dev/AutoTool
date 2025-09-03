@@ -1,117 +1,424 @@
+﻿using AutoTool.Command.Class;
+using AutoTool.Command.Interface;
+using AutoTool.Message;
+using CommunityToolkit.Mvvm.Messaging;
+using KeyHelper;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using MouseHelper;
+using OpenCVHelper;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
-using AutoTool.Command.Interface;
-using CommunityToolkit.Mvvm.Messaging;
-using AutoTool.Message;
-using WpfMouseButton = System.Windows.Input.MouseButton;
-using AutoToolICommand = AutoTool.Command.Interface.ICommand;
+using System.Windows;
+using YoloWinLib;
 
 namespace AutoTool.Command.Class
 {
     /// <summary>
-    /// Phase 5���S�����ŁF�R�}���h�̊��N���X
-    /// MacroPanels�ˑ����폜���AAutoTool�����ł̂ݎg�p
+    /// ループ中断用の専用例外
     /// </summary>
-    public abstract class BaseCommand : AutoToolICommand
+    public class LoopBreakException : Exception
     {
-        // �v���C�x�[�g�t�B�[���h
-        private readonly List<AutoToolICommand> _children = new();
+        public LoopBreakException() : base("ループが中断されました") { }
+        public LoopBreakException(string message) : base(message) { }
+    }
+
+    /// <summary>
+    /// コマンドファクトリー（DI対応）
+    /// </summary>
+    public static class CommandFactory
+    {
+        private static IServiceProvider? _serviceProvider;
+        private static ILogger? _logger;
+
+        /// <summary>
+        /// サービスプロバイダーを設定
+        /// </summary>
+        public static void SetServiceProvider(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+            _logger = serviceProvider.GetService<ILoggerFactory>()?.CreateLogger("CommandFactory");
+        }
+
+        /// <summary>
+        /// 設定からコマンドを作成
+        /// </summary>
+        public static T? CreateCommand<T>(object? settings = null, ICommand? parent = null) where T : BaseCommand
+        {
+            try
+            {
+                var commandType = typeof(T);
+                var command = Activator.CreateInstance(commandType, parent, settings, _serviceProvider) as T;
+                
+                if (command != null)
+                {
+                    _logger?.LogDebug("コマンドを作成しました: {CommandType}", commandType.Name);
+                }
+                
+                return command;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "コマンド作成に失敗しました: {CommandType}", typeof(T).Name);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 型名からコマンドを作成
+        /// </summary>
+        public static ICommand? CreateCommandByTypeName(string typeName, object? settings = null, ICommand? parent = null)
+        {
+            try
+            {
+                return typeName switch
+                {
+                    "WaitImage" => CreateCommand<WaitImageCommand>(settings, parent),
+                    "ClickImage" => CreateCommand<ClickImageCommand>(settings, parent),
+                    "ClickImageAI" => CreateCommand<ClickImageAICommand>(settings, parent),
+                    "Hotkey" => CreateCommand<HotkeyCommand>(settings, parent),
+                    "Click" => CreateCommand<ClickCommand>(settings, parent),
+                    "Wait" => CreateCommand<WaitCommand>(settings, parent),
+                    "Loop" => CreateCommand<LoopCommand>(settings, parent),
+                    "LoopBreak" => CreateCommand<LoopBreakCommand>(settings, parent),
+                    "IfImageExist" => CreateCommand<IfImageExistCommand>(settings, parent),
+                    "IfImageNotExist" => CreateCommand<IfImageNotExistCommand>(settings, parent),
+                    "IfImageExistAI" => CreateCommand<IfImageExistAICommand>(settings, parent),
+                    "IfImageNotExistAI" => CreateCommand<IfImageNotExistAICommand>(settings, parent),
+                    "IfVariable" => CreateCommand<IfVariableCommand>(settings, parent),
+                    "Execute" => CreateCommand<ExecuteCommand>(settings, parent),
+                    "SetVariable" => CreateCommand<SetVariableCommand>(settings, parent),
+                    "SetVariableAI" => CreateCommand<SetVariableAICommand>(settings, parent),
+                    "Screenshot" => CreateCommand<ScreenshotCommand>(settings, parent),
+                    _ => null
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "型名からのコマンド作成に失敗しました: {TypeName}", typeName);
+                return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// コマンド実行コンテキスト
+    /// </summary>
+    public class CommandExecutionContext
+    {
+        public CancellationToken CancellationToken { get; }
+        public IVariableStore? VariableStore { get; }
+        public IServiceProvider? ServiceProvider { get; }
+        public Dictionary<string, object> Properties { get; } = new();
+
+        public CommandExecutionContext(CancellationToken cancellationToken, IVariableStore? variableStore = null, IServiceProvider? serviceProvider = null)
+        {
+            CancellationToken = cancellationToken;
+            VariableStore = variableStore;
+            ServiceProvider = serviceProvider;
+        }
+    }
+
+    /// <summary>
+    /// コマンド実行統計
+    /// </summary>
+    public class CommandExecutionStats
+    {
+        public int TotalCommands { get; set; }
+        public int ExecutedCommands { get; set; }
+        public int SuccessfulCommands { get; set; }
+        public int FailedCommands { get; set; }
+        public int SkippedCommands { get; set; }
+        public TimeSpan TotalExecutionTime { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+        
+        public double SuccessRate => TotalCommands > 0 ? (double)SuccessfulCommands / TotalCommands * 100 : 0;
+        public bool IsCompleted => EndTime.HasValue;
+    }
+
+    /// <summary>
+    /// コマンドの基底クラス（DI対応・拡張版）
+    /// </summary>
+    public abstract class BaseCommand : ICommand
+    {
+        // プライベートフィールド
+        private readonly List<ICommand> _children = new();
         protected readonly ILogger? _logger;
         protected readonly IServiceProvider? _serviceProvider;
+        protected CommandExecutionContext? _executionContext;
 
-        // ICommand�C���^�[�t�F�[�X�̎���
+        // ICommandインターフェースの実装
         public int LineNumber { get; set; }
         public bool IsEnabled { get; set; } = true;
-        public AutoToolICommand? Parent { get; private set; }
-        public IEnumerable<AutoToolICommand> Children => _children;
+        public ICommand? Parent { get; private set; }
+        public IEnumerable<ICommand> Children => _children;
         public int NestLevel { get; set; }
         public object? Settings { get; set; }
         public string Description { get; protected set; } = string.Empty;
 
-        // �C�x���g
+        // 実行状態管理
+        public bool IsRunning { get; private set; }
+        public CommandExecutionStats ExecutionStats { get; } = new();
+
+        // イベント
         public event EventHandler? OnStartCommand;
         public event EventHandler? OnFinishCommand;
         public event EventHandler<string>? OnDoingCommand;
+        public event EventHandler<Exception>? OnErrorCommand;
 
-        protected BaseCommand(AutoToolICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+        protected BaseCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
         {
             Parent = parent;
             Settings = settings;
             NestLevel = parent?.NestLevel + 1 ?? 0;
             _serviceProvider = serviceProvider;
             _logger = serviceProvider?.GetService<ILogger<BaseCommand>>();
-            
-            // Phase 5: AutoTool�����Ń��b�Z�[�W���O
+
+            // メッセージング設定
             OnStartCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
             OnDoingCommand += (sender, log) => WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, log ?? ""));
             OnFinishCommand += (sender, e) => WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+            OnErrorCommand += (sender, ex) => WeakReferenceMessenger.Default.Send(new CommandErrorMessage(this, ex));
         }
 
-        public virtual void AddChild(AutoToolICommand child)
+        public virtual void AddChild(ICommand child)
         {
             _children.Add(child);
         }
 
-        public virtual void RemoveChild(AutoToolICommand child)
+        public virtual void RemoveChild(ICommand child)
         {
             _children.Remove(child);
         }
 
-        public virtual IEnumerable<AutoToolICommand> GetChildren()
+        public virtual IEnumerable<ICommand> GetChildren()
         {
             return _children;
         }
 
         /// <summary>
-        /// �R�}���h�����s
+        /// 実行コンテキストを設定
         /// </summary>
-        public virtual async Task<bool> Execute(CancellationToken cancellationToken)
+        public virtual void SetExecutionContext(CommandExecutionContext context)
         {
-            if (!IsEnabled)
-                return true;
+            _executionContext = context;
+            foreach (var child in _children)
+            {
+                if (child is BaseCommand baseChild)
+                {
+                    baseChild.SetExecutionContext(context);
+                }
+            }
+        }
 
-            OnStartCommand?.Invoke(this, EventArgs.Empty);
-
+        /// <summary>
+        /// コマンドが実行可能かチェック
+        /// </summary>
+        public virtual bool CanExecute()
+        {
+            if (!IsEnabled) return false;
+            if (IsRunning) return false;
+            
             try
             {
-                var result = await DoExecuteAsync(cancellationToken);
-                OnFinishCommand?.Invoke(this, EventArgs.Empty);
-                return result;
+                ValidateFiles();
+                ValidateSettings();
+                return true;
             }
-            catch (OperationCanceledException)
+            catch
             {
-                OnFinishCommand?.Invoke(this, EventArgs.Empty);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                LogMessage($"? ���s�G���[: {ex.Message}");
-                _logger?.LogError(ex, "�R�}���h���s���ɃG���[���������܂���: {Description}", Description);
-                OnFinishCommand?.Invoke(this, EventArgs.Empty);
                 return false;
             }
         }
 
         /// <summary>
-        /// ���ۂ̎��s�����i�h���N���X�Ŏ����j
+        /// 設定の検証（派生クラスでオーバーライド）
+        /// </summary>
+        protected virtual void ValidateSettings()
+        {
+            // 基底クラスでは何もしない
+        }
+
+        /// <summary>
+        /// ファイルパスの有効性を検証
+        /// </summary>
+        protected virtual void ValidateFiles()
+        {
+            // 基底クラスでは何もしない（派生クラスでオーバーライド）
+        }
+
+        /// <summary>
+        /// ファイル存在チェック（エラー時に例外を投げる）
+        /// </summary>
+        protected void ValidateFileExists(string filePath, string fileDescription)
+        {
+            if (string.IsNullOrEmpty(filePath))
+                return; // 空の場合はチェックしない
+
+            var absolutePath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(Environment.CurrentDirectory, filePath);
+
+            if (!File.Exists(absolutePath))
+            {
+                throw new FileNotFoundException($"{fileDescription}が見つかりません: {filePath}\n確認したパス: {absolutePath}");
+            }
+        }
+
+        /// <summary>
+        /// ディレクトリ存在チェック（エラー時に例外を投げる）
+        /// </summary>
+        protected void ValidateDirectoryExists(string directoryPath, string directoryDescription)
+        {
+            if (string.IsNullOrEmpty(directoryPath))
+                return; // 空の場合はチェックしない
+
+            var absolutePath = Path.IsPathRooted(directoryPath) ? directoryPath : Path.Combine(Environment.CurrentDirectory, directoryPath);
+
+            if (!Directory.Exists(absolutePath))
+            {
+                throw new DirectoryNotFoundException($"{directoryDescription}が見つかりません: {directoryPath}\n確認したパス: {absolutePath}");
+            }
+        }
+
+        /// <summary>
+        /// 保存先ディレクトリの親フォルダ存在チェック
+        /// </summary>
+        protected void ValidateSaveDirectoryParentExists(string directoryPath, string directoryDescription)
+        {
+            if (string.IsNullOrEmpty(directoryPath))
+                return; // 空の場合はチェックしない
+
+            var absolutePath = Path.IsPathRooted(directoryPath) ? directoryPath : Path.Combine(Environment.CurrentDirectory, directoryPath);
+
+            // ディレクトリが既に存在する場合はOK
+            if (Directory.Exists(absolutePath))
+                return;
+
+            // 親ディレクトリが存在するかチェック
+            var parentDir = Path.GetDirectoryName(absolutePath);
+            if (string.IsNullOrEmpty(parentDir) || !Directory.Exists(parentDir))
+            {
+                throw new DirectoryNotFoundException($"{directoryDescription}の親フォルダが見つかりません: {directoryPath}\n親フォルダ: {parentDir ?? "不明"}");
+            }
+        }
+
+        /// <summary>
+        /// コマンドを実行
+        /// </summary>
+        public virtual async Task<bool> Execute(CancellationToken cancellationToken)
+        {
+            if (!CanExecute())
+            {
+                LogMessage("コマンドは実行できません（無効またはエラー）");
+                return false;
+            }
+
+            IsRunning = true;
+            ExecutionStats.StartTime = DateTime.Now;
+            ExecutionStats.TotalCommands++;
+
+            OnStartCommand?.Invoke(this, EventArgs.Empty);
+            WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
+
+            try
+            {
+                // 実行前にファイル検証を行う
+                ValidateFiles();
+                ValidateSettings();
+
+                var result = await DoExecuteAsync(cancellationToken);
+                
+                ExecutionStats.ExecutedCommands++;
+                if (result)
+                {
+                    ExecutionStats.SuccessfulCommands++;
+                }
+                else
+                {
+                    ExecutionStats.FailedCommands++;
+                }
+                
+                ExecutionStats.EndTime = DateTime.Now;
+                ExecutionStats.TotalExecutionTime = ExecutionStats.EndTime.Value - ExecutionStats.StartTime;
+
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                return result;
+            }
+            catch (OperationCanceledException)
+            {
+                LogMessage("コマンドがキャンセルされました");
+                ExecutionStats.SkippedCommands++;
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                throw;
+            }
+            catch (LoopBreakException)
+            {
+                // LoopBreakExceptionはそのまま上位に伝播
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                throw;
+            }
+            catch (FileNotFoundException ex)
+            {
+                LogMessage($"❌ ファイルエラー: {ex.Message}");
+                OnErrorCommand?.Invoke(this, ex);
+                ExecutionStats.FailedCommands++;
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                return false;
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                LogMessage($"❌ ディレクトリエラー: {ex.Message}");
+                OnErrorCommand?.Invoke(this, ex);
+                ExecutionStats.FailedCommands++;
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 実行エラー: {ex.Message}");
+                OnErrorCommand?.Invoke(this, ex);
+                _logger?.LogError(ex, "コマンド実行中にエラーが発生しました: {Description}", Description);
+                ExecutionStats.FailedCommands++;
+                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                return false;
+            }
+            finally
+            {
+                IsRunning = false;
+                if (!ExecutionStats.EndTime.HasValue)
+                {
+                    ExecutionStats.EndTime = DateTime.Now;
+                    ExecutionStats.TotalExecutionTime = ExecutionStats.EndTime.Value - ExecutionStats.StartTime;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 実際の実行処理（派生クラスで実装）
         /// </summary>
         protected abstract Task<bool> DoExecuteAsync(CancellationToken cancellationToken);
 
         /// <summary>
-        /// �q�R�}���h���������s
+        /// 子コマンドを順次実行
         /// </summary>
         protected async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
         {
             foreach (var child in _children)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                
+
+                // 実行コンテキストを設定
+                if (child is BaseCommand baseChild && _executionContext != null)
+                {
+                    baseChild.SetExecutionContext(_executionContext);
+                }
+
                 var result = await child.Execute(cancellationToken);
                 if (!result)
                     return false;
@@ -120,16 +427,41 @@ namespace AutoTool.Command.Class
         }
 
         /// <summary>
-        /// ���O�o��
+        /// 進捗報告
+        /// </summary>
+        protected void ReportProgress(double elapsedMilliseconds, double totalMilliseconds)
+        {
+            int progress = totalMilliseconds <= 0 ? 100 :
+                Math.Max(0, Math.Min(100, (int)Math.Round((elapsedMilliseconds / totalMilliseconds) * 100)));
+
+            WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(this, progress));
+        }
+
+        /// <summary>
+        /// 子要素の進捗をリセット
+        /// </summary>
+        protected void ResetChildrenProgress()
+        {
+            foreach (var command in Children)
+            {
+                WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(command, 0));
+            }
+        }
+
+        /// <summary>
+        /// ログ出力
         /// </summary>
         protected void LogMessage(string message)
         {
             OnDoingCommand?.Invoke(this, message);
+            WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, message));
             _logger?.LogInformation("{Message}", message);
+
+            // ファイル出力は MacroPanelViewModel 側(Start/Doing/Finishメッセージ受信)で一元管理
         }
 
         /// <summary>
-        /// �T�[�r�X���擾
+        /// サービスを取得
         /// </summary>
         protected T? GetService<T>() where T : class
         {
@@ -137,25 +469,71 @@ namespace AutoTool.Command.Class
         }
 
         /// <summary>
-        /// �K�{�T�[�r�X���擾
+        /// 必須サービスを取得
         /// </summary>
         protected T GetRequiredService<T>() where T : class
         {
             if (_serviceProvider == null)
-                throw new InvalidOperationException("ServiceProvider ���ݒ肳��Ă��܂���");
-            
+                throw new InvalidOperationException("ServiceProvider が設定されていません");
+
             return _serviceProvider.GetRequiredService<T>();
+        }
+
+        /// <summary>
+        /// 変数ストアから値を取得
+        /// </summary>
+        protected string GetVariable(string name, string defaultValue = "")
+        {
+            var variableStore = GetService<IVariableStore>();
+            return variableStore?.Get(name) ?? defaultValue;
+        }
+
+        /// <summary>
+        /// 変数ストアに値を設定
+        /// </summary>
+        protected void SetVariable(string name, string value)
+        {
+            var variableStore = GetService<IVariableStore>();
+            variableStore?.Set(name, value);
+        }
+
+        /// <summary>
+        /// コマンドを複製
+        /// </summary>
+        public virtual ICommand Clone()
+        {
+            var clonedType = GetType();
+            var cloned = Activator.CreateInstance(clonedType, Parent, Settings, _serviceProvider) as BaseCommand;
+            
+            if (cloned != null)
+            {
+                cloned.LineNumber = LineNumber;
+                cloned.IsEnabled = IsEnabled;
+                cloned.NestLevel = NestLevel;
+                cloned.Description = Description;
+                
+                // 子コマンドも複製
+                foreach (var child in _children)
+                {
+                    if (child is BaseCommand baseChild)
+                    {
+                        cloned.AddChild(baseChild.Clone());
+                    }
+                }
+            }
+            
+            return cloned ?? new NothingCommand(_serviceProvider);
         }
     }
 
     /// <summary>
-    /// Phase 5�����ŁF���[�g�R�}���h
+    /// ルートコマンド
     /// </summary>
     public class RootCommand : BaseCommand, IRootCommand
     {
         public RootCommand(IServiceProvider? serviceProvider = null) : base(null, null, serviceProvider)
         {
-            Description = "Phase 5�����Ń��[�g�R�}���h";
+            Description = "ルートコマンド";
         }
 
         protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
@@ -165,16 +543,302 @@ namespace AutoTool.Command.Class
     }
 
     /// <summary>
-    /// Phase 5�����ŁF�ҋ@�R�}���h
+    /// 何もしないコマンド
+    /// </summary>
+    public class NothingCommand : BaseCommand, IRootCommand
+    {
+        public NothingCommand(IServiceProvider? serviceProvider = null) : base(null, null, serviceProvider)
+        {
+            Description = "何もしない";
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
+        }
+    }
+
+    /// <summary>
+    /// 画像待機コマンド（DI対応）
+    /// </summary>
+    public class WaitImageCommand : BaseCommand, IWaitImageCommand
+    {
+        public new IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings!;
+
+        public WaitImageCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "画像待機";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ImagePath, "画像ファイル");
+            }
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            var stopwatch = Stopwatch.StartNew();
+
+            while (stopwatch.ElapsedMilliseconds < settings.Timeout)
+            {
+                var point = await ImageSearchHelper.SearchImage(
+                    settings.ImagePath, cancellationToken, settings.Threshold,
+                    settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
+
+                if (point != null)
+                {
+                    LogMessage($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+                    return true;
+                }
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, settings.Timeout);
+                await Task.Delay(settings.Interval, cancellationToken);
+            }
+
+            LogMessage("画像が見つかりませんでした。");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 画像クリックコマンド（DI対応）
+    /// </summary>
+    public class ClickImageCommand : BaseCommand, IClickImageCommand
+    {
+        public new IClickImageCommandSettings Settings => (IClickImageCommandSettings)base.Settings!;
+
+        public ClickImageCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "画像クリック";
+        }
+
+        // 背景クリック方式名取得
+        private static string GetBgMethodName(int method) => method switch
+        {
+            0 => "SendMessage",
+            1 => "PostMessage",
+            2 => "AutoDetectChild",
+            3 => "TryAll",
+            4 => "GameDirectInput",
+            5 => "GameFullscreen",
+            6 => "GameLowLevel",
+            7 => "GameVirtualMouse",
+            _ => $"Unknown({method})"
+        };
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ImagePath, "画像ファイル");
+            }
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            var stopwatch = Stopwatch.StartNew();
+
+            while (stopwatch.ElapsedMilliseconds < settings.Timeout)
+            {
+                var point = await ImageSearchHelper.SearchImage(
+                    settings.ImagePath, cancellationToken, settings.Threshold,
+                    settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
+
+                if (point != null)
+                {
+                    await ExecuteMouseClick(point.Value.X, point.Value.Y, settings.Button,
+                        settings.WindowTitle, settings.WindowClassName, settings.UseBackgroundClick, settings.BackgroundClickMethod);
+                    var extra = settings.UseBackgroundClick ? $"[BG:{GetBgMethodName(settings.BackgroundClickMethod)}]" : string.Empty;
+                    LogMessage($"画像をクリックしました。{extra} ({point.Value.X}, {point.Value.Y})");
+                    return true;
+                }
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, settings.Timeout);
+                await Task.Delay(settings.Interval, cancellationToken);
+            }
+
+            LogMessage("画像が見つかりませんでした。");
+            return false;
+        }
+
+        private async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button,
+            string windowTitle, string windowClassName, bool useBackgroundClick, int backgroundMethod)
+        {
+            if (useBackgroundClick)
+            {
+                var method = (MouseHelper.Input.BackgroundClickMethod)backgroundMethod;
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.BackgroundClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.BackgroundRightClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.BackgroundMiddleClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    default:
+                        throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                }
+            }
+            else
+            {
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    default:
+                        throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// ホットキーコマンド（DI対応）
+    /// </summary>
+    public class HotkeyCommand : BaseCommand, IHotkeyCommand
+    {
+        public new IHotkeyCommandSettings Settings => (IHotkeyCommandSettings)base.Settings!;
+
+        public HotkeyCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "ホットキー";
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            await Task.Run(() => KeyHelper.Input.KeyPress(
+                settings.Key, settings.Ctrl, settings.Alt, settings.Shift,
+                settings.WindowTitle, settings.WindowClassName));
+
+            LogMessage("ホットキーを実行しました。");
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// クリックコマンド（DI対応）
+    /// </summary>
+    public class ClickCommand : BaseCommand, IClickCommand
+    {
+        public new IClickCommandSettings Settings => (IClickCommandSettings)base.Settings!;
+
+        public ClickCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "クリック";
+        }
+
+        private static string GetBgMethodName(int method) => method switch
+        {
+            0 => "SendMessage",
+            1 => "PostMessage",
+            2 => "AutoDetectChild",
+            3 => "TryAll",
+            4 => "GameDirectInput",
+            5 => "GameFullscreen",
+            6 => "GameLowLevel",
+            7 => "GameVirtualMouse",
+            _ => $"Unknown({method})"
+        };
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            await ExecuteMouseClick(settings.X, settings.Y, settings.Button,
+                settings.WindowTitle, settings.WindowClassName, settings.UseBackgroundClick, settings.BackgroundClickMethod);
+
+            var target = string.IsNullOrEmpty(settings.WindowTitle) && string.IsNullOrEmpty(settings.WindowClassName)
+                ? "グローバル" : $"{settings.WindowTitle}[{settings.WindowClassName}]";
+            var clickType = settings.UseBackgroundClick ? $"バックグラウンドクリック[{GetBgMethodName(settings.BackgroundClickMethod)}]" : "クリック";
+            LogMessage($"{clickType}しました。対象: {target} ({settings.X}, {settings.Y})");
+            return true;
+        }
+
+        private async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button,
+            string windowTitle, string windowClassName, bool useBackgroundClick, int backgroundMethod)
+        {
+            if (useBackgroundClick)
+            {
+                var method = (MouseHelper.Input.BackgroundClickMethod)backgroundMethod;
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.BackgroundClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.BackgroundRightClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.BackgroundMiddleClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    default:
+                        throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                }
+            }
+            else
+            {
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    default:
+                        throw new ArgumentException($"サポートされていないマウスボタン: {button}");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 待機コマンド（DI対応）
     /// </summary>
     public class WaitCommand : BaseCommand, IWaitCommand
     {
         public new IWaitCommandSettings Settings => (IWaitCommandSettings)base.Settings!;
 
-        public WaitCommand(AutoToolICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+        public WaitCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
             : base(parent, settings, serviceProvider)
         {
-            Description = "Phase 5�����őҋ@";
+            Description = "待機";
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
@@ -187,51 +851,27 @@ namespace AutoTool.Command.Class
             while (stopwatch.ElapsedMilliseconds < settings.Wait)
             {
                 if (cancellationToken.IsCancellationRequested) return false;
+
+                ReportProgress(stopwatch.ElapsedMilliseconds, settings.Wait);
                 await Task.Delay(50, cancellationToken);
             }
 
-            LogMessage("Phase 5�����őҋ@���������܂����B");
+            LogMessage("待機が完了しました。");
             return true;
         }
     }
 
     /// <summary>
-    /// Phase 5�����ŁF�N���b�N�R�}���h
-    /// </summary>
-    public class ClickCommand : BaseCommand, IClickCommand
-    {
-        public new IClickCommandSettings Settings => (IClickCommandSettings)base.Settings!;
-
-        public ClickCommand(AutoToolICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
-            : base(parent, settings, serviceProvider)
-        {
-            Description = "Phase 5�����ŃN���b�N";
-        }
-
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            var settings = Settings;
-            if (settings == null) return false;
-
-            // Phase 5: ��{�I�ȃN���b�N�����i�ڍ׎����͌�Œǉ��\��j
-            await Task.Delay(100, cancellationToken);
-
-            LogMessage($"Phase 5�����ŃN���b�N���܂����B({settings.X}, {settings.Y})");
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Phase 5�����ŁF���[�v�R�}���h
+    /// ループコマンド（DI対応）
     /// </summary>
     public class LoopCommand : BaseCommand, ILoopCommand
     {
         public new ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings!;
 
-        public LoopCommand(AutoToolICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null) 
+        public LoopCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
             : base(parent, settings, serviceProvider)
         {
-            Description = "Phase 5�����Ń��[�v";
+            Description = "ループ";
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
@@ -239,59 +879,739 @@ namespace AutoTool.Command.Class
             var settings = Settings;
             if (settings == null) return false;
 
-            LogMessage($"Phase 5�����Ń��[�v���J�n���܂��B({settings.LoopCount}��)");
+            LogMessage($"ループを開始します。({settings.LoopCount}回)");
 
             for (int i = 0; i < settings.LoopCount; i++)
             {
                 if (cancellationToken.IsCancellationRequested) return false;
 
-                var result = await ExecuteChildrenAsync(cancellationToken);
-                if (!result) return false;
+                ResetChildrenProgress();
+
+                try
+                {
+                    var result = await ExecuteChildrenAsync(cancellationToken);
+                    if (!result) return false;
+                }
+                catch (LoopBreakException)
+                {
+                    // LoopBreakExceptionをキャッチしてこのループを中断
+                    LogMessage($"ループが中断されました。(実行回数: {i + 1}/{settings.LoopCount})");
+                    break; // このループのみを抜ける
+                }
+
+                ReportProgress(i + 1, settings.LoopCount);
             }
 
-            LogMessage("Phase 5�����Ń��[�v���������܂����B");
+            LogMessage("ループが完了しました。");
+            return true;
+        }
+
+        /// <summary>
+        /// 子コマンドを順次実行（LoopBreakException対応版）
+        /// </summary>
+        protected new async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
+        {
+            foreach (var child in Children)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                try
+                {
+                    var result = await child.Execute(cancellationToken);
+                    if (!result)
+                        return false;
+                }
+                catch (LoopBreakException)
+                {
+                    // LoopBreakExceptionは上位のLoopCommandに伝播
+                    throw;
+                }
+            }
             return true;
         }
     }
 
-    #region Phase 5�����Őݒ�N���X
-
     /// <summary>
-    /// Phase 5�����ŁF��{�ݒ�N���X
+    /// If文の基底クラス（DI対応）
     /// </summary>
-    public class BasicCommandSettings : ICommandSettings
+    public abstract class IfCommand : BaseCommand
     {
-        public string WindowTitle { get; set; } = string.Empty;
-        public string WindowClassName { get; set; } = string.Empty;
+        protected IfCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var condition = await EvaluateConditionAsync(cancellationToken);
+            if (condition)
+            {
+                return await ExecuteChildrenAsync(cancellationToken);
+            }
+            return true; // 条件が偽でも成功として扱う
+        }
+
+        protected abstract Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken);
     }
 
     /// <summary>
-    /// Phase 5�����ŁF�ҋ@�ݒ�
+    /// 画像存在確認If文（DI対応）
     /// </summary>
-    public class BasicWaitSettings : BasicCommandSettings, IWaitCommandSettings
+    public class IfImageExistCommand : IfCommand, IIfImageExistCommand
     {
-        public int Wait { get; set; } = 1000;
+        public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings!;
+
+        public IfImageExistCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "画像存在確認";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ImagePath, "画像ファイル");
+            }
+        }
+
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            var point = await ImageSearchHelper.SearchImage(
+                settings.ImagePath, cancellationToken, settings.Threshold,
+                settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
+
+            if (point != null)
+            {
+                LogMessage($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+                return true;
+            }
+
+            LogMessage("画像が見つかりませんでした。");
+            return false;
+        }
     }
 
     /// <summary>
-    /// Phase 5�����ŁF�N���b�N�ݒ�
+    /// 画像非存在確認If文（DI対応）
     /// </summary>
-    public class BasicClickSettings : BasicCommandSettings, IClickCommandSettings
+    public class IfImageNotExistCommand : IfCommand, IIfImageNotExistCommand
     {
-        public int X { get; set; } = 0;
-        public int Y { get; set; } = 0;
-        public WpfMouseButton Button { get; set; } = WpfMouseButton.Left;
-        public bool UseBackgroundClick { get; set; } = false;
-        public int BackgroundClickMethod { get; set; } = 0;
+        public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings!;
+
+        public IfImageNotExistCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "画像非存在確認";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ImagePath, "画像ファイル");
+            }
+        }
+
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            var point = await ImageSearchHelper.SearchImage(
+                settings.ImagePath, cancellationToken, settings.Threshold,
+                settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
+
+            if (point == null)
+            {
+                LogMessage("画像が見つかりませんでした。");
+                return true;
+            }
+
+            LogMessage($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+            return false;
+        }
     }
 
     /// <summary>
-    /// Phase 5�����ŁF���[�v�ݒ�
+    /// AI画像存在確認If文（DI対応）
     /// </summary>
-    public class BasicLoopSettings : BasicCommandSettings, ILoopCommandSettings
+    public class IfImageExistAICommand : IfCommand, IIfImageExistAICommand
     {
-        public int LoopCount { get; set; } = 1;
+        public new IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings!;
+
+        public IfImageExistAICommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "AI画像存在確認";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ModelPath, "ONNXモデルファイル");
+            }
+        }
+
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            if (Children == null || !Children.Any())
+            {
+                throw new Exception("If内に要素がありません。");
+            }
+
+            YoloWin.Init(settings.ModelPath, 640, true);
+
+            // AI検出は即座に実行し、ループやタイムアウトは行わない
+            var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
+
+            if (det.Count > 0)
+            {
+                var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
+
+                if (best.ClassId == settings.ClassID)
+                {
+                    LogMessage($"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) ClassId: {best.ClassId}");
+                    return true;
+                }
+            }
+
+            LogMessage("画像が見つかりませんでした。");
+            return false;
+        }
     }
 
-    #endregion
+    /// <summary>
+    /// AI画像非存在確認If文（DI対応）
+    /// </summary>
+    public class IfImageNotExistAICommand : IfCommand, IIfImageNotExistAICommand
+    {
+        public new IIfImageNotExistAISettings Settings => (IIfImageNotExistAISettings)base.Settings!;
+
+        public IfImageNotExistAICommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "AI画像非存在確認";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ModelPath, "ONNXモデルファイル");
+            }
+        }
+
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            if (Children == null || !Children.Any())
+            {
+                throw new Exception("If内に要素がありません。");
+            }
+
+            YoloWin.Init(settings.ModelPath, 640, true);
+
+            // AI検出は即座に実行し、ループやタイムアウトは行わない
+            var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
+
+            // 指定クラスIDが検出されなかった場合に子コマンド実行
+            var targetDetections = det.Where(d => d.ClassId == settings.ClassID).ToList();
+
+            if (targetDetections.Count == 0)
+            {
+                LogMessage($"クラスID {settings.ClassID} の画像が見つかりませんでした。");
+                return true;
+            }
+
+            LogMessage($"クラスID {settings.ClassID} の画像が見つかりました。");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 変数条件確認If文（DI対応）
+    /// </summary>
+    public class IfVariableCommand : IfCommand, IIfVariableCommand
+    {
+        private readonly IVariableStore? _variableStore;
+        public new IIfVariableCommandSettings Settings => (IIfVariableCommandSettings)base.Settings!;
+
+        public IfVariableCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "変数条件確認";
+            _variableStore = GetService<IVariableStore>();
+        }
+
+        protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            if (Children == null || !Children.Any())
+            {
+                throw new Exception("If内に要素がありません。");
+            }
+
+            var lhs = _variableStore?.Get(settings.Name) ?? string.Empty;
+            var rhs = settings.Value ?? string.Empty;
+
+            bool result = Evaluate(lhs, rhs, settings.Operator);
+            LogMessage($"IfVariable: {settings.Name}({lhs}) {settings.Operator} {rhs} => {result}");
+
+            return result;
+        }
+
+        private static bool Evaluate(string lhs, string rhs, string op)
+        {
+            op = (op ?? "").Trim();
+            if (double.TryParse(lhs, out var lnum) && double.TryParse(rhs, out var rnum))
+            {
+                return op switch
+                {
+                    "==" => lnum == rnum,
+                    "!=" => lnum != rnum,
+                    ">" => lnum > rnum,
+                    "<" => lnum < rnum,
+                    ">=" => lnum >= rnum,
+                    "<=" => lnum <= rnum,
+                    _ => throw new Exception($"不明な数値比較演算子です: {op}"),
+                };
+            }
+            else
+            {
+                return op switch
+                {
+                    "==" => string.Equals(lhs, rhs, StringComparison.Ordinal),
+                    "!=" => !string.Equals(lhs, rhs, StringComparison.Ordinal),
+                    "Contains" => lhs.Contains(rhs, StringComparison.Ordinal),
+                    "StartsWith" => lhs.StartsWith(rhs, StringComparison.Ordinal),
+                    "EndsWith" => lhs.EndsWith(rhs, StringComparison.Ordinal),
+                    "IsEmpty" => string.IsNullOrEmpty(lhs),
+                    "IsNotEmpty" => !string.IsNullOrEmpty(lhs),
+                    _ => throw new Exception($"不明な文字列比較演算子です: {op}"),
+                };
+            }
+        }
+    }
+
+    // 終了コマンド類（DI対応）
+    public class IfEndCommand : BaseCommand
+    {
+        public IfEndCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "If終了";
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            ResetChildrenProgress();
+            return Task.FromResult(true);
+        }
+    }
+
+    public class LoopEndCommand : BaseCommand
+    {
+        public LoopEndCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "ループ終了";
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            ResetChildrenProgress();
+            return Task.FromResult(true);
+        }
+    }
+
+    public class LoopBreakCommand : BaseCommand, ILoopBreakCommand
+    {
+        public LoopBreakCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "ループ中断";
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            LogMessage("ループ中断を実行します。");
+
+            // LoopBreakExceptionを投げて最も内側のループのみを中断
+            throw new LoopBreakException("ループ中断コマンドが実行されました");
+        }
+    }
+
+    // その他のコマンド（DI対応）
+    public class ExecuteCommand : BaseCommand, IExecuteCommand
+    {
+        public new IExecuteCommandSettings Settings => (IExecuteCommandSettings)base.Settings!;
+
+        public ExecuteCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "プログラム実行";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ProgramPath, "実行ファイル");
+                if (!string.IsNullOrEmpty(settings.WorkingDirectory))
+                {
+                    ValidateDirectoryExists(settings.WorkingDirectory, "ワーキングディレクトリ");
+                }
+            }
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = settings.ProgramPath,
+                    Arguments = settings.Arguments,
+                    WorkingDirectory = settings.WorkingDirectory,
+                    UseShellExecute = true,
+                };
+                await Task.Run(() =>
+                {
+                    Process.Start(startInfo);
+                    LogMessage($"プログラムを実行しました。");
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"プログラムの実行に失敗しました: {ex.Message}");
+                return false;
+            }
+        }
+    }
+
+    public class SetVariableCommand : BaseCommand, ISetVariableCommand
+    {
+        private readonly IVariableStore? _variableStore;
+        public new ISetVariableCommandSettings Settings => (ISetVariableCommandSettings)base.Settings!;
+
+        public SetVariableCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "変数設定";
+            _variableStore = GetService<IVariableStore>();
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return Task.FromResult(false);
+
+            _variableStore?.Set(settings.Name, settings.Value);
+            LogMessage($"変数を設定しました。{settings.Name} = \"{settings.Value}\"");
+            return Task.FromResult(true);
+        }
+    }
+
+    public class SetVariableAICommand : BaseCommand, ISetVariableAICommand
+    {
+        private readonly IVariableStore? _variableStore;
+        public new ISetVariableAICommandSettings Settings => (ISetVariableAICommandSettings)base.Settings!;
+
+        public SetVariableAICommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "AI変数設定";
+            _variableStore = GetService<IVariableStore>();
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ModelPath, "ONNXモデルファイル");
+            }
+        }
+
+        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return Task.FromResult(false);
+
+            YoloWin.Init(settings.ModelPath, 640, true);
+
+            var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
+
+            if (det.Count == 0)
+            {
+                _variableStore?.Set(settings.Name, "-1");
+                LogMessage($"画像が見つかりませんでした。{settings.Name}に-1をセットしました。");
+            }
+            else
+            {
+                switch (settings.AIDetectMode)
+                {
+                    case "Class":
+                        // 最高スコアのものをセット
+                        var best = det.OrderByDescending(d => d.Score).FirstOrDefault();
+                        _variableStore?.Set(settings.Name, best.ClassId.ToString());
+                        LogMessage($"画像が見つかりました。{settings.Name}に{best.ClassId}をセットしました。");
+                        break;
+                    case "Count":
+                        // 検出された数をセット
+                        _variableStore?.Set(settings.Name, det.Count.ToString());
+                        LogMessage($"画像が{det.Count}個見つかりました。{settings.Name}に{det.Count}をセットしました。");
+                        break;
+                    default:
+                        throw new Exception($"不明なモードです: {settings.AIDetectMode}");
+                }
+            }
+
+            return Task.FromResult(true);
+        }
+    }
+
+    public class ScreenshotCommand : BaseCommand, IScreenshotCommand
+    {
+        public new IScreenshotCommandSettings Settings => (IScreenshotCommandSettings)base.Settings!;
+
+        public ScreenshotCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "スクリーンショット";
+        }
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null && !string.IsNullOrEmpty(settings.SaveDirectory))
+            {
+                ValidateSaveDirectoryParentExists(settings.SaveDirectory, "保存先ディレクトリ");
+            }
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            try
+            {
+                var dir = string.IsNullOrWhiteSpace(settings.SaveDirectory)
+                    ? Path.Combine(Environment.CurrentDirectory, "Screenshots")
+                    : settings.SaveDirectory;
+
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                var file = $"{DateTime.Now:yyyyMMdd_HHmmssfff}.png";
+                var fullPath = Path.Combine(dir, file);
+
+                using var mat = (string.IsNullOrEmpty(settings.WindowTitle) && string.IsNullOrEmpty(settings.WindowClassName))
+                    ? ScreenCaptureHelper.CaptureScreen()
+                    : ScreenCaptureHelper.CaptureWindow(settings.WindowTitle, settings.WindowClassName);
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                ScreenCaptureHelper.SaveCapture(mat, fullPath);
+
+                LogMessage($"スクリーンショットを保存しました: {fullPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"スクリーンショットの保存に失敗しました: {ex.Message}");
+                return false;
+            }
+        }
+    }
+
+    public class ClickImageAICommand : BaseCommand, IClickImageAICommand
+    {
+        public new IClickImageAICommandSettings Settings => (IClickImageAICommandSettings)base.Settings!;
+
+        public ClickImageAICommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
+        {
+            Description = "AI画像クリック";
+        }
+
+        private static string GetBgMethodName(int method) => method switch
+        {
+            0 => "SendMessage",
+            1 => "PostMessage",
+            2 => "AutoDetectChild",
+            3 => "TryAll",
+            4 => "GameDirectInput",
+            5 => "GameFullscreen",
+            6 => "GameLowLevel",
+            7 => "GameVirtualMouse",
+            _ => $"Unknown({method})"
+        };
+
+        protected override void ValidateFiles()
+        {
+            var settings = Settings;
+            if (settings != null)
+            {
+                ValidateFileExists(settings.ModelPath, "ONNXモデルファイル");
+            }
+        }
+
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            var settings = Settings;
+            if (settings == null) return false;
+
+            YoloWin.Init(settings.ModelPath, 640, true);
+
+            var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
+            var targetDetections = det.Where(d => d.ClassId == settings.ClassID).ToList();
+
+            if (targetDetections.Count > 0)
+            {
+                var best = targetDetections.OrderByDescending(d => d.Score).First();
+                int centerX = (int)(best.Rect.X + best.Rect.Width / 2);
+                int centerY = (int)(best.Rect.Y + best.Rect.Height / 2);
+
+                await ExecuteMouseClick(centerX, centerY, settings.Button,
+                    settings.WindowTitle, settings.WindowClassName, settings.UseBackgroundClick, settings.BackgroundClickMethod);
+
+                var clickType = settings.UseBackgroundClick ? $"バックグラウンドAI画像クリック[{GetBgMethodName(settings.BackgroundClickMethod)}]" : "AI画像クリック";
+                LogMessage($"{clickType}が完了しました。({centerX}, {centerY}) ClassId: {best.ClassId}, Score: {best.Score:F2}");
+                return true;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+                return false;
+
+            LogMessage($"クラスID {settings.ClassID} の画像が見つかりませんでした。");
+            return false;
+        }
+
+        private async Task ExecuteMouseClick(int x, int y, System.Windows.Input.MouseButton button,
+            string windowTitle, string windowClassName, bool useBackgroundClick, int backgroundMethod)
+        {
+            if (useBackgroundClick)
+            {
+                var method = (MouseHelper.Input.BackgroundClickMethod)backgroundMethod;
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.BackgroundClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.BackgroundRightClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.BackgroundMiddleClickAsync(x, y, windowTitle, windowClassName, method);
+                        break;
+                    default:
+                        throw new Exception("マウスボタンが不正です。");
+                }
+            }
+            else
+            {
+                switch (button)
+                {
+                    case System.Windows.Input.MouseButton.Left:
+                        await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Right:
+                        await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    case System.Windows.Input.MouseButton.Middle:
+                        await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
+                        break;
+                    default:
+                        throw new Exception("マウスボタンが不正です。");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 変数ストアのインターフェース（DI対応・拡張版）
+    /// </summary>
+    namespace MacroPanels.Command.Interface
+    {
+        /// <summary>
+        /// 変数ストアのインターフェース
+        /// </summary>
+        public interface IVariableStore
+        {
+            void Set(string name, string value);
+            string? Get(string name);
+            void Clear();
+            Dictionary<string, string> GetAll();
+        }
+    }
+
+    /// <summary>
+    /// 変数ストアの実装（DI対応・拡張版）
+    /// </summary>
+    public class VariableStore : IVariableStore
+    {
+        private readonly ConcurrentDictionary<string, string> _vars = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ILogger<VariableStore>? _logger;
+
+        public VariableStore(ILogger<VariableStore>? logger = null)
+        {
+            _logger = logger;
+        }
+
+        public void Set(string name, string value)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+
+            _vars[name] = value ?? string.Empty;
+            _logger?.LogDebug("変数設定: {Name} = {Value}", name, value);
+            
+            // 変数変更をメッセージで通知
+            WeakReferenceMessenger.Default.Send(new VariableChangedMessage(name, value));
+        }
+
+        public string? Get(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+
+            var result = _vars.TryGetValue(name, out var v) ? v : null;
+            _logger?.LogDebug("変数取得: {Name} = {Value}", name, result ?? "null");
+            return result;
+        }
+
+        public void Clear()
+        {
+            _vars.Clear();
+            _logger?.LogDebug("変数ストアをクリアしました");
+            
+            // 変数クリアをメッセージで通知
+            WeakReferenceMessenger.Default.Send(new VariablesClearedMessage());
+        }
+
+        public Dictionary<string, string> GetAll()
+        {
+            return new Dictionary<string, string>(_vars);
+        }
+    }
 }

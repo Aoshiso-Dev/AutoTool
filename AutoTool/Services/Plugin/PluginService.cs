@@ -11,7 +11,7 @@ using AutoTool.Services.Plugin;
 namespace AutoTool.Services.Plugin
 {
     /// <summary>
-    /// Phase 5完全統合版：プラグインサービス
+    /// プラグインサービス
     /// MacroPanels依存を削除し、AutoTool統合版のみ使用
     /// </summary>
     public class PluginService : AutoTool.Services.Plugin.IPluginService
@@ -20,7 +20,7 @@ namespace AutoTool.Services.Plugin
         private readonly ConcurrentDictionary<string, IPlugin> _loadedPlugins;
         private readonly ConcurrentDictionary<string, IPluginCommandInfo> _availableCommands;
 
-        // Phase 5統合版イベント
+        // イベント
         public event EventHandler<PluginLoadedEventArgs>? PluginLoaded;
         public event EventHandler<PluginUnloadedEventArgs>? PluginUnloaded;
 
@@ -35,7 +35,7 @@ namespace AutoTool.Services.Plugin
         {
             try
             {
-                _logger.LogInformation("Phase 5統合版プラグイン読み込み開始: {PluginPath}", pluginPath);
+                _logger.LogInformation("プラグイン読み込み開始: {PluginPath}", pluginPath);
 
                 if (string.IsNullOrEmpty(pluginPath) || !File.Exists(pluginPath))
                 {
@@ -59,7 +59,7 @@ namespace AutoTool.Services.Plugin
                         // イベント発火
                         PluginLoaded?.Invoke(this, new PluginLoadedEventArgs(plugin.Info));
                         
-                        _logger.LogInformation("Phase 5統合版プラグイン読み込み完了: {PluginId}", plugin.Info.Id);
+                        _logger.LogInformation("プラグイン読み込み完了: {PluginId}", plugin.Info.Id);
                     }
                     catch (Exception ex)
                     {
@@ -69,7 +69,7 @@ namespace AutoTool.Services.Plugin
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Phase 5統合版プラグイン読み込みエラー: {PluginPath}", pluginPath);
+                _logger.LogError(ex, "プラグイン読み込みエラー: {PluginPath}", pluginPath);
                 throw;
             }
         }
@@ -78,7 +78,7 @@ namespace AutoTool.Services.Plugin
         {
             try
             {
-                _logger.LogInformation("Phase 5統合版全プラグイン読み込み開始");
+                _logger.LogInformation("全プラグイン読み込み開始");
 
                 var pluginDirectory = Path.Combine(AppContext.BaseDirectory, "Plugins");
                 if (!Directory.Exists(pluginDirectory))
@@ -100,11 +100,11 @@ namespace AutoTool.Services.Plugin
                     }
                 }
 
-                _logger.LogInformation("Phase 5統合版全プラグイン読み込み完了: {Count}個", _loadedPlugins.Count);
+                _logger.LogInformation("全プラグイン読み込み完了: {Count}個", _loadedPlugins.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Phase 5統合版全プラグイン読み込みエラー");
+                _logger.LogError(ex, "全プラグイン読み込みエラー");
                 throw;
             }
         }
@@ -117,7 +117,7 @@ namespace AutoTool.Services.Plugin
                 {
                     await plugin.ShutdownAsync();
                     
-                    // プラグイン関連のコマンドも削除
+                    // プラグイン関連のコマンドを削除
                     var commandsToRemove = _availableCommands
                         .Where(kvp => kvp.Value.PluginId == pluginId)
                         .Select(kvp => kvp.Key)
@@ -131,12 +131,12 @@ namespace AutoTool.Services.Plugin
                     // イベント発火
                     PluginUnloaded?.Invoke(this, new PluginUnloadedEventArgs(pluginId));
                     
-                    _logger.LogInformation("Phase 5統合版プラグインアンロード完了: {PluginId}", pluginId);
+                    _logger.LogInformation("プラグインアンロード完了: {PluginId}", pluginId);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Phase 5統合版プラグインアンロードエラー: {PluginId}", pluginId);
+                _logger.LogError(ex, "プラグインアンロードエラー: {PluginId}", pluginId);
                 throw;
             }
         }
@@ -159,21 +159,21 @@ namespace AutoTool.Services.Plugin
         {
             try
             {
-                _logger.LogDebug("Phase 5統合版プラグインコマンド作成: {PluginId}.{CommandId}", pluginId, commandId);
+                _logger.LogDebug("プラグインコマンド作成: {PluginId}.{CommandId}", pluginId, commandId);
 
                 if (_availableCommands.TryGetValue($"{pluginId}.{commandId}", out var commandInfo))
                 {
                     var command = Activator.CreateInstance(commandInfo.CommandType);
-                    _logger.LogDebug("Phase 5統合版プラグインコマンド作成完了: {CommandType}", commandInfo.CommandType.Name);
+                    _logger.LogDebug("プラグインコマンド作成完了: {CommandType}", commandInfo.CommandType.Name);
                     return command;
                 }
 
-                _logger.LogWarning("Phase 5統合版プラグインコマンドが見つかりません: {PluginId}.{CommandId}", pluginId, commandId);
+                _logger.LogWarning("プラグインコマンドが見つかりません: {PluginId}.{CommandId}", pluginId, commandId);
                 return null;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Phase 5統合版プラグインコマンド作成エラー: {PluginId}.{CommandId}", pluginId, commandId);
+                _logger.LogError(ex, "プラグインコマンド作成エラー: {PluginId}.{CommandId}", pluginId, commandId);
                 return null;
             }
         }
@@ -187,7 +187,7 @@ namespace AutoTool.Services.Plugin
         {
             try
             {
-                _logger.LogInformation("Phase 5統合版PluginService のDispose処理を開始します");
+                _logger.LogInformation("PluginService のDispose処理を開始します");
 
                 var unloadTasks = _loadedPlugins.Keys.Select(pluginId => UnloadPluginAsync(pluginId));
                 Task.WaitAll(unloadTasks.ToArray(), TimeSpan.FromSeconds(30));
@@ -195,17 +195,17 @@ namespace AutoTool.Services.Plugin
                 _loadedPlugins.Clear();
                 _availableCommands.Clear();
 
-                _logger.LogInformation("Phase 5統合版PluginService のDispose処理が完了しました");
+                _logger.LogInformation("PluginService のDispose処理が完了しました");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Phase 5統合版PluginService のDispose処理中にエラーが発生しました");
+                _logger.LogError(ex, "PluginService のDispose処理中にエラーが発生しました");
             }
         }
     }
 
     /// <summary>
-    /// Phase 5統合版：プラグイン情報実装クラス
+    /// プラグイン情報クラス
     /// </summary>
     public class PluginInfo : IPluginInfo
     {
@@ -219,7 +219,7 @@ namespace AutoTool.Services.Plugin
     }
 
     /// <summary>
-    /// Phase 5統合版：プラグインコマンド情報実装クラス
+    /// プラグインコマンド情報クラス
     /// </summary>
     public class PluginCommandInfo : IPluginCommandInfo
     {

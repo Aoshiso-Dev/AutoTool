@@ -8,14 +8,14 @@ using AutoTool.Services.Plugin;
 namespace AutoTool.SamplePlugins
 {
     /// <summary>
-    /// Phase 5完全統合版：サンプルコマンドプラグイン
+    /// サンプルコマンドプラグイン
     /// MacroPanels依存を削除し、AutoTool統合版のみ使用
     /// </summary>
 
-    #region サンプル設定インターフェース（Phase 5統合版）
+    #region サンプル設定インターフェース
 
     /// <summary>
-    /// Phase 5統合版：サンプルコマンド設定インターフェース
+    /// サンプルコマンド設定インターフェース
     /// </summary>
     public interface ISampleCommandSettings
     {
@@ -25,7 +25,7 @@ namespace AutoTool.SamplePlugins
     }
 
     /// <summary>
-    /// Phase 5統合版：ファイル操作設定インターフェース
+    /// ファイル操作設定インターフェース
     /// </summary>
     public interface IFileOperationSettings
     {
@@ -36,10 +36,10 @@ namespace AutoTool.SamplePlugins
 
     #endregion
 
-    #region サンプルコマンド実装（Phase 5統合版）
+    #region サンプルコマンド実装
 
     /// <summary>
-    /// Phase 5統合版：サンプルプラグインコマンド
+    /// サンプルプラグインコマンド
     /// </summary>
     public class SamplePluginCommand : PluginCommandBase
     {
@@ -54,7 +54,7 @@ namespace AutoTool.SamplePlugins
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] サンプルコマンド実行: {Settings?.SampleText ?? "デフォルトテキスト"}");
+                System.Diagnostics.Debug.WriteLine($"サンプルコマンド実行: {Settings?.SampleText ?? "デフォルトテキスト"}");
                 
                 if (Settings != null)
                 {
@@ -64,7 +64,7 @@ namespace AutoTool.SamplePlugins
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] サンプルコマンド実行エラー: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"サンプルコマンド実行エラー: {ex.Message}");
             }
         }
 
@@ -80,7 +80,7 @@ namespace AutoTool.SamplePlugins
     }
 
     /// <summary>
-    /// Phase 5統合版：ファイル操作コマンド
+    /// ファイル操作コマンド
     /// </summary>
     public class FileOperationCommand : PluginCommandBase
     {
@@ -95,9 +95,9 @@ namespace AutoTool.SamplePlugins
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] ファイル操作実行: {Settings?.Operation ?? "不明"} - {Settings?.FilePath ?? "パス未指定"}");
+                System.Diagnostics.Debug.WriteLine($"ファイル操作実行: {Settings?.Operation ?? "不明"} - {Settings?.FilePath ?? "パス未指定"}");
                 
-                // Phase 5: ファイル操作の簡易実装
+                // ファイル操作の簡易実装
                 if (Settings != null && !string.IsNullOrEmpty(Settings.FilePath))
                 {
                     switch (Settings.Operation?.ToLower())
@@ -105,7 +105,7 @@ namespace AutoTool.SamplePlugins
                         case "create":
                             if (Settings.CreateIfNotExists && !System.IO.File.Exists(Settings.FilePath))
                             {
-                                System.IO.File.WriteAllText(Settings.FilePath, $"Phase 5統合版で作成: {DateTime.Now}");
+                                System.IO.File.WriteAllText(Settings.FilePath, $"作成日時: {DateTime.Now}");
                                 System.Diagnostics.Debug.WriteLine($"  - ファイル作成完了: {Settings.FilePath}");
                             }
                             break;
@@ -124,7 +124,7 @@ namespace AutoTool.SamplePlugins
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] ファイル操作エラー: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"ファイル操作エラー: {ex.Message}");
             }
         }
 
@@ -141,17 +141,17 @@ namespace AutoTool.SamplePlugins
 
     #endregion
 
-    #region プラグイン情報（Phase 5統合版）
+    #region プラグイン情報
 
     /// <summary>
-    /// Phase 5統合版：サンプルプラグイン情報
+    /// サンプルプラグイン情報
     /// </summary>
     public class SamplePluginInfo : IPluginInfo
     {
         public string Id { get; } = "SampleCommandPlugin";
-        public string Name { get; } = "サンプルコマンドプラグイン (Phase 5統合版)";
+        public string Name { get; } = "サンプルコマンドプラグイン";
         public string Version { get; } = "1.0.0";
-        public string Description { get; } = "Phase 5完全統合版のサンプルプラグインです";
+        public string Description { get; } = "サンプルプラグインです";
         public string Author { get; } = "AutoTool Development Team";
         public DateTime LoadedAt { get; set; } = DateTime.Now;
         public PluginStatus Status { get; set; } = PluginStatus.NotLoaded;
@@ -159,10 +159,10 @@ namespace AutoTool.SamplePlugins
 
     #endregion
 
-    #region プラグインメインクラス（Phase 5統合版）
+    #region プラグインメインクラス
 
     /// <summary>
-    /// Phase 5完全統合版：サンプルコマンドプラグイン
+    /// サンプルコマンドプラグイン
     /// </summary>
     public class SampleCommandPlugin : IPlugin
     {
@@ -179,18 +179,18 @@ namespace AutoTool.SamplePlugins
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] {Info.Name} 初期化開始");
+                System.Diagnostics.Debug.WriteLine($"{Info.Name} 初期化開始");
                 
-                // Phase 5: 非同期初期化処理のシミュレーション
+                // 非同期初期化処理のシミュレーション
                 await Task.Delay(100);
                 
                 _pluginInfo.Status = PluginStatus.Active;
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] {Info.Name} 初期化完了");
+                System.Diagnostics.Debug.WriteLine($"{Info.Name} 初期化完了");
             }
             catch (Exception ex)
             {
                 _pluginInfo.Status = PluginStatus.Error;
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] {Info.Name} 初期化エラー: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"{Info.Name} 初期化エラー: {ex.Message}");
                 throw;
             }
         }
@@ -199,17 +199,17 @@ namespace AutoTool.SamplePlugins
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] {Info.Name} 終了処理開始");
+                System.Diagnostics.Debug.WriteLine($"{Info.Name} 終了処理開始");
                 
-                // Phase 5: 非同期終了処理のシミュレーション
+                // 非同期終了処理のシミュレーション
                 await Task.Delay(50);
                 
                 _pluginInfo.Status = PluginStatus.NotLoaded;
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] {Info.Name} 終了処理完了");
+                System.Diagnostics.Debug.WriteLine($"{Info.Name} 終了処理完了");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Phase 5統合版] {Info.Name} 終了処理エラー: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"{Info.Name} 終了処理エラー: {ex.Message}");
                 throw;
             }
         }
@@ -225,7 +225,7 @@ namespace AutoTool.SamplePlugins
                 {
                     Id = "SampleCommand",
                     Name = "サンプルコマンド",
-                    Description = "Phase 5統合版のサンプルコマンドです",
+                    Description = "サンプルコマンドです",
                     Category = "サンプル",
                     PluginId = Info.Id,
                     CommandType = typeof(SamplePluginCommand),
@@ -235,7 +235,7 @@ namespace AutoTool.SamplePlugins
                 {
                     Id = "FileOperation",
                     Name = "ファイル操作",
-                    Description = "Phase 5統合版のファイル操作コマンドです",
+                    Description = "ファイル操作コマンドです",
                     Category = "ファイル",
                     PluginId = Info.Id,
                     CommandType = typeof(FileOperationCommand),
@@ -257,7 +257,7 @@ namespace AutoTool.SamplePlugins
 
             var command = Activator.CreateInstance(commandInfo.CommandType, Info, commandInfo);
             
-            // 設定を適用
+            // 設定適用
             if (settings != null && command != null)
             {
                 var settingsProperty = commandInfo.CommandType.GetProperty("Settings");

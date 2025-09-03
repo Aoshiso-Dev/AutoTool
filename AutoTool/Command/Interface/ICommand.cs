@@ -1,117 +1,108 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace AutoTool.Command.Interface
 {
+
     /// <summary>
-    /// Phase 5Š®‘S“‡”ÅFƒRƒ}ƒ“ƒhƒCƒ“ƒ^[ƒtƒF[ƒX
-    /// MacroPanelsˆË‘¶‚ğíœ‚µAAutoTool“‡”Å‚Ì‚İg—p
+    /// ã‚³ãƒãƒ³ãƒ‰ã®ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹
     /// </summary>
     public interface ICommand
     {
+        /// <summary>
+        /// è¡Œç•ªå·
+        /// </summary>
         int LineNumber { get; set; }
-        bool IsEnabled { get; set; }
+
+        /// <summary>
+        /// è¦ªã‚³ãƒãƒ³ãƒ‰
+        /// </summary>
         ICommand? Parent { get; }
+
+        /// <summary>
+        /// å­ã‚³ãƒãƒ³ãƒ‰
+        /// </summary>
         IEnumerable<ICommand> Children { get; }
+
+        /// <summary>
+        /// ãƒã‚¹ãƒˆãƒ¬ãƒ™ãƒ«
+        /// </summary>
         int NestLevel { get; set; }
+
+        /// <summary>
+        /// è¨­å®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+        /// </summary>
         object? Settings { get; set; }
+
+        /// <summary>
+        /// èª¬æ˜
+        /// </summary>
         string Description { get; }
 
-        event EventHandler? OnStartCommand;
-        event EventHandler? OnFinishCommand;
-        event EventHandler<string>? OnDoingCommand;
+        /// <summary>
+        /// æœ‰åŠ¹/ç„¡åŠ¹
+        /// </summary>
+        bool IsEnabled { get; set; }
 
+        /// <summary>
+        /// ã‚³ãƒãƒ³ãƒ‰ã‚’å®Ÿè¡Œ
+        /// </summary>
+        Task<bool> Execute(CancellationToken cancellationToken);
+
+        /// <summary>
+        /// å­ã‚³ãƒãƒ³ãƒ‰ã‚’è¿½åŠ 
+        /// </summary>
         void AddChild(ICommand child);
+
+        /// <summary>
+        /// å­ã‚³ãƒãƒ³ãƒ‰ã‚’å‰Šé™¤
+        /// </summary>
         void RemoveChild(ICommand child);
+
+        /// <summary>
+        /// å­ã‚³ãƒãƒ³ãƒ‰ã‚’å–å¾—
+        /// </summary>
         IEnumerable<ICommand> GetChildren();
 
-        Task<bool> Execute(CancellationToken cancellationToken);
+        /// <summary>
+        /// ã‚³ãƒãƒ³ãƒ‰é–‹å§‹æ™‚ã®ã‚¤ãƒ™ãƒ³ãƒˆ
+        /// </summary>
+        event System.EventHandler? OnStartCommand;
     }
 
     /// <summary>
-    /// Phase 5“‡”ÅFƒ‹[ƒgƒRƒ}ƒ“ƒhƒCƒ“ƒ^[ƒtƒF[ƒX
+    /// å¤‰æ•°ã‚¹ãƒˆã‚¢ã®ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹
     /// </summary>
-    public interface IRootCommand : ICommand
+    public interface IVariableStore
     {
+        void Set(string name, string value);
+        string? Get(string name);
+        void Clear();
     }
 
-    /// <summary>
-    /// Phase 5“‡”ÅFŠî–{ƒRƒ}ƒ“ƒhİ’èƒCƒ“ƒ^[ƒtƒF[ƒX
-    /// </summary>
-    public interface ICommandSettings
-    {
-        string WindowTitle { get; set; }
-        string WindowClassName { get; set; }
-    }
-
-    /// <summary>
-    /// Phase 5“‡”ÅF‘Ò‹@ƒRƒ}ƒ“ƒhİ’è
-    /// </summary>
-    public interface IWaitCommandSettings : ICommandSettings
-    {
-        int Wait { get; set; }
-    }
-
-    /// <summary>
-    /// Phase 5“‡”ÅFƒNƒŠƒbƒNƒRƒ}ƒ“ƒhİ’è
-    /// </summary>
-    public interface IClickCommandSettings : ICommandSettings
-    {
-        int X { get; set; }
-        int Y { get; set; }
-        System.Windows.Input.MouseButton Button { get; set; }
-        bool UseBackgroundClick { get; set; }
-        int BackgroundClickMethod { get; set; }
-    }
-
-    /// <summary>
-    /// Phase 5“‡”ÅFƒ‹[ƒvƒRƒ}ƒ“ƒhİ’è
-    /// </summary>
-    public interface ILoopCommandSettings : ICommandSettings
-    {
-        int LoopCount { get; set; }
-    }
-
-    /// <summary>
-    /// Phase 5“‡”ÅF‰æ‘œ‘Ò‹@ƒRƒ}ƒ“ƒhİ’è
-    /// </summary>
-    public interface IWaitImageCommandSettings : ICommandSettings
-    {
-        string ImagePath { get; set; }
-        int Timeout { get; set; }
-        int Interval { get; set; }
-        double Threshold { get; set; }
-        bool SearchColor { get; set; }
-    }
-
-    /// <summary>
-    /// Phase 5“‡”ÅF‰æ‘œƒNƒŠƒbƒNƒRƒ}ƒ“ƒhİ’è
-    /// </summary>
-    public interface IClickImageCommandSettings : IWaitImageCommandSettings
-    {
-        System.Windows.Input.MouseButton Button { get; set; }
-        bool UseBackgroundClick { get; set; }
-        int BackgroundClickMethod { get; set; }
-    }
-
-    /// <summary>
-    /// Phase 5“‡”ÅFƒzƒbƒgƒL[ƒRƒ}ƒ“ƒhİ’è
-    /// </summary>
-    public interface IHotkeyCommandSettings : ICommandSettings
-    {
-        string Key { get; set; }
-        bool Ctrl { get; set; }
-        bool Alt { get; set; }
-        bool Shift { get; set; }
-    }
-
-    // “Á’èƒRƒ}ƒ“ƒhƒCƒ“ƒ^[ƒtƒF[ƒX
-    public interface IWaitCommand : ICommand { }
-    public interface IClickCommand : ICommand { }
-    public interface ILoopCommand : ICommand { }
-    public interface IWaitImageCommand : ICommand { }
-    public interface IClickImageCommand : ICommand { }
-    public interface IHotkeyCommand : ICommand { }
+    public interface IRootCommand : ICommand { }
+    public interface IIfCommand : ICommand { }
+    public interface IWaitImageCommand : ICommand { new IWaitImageCommandSettings Settings { get; } }
+    public interface IClickImageCommand : ICommand { new IClickImageCommandSettings Settings { get; } }
+    public interface IHotkeyCommand : ICommand { new IHotkeyCommandSettings Settings { get; } }
+    public interface IClickCommand : ICommand { new IClickCommandSettings Settings { get; } }
+    public interface IWaitCommand : ICommand { new IWaitCommandSettings Settings { get; } }
+    public interface IIfImageExistCommand : ICommand, IIfCommand { new IIfImageCommandSettings Settings { get; } }
+    public interface IIfImageNotExistCommand : ICommand, IIfCommand { new IIfImageCommandSettings Settings { get; } }
+    public interface ILoopCommand : ICommand { new ILoopCommandSettings Settings { get; } }
+    public interface IEndLoopCommand : ICommand { new ILoopEndCommandSettings Settings { get; } }
+    public interface ILoopBreakCommand : ICommand { }
+    public interface IIfImageExistAICommand : ICommand, IIfCommand { new IIfImageExistAISettings Settings { get; } }
+    public interface IIfImageNotExistAICommand : ICommand, IIfCommand { new IIfImageNotExistAISettings Settings { get; } } // Use proper interface
+    public interface IClickImageAICommand : ICommand { new IClickImageAICommandSettings Settings { get; } }
+    public interface IExecuteCommand : ICommand { new IExecuteCommandSettings Settings { get; } }
+    public interface ISetVariableCommand : ICommand { new ISetVariableCommandSettings Settings { get; } }
+    public interface ISetVariableAICommand : ICommand { new ISetVariableAICommandSettings Settings { get; } }
+    public interface IIfVariableCommand : ICommand, IIfCommand { new IIfVariableCommandSettings Settings { get; } }
+    public interface IScreenshotCommand : ICommand { new IScreenshotCommandSettings Settings { get; } }
 }

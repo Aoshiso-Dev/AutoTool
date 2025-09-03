@@ -10,9 +10,6 @@ using System.Windows.Media;
 
 namespace AutoTool.Model.List.Interface
 {
-    /// <summary>
-    /// Phase 4統合版：コマンドリストアイテムの基底インターフェース
-    /// </summary>
     public interface ICommandListItem
     {
         public bool IsEnable { get; set; }
@@ -133,7 +130,6 @@ namespace AutoTool.Model.List.Interface
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
     }
-    
     public interface IIfImageNotExistAIItem : ICommandListItem
     {
         string WindowTitle { get; set; }
@@ -189,9 +185,7 @@ namespace AutoTool.Model.List.Interface
         public string Value { get; set; }
     }
 
-    /// <summary>
-    /// スクリーンショットアイテムインターフェース
-    /// </summary>
+    // Screenshot item interface for panel editing
     public interface IScreenshotItem : ICommandListItem
     {
         string SaveDirectory { get; set; }
