@@ -11,6 +11,8 @@ using AutoTool.Services;
 using AutoTool.Services.Safety;
 using AutoTool.Services.Configuration;
 using AutoTool.Logging; // 追加: ファイルロガー
+using AutoTool.ViewModel; // MainWindowViewModelの名前空間
+using AutoTool.Helpers;
 
 namespace AutoTool
 {
@@ -69,6 +71,11 @@ namespace AutoTool
                 // MacroFactoryとCommandRegistryの初期化
                 AutoTool.Model.MacroFactory.MacroFactory.SetServiceProvider(serviceProvider);
                 AutoTool.Model.CommandDefinition.CommandRegistry.Initialize();
+
+                // JsonSerializerHelperのロガーを初期化
+                var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+                var jsonLogger = loggerFactory.CreateLogger("JsonSerializerHelper");
+                JsonSerializerHelper.SetLogger(jsonLogger);
 
                 // メインウィンドウを作成して表示
                 var mainWindowViewModel = serviceProvider.GetRequiredService<MainWindowViewModel>();
@@ -265,17 +272,8 @@ namespace AutoTool
                 })
                 .ConfigureServices((context, services) =>
                 {
-                    try
-                    {
-                        services.AddAutoToolServices();
-                        services.AddTransient<MainWindowViewModel>();
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Service registration error: {ex.Message}");
-                        // 最低限のサービスのみ登録
-                        services.AddSingleton<Microsoft.Extensions.Logging.ILoggerFactory, Microsoft.Extensions.Logging.LoggerFactory>();
-                    }
+                    services.AddAutoToolServices();
+                    services.AddTransient<MainWindowViewModel>();
                 });
         }
     }

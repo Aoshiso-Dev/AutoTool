@@ -14,6 +14,7 @@ using System.Text.Json;
 using System.IO;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.Input;
+using AutoTool.List.Class; // CommandListクラス用
 
 namespace AutoTool.ViewModel.Panels
 {
@@ -62,7 +63,19 @@ namespace AutoTool.ViewModel.Panels
             {
                 TotalItems = _items.Count;
                 HasUnsavedChanges = true;
-                UpdateLineNumbers();
+                
+                // コレクション変更後に少し遅延してペアリング更新
+                Task.Delay(50).ContinueWith(_ =>
+                {
+                    try
+                    {
+                        UpdateLineNumbers();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "コレクション変更後のペアリング更新でエラー");
+                    }
+                }, TaskScheduler.Default);
             };
         }
 
@@ -526,14 +539,171 @@ namespace AutoTool.ViewModel.Panels
 
         private void UpdateLineNumbers()
         {
-            for (int i = 0; i < Items.Count; i++)
+            try
             {
-                Items[i].LineNumber = i + 1;
+                if (_items.Count == 0)
+                {
+                    _logger.LogDebug("アイテムが0件のため、ペアリング処理をスキップ");
+                    return;
+                }
+
+                _logger.LogDebug("行番号・ネストレベル・ペアリング更新開始: {Count}件", _items.Count);
+
+                // Step 1: 行番号を更新
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    _items[i].LineNumber = i + 1;
+                }
+
+                // Step 2: ネストレベルを計算
+                UpdateNestLevelInternal();
+
+                // Step 3: Pairプロパティをクリア
+                ClearAllPairs();
+
+                // Step 4: ペアリングを実行
+                UpdatePairingInternal();
+
+                _logger.LogDebug("行番号・ネストレベル・ペアリング更新完了");
             }
-            
-            // ペアリング処理を追加
-            UpdateNestLevel();
-            UpdatePairing();
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "行番号更新中にエラーが発生しました: {Message}", ex.Message);
+                
+                // フォールバック：最低限の行番号更新
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    _items[i].LineNumber = i + 1;
+                }
+            }
+        }
+
+        /// <summary>
+        /// ネストレベルを内部計算
+        /// </summary>
+        private void UpdateNestLevelInternal()
+        {
+            try
+            {
+                var nestLevel = 0;
+
+                foreach (var item in _items)
+                {
+                    // ネストレベルを減らすコマンド（終了系）
+                    if (IsEndCommand(item.ItemType))
+                    {
+                        nestLevel = Math.Max(0, nestLevel - 1);
+                    }
+
+                    item.NestLevel = nestLevel;
+
+                    // ネストレベルを増やすコマンド（開始系）
+                    if (IsStartCommand(item.ItemType))
+                    {
+                        nestLevel++;
+                    }
+                }
+
+                _logger.LogDebug("ネストレベル計算完了");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ネストレベル計算中にエラー: {Message}", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// すべてのPairプロパティをクリア
+        /// </summary>
+        private void ClearAllPairs()
+        {
+            try
+            {
+                foreach (var item in _items)
+                {
+                    SetPairProperty(item, null);
+                }
+                _logger.LogDebug("全ペアプロパティクリア完了");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ペアプロパティクリア中にエラー: {Message}", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// ペアリングを内部実行
+        /// </summary>
+        private void UpdatePairingInternal()
+        {
+            try
+            {
+                // Loopペアリング
+                var loopItems = _items.Where(x => x.ItemType == "Loop").ToList();
+                var loopEndItems = _items.Where(x => x.ItemType == "Loop_End").ToList();
+
+                foreach (var loopItem in loopItems)
+                {
+                    var correspondingEnd = loopEndItems
+                        .Where(end => end.LineNumber > loopItem.LineNumber)
+                        .Where(end => end.NestLevel == loopItem.NestLevel)
+                        .OrderBy(end => end.LineNumber)
+                        .FirstOrDefault();
+
+                    if (correspondingEnd != null)
+                    {
+                        SetPairProperty(loopItem, correspondingEnd);
+                        SetPairProperty(correspondingEnd, loopItem);
+                        
+                        // LoopCountも同期
+                        var loopCount = GetPropertyValue<int>(loopItem, "LoopCount");
+                        if (loopCount > 0)
+                        {
+                            SetPropertyValue(correspondingEnd, "LoopCount", loopCount);
+                        }
+                        
+                        _logger.LogDebug("ループペアリング成功: Loop({LoopLine}) <-> Loop_End({EndLine})", 
+                            loopItem.LineNumber, correspondingEnd.LineNumber);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Loop (行 {LineNumber}) に対応するLoop_Endが見つかりません", loopItem.LineNumber);
+                    }
+                }
+
+                // Ifペアリング
+                var ifItems = _items.Where(x => IsIfCommand(x.ItemType)).ToList();
+                var ifEndItems = _items.Where(x => x.ItemType == "IF_End").ToList();
+
+                foreach (var ifItem in ifItems)
+                {
+                    var correspondingEnd = ifEndItems
+                        .Where(end => end.LineNumber > ifItem.LineNumber)
+                        .Where(end => end.NestLevel == ifItem.NestLevel)
+                        .OrderBy(end => end.LineNumber)
+                        .FirstOrDefault();
+
+                    if (correspondingEnd != null)
+                    {
+                        SetPairProperty(ifItem, correspondingEnd);
+                        SetPairProperty(correspondingEnd, ifItem);
+                        
+                        _logger.LogDebug("Ifペアリング成功: {IfType}({IfLine}) <-> IF_End({EndLine})", 
+                            ifItem.ItemType, ifItem.LineNumber, correspondingEnd.LineNumber);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("{IfType} (行 {LineNumber}) に対応するIF_Endが見つかりません", 
+                            ifItem.ItemType, ifItem.LineNumber);
+                    }
+                }
+
+                _logger.LogDebug("ペアリング処理完了");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ペアリング処理中にエラー: {Message}", ex.Message);
+            }
         }
 
         /// <summary>
@@ -541,138 +711,54 @@ namespace AutoTool.ViewModel.Panels
         /// </summary>
         private void UpdateNestLevel()
         {
-            var nestLevel = 0;
-
-            foreach (var item in Items)
-            {
-                // ネストレベルを減らすコマンド（終了系）
-                if (IsEndCommand(item.ItemType))
-                {
-                    nestLevel = Math.Max(0, nestLevel - 1);
-                }
-
-                item.NestLevel = nestLevel;
-
-                // ネストレベルを増やすコマンド（開始系）
-                if (IsStartCommand(item.ItemType))
-                {
-                    nestLevel++;
-                }
-            }
-        }
-
-        /// <summary>
-        /// ペアリングを更新
-        /// </summary>
-        private void UpdatePairing()
-        {
             try
             {
-                PairLoopItems();
-                PairIfItems();
-                _logger.LogDebug("ペアリング更新完了");
+                _logger.LogDebug("ネストレベル更新開始");
+                UpdateNestLevelInternal();
+                _logger.LogDebug("ネストレベル更新完了");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ペアリング更新中にエラーが発生しました");
+                _logger.LogError(ex, "ネストレベル更新中にエラーが発生しました");
             }
         }
 
         /// <summary>
-        /// ループアイテムのペアリング
+        /// ループアイテムのペアリング（従来のメソッドは簡素化）
         /// </summary>
         private void PairLoopItems()
         {
-            // まず既存のペアリングをクリア
-            ClearLoopPairing();
-
-            var loopItems = Items.Where(x => x.ItemType == "Loop").ToList();
-            var loopEndItems = Items.Where(x => x.ItemType == "Loop_End").ToList();
-
-            foreach (var loopItem in loopItems)
-            {
-                // 対応するLoop_Endを探す
-                var correspondingEnd = loopEndItems
-                    .Where(end => end.LineNumber > loopItem.LineNumber)
-                    .Where(end => end.NestLevel == loopItem.NestLevel)
-                    .OrderBy(end => end.LineNumber)
-                    .FirstOrDefault();
-
-                if (correspondingEnd != null)
-                {
-                    SetPairProperty(loopItem, correspondingEnd);
-                    SetPairProperty(correspondingEnd, loopItem);
-                    
-                    // LoopCountも同期
-                    var loopCount = GetPropertyValue<int>(loopItem, "LoopCount");
-                    SetPropertyValue(correspondingEnd, "LoopCount", loopCount);
-                    
-                    _logger.LogDebug("ループペアリング: Loop({LineNum1}) <-> Loop_End({LineNum2})", 
-                        loopItem.LineNumber, correspondingEnd.LineNumber);
-                }
-                else
-                {
-                    _logger.LogWarning("Loop (行 {LineNumber}) に対応するLoop_Endが見つかりません", loopItem.LineNumber);
-                }
-            }
+            // CommandListクラスのPairLoopItemsを使用するため、
+            // このメソッドは UpdateLineNumbers() 内で実行される
+            _logger.LogDebug("LoopペアリングはUpdateLineNumbers内で実行されます");
         }
 
         /// <summary>
-        /// IFアイテムのペアリング
+        /// IFアイテムのペアリング（従来のメソッドは簡素化）
         /// </summary>
         private void PairIfItems()
         {
-            // まず既存のペアリングをクリア
-            ClearIfPairing();
-
-            var ifItems = Items.Where(x => IsIfCommand(x.ItemType)).ToList();
-            var ifEndItems = Items.Where(x => x.ItemType == "IF_End").ToList();
-
-            foreach (var ifItem in ifItems)
-            {
-                // 対応するIF_Endを探す
-                var correspondingEnd = ifEndItems
-                    .Where(end => end.LineNumber > ifItem.LineNumber)
-                    .Where(end => end.NestLevel == ifItem.NestLevel)
-                    .OrderBy(end => end.LineNumber)
-                    .FirstOrDefault();
-
-                if (correspondingEnd != null)
-                {
-                    SetPairProperty(ifItem, correspondingEnd);
-                    SetPairProperty(correspondingEnd, ifItem);
-                    
-                    _logger.LogDebug("IFペアリング: {IfType}({LineNum1}) <-> IF_End({LineNum2})", 
-                        ifItem.ItemType, ifItem.LineNumber, correspondingEnd.LineNumber);
-                }
-                else
-                {
-                    _logger.LogWarning("{IfType} (行 {LineNumber}) に対応するIF_Endが見つかりません", 
-                        ifItem.ItemType, ifItem.LineNumber);
-                }
-            }
+            // CommandListクラスのPairIfItemsを使用するため、
+            // このメソッドは UpdateLineNumbers() 内で実行される
+            _logger.LogDebug("IfペアリングはUpdateLineNumbers内で実行されます");
         }
 
         /// <summary>
-        /// ループペアリングをクリア
+        /// ループペアリングをクリア（非推奨）
         /// </summary>
         private void ClearLoopPairing()
         {
-            foreach (var item in Items.Where(x => x.ItemType == "Loop" || x.ItemType == "Loop_End"))
-            {
-                SetPairProperty(item, null);
-            }
+            // CommandListクラスで自動処理されるため不要
+            _logger.LogDebug("LoopペアリングクリアはCommandListで自動処理されます");
         }
 
         /// <summary>
-        /// IFペアリングをクリア
+        /// IFペアリングをクリア（非推奨）
         /// </summary>
         private void ClearIfPairing()
         {
-            foreach (var item in Items.Where(x => IsIfCommand(x.ItemType) || x.ItemType == "IF_End"))
-            {
-                SetPairProperty(item, null);
-            }
+            // CommandListクラスで自動処理されるため不要
+            _logger.LogDebug("IfペアリングクリアはCommandListで自動処理されます");
         }
 
         /// <summary>
@@ -680,10 +766,26 @@ namespace AutoTool.ViewModel.Panels
         /// </summary>
         private void SetPairProperty(ICommandListItem item, ICommandListItem? pair)
         {
-            var pairProperty = item.GetType().GetProperty("Pair");
-            if (pairProperty != null && pairProperty.CanWrite)
+            try
             {
-                pairProperty.SetValue(item, pair);
+                var pairProperty = item.GetType().GetProperty("Pair");
+                if (pairProperty != null && pairProperty.CanWrite)
+                {
+                    pairProperty.SetValue(item, pair);
+                    var pairLineText = pair?.LineNumber.ToString() ?? "null";
+                    _logger.LogTrace("ペアプロパティ設定成功: {ItemType} ({Type}) Line:{LineNumber} -> {PairLine}", 
+                        item.ItemType, item.GetType().Name, item.LineNumber, pairLineText);
+                }
+                else
+                {
+                    _logger.LogDebug("ペアプロパティなし: {ItemType} ({Type}) Line:{LineNumber}", 
+                        item.ItemType, item.GetType().Name, item.LineNumber);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "ペアプロパティ設定に失敗: {ItemType} ({Type}) Line:{LineNumber}", 
+                    item.ItemType, item.GetType().Name, item.LineNumber);
             }
         }
 
@@ -692,12 +794,19 @@ namespace AutoTool.ViewModel.Panels
         /// </summary>
         private T GetPropertyValue<T>(ICommandListItem item, string propertyName)
         {
-            var property = item.GetType().GetProperty(propertyName);
-            if (property != null && property.CanRead)
+            try
             {
-                var value = property.GetValue(item);
-                if (value is T tValue)
-                    return tValue;
+                var property = item.GetType().GetProperty(propertyName);
+                if (property != null && property.CanRead)
+                {
+                    var value = property.GetValue(item);
+                    if (value is T tValue)
+                        return tValue;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "プロパティ値取得に失敗: {PropertyName} on {ItemType}", propertyName, item.ItemType);
             }
             return default(T)!;
         }
@@ -707,10 +816,17 @@ namespace AutoTool.ViewModel.Panels
         /// </summary>
         private void SetPropertyValue(ICommandListItem item, string propertyName, object? value)
         {
-            var property = item.GetType().GetProperty(propertyName);
-            if (property != null && property.CanWrite)
+            try
             {
-                property.SetValue(item, value);
+                var property = item.GetType().GetProperty(propertyName);
+                if (property != null && property.CanWrite)
+                {
+                    property.SetValue(item, value);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "プロパティ値設定に失敗: {PropertyName} on {ItemType}", propertyName, item.ItemType);
             }
         }
 
@@ -791,53 +907,52 @@ namespace AutoTool.ViewModel.Panels
                 
                 if (System.IO.File.Exists(filePath))
                 {
-                    var json = System.IO.File.ReadAllText(filePath);
+                    // CommandListクラスを使用してファイル読み込み
+                    var tempCommandList = new AutoTool.List.Class.CommandList();
+                    tempCommandList.Load(filePath);
                     
-                    // 適切な型でデシリアライズ
-                    var options = new JsonSerializerOptions
+                    _logger.LogInformation("ファイル読み込み成功: {Count}件", tempCommandList.Items.Count);
+                    
+                    // 読み込まれたアイテムの型情報をログ出力
+                    foreach (var item in tempCommandList.Items.Take(5)) // 最初の5件だけログ
                     {
-                        PropertyNameCaseInsensitive = true,
-                        AllowTrailingCommas = true
-                    };
-                    
-                    var itemData = System.Text.Json.JsonSerializer.Deserialize<List<Dictionary<string, object>>>(json, options);
-                    
-                    Items.Clear();
-                    if (itemData != null)
-                    {
-                        foreach (var itemDict in itemData)
+                        _logger.LogDebug("読み込みアイテム: Type={Type}, ItemType={ItemType}, Comment={Comment}", 
+                            item.GetType().Name, item.ItemType, item.Comment);
+                        
+                        // Pairプロパティの存在確認
+                        var pairProperty = item.GetType().GetProperty("Pair");
+                        if (pairProperty != null)
                         {
-                            if (itemDict.TryGetValue("ItemType", out var itemTypeObj) && itemTypeObj is string itemType)
-                            {
-                                var item = CreateItem(itemType);
-                                
-                                // プロパティを復元
-                                foreach (var kvp in itemDict)
-                                {
-                                    var property = item.GetType().GetProperty(kvp.Key);
-                                    if (property != null && property.CanWrite)
-                                    {
-                                        try
-                                        {
-                                            var value = Convert.ChangeType(kvp.Value, property.PropertyType);
-                                            property.SetValue(item, value);
-                                        }
-                                        catch
-                                        {
-                                            // プロパティ設定失敗は無視
-                                        }
-                                    }
-                                }
-                                
-                                Items.Add(item);
-                            }
+                            _logger.LogDebug("Pairプロパティ存在: {ItemType}", item.ItemType);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Pairプロパティなし: {ItemType} ({Type})", item.ItemType, item.GetType().Name);
                         }
                     }
+                    
+                    // ObservableCollectionを破壊せずに内容を更新
+                    Items.Clear();
+                    foreach (var item in tempCommandList.Items)
+                    {
+                        Items.Add(item);
+                    }
+                    
+                    // 読み込み後にペアリング更新
+                    UpdateLineNumbers();
+                    
+                    _logger.LogInformation("CommandListクラスを使用してファイル読み込み完了: {Count}件", Items.Count);
+                }
+                else
+                {
+                    _logger.LogWarning("ファイルが存在しません: {FilePath}", filePath);
+                    
+                    // ファイルが存在しない場合はクリア
+                    Items.Clear();
                 }
                 
                 SelectedIndex = Items.Count > 0 ? 0 : -1;
                 SelectedItem = Items.FirstOrDefault();
-                UpdateLineNumbers();
                 
                 // 履歴をクリア
                 _undoStack.Clear();
@@ -1082,6 +1197,110 @@ namespace AutoTool.ViewModel.Panels
             catch (Exception ex)
             {
                 _logger.LogError(ex, "進捗更新処理中にエラーが発生しました");
+            }
+        }
+
+        #endregion
+
+        #region ペアリング処理
+
+        /// <summary>
+        /// ペアリングを更新
+        /// </summary>
+        private void UpdatePairing()
+        {
+            try
+            {
+                if (_items.Count > 0)
+                {
+                    _logger.LogDebug("ペアリング更新開始");
+                    UpdatePairingInternal();
+                    _logger.LogDebug("ペアリング更新完了");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ペアリング更新中にエラーが発生しました");
+            }
+        }
+
+        #endregion
+
+        #region デバッグ用メソッド
+
+        /// <summary>
+        /// ペアリング状況をデバッグ出力
+        /// </summary>
+        [RelayCommand]
+        private void DebugPairing()
+        {
+            try
+            {
+                _logger.LogInformation("=== ペアリング状況デバッグ開始 ===");
+                
+                foreach (var item in Items)
+                {
+                    var itemTypeName = item.GetType().Name;
+                    var pairProperty = item.GetType().GetProperty("Pair");
+                    var hasPairProperty = pairProperty != null;
+                    
+                    var pairInfo = "なし";
+                    if (hasPairProperty)
+                    {
+                        var pairValue = pairProperty?.GetValue(item) as ICommandListItem;
+                        pairInfo = pairValue?.LineNumber.ToString() ?? "null";
+                    }
+                    else
+                    {
+                        pairInfo = "プロパティなし";
+                    }
+                    
+                    _logger.LogInformation("行{LineNumber}: {ItemType} ({TypeName}) ネスト:{NestLevel} -> ペア:{PairInfo}", 
+                        item.LineNumber, item.ItemType, itemTypeName, item.NestLevel, pairInfo);
+                }
+                
+                // 統計情報
+                var totalItems = Items.Count;
+                var basicCommandItems = Items.Count(i => i.GetType() == typeof(BasicCommandItem));
+                var itemsWithPairProperty = Items.Count(i => i.GetType().GetProperty("Pair") != null);
+                var loopItems = Items.Count(i => i.ItemType == "Loop");
+                var loopEndItems = Items.Count(i => i.ItemType == "Loop_End");
+                var ifItems = Items.Count(i => IsIfCommand(i.ItemType));
+                var ifEndItems = Items.Count(i => i.ItemType == "IF_End");
+                
+                _logger.LogInformation("=== 統計情報 ===");
+                _logger.LogInformation("総アイテム数: {Total}", totalItems);
+                _logger.LogInformation("BasicCommandItem数: {Basic}", basicCommandItems);
+                _logger.LogInformation("Pairプロパティあり: {WithPair}", itemsWithPairProperty);
+                _logger.LogInformation("Loop数: {Loop}, Loop_End数: {LoopEnd}", loopItems, loopEndItems);
+                _logger.LogInformation("If数: {If}, IF_End数: {IfEnd}", ifItems, ifEndItems);
+                
+                _logger.LogInformation("=== ペアリング状況デバッグ終了 ===");
+                StatusMessage = "ペアリング状況をログに出力しました";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ペアリングデバッグ中にエラー");
+                StatusMessage = $"ペアリングデバッグエラー: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// 手動でペアリング更新を実行
+        /// </summary>
+        [RelayCommand]
+        private void ForceUpdatePairing()
+        {
+            try
+            {
+                _logger.LogInformation("手動ペアリング更新を実行");
+                UpdateLineNumbers();
+                StatusMessage = "ペアリングを手動更新しました";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "手動ペアリング更新中にエラー");
+                StatusMessage = $"ペアリング更新エラー: {ex.Message}";
             }
         }
 

@@ -223,17 +223,36 @@ namespace AutoTool.Command.Class
         /// </summary>
         public virtual bool CanExecute()
         {
-            if (!IsEnabled) return false;
-            if (IsRunning) return false;
+            _logger?.LogDebug("[CanExecute] チェック開始: {Description} (Line: {LineNumber})", Description, LineNumber);
+            
+            if (!IsEnabled) 
+            {
+                _logger?.LogDebug("[CanExecute] IsEnabled=false: {Description}", Description);
+                return false;
+            }
+            
+            if (IsRunning) 
+            {
+                _logger?.LogDebug("[CanExecute] IsRunning=true: {Description}", Description);
+                return false;
+            }
             
             try
             {
+                _logger?.LogDebug("[CanExecute] ValidateFiles開始: {Description}", Description);
                 ValidateFiles();
+                _logger?.LogDebug("[CanExecute] ValidateFiles成功: {Description}", Description);
+                
+                _logger?.LogDebug("[CanExecute] ValidateSettings開始: {Description}", Description);
                 ValidateSettings();
+                _logger?.LogDebug("[CanExecute] ValidateSettings成功: {Description}", Description);
+                
+                _logger?.LogDebug("[CanExecute] チェック成功: {Description}", Description);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.LogWarning(ex, "[CanExecute] 検証失敗: {Description} - {Message}", Description, ex.Message);
                 return false;
             }
         }
@@ -313,8 +332,11 @@ namespace AutoTool.Command.Class
         /// </summary>
         public virtual async Task<bool> Execute(CancellationToken cancellationToken)
         {
+            _logger?.LogDebug("[Execute] 実行開始: {Description} (Line: {LineNumber}, Type: {Type})", Description, LineNumber, GetType().Name);
+            
             if (!CanExecute())
             {
+                _logger?.LogWarning("[Execute] CanExecute=false: {Description} (Line: {LineNumber})", Description, LineNumber);
                 LogMessage("コマンドは実行できません（無効またはエラー）");
                 return false;
             }
@@ -323,16 +345,21 @@ namespace AutoTool.Command.Class
             ExecutionStats.StartTime = DateTime.Now;
             ExecutionStats.TotalCommands++;
 
+            _logger?.LogDebug("[Execute] コマンド実行開始: {Description}", Description);
             OnStartCommand?.Invoke(this, EventArgs.Empty);
             WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
 
             try
             {
                 // 実行前にファイル検証を行う
+                _logger?.LogDebug("[Execute] 実行前検証開始: {Description}", Description);
                 ValidateFiles();
                 ValidateSettings();
+                _logger?.LogDebug("[Execute] 実行前検証完了: {Description}", Description);
 
+                _logger?.LogDebug("[Execute] DoExecuteAsync開始: {Description}", Description);
                 var result = await DoExecuteAsync(cancellationToken);
+                _logger?.LogDebug("[Execute] DoExecuteAsync完了: {Description} - Result: {Result}", Description, result);
                 
                 ExecutionStats.ExecutedCommands++;
                 if (result)
@@ -369,6 +396,7 @@ namespace AutoTool.Command.Class
                 OnErrorCommand?.Invoke(this, ex);
                 ExecutionStats.FailedCommands++;
                 WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                _logger?.LogError(ex, "[Execute] ファイル不存在エラー: {Description}", Description);
                 return false;
             }
             catch (DirectoryNotFoundException ex)
@@ -377,13 +405,14 @@ namespace AutoTool.Command.Class
                 OnErrorCommand?.Invoke(this, ex);
                 ExecutionStats.FailedCommands++;
                 WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                _logger?.LogError(ex, "[Execute] ディレクトリ不存在エラー: {Description}", Description);
                 return false;
             }
             catch (Exception ex)
             {
                 LogMessage($"❌ 実行エラー: {ex.Message}");
                 OnErrorCommand?.Invoke(this, ex);
-                _logger?.LogError(ex, "コマンド実行中にエラーが発生しました: {Description}", Description);
+                _logger?.LogError(ex, "[Execute] コマンド実行中にエラーが発生しました: {Description}", Description);
                 ExecutionStats.FailedCommands++;
                 WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
                 return false;
@@ -396,6 +425,7 @@ namespace AutoTool.Command.Class
                     ExecutionStats.EndTime = DateTime.Now;
                     ExecutionStats.TotalExecutionTime = ExecutionStats.EndTime.Value - ExecutionStats.StartTime;
                 }
+                _logger?.LogDebug("[Execute] 実行終了: {Description}", Description);
             }
         }
 
@@ -574,9 +604,16 @@ namespace AutoTool.Command.Class
         protected override void ValidateFiles()
         {
             var settings = Settings;
-            if (settings != null)
+            if (settings != null && !string.IsNullOrEmpty(settings.ImagePath))
             {
+                _logger?.LogDebug("[ValidateFiles] WaitImage ImagePath検証開始: {ImagePath}", settings.ImagePath);
                 ValidateFileExists(settings.ImagePath, "画像ファイル");
+                _logger?.LogDebug("[ValidateFiles] WaitImage ImagePath検証成功: {ImagePath}", settings.ImagePath);
+            }
+            else
+            {
+                _logger?.LogDebug("[ValidateFiles] WaitImage ImagePathが空またはSettingsがnull: Settings={Settings}, ImagePath={ImagePath}", 
+                    settings?.ToString() ?? "null", settings?.ImagePath ?? "null");
             }
         }
 
@@ -640,9 +677,16 @@ namespace AutoTool.Command.Class
         protected override void ValidateFiles()
         {
             var settings = Settings;
-            if (settings != null)
+            if (settings != null && !string.IsNullOrEmpty(settings.ImagePath))
             {
+                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePath検証開始: {ImagePath}", settings.ImagePath);
                 ValidateFileExists(settings.ImagePath, "画像ファイル");
+                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePath検証成功: {ImagePath}", settings.ImagePath);
+            }
+            else
+            {
+                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePathが空またはSettingsがnull: Settings={Settings}, ImagePath={ImagePath}", 
+                    settings?.ToString() ?? "null", settings?.ImagePath ?? "null");
             }
         }
 
@@ -970,9 +1014,16 @@ namespace AutoTool.Command.Class
         protected override void ValidateFiles()
         {
             var settings = Settings;
-            if (settings != null)
+            if (settings != null && !string.IsNullOrEmpty(settings.ImagePath))
             {
+                _logger?.LogDebug("[ValidateFiles] IfImageExist ImagePath検証開始: {ImagePath}", settings.ImagePath);
                 ValidateFileExists(settings.ImagePath, "画像ファイル");
+                _logger?.LogDebug("[ValidateFiles] IfImageExist ImagePath検証成功: {ImagePath}", settings.ImagePath);
+            }
+            else
+            {
+                _logger?.LogDebug("[ValidateFiles] IfImageExist ImagePathが空またはSettingsがnull: Settings={Settings}, ImagePath={ImagePath}", 
+                    settings?.ToString() ?? "null", settings?.ImagePath ?? "null");
             }
         }
 
@@ -1012,9 +1063,16 @@ namespace AutoTool.Command.Class
         protected override void ValidateFiles()
         {
             var settings = Settings;
-            if (settings != null)
+            if (settings != null && !string.IsNullOrEmpty(settings.ImagePath))
             {
+                _logger?.LogDebug("[ValidateFiles] ImagePath検証開始: {ImagePath}", settings.ImagePath);
                 ValidateFileExists(settings.ImagePath, "画像ファイル");
+                _logger?.LogDebug("[ValidateFiles] ImagePath検証成功: {ImagePath}", settings.ImagePath);
+            }
+            else
+            {
+                _logger?.LogDebug("[ValidateFiles] ImagePathが空またはSettingsがnull: Settings={Settings}, ImagePath={ImagePath}", 
+                    settings?.ToString() ?? "null", settings?.ImagePath ?? "null");
             }
         }
 

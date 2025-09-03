@@ -1,0 +1,441 @@
+﻿<Window x:Class="AutoTool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AutoTool"
+        xmlns:view="clr-namespace:AutoTool.View"
+        xmlns:converters="clr-namespace:AutoTool.View.Converters"
+        mc:Ignorable="d"
+        Title="{Binding Title}" 
+        MinWidth="800" MinHeight="600"
+        Height="{Binding WindowHeight, Mode=TwoWay}" 
+        Width="{Binding WindowWidth, Mode=TwoWay}"
+        WindowState="{Binding WindowState, Mode=TwoWay}"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
+        <converters:RunningStatusConverter x:Key="RunningStatusConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
+
+    <!-- キーボードショートカットの設定 -->
+    <Window.InputBindings>
+        <!-- ファイル操作 -->
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveFileCommand}"/>
+        <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding SaveFileAsCommand}"/>
+        <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenFileCommand}"/>
+        <!-- Undo/Redo操作 -->
+        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}" />
+        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}" />
+        <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}" />
+    </Window.InputBindings>
+    
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- メニューバー -->
+        <Menu Grid.Row="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
+            <MenuItem Header="ファイル(_F)">
+                <MenuItem Header="開く(_O)" Command="{Binding OpenFileCommand}" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="{Binding MenuItemHeader_SaveFile}" Command="{Binding SaveFileCommand}" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="{Binding MenuItemHeader_SaveFileAs}" Command="{Binding SaveFileAsCommand}" InputGestureText="Ctrl+Shift+S"/>
+                <Separator/>
+                <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}">
+                    <MenuItem.ItemTemplate>
+                        <DataTemplate>
+                            <MenuItem Header="{Binding FileName}" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding FilePath}" />
+                        </DataTemplate>
+                    </MenuItem.ItemTemplate>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="設定" />
+                <Separator/>
+                <MenuItem Header="終了(_X)" Command="{Binding ExitCommand}" InputGestureText="Alt+F4"/>
+            </MenuItem>
+            <MenuItem Header="編集(_E)">
+                <MenuItem Header="元に戻す(_U)" Command="{Binding UndoCommand}" InputGestureText="Ctrl+Z"/>
+                <MenuItem Header="やり直し(_R)" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y"/>
+                <Separator/>
+                <MenuItem Header="切り取り(_T)" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
+                <MenuItem Header="コピー(_C)" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
+                <MenuItem Header="貼り付け(_P)" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
+                <MenuItem Header="削除(_D)" Command="ApplicationCommands.Delete" InputGestureText="Delete"/>
+            </MenuItem>
+            <MenuItem Header="表示(_V)">
+                <MenuItem Header="テーマ(_T)">
+                    <MenuItem Header="ライト" Command="{Binding ChangeThemeCommand}" CommandParameter="Light" />
+                    <MenuItem Header="ダーク" Command="{Binding ChangeThemeCommand}" CommandParameter="Dark" />
+                    <MenuItem Header="システム設定に合わせる" Command="{Binding ChangeThemeCommand}" CommandParameter="Auto" />
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="パフォーマンス情報を更新" Command="{Binding RefreshPerformanceCommand}" />
+            </MenuItem>
+            <MenuItem Header="プラグイン(_P)">
+                <MenuItem Header="プラグインの読み込み..." Command="{Binding LoadPluginFileCommand}" />
+                <MenuItem Header="全プラグインの再読み込み" Command="{Binding RefreshPluginsCommand}" />
+                <Separator/>
+                <MenuItem Header="プラグイン情報の表示" Command="{Binding ShowPluginInfoCommand}" />
+            </MenuItem>
+            <MenuItem Header="ツール(_T)">
+                <MenuItem Header="アプリケーションフォルダを開く" Command="{Binding OpenAppDirCommand}" />
+            </MenuItem>
+            <MenuItem Header="ヘルプ(_H)">
+                <MenuItem Header="バージョン情報(_A)..." Command="{Binding ShowAboutCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- ツールバー（ボタンパネル統合） -->
+        <ToolBarTray Grid.Row="1">
+            <ToolBar IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
+                <!-- ファイル操作 -->
+                <Button Content="開く" Command="{Binding OpenFileCommand}" ToolTip="ファイルを開く (Ctrl+O)" />
+                <Button Content="保存" Command="{Binding SaveFileCommand}" ToolTip="ファイルを保存 (Ctrl+S)" />
+                <Separator />
+                
+                <!-- Undo/Redo -->
+                <Button Content="元に戻す" Command="{Binding UndoCommand}" ToolTip="元に戻す (Ctrl+Z)"/>
+                <Button Content="やり直し" Command="{Binding RedoCommand}" ToolTip="やり直し (Ctrl+Y)"/>
+                <Separator />
+                
+                <!-- 実行制御 -->
+                <Button Command="{Binding RunMacroCommand}" Width="100" Margin="2" Foreground="White">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="Green"/>
+                            <Setter Property="Content" Value="実行"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                    <Setter Property="Background" Value="Red"/>
+                                    <Setter Property="Content" Value="停止"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Separator />
+                
+                <!-- リスト操作 -->
+                <ComboBox ItemsSource="{Binding ItemTypes}" 
+                          SelectedItem="{Binding SelectedItemType}" 
+                          DisplayMemberPath="DisplayName"
+                          IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
+                          VerticalContentAlignment="Center" 
+                          Width="150" 
+                          Margin="2"/>
+                <Button Content="追加" Command="{Binding AddCommandCommand}" 
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
+                        Width="50" Height="Auto" Margin="2"/>
+                <Button Content="削除" Command="{Binding DeleteCommandCommand}" 
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
+                        Width="50" Height="Auto" Margin="2"/>
+                <Button Content="↑" Command="{Binding UpCommandCommand}" 
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
+                        Width="30" Margin="2" ToolTip="上に移動"/>
+                <Button Content="↓" Command="{Binding DownCommandCommand}" 
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
+                        Width="30" Margin="2" ToolTip="下に移動"/>
+                <Button Content="クリア" Command="{Binding ClearCommandCommand}" 
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
+                        Width="50" Height="Auto" Margin="2"/>
+                <Separator />
+                
+                <!-- デバッグ用テストボタン -->
+                <Button Content="TEST" Command="{Binding AddTestCommandCommand}" 
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
+                        Width="50" Height="Auto" Margin="2" 
+                        Background="Orange" Foreground="White"
+                        ToolTip="テストコマンド追加（デバッグ用）"/>
+                        
+                <!-- 別パターンでもテスト -->
+                <Button Content="TEST2" Click="TestButton_Click"
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
+                        Width="50" Height="Auto" Margin="2" 
+                        Background="Red" Foreground="White"
+                        ToolTip="テストコマンド追加（クリックイベント版）"/>
+                        
+                <!-- さらにシンプルなテスト -->
+                <Button Content="SIMPLE" Click="SimpleTest_Click"
+                        Width="60" Height="Auto" Margin="2" 
+                        Background="Blue" Foreground="White"
+                        ToolTip="最もシンプルなテスト"/>
+            </ToolBar>
+        </ToolBarTray>
+
+        <!-- メインコンテンツ -->
+        <Grid Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <!-- ロード中インジケータ -->
+            <Border Background="#80000000" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="読み込み中..." Foreground="White" FontSize="20" HorizontalAlignment="Center" />
+                    <ProgressBar IsIndeterminate="True" Width="200" Height="20" Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- メインパネル（3分割レイアウト） -->
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InvertBooleanConverter}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="300"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="300" MinWidth="250"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="250" MinWidth="200"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 左パネル：コマンドリスト -->
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="150" MinHeight="100"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- コマンドリストヘッダー -->
+                    <Border Grid.Row="0" Background="LightGray" Padding="5">
+                        <TextBlock Text="コマンドリスト" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <!-- コマンドリスト -->
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding CommandList.Items, UpdateSourceTrigger=PropertyChanged}" 
+                              SelectedIndex="{Binding SelectedLineNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              SelectionMode="Single" 
+                              HeadersVisibility="Column" 
+                              CanUserAddRows="False" 
+                              AutoGenerateColumns="False" 
+                              EnableRowVirtualization="True" 
+                              EnableColumnVirtualization="True" 
+                              VerticalScrollBarVisibility="Visible"
+                              HorizontalScrollBarVisibility="Auto"
+                              CanUserReorderColumns="False"
+                              CanUserSortColumns="False">
+
+                        <DataGrid.Columns>
+                            <!-- 有効チェック -->
+                            <DataGridTemplateColumn Header="✓" Width="30">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                  IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InvertBooleanConverter}}" 
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- 行番号 -->
+                            <DataGridTemplateColumn Header="#" Width="40">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding LineNumber}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- コマンド -->
+                            <DataGridTemplateColumn Header="コマンド" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding ItemType}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <TextBox Text="{Binding Comment, UpdateSourceTrigger=PropertyChanged}" 
+                                                     Background="Transparent" BorderThickness="0" FontSize="10" FontStyle="Italic"
+                                                     IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InvertBooleanConverter}}"
+                                                     Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- 分割線 -->
+                    <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
+                                  Background="LightGray" ShowsPreview="True"/>
+
+                    <!-- ログパネル -->
+                    <Grid Grid.Row="3">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- ログヘッダー -->
+                        <Border Grid.Row="0" Background="LightGray" Padding="5">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="実行ログ" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Button Content="クリア" Command="{Binding ClearLogCommand}" 
+                                        Width="50" Height="20" Margin="10,0,0,0" FontSize="10"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ログリスト -->
+                        <ListBox Grid.Row="1" 
+                                 ItemsSource="{Binding LogEntries}"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="10" TextWrapping="Wrap"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Grid>
+
+                <!-- 分割線1 -->
+                <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
+                              Background="LightGray" ShowsPreview="True"/>
+
+                <!-- 中央パネル：エディット -->
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- エディットヘッダー -->
+                    <Border Grid.Row="0" Background="LightGray" Padding="5">
+                        <TextBlock Text="コマンド設定" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <!-- エディット内容 -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" 
+                                  Margin="10" Padding="5">
+                        <StackPanel DataContext="{Binding}">
+                            <!-- アイテム未選択メッセージ -->
+                            <StackPanel Visibility="{Binding IsListEmpty, Converter={StaticResource BoolToVisibilityConverter}}" 
+                                        Margin="0,20">
+                                <TextBlock Text="📝 リストにコマンドを追加してください" 
+                                           FontSize="14" Foreground="DarkGray" TextWrapping="Wrap"/>
+                                <TextBlock Text="上部の「追加」ボタンでコマンドを追加できます" 
+                                           FontSize="11" Foreground="DarkGray" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsListNotEmptyButNoSelection, Converter={StaticResource BoolToVisibilityConverter}}" 
+                                        Margin="0,20">
+                                <TextBlock Text="👆 リストからコマンドを選択してください" 
+                                           FontSize="14" Foreground="DarkGray" TextWrapping="Wrap"/>
+                                <TextBlock Text="選択すると設定項目が表示されます" 
+                                           FontSize="11" Foreground="DarkGray" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+
+                            <!-- 設定項目（アイテムが選択されている場合のみ表示） -->
+                            <StackPanel Visibility="{Binding IsNotNullItem, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <!-- コマンドタイプ -->
+                                <StackPanel Orientation="Horizontal" Margin="0,5">
+                                    <TextBlock Text="コマンド:" Width="80" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding SelectedItem.ItemType}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- コメント設定 -->
+                                <StackPanel Margin="0,10">
+                                    <TextBlock Text="コメント:" Margin="0,0,0,5"/>
+                                    <TextBox Text="{Binding SelectedItem.Comment, UpdateSourceTrigger=PropertyChanged}" 
+                                             Height="60" TextWrapping="Wrap" AcceptsReturn="True"
+                                             VerticalScrollBarVisibility="Auto"/>
+                                </StackPanel>
+
+                                <!-- 詳細設定項目 -->
+                                <StackPanel Margin="0,10">
+                                    <TextBlock Text="詳細設定:" Margin="0,0,0,5" FontWeight="Bold"/>
+                                    
+                                    <!-- 説明表示 -->
+                                    <TextBox Text="{Binding SelectedItem.Description, Mode=OneWay}" 
+                                             Height="40" TextWrapping="Wrap" IsReadOnly="True"
+                                             Background="LightGray" Margin="0,0,0,10"/>
+                                    
+                                    <!-- 将来の詳細設定実装予定 -->
+                                    <Border BorderBrush="LightBlue" BorderThickness="1" Padding="10" Margin="0,10">
+                                        <StackPanel>
+                                            <TextBlock Text="🚧 詳細設定項目" FontWeight="Bold" Foreground="DarkBlue"/>
+                                            <TextBlock Text="各コマンドの詳細設定項目は今後のバージョンで実装予定です。" 
+                                                       FontSize="11" Foreground="DarkBlue" TextWrapping="Wrap" Margin="0,5"/>
+                                            <TextBlock Text="現在は基本的なコメント設定のみ利用可能です。" 
+                                                       FontSize="11" Foreground="DarkBlue" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- 分割線2 -->
+                <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
+                              Background="LightGray" ShowsPreview="True"/>
+
+                <!-- 右パネル：お気に入り・設定 -->
+                <Grid Grid.Column="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- お気に入りヘッダー -->
+                    <Border Grid.Row="0" Background="LightGray" Padding="5">
+                        <TextBlock Text="お気に入り" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <!-- お気に入り内容 -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" 
+                                  Margin="10" Padding="5">
+                        <StackPanel>
+                            <!-- お気に入り機能の説明 -->
+                            <Border BorderBrush="LightGreen" BorderThickness="1" Padding="10" Margin="0,10">
+                                <StackPanel>
+                                    <TextBlock Text="⭐ お気に入り機能" FontWeight="Bold" Foreground="DarkGreen"/>
+                                    <TextBlock Text="よく使用するマクロやコマンドパターンを保存して、すぐに呼び出せる機能です。" 
+                                               FontSize="11" Foreground="DarkGreen" TextWrapping="Wrap" Margin="0,5"/>
+                                    <TextBlock Text="今後のバージョンで実装予定です。" 
+                                               FontSize="11" Foreground="DarkGreen" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 設定機能の説明 -->
+                            <Border BorderBrush="LightCoral" BorderThickness="1" Padding="10" Margin="0,10">
+                                <StackPanel>
+                                    <TextBlock Text="⚙️ 設定機能" FontWeight="Bold" Foreground="DarkRed"/>
+                                    <TextBlock Text="アプリケーションの動作設定、テーマ変更、ショートカットキーの設定などを行えます。" 
+                                               FontSize="11" Foreground="DarkRed" TextWrapping="Wrap" Margin="0,5"/>
+                                    <TextBlock Text="今後のバージョンで実装予定です。" 
+                                               FontSize="11" Foreground="DarkRed" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- ステータスバー -->
+        <StatusBar Grid.Row="3" Height="25">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="メモリ: " />
+                    <TextBlock Text="{Binding MemoryUsage}" Margin="0,0,10,0" />
+                    <TextBlock Text="CPU: " />
+                    <TextBlock Text="{Binding CpuUsage}" Margin="0,0,10,0" />
+                    <TextBlock Text="実行状態: " />
+                    <TextBlock Text="{Binding IsRunning, Converter={StaticResource RunningStatusConverter}}" Margin="0,0,10,0" />
+                    <TextBlock Text="プラグイン: " />
+                    <TextBlock Text="{Binding PluginCount}" Margin="0,0,5,0" />
+                    <TextBlock Text="個 / コマンド: " />
+                    <TextBlock Text="{Binding CommandCount}" Margin="0,0,5,0" />
+                    <TextBlock Text="個" />
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

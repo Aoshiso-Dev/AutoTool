@@ -5,7 +5,7 @@ using System;
 namespace AutoTool.ViewModel.Panels
 {
     /// <summary>
-    /// Phase 5完全統合版：FavoritePanelViewModel
+    /// お気に入りパネルビューモデル
     /// </summary>
     public partial class FavoritePanelViewModel : ObservableObject
     {
@@ -17,7 +17,7 @@ namespace AutoTool.ViewModel.Panels
         public FavoritePanelViewModel(ILogger<FavoritePanelViewModel> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _logger.LogInformation("Phase 5統合版FavoritePanelViewModel を初期化しています");
+            _logger.LogInformation("FavoritePanelViewModel初期化完了");
         }
 
         public void SetRunningState(bool isRunning) 

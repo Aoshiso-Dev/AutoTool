@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using AutoTool.Model.List.Interface;
-using AutoTool.Model.List.Type;
+using MacroPanels.Model.List.Interface;
+using MacroPanels.List.Class;
 
 namespace MacroPanels.Model.MacroFactory
 {

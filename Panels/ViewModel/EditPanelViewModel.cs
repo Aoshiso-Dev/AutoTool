@@ -6,7 +6,6 @@ using System.Linq;
 using System.Windows.Media;
 using MacroPanels.Message;
 using System.Collections.ObjectModel;
-using MacroPanels.Model.List.Type;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
 using MacroPanels.List.Class;
