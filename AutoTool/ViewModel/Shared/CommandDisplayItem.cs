@@ -3,7 +3,7 @@ using System;
 namespace AutoTool.ViewModel.Shared
 {
     /// <summary>
-    /// コマンド表示用のアイテムクラス（Phase 3統合版）
+    /// コマンド表示用のアイテムクラス（Phase 3対応）
     /// </summary>
     public class CommandDisplayItem
     {
@@ -42,6 +42,15 @@ namespace AutoTool.ViewModel.Shared
     public class AIDetectModeItem
     {
         public string Key { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// バックグラウンドクリック方式アイテム
+    /// </summary>
+    public class BackgroundClickMethodItem
+    {
+        public int Value { get; set; }
         public string DisplayName { get; set; } = string.Empty;
     }
 }

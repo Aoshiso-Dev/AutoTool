@@ -5,6 +5,7 @@ using AutoTool.Model.List.Class;
 using AutoTool.Model.CommandDefinition;
 using AutoTool.Services;
 using AutoTool.Services.Plugin;
+using AutoTool.ViewModel.Shared;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -21,19 +22,22 @@ using System.Windows;
 using AutoTool.Command.Interface;
 using AutoTool.ViewModel.Panels;
 using System.Threading;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace AutoTool.ViewModel
 {
     /// <summary>
-    /// メインウィンドウのViewModel（DI + Messaging統合版）
+    /// メインウィンドウのViewModel（EditPanel機能統合版）
     /// </summary>
     public partial class MainWindowViewModel : ObservableObject
     {
         private readonly ILogger<MainWindowViewModel> _logger;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IPluginService _pluginService; // 正しい型に修正
+        private readonly IPluginService _pluginService;
         private readonly IRecentFileService _recentFileService;
         private readonly IMessenger _messenger;
+        private readonly EditPanelViewModel _editPanelViewModel;
 
         // マクロ実行関連
         private CancellationTokenSource? _currentCancellationTokenSource;
@@ -83,7 +87,7 @@ namespace AutoTool.ViewModel
 
         // 統合UI関連プロパティ（CommandListを使用）
         [ObservableProperty]
-        private object _commandList; // CommandList の一時的な代替
+        private object _commandList;
         
         [ObservableProperty]
         private ICommandListItem? _selectedItem;
@@ -100,20 +104,553 @@ namespace AutoTool.ViewModel
         [ObservableProperty]
         private CommandTypeInfo? _selectedItemType;
 
-        /// <summary>
-        /// リストが空かどうか
-        /// </summary>
+        // EditPanel統合プロパティ（EditPanelViewModelから転送）
+        [ObservableProperty]
+        private string _progressText = "";
+        
+        [ObservableProperty]
+        private string _currentExecutingDescription = "";
+        
+        [ObservableProperty]
+        private string _estimatedTimeRemaining = "";
+
+        // EditPanelViewModelのプロパティをプロキシ
+        public ICommandListItem? Item
+        {
+            get => _editPanelViewModel?.Item;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.Item = value;
+                    OnPropertyChanged();
+                    UpdateEditPanelProperties();
+                }
+            }
+        }
+
+        // EditPanelの表示制御プロパティ
         public bool IsListEmpty => CommandCount == 0;
-
-        /// <summary>
-        /// リストが空ではないが選択されていないかどうか
-        /// </summary>
         public bool IsListNotEmptyButNoSelection => CommandCount > 0 && SelectedItem == null;
-
-        /// <summary>
-        /// アイテムが選択されているかどうか
-        /// </summary>
         public bool IsNotNullItem => SelectedItem != null;
+
+        // EditPanelのアイテムタイプ判定プロパティ（プロキシ）
+        public bool IsWaitImageItem => _editPanelViewModel?.IsWaitImageItem ?? false;
+        public bool IsClickImageItem => _editPanelViewModel?.IsClickImageItem ?? false;
+        public bool IsClickImageAIItem => _editPanelViewModel?.IsClickImageAIItem ?? false;
+        public bool IsHotkeyItem => _editPanelViewModel?.IsHotkeyItem ?? false;
+        public bool IsClickItem => _editPanelViewModel?.IsClickItem ?? false;
+        public bool IsWaitItem => _editPanelViewModel?.IsWaitItem ?? false;
+        public bool IsLoopItem => _editPanelViewModel?.IsLoopItem ?? false;
+        public bool IsLoopEndItem => _editPanelViewModel?.IsLoopEndItem ?? false;
+        public bool IsLoopBreakItem => _editPanelViewModel?.IsLoopBreakItem ?? false;
+        public bool IsIfImageExistItem => _editPanelViewModel?.IsIfImageExistItem ?? false;
+        public bool IsIfImageNotExistItem => _editPanelViewModel?.IsIfImageNotExistItem ?? false;
+        public bool IsIfImageExistAIItem => _editPanelViewModel?.IsIfImageExistAIItem ?? false;
+        public bool IsIfImageNotExistAIItem => _editPanelViewModel?.IsIfImageNotExistAIItem ?? false;
+        public bool IsIfEndItem => _editPanelViewModel?.IsIfEndItem ?? false;
+        public bool IsIfVariableItem => _editPanelViewModel?.IsIfVariableItem ?? false;
+        public bool IsExecuteItem => _editPanelViewModel?.IsExecuteItem ?? false;
+        public bool IsSetVariableItem => _editPanelViewModel?.IsSetVariableItem ?? false;
+        public bool IsSetVariableAIItem => _editPanelViewModel?.IsSetVariableAIItem ?? false;
+        public bool IsScreenshotItem => _editPanelViewModel?.IsScreenshotItem ?? false;
+        
+        // 複合条件判定
+        public bool IsImageBasedItem => _editPanelViewModel?.IsImageBasedItem ?? false;
+        public bool IsAIBasedItem => _editPanelViewModel?.IsAIBasedItem ?? false;
+        public bool IsVariableItem => _editPanelViewModel?.IsVariableItem ?? false;
+        public bool IsLoopRelatedItem => _editPanelViewModel?.IsLoopRelatedItem ?? false;
+        public bool IsIfRelatedItem => _editPanelViewModel?.IsIfRelatedItem ?? false;
+        
+        // 表示制御プロパティ
+        public bool ShowWindowInfo => _editPanelViewModel?.ShowWindowInfo ?? false;
+        public bool ShowAdvancedSettings => _editPanelViewModel?.ShowAdvancedSettings ?? false;
+
+        // EditPanelViewModelの基本設定プロパティ（プロキシ）
+        public string Comment
+        {
+            get => _editPanelViewModel?.Comment ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.Comment = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string WindowTitle
+        {
+            get => _editPanelViewModel?.WindowTitle ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.WindowTitle = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string WindowClassName
+        {
+            get => _editPanelViewModel?.WindowClassName ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.WindowClassName = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // 画像関連プロパティ（プロキシ）
+        public string ImagePath
+        {
+            get => _editPanelViewModel?.ImagePath ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.ImagePath = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public double Threshold
+        {
+            get => _editPanelViewModel?.Threshold ?? 0.8;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.Threshold = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public Color? SearchColor
+        {
+            get => _editPanelViewModel?.SearchColor;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.SearchColor = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int Timeout
+        {
+            get => _editPanelViewModel?.Timeout ?? 5000;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.Timeout = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int Interval
+        {
+            get => _editPanelViewModel?.Interval ?? 500;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.Interval = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // クリック関連プロパティ（プロキシ）
+        public MouseButton MouseButton
+        {
+            get => _editPanelViewModel?.MouseButton ?? MouseButton.Left;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.MouseButton = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int ClickX
+        {
+            get => _editPanelViewModel?.ClickX ?? 0;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.ClickX = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int ClickY
+        {
+            get => _editPanelViewModel?.ClickY ?? 0;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.ClickY = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool UseBackgroundClick
+        {
+            get => _editPanelViewModel?.UseBackgroundClick ?? false;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.UseBackgroundClick = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int BackgroundClickMethod
+        {
+            get => _editPanelViewModel?.BackgroundClickMethod ?? 0;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.BackgroundClickMethod = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // ホットキー関連プロパティ（プロキシ）
+        public bool CtrlKey
+        {
+            get => _editPanelViewModel?.CtrlKey ?? false;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.CtrlKey = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool AltKey
+        {
+            get => _editPanelViewModel?.AltKey ?? false;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.AltKey = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool ShiftKey
+        {
+            get => _editPanelViewModel?.ShiftKey ?? false;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.ShiftKey = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public Key SelectedKey
+        {
+            get => _editPanelViewModel?.SelectedKey ?? Key.Escape;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.SelectedKey = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // 待機関連プロパティ（プロキシ）
+        public int WaitHours
+        {
+            get => _editPanelViewModel?.WaitHours ?? 0;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.WaitHours = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int WaitMinutes
+        {
+            get => _editPanelViewModel?.WaitMinutes ?? 0;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.WaitMinutes = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int WaitSeconds
+        {
+            get => _editPanelViewModel?.WaitSeconds ?? 1;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.WaitSeconds = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int WaitMilliseconds
+        {
+            get => _editPanelViewModel?.WaitMilliseconds ?? 0;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.WaitMilliseconds = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // ループ関連プロパティ（プロキシ）
+        public int LoopCount
+        {
+            get => _editPanelViewModel?.LoopCount ?? 1;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.LoopCount = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // 変数関連プロパティ（プロキシ）
+        public string VariableName
+        {
+            get => _editPanelViewModel?.VariableName ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.VariableName = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string VariableValue
+        {
+            get => _editPanelViewModel?.VariableValue ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.VariableValue = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string VariableOperator
+        {
+            get => _editPanelViewModel?.VariableOperator ?? "==";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.VariableOperator = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // AI関連プロパティ（プロキシ）
+        public string ModelPath
+        {
+            get => _editPanelViewModel?.ModelPath ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.ModelPath = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public int ClassID
+        {
+            get => _editPanelViewModel?.ClassID ?? 0;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.ClassID = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public double ConfThreshold
+        {
+            get => _editPanelViewModel?.ConfThreshold ?? 0.5;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.ConfThreshold = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public double IoUThreshold
+        {
+            get => _editPanelViewModel?.IoUThreshold ?? 0.25;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.IoUThreshold = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string AiDetectMode
+        {
+            get => _editPanelViewModel?.AiDetectMode ?? "Class";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.AiDetectMode = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // プログラム実行関連プロパティ（プロキシ）
+        public string ProgramPath
+        {
+            get => _editPanelViewModel?.ProgramPath ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.ProgramPath = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string Arguments
+        {
+            get => _editPanelViewModel?.Arguments ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.Arguments = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string WorkingDirectory
+        {
+            get => _editPanelViewModel?.WorkingDirectory ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.WorkingDirectory = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool WaitForExit
+        {
+            get => _editPanelViewModel?.WaitForExit ?? false;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.WaitForExit = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // スクリーンショット関連プロパティ（プロキシ）
+        public string SaveDirectory
+        {
+            get => _editPanelViewModel?.SaveDirectory ?? "";
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.SaveDirectory = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // EditPanelViewModelのコレクション（プロキシ）
+        public ObservableCollection<MouseButton> MouseButtons => _editPanelViewModel?.MouseButtons ?? new();
+        public ObservableCollection<Key> KeyList => _editPanelViewModel?.KeyList ?? new();
+        public ObservableCollection<OperatorItem> Operators => _editPanelViewModel?.Operators ?? new();
+        public ObservableCollection<AIDetectModeItem> AiDetectModes => _editPanelViewModel?.AiDetectModes ?? new();
+        public ObservableCollection<Shared.BackgroundClickMethodItem> BackgroundClickMethods => _editPanelViewModel?.BackgroundClickMethods ?? new();
+
+        // EditPanel統合のための追加プロパティ
+        public CommandDisplayItem? SelectedItemTypeObj
+        {
+            get => _editPanelViewModel?.SelectedItemTypeObj;
+            set
+            {
+                if (_editPanelViewModel != null)
+                {
+                    _editPanelViewModel.SelectedItemTypeObj = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         /// <summary>
         /// マクロ実行可能かどうか
@@ -143,15 +680,17 @@ namespace AutoTool.ViewModel
             ILogger<MainWindowViewModel> logger,
             IServiceProvider serviceProvider,
             IRecentFileService recentFileService,
-            IPluginService pluginService) // 正しい型に修正
+            IPluginService pluginService,
+            EditPanelViewModel editPanelViewModel)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _recentFileService = recentFileService ?? throw new ArgumentNullException(nameof(recentFileService));
             _pluginService = pluginService ?? throw new ArgumentNullException(nameof(pluginService));
+            _editPanelViewModel = editPanelViewModel ?? throw new ArgumentNullException(nameof(editPanelViewModel));
             _messenger = WeakReferenceMessenger.Default;
 
-            _commandList = _serviceProvider.GetService<object>() ?? new object(); // CommandListの一時的な代替
+            _commandList = _serviceProvider.GetService<object>() ?? new object();
 
             InitializeCommands();
             InitializeProperties();
@@ -249,6 +788,7 @@ namespace AutoTool.ViewModel
                 _messenger.Register<ChangeSelectedMessage>(this, (r, m) =>
                 {
                     SelectedItem = m.SelectedItem;
+                    Item = m.SelectedItem; // EditPanelViewModelにも設定
                     var listPanel = _serviceProvider.GetService<ListPanelViewModel>();
                     if (listPanel != null)
                     {
@@ -256,6 +796,7 @@ namespace AutoTool.ViewModel
                         CommandCount = listPanel.TotalItems;
                     }
                     UpdateProperties();
+                    UpdateEditPanelProperties();
                 });
 
                 // ListPanelからのアイテム数変更メッセージを受信
@@ -283,23 +824,43 @@ namespace AutoTool.ViewModel
         {
             try
             {
-                // 基本的なコマンドタイプを手動で追加
-                var commandTypes = new List<CommandTypeInfo>
+                // EditPanelViewModelのItemTypesを使用
+                if (_editPanelViewModel?.ItemTypes != null)
                 {
-                    new CommandTypeInfo { TypeName = "Wait", DisplayName = "待機", Category = "基本", ItemType = typeof(BasicCommandItem) },
-                    new CommandTypeInfo { TypeName = "Click", DisplayName = "クリック", Category = "基本", ItemType = typeof(BasicCommandItem) },
-                    new CommandTypeInfo { TypeName = "Wait_Image", DisplayName = "画像待機", Category = "画像", ItemType = typeof(BasicCommandItem) },
-                    new CommandTypeInfo { TypeName = "Click_Image", DisplayName = "画像クリック", Category = "画像", ItemType = typeof(BasicCommandItem) },
-                    new CommandTypeInfo { TypeName = "Hotkey", DisplayName = "ホットキー", Category = "入力", ItemType = typeof(BasicCommandItem) },
-                    new CommandTypeInfo { TypeName = "Loop", DisplayName = "ループ開始", Category = "制御", ItemType = typeof(BasicCommandItem) },
-                    new CommandTypeInfo { TypeName = "Loop_End", DisplayName = "ループ終了", Category = "制御", ItemType = typeof(BasicCommandItem) },
-                    new CommandTypeInfo { TypeName = "IF_ImageExist", DisplayName = "画像存在判定", Category = "条件", ItemType = typeof(BasicCommandItem) },
-                    new CommandTypeInfo { TypeName = "IF_End", DisplayName = "条件終了", Category = "条件", ItemType = typeof(BasicCommandItem) }
-                };
+                    var commandTypes = _editPanelViewModel.ItemTypes
+                        .Select(item => new CommandTypeInfo
+                        {
+                            TypeName = item.TypeName,
+                            DisplayName = item.DisplayName,
+                            Category = item.Category,
+                            ItemType = typeof(BasicCommandItem)
+                        })
+                        .ToList();
 
-                ItemTypes = new ObservableCollection<CommandTypeInfo>(commandTypes);
-                SelectedItemType = ItemTypes.FirstOrDefault();
-                _logger.LogDebug("ItemTypes初期化完了: {Count}個", ItemTypes.Count);
+                    ItemTypes = new ObservableCollection<CommandTypeInfo>(commandTypes);
+                    SelectedItemType = ItemTypes.FirstOrDefault();
+                    _logger.LogDebug("ItemTypes初期化完了（EditPanelから）: {Count}個", ItemTypes.Count);
+                }
+                else
+                {
+                    // フォールバック
+                    var commandTypes = new List<CommandTypeInfo>
+                    {
+                        new CommandTypeInfo { TypeName = "Wait", DisplayName = "待機", Category = "基本", ItemType = typeof(BasicCommandItem) },
+                        new CommandTypeInfo { TypeName = "Click", DisplayName = "クリック", Category = "基本", ItemType = typeof(BasicCommandItem) },
+                        new CommandTypeInfo { TypeName = "Wait_Image", DisplayName = "画像待機", Category = "画像", ItemType = typeof(BasicCommandItem) },
+                        new CommandTypeInfo { TypeName = "Click_Image", DisplayName = "画像クリック", Category = "画像", ItemType = typeof(BasicCommandItem) },
+                        new CommandTypeInfo { TypeName = "Hotkey", DisplayName = "ホットキー", Category = "入力", ItemType = typeof(BasicCommandItem) },
+                        new CommandTypeInfo { TypeName = "Loop", DisplayName = "ループ開始", Category = "制御", ItemType = typeof(BasicCommandItem) },
+                        new CommandTypeInfo { TypeName = "Loop_End", DisplayName = "ループ終了", Category = "制御", ItemType = typeof(BasicCommandItem) },
+                        new CommandTypeInfo { TypeName = "IF_ImageExist", DisplayName = "画像存在判定", Category = "条件", ItemType = typeof(BasicCommandItem) },
+                        new CommandTypeInfo { TypeName = "IF_End", DisplayName = "条件終了", Category = "条件", ItemType = typeof(BasicCommandItem) }
+                    };
+
+                    ItemTypes = new ObservableCollection<CommandTypeInfo>(commandTypes);
+                    SelectedItemType = ItemTypes.FirstOrDefault();
+                    _logger.LogDebug("ItemTypes初期化完了（フォールバック）: {Count}個", ItemTypes.Count);
+                }
             }
             catch (Exception ex)
             {
@@ -312,6 +873,55 @@ namespace AutoTool.ViewModel
                 };
                 SelectedItemType = ItemTypes.FirstOrDefault();
             }
+        }
+
+        private void UpdateProperties()
+        {
+            OnPropertyChanged(nameof(IsListEmpty));
+            OnPropertyChanged(nameof(IsListNotEmptyButNoSelection));
+            OnPropertyChanged(nameof(IsNotNullItem));
+            OnPropertyChanged(nameof(CanRunMacro));
+            OnPropertyChanged(nameof(CanStopMacro));
+        }
+
+        /// <summary>
+        /// EditPanelプロパティを更新
+        /// </summary>
+        private void UpdateEditPanelProperties()
+        {
+            // EditPanelのすべての判定プロパティを更新
+            OnPropertyChanged(nameof(IsWaitImageItem));
+            OnPropertyChanged(nameof(IsClickImageItem));
+            OnPropertyChanged(nameof(IsClickImageAIItem));
+            OnPropertyChanged(nameof(IsHotkeyItem));
+            OnPropertyChanged(nameof(IsClickItem));
+            OnPropertyChanged(nameof(IsWaitItem));
+            OnPropertyChanged(nameof(IsLoopItem));
+            OnPropertyChanged(nameof(IsLoopEndItem));
+            OnPropertyChanged(nameof(IsLoopBreakItem));
+            OnPropertyChanged(nameof(IsIfImageExistItem));
+            OnPropertyChanged(nameof(IsIfImageNotExistItem));
+            OnPropertyChanged(nameof(IsIfImageExistAIItem));
+            OnPropertyChanged(nameof(IsIfImageNotExistAIItem));
+            OnPropertyChanged(nameof(IsIfEndItem));
+            OnPropertyChanged(nameof(IsIfVariableItem));
+            OnPropertyChanged(nameof(IsExecuteItem));
+            OnPropertyChanged(nameof(IsSetVariableItem));
+            OnPropertyChanged(nameof(IsSetVariableAIItem));
+            OnPropertyChanged(nameof(IsScreenshotItem));
+            
+            // 複合条件プロパティの更新
+            OnPropertyChanged(nameof(IsImageBasedItem));
+            OnPropertyChanged(nameof(IsAIBasedItem));
+            OnPropertyChanged(nameof(IsVariableItem));
+            OnPropertyChanged(nameof(IsLoopRelatedItem));
+            OnPropertyChanged(nameof(IsIfRelatedItem));
+            
+            // 表示制御プロパティの更新
+            OnPropertyChanged(nameof(ShowWindowInfo));
+            OnPropertyChanged(nameof(ShowAdvancedSettings));
+            
+            _logger.LogDebug("EditPanelプロパティを更新しました");
         }
 
         private void InitializeSampleLog()
@@ -329,386 +939,36 @@ namespace AutoTool.ViewModel
             }
         }
 
-        // コマンド実装（Messaging使用）
-        [RelayCommand]
-        public void AddCommand()
+        partial void OnSelectedLineNumberChanged(int value)
         {
-            try
-            {
-                _logger.LogDebug("AddCommand開始 - SelectedItemType: {SelectedItemType}", SelectedItemType?.TypeName ?? "null");
-                
-                if (SelectedItemType != null)
-                {
-                    // Messagingを使用してListPanelにコマンド追加要求を送信
-                    _messenger.Send(new AddMessage(SelectedItemType.TypeName));
-                    
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] コマンド追加要求: {SelectedItemType.DisplayName}");
-                    _logger.LogDebug("AddMessageを送信: {TypeName}", SelectedItemType.TypeName);
-                }
-                else
-                {
-                    _logger.LogWarning("SelectedItemTypeがnullです");
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: コマンドタイプが選択されていません");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンド追加中にエラーが発生しました");
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: コマンド追加失敗 - {ex.Message}");
-            }
+            UpdateProperties();
         }
 
-        [RelayCommand]
-        public void DeleteCommand()
+        partial void OnSelectedItemChanged(ICommandListItem? value)
         {
-            try
-            {
-                // Messagingを使用してListPanelに削除要求を送信
-                _messenger.Send(new DeleteMessage());
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] コマンド削除要求");
-                _logger.LogDebug("DeleteMessageを送信");
-            } 
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンド削除中にエラーが発生しました");
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: コマンド削除失敗 - {ex.Message}");
-            }
+            Item = value; // EditPanelViewModelにも設定
+            UpdateProperties();
+            UpdateEditPanelProperties();
         }
 
-        [RelayCommand]
-        public void UpCommand()
+        partial void OnIsRunningChanged(bool value)
         {
-            try
+            OnPropertyChanged(nameof(CanRunMacro));
+            OnPropertyChanged(nameof(CanStopMacro));
+            
+            // EditPanelViewModelにも実行状態を設定
+            if (_editPanelViewModel != null)
             {
-                // Messagingを使用してListPanelに上移動要求を送信
-                _messenger.Send(new UpMessage());
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] コマンド上移動要求");
-                _logger.LogDebug("UpMessageを送信");
+                _editPanelViewModel.IsRunning = value;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンド上移動中にエラーが発生しました");
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: コマンド上移動失敗 - {ex.Message}");
-            }
+            
+            _logger.LogDebug("マクロ実行状態変更: {IsRunning}", value);
         }
 
-        [RelayCommand]
-        public void DownCommand()
+        partial void OnCommandCountChanged(int value)
         {
-            try
-            {
-                // Messagingを使用してListPanelに下移動要求を送信
-                _messenger.Send(new DownMessage());
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] コマンド下移動要求");
-                _logger.LogDebug("DownMessageを送信");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンド下移動中にエラーが発生しました");
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: コマンド下移動失敗 - {ex.Message}");
-            }
+            UpdateProperties();
         }
-
-        [RelayCommand]
-        public void ClearCommand()
-        {
-            try
-            {
-                // Messagingを使用してListPanelにクリア要求を送信
-                _messenger.Send(new ClearMessage());
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] 全コマンドクリア要求");
-                _logger.LogDebug("ClearMessageを送信");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "コマンドクリア中にエラーが発生しました");
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: コマンドクリア失敗 - {ex.Message}");
-            }
-        }
-
-        [RelayCommand]
-        public void ClearLog()
-        {
-            try
-            {
-                LogEntries.Clear();
-                _logger.LogDebug("ログクリア実行");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ログクリア中にエラーが発生しました");
-            }
-        }
-
-        [RelayCommand]
-        public async Task RunMacro()
-        {
-            try
-            {
-                if (IsRunning)
-                {
-                    // 実行中の場合は停止
-                    await StopMacroInternal();
-                    return;
-                }
-
-                if (CommandCount == 0)
-                {
-                    StatusMessage = "実行するコマンドがありません";
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: 実行するコマンドがありません");
-                    return;
-                }
-
-                IsRunning = true;
-                StatusMessage = "マクロ実行中...";
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] マクロ実行開始 ({CommandCount}個のコマンド)");
-                _logger.LogInformation("マクロ実行開始: {Count}個のコマンド", CommandCount);
-
-                // ListPanelに実行開始を通知
-                _messenger.Send(new MacroExecutionStateMessage(true));
-
-                // CancellationTokenSourceを作成
-                using var cancellationTokenSource = new CancellationTokenSource();
-                _currentCancellationTokenSource = cancellationTokenSource;
-
-                try
-                {
-                    // DIからListPanelViewModelを取得してアイテムを取得
-                    var listPanelViewModel = _serviceProvider.GetService<ListPanelViewModel>();
-                    if (listPanelViewModel == null)
-                    {
-                        throw new InvalidOperationException("ListPanelViewModelがDIから取得できませんでした");
-                    }
-
-                    var items = listPanelViewModel.Items;
-                    
-                    // MacroFactoryでCommandListItemからCommandを生成
-                    _logger.LogDebug("MacroFactoryでコマンド生成開始");
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] コマンド生成中...");
-                    
-                    var rootCommand = await Task.Run(() => 
-                    {
-                        return AutoTool.Model.MacroFactory.MacroFactory.CreateMacro(items);
-                    });
-
-                    if (rootCommand == null)
-                    {
-                        throw new InvalidOperationException("マクロの生成に失敗しました");
-                    }
-
-                    _logger.LogDebug("MacroFactoryでコマンド生成完了: {Type}", rootCommand.GetType().Name);
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] コマンド生成完了");
-
-                    // 実行前の準備
-                    await PrepareForExecution();
-
-                    // マクロを実行
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] マクロ実行開始");
-                    _logger.LogInformation("マクロ実行開始");
-
-                    var executionResult = await rootCommand.Execute(cancellationTokenSource.Token);
-
-                    // 実行結果の処理
-                    if (cancellationTokenSource.Token.IsCancellationRequested)
-                    {
-                        StatusMessage = "マクロ実行が中断されました";
-                        LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] マクロ実行中断");
-                        _logger.LogInformation("マクロ実行中断");
-                    }
-                    else if (executionResult)
-                    {
-                        StatusMessage = "マクロ実行完了";
-                        LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] マクロ実行完了");
-                        _logger.LogInformation("マクロ実行完了");
-                    }
-                    else
-                    {
-                        StatusMessage = "マクロ実行失敗";
-                        LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] マクロ実行失敗");
-                        _logger.LogWarning("マクロ実行失敗");
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    StatusMessage = "マクロ実行がキャンセルされました";
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] マクロ実行キャンセル");
-                    _logger.LogInformation("マクロ実行キャンセル");
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("ネストが深すぎます"))
-                {
-                    StatusMessage = "マクロ構造エラー";
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: ネスト構造が深すぎます");
-                    _logger.LogError(ex, "マクロ構造エラー: ネストが深すぎます");
-                    MessageBox.Show("マクロのネスト構造が深すぎます。\nLoop や If の入れ子を確認してください。", 
-                        "マクロ構造エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("対応する") && ex.Message.Contains("がありません"))
-                {
-                    StatusMessage = "マクロ構造エラー";
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: {ex.Message}");
-                    _logger.LogError(ex, "マクロ構造エラー: ペアリング不備");
-                    MessageBox.Show($"マクロの構造に問題があります。\n\n{ex.Message}", 
-                        "マクロ構造エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                catch (Exception ex)
-                {
-                    StatusMessage = "マクロ実行エラー";
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: マクロ実行失敗 - {ex.Message}");
-                    _logger.LogError(ex, "マクロ実行中にエラーが発生しました");
-                    MessageBox.Show($"マクロの実行中にエラーが発生しました。\n\n{ex.Message}", 
-                        "実行エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                finally
-                {
-                    _currentCancellationTokenSource = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "RunMacro処理中に予期しないエラーが発生しました");
-                StatusMessage = "予期しないエラー";
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: 予期しないエラー - {ex.Message}");
-            }
-            finally
-            {
-                IsRunning = false;
-                
-                // ListPanelに実行終了を通知
-                _messenger.Send(new MacroExecutionStateMessage(false));
-                
-                await CleanupAfterExecution();
-            }
-        }
-
-        [RelayCommand]
-        public async Task StopMacro()
-        {
-            await StopMacroInternal();
-        }
-
-        /// <summary>
-        /// マクロ停止の内部実装
-        /// </summary>
-        private async Task StopMacroInternal()
-        {
-            try
-            {
-                if (_currentCancellationTokenSource != null)
-                {
-                    _logger.LogDebug("マクロ実行キャンセル要求");
-                    _currentCancellationTokenSource.Cancel();
-                    
-                    // キャンセルの完了を少し待つ
-                    await Task.Delay(100);
-                }
-
-                IsRunning = false;
-                StatusMessage = "マクロ実行停止";
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] マクロ実行停止");
-                _logger.LogDebug("マクロ停止完了");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "マクロ停止中にエラーが発生しました");
-                IsRunning = false;
-                StatusMessage = "停止エラー";
-            }
-        }
-
-        // ファイル操作コマンド（Messaging使用）
-        [RelayCommand]
-        public async Task OpenFile()
-        {
-            try
-            {
-                var openFileDialog = new Microsoft.Win32.OpenFileDialog
-                {
-                    Filter = "マクロファイル (*.json)|*.json|すべてのファイル (*.*)|*.*",
-                    Title = "マクロファイルを開く"
-                };
-
-                if (openFileDialog.ShowDialog() == true)
-                {
-                    IsLoading = true;
-                    StatusMessage = "ファイル読み込み中...";
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] ファイル読み込み開始: {openFileDialog.FileName}");
-
-                    try
-                    {
-                        // Messagingを使用してListPanelにファイル読み込み要求を送信
-                        _messenger.Send(new LoadFileMessage(openFileDialog.FileName));
-                        
-                        StatusMessage = $"ファイルを読み込みました: {Path.GetFileName(openFileDialog.FileName)}";
-                        LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] ファイル読み込み要求送信");
-                        _logger.LogInformation("ファイル読み込み要求: {FileName}", openFileDialog.FileName);
-                    }
-                    catch (Exception ex)
-                    {
-                        StatusMessage = "読み込みエラー";
-                        LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: ファイル読み込み失敗 - {ex.Message}");
-                        _logger.LogError(ex, "ファイル読み込み中にエラーが発生しました");
-                        MessageBox.Show($"ファイルの読み込み中にエラーが発生しました。\n\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    finally
-                    {
-                        IsLoading = false;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                IsLoading = false;
-                _logger.LogError(ex, "ファイル読み込み中に予期しないエラーが発生しました");
-                StatusMessage = "読み込みエラー";
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: 予期しないエラー - {ex.Message}");
-                MessageBox.Show($"ファイルの読み込み中に予期しないエラーが発生しました。\n\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        public async Task SaveFile()
-        {
-            try
-            {
-                var saveFileDialog = new Microsoft.Win32.SaveFileDialog
-                {
-                    Filter = "マクロファイル (*.json)|*.json|すべてのファイル (*.*)|*.*",
-                    Title = "マクロファイルを保存",
-                    DefaultExt = "json"
-                };
-
-                if (saveFileDialog.ShowDialog() == true)
-                {
-                    // Messagingを使用してListPanelにファイル保存要求を送信
-                    _messenger.Send(new SaveFileMessage(saveFileDialog.FileName));
-                    
-                    StatusMessage = $"ファイルを保存しました: {Path.GetFileName(saveFileDialog.FileName)}";
-                    LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] ファイル保存要求: {saveFileDialog.FileName}");
-                    _logger.LogInformation("ファイル保存要求: {FileName}", saveFileDialog.FileName);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ファイル保存中にエラーが発生しました");
-                StatusMessage = "ファイル保存エラー";
-                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: ファイル保存失敗 - {ex.Message}");
-                MessageBox.Show($"ファイルの保存に失敗しました。\n\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand] 
-        public async Task SaveFileAs() => await SaveFile(); // SaveFileと同じ処理
-
-        [RelayCommand] public void Exit() => Application.Current?.Shutdown();
-        [RelayCommand] public void Undo() => _messenger.Send(new UndoMessage());
-        [RelayCommand] public void Redo() => _messenger.Send(new RedoMessage());
-        [RelayCommand] public void ChangeTheme(string theme) => _logger.LogDebug("テーマ変更: {Theme}（未実装）", theme);
-        [RelayCommand] public void RefreshPerformance() => _logger.LogDebug("パフォーマンス更新（未実装）");
-        [RelayCommand] public void LoadPluginFile() => _logger.LogDebug("プラグイン読み込み（未実装）");
-        [RelayCommand] public void RefreshPlugins() => _logger.LogDebug("プラグイン再読み込み（未実装）");
-        [RelayCommand] public void ShowPluginInfo() => _logger.LogDebug("プラグイン情報表示（未実装）");
-        [RelayCommand] public void OpenAppDir() => _logger.LogDebug("アプリフォルダ開く（未実装）");
-        [RelayCommand] public void ShowAbout() => _logger.LogDebug("バージョン情報表示（未実装）");
 
         /// <summary>
         /// ウィンドウ設定の保存
@@ -741,32 +1001,6 @@ namespace AutoTool.ViewModel
             {
                 _logger.LogError(ex, "クリーンアップ処理中にエラーが発生しました");
             }
-        }
-
-        private void UpdateProperties()
-        {
-            OnPropertyChanged(nameof(IsListEmpty));
-            OnPropertyChanged(nameof(IsListNotEmptyButNoSelection));
-            OnPropertyChanged(nameof(IsNotNullItem));
-            OnPropertyChanged(nameof(CanRunMacro));
-            OnPropertyChanged(nameof(CanStopMacro));
-        }
-
-        partial void OnSelectedLineNumberChanged(int value)
-        {
-            UpdateProperties();
-        }
-
-        partial void OnIsRunningChanged(bool value)
-        {
-            OnPropertyChanged(nameof(CanRunMacro));
-            OnPropertyChanged(nameof(CanStopMacro));
-            _logger.LogDebug("マクロ実行状態変更: {IsRunning}", value);
-        }
-
-        partial void OnCommandCountChanged(int value)
-        {
-            UpdateProperties();
         }
 
         private void LoadInitialData()

@@ -41,6 +41,7 @@ namespace AutoTool.Services
             services.AddSingleton<IRecentFileService, RecentFileService>();
 
             // ViewModelの登録（シングルトン）
+            services.AddSingleton<EditPanelViewModel>();
             services.AddSingleton<MainWindowViewModel>();
             services.AddSingleton<FavoritePanelViewModel>();
             services.AddSingleton<ListPanelViewModel>();
@@ -104,13 +105,13 @@ namespace AutoTool.Services
             {
                 _logger.LogDebug("CommandListItemFactory.CreateItem開始: {ItemType}", itemType);
                 
-                // CommandRegistryからタイプマッピングを取得
+                // CommandRegistryから型マッピングを取得
                 var itemTypes = CommandRegistry.GetTypeMapping();
                 if (itemTypes.TryGetValue(itemType, out var type))
                 {
-                    _logger.LogDebug("CommandRegistryからタイプ取得: {Type}", type.Name);
+                    _logger.LogDebug("CommandRegistryから型取得: {Type}", type.Name);
                     
-                    // DIコンテナからインスタンスを取得を試みる
+                    // DIコンテナからインスタンスを取得を試行
                     var serviceInstance = _serviceProvider.GetService(type);
                     if (serviceInstance is ICommandListItem item)
                     {
@@ -139,7 +140,7 @@ namespace AutoTool.Services
                 if (basicItem == null)
                 {
                     basicItem = new BasicCommandItem();
-                    _logger.LogWarning("BasicCommandItemもDIから取得できないため、直接作成しました");
+                    _logger.LogWarning("BasicCommandItemもDIから取得できなかったため、直接作成しました");
                 }
                 
                 basicItem.ItemType = itemType;
@@ -150,7 +151,7 @@ namespace AutoTool.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "CommandListItemFactory.CreateItem中にエラーが発生: {ItemType}", itemType);
+                _logger.LogError(ex, "CommandListItemFactory.CreateItem中にエラー発生: {ItemType}", itemType);
                 
                 // 緊急フォールバック
                 return new BasicCommandItem 
