@@ -7,7 +7,7 @@ namespace AutoTool.ViewModel.Shared
     /// </summary>
     public class CommandDisplayItem
     {
-        public string TypeName { get; init; } = string.Empty;      // 内部で使用する英語名
+        public string TypeName { get; init; } = string.Empty;      // 内部で使用する型名
         public string DisplayName { get; init; } = string.Empty;   // UI表示用の日本語名
         public string Category { get; init; } = string.Empty;      // カテゴリ名
 

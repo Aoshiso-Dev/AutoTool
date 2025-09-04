@@ -173,7 +173,7 @@ namespace AutoTool.Model.List.Class
         private double _threshold = 0.8;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        private Color? _searchColor = null;
+        private System.Windows.Media.Color? _searchColor = null;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private int _timeout = 5000;
@@ -222,7 +222,7 @@ namespace AutoTool.Model.List.Class
         private double _threshold = 0.8;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        private Color? _searchColor = null;
+        private System.Windows.Media.Color? _searchColor = null;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private int _timeout = 5000;
@@ -542,7 +542,7 @@ namespace AutoTool.Model.List.Class
         private double _threshold = 0.8;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        private Color? _searchColor = null;
+        private System.Windows.Media.Color? _searchColor = null;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;
@@ -590,7 +590,7 @@ namespace AutoTool.Model.List.Class
         private double _threshold = 0.8;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        private Color? _searchColor = null;
+        private System.Windows.Media.Color? _searchColor = null;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private string _windowTitle = string.Empty;

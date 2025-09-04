@@ -11,7 +11,7 @@ namespace AutoTool
     /// <summary>
     /// アプリケーションエントリポイント（クリーンアーキテクチャ対応）
     /// </summary>
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
         private IApplicationBootstrapper? _bootstrapper;
         private ILogger<App>? _logger;
@@ -165,7 +165,7 @@ namespace AutoTool
             // コンソールにも出力
             Console.WriteLine($"[FATAL ERROR] {DateTime.Now}: {message}");
             
-            MessageBox.Show(message, "起動エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(message, "起動エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
         }
 
@@ -192,7 +192,7 @@ namespace AutoTool
             catch (Exception ex)
             {
                 // 最後の砦
-                MessageBox.Show("重大なエラーが発生しました。アプリケーションを強制終了します。", 
+                System.Windows.MessageBox.Show("重大なエラーが発生しました。アプリケーションを強制終了します。", 
                     "システムエラー", MessageBoxButton.OK, MessageBoxImage.Stop);
                 Shutdown(1);
             }
@@ -215,13 +215,13 @@ namespace AutoTool
                                        $"メッセージ: {exception.Message}\n\n" +
                                        $"スタックトレース:\n{exception.StackTrace}";
                     
-                    MessageBox.Show(detailMessage, "重大なエラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    System.Windows.MessageBox.Show(detailMessage, "重大なエラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
                 // 緊急フォールバック
-                MessageBox.Show("システムエラーが発生しました。", "エラー", 
+                System.Windows.MessageBox.Show("システムエラーが発生しました。", "エラー", 
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -243,7 +243,7 @@ namespace AutoTool
         {
             _logger?.LogWarning("軽微なエラーが発生しました。継続して実行します。");
             
-            MessageBox.Show("アプリケーションで軽微なエラーが発生しました。\n継続して実行します。\n\n" +
+            System.Windows.MessageBox.Show("アプリケーションで軽微なエラーが発生しました。\n継続して実行します。\n\n" +
                           $"エラーの詳細:\n{e.Exception.Message}", "情報", 
                           MessageBoxButton.OK, MessageBoxImage.Information);
             
@@ -258,7 +258,7 @@ namespace AutoTool
             var userMessage = $"予期しないエラーが発生しました。\n\n{e.Exception.Message}\n\n" +
                              "アプリケーションを継続しますか？";
 
-            var result = MessageBox.Show(userMessage, "予期しないエラー", 
+            var result = System.Windows.MessageBox.Show(userMessage, "予期しないエラー", 
                 MessageBoxButton.YesNo, MessageBoxImage.Error);
 
             if (result == MessageBoxResult.Yes)

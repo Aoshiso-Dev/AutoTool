@@ -21,7 +21,7 @@ namespace AutoTool.Services.Performance
         private readonly object _lockObject = new();
         
         // パフォーマンス監視用
-        private Timer? _monitoringTimer;
+        private System.Threading.Timer? _monitoringTimer;
         private readonly PerformanceCounter? _cpuCounter;
         private readonly Process _currentProcess;
         private bool _isMonitoring;
@@ -61,7 +61,7 @@ namespace AutoTool.Services.Performance
             try
             {
                 _isMonitoring = true;
-                _monitoringTimer = new Timer(UpdatePerformanceMetrics, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+                _monitoringTimer = new System.Threading.Timer(UpdatePerformanceMetrics, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
                 _logger.LogInformation("パフォーマンス監視を開始しました");
             }
             catch (Exception ex)

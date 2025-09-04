@@ -213,7 +213,7 @@ namespace AutoTool.Services.UI
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "バックグラウンドマクロ実行中にエラー");
-                            await Application.Current.Dispatcher.InvokeAsync(() =>
+                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                             {
                                 StatusChanged?.Invoke(this, $"実行エラー: {ex.Message}");
                                 IsRunning = false;
@@ -225,7 +225,7 @@ namespace AutoTool.Services.UI
             catch (Exception ex)
             {
                 _logger.LogError(ex, "RunMacroCommand 実行中にエラー");
-                Application.Current.Dispatcher.InvokeAsync(() =>
+                System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     StatusChanged?.Invoke(this, $"実行エラー: {ex.Message}");
                     IsRunning = false;
@@ -372,7 +372,7 @@ namespace AutoTool.Services.UI
                 var firstItem = listPanelViewModel.Items.First();
                 
                 // UIスレッドで実行状態を設定
-                Application.Current.Dispatcher.Invoke(() =>
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     firstItem.IsRunning = true;
                     firstItem.Progress = 0;
@@ -387,14 +387,14 @@ namespace AutoTool.Services.UI
                         await Task.Delay(500); // 500msごとに更新
                         
                         // UIスレッドで実行
-                        Application.Current.Dispatcher.Invoke(() =>
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
                         {
                             firstItem.Progress = i;
                         });
                     }
 
                     // 完了状態に設定
-                    Application.Current.Dispatcher.Invoke(() =>
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
                         firstItem.IsRunning = false;
                         firstItem.Progress = 100;
@@ -404,7 +404,7 @@ namespace AutoTool.Services.UI
                         // 少し待ってからプログレスをリセット
                         Task.Delay(2000).ContinueWith(_ =>
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            System.Windows.Application.Current.Dispatcher.Invoke(() =>
                             {
                                 firstItem.Progress = 0;
                             });
@@ -427,48 +427,30 @@ namespace AutoTool.Services.UI
                 
                 if (_currentCancellationTokenSource != null && !_currentCancellationTokenSource.IsCancellationRequested)
                 {
-                    // 即座にキャンセル要求
-                    _currentCancellationTokenSource.Cancel();
                     _logger.LogInformation("キャンセル要求を送信しました");
+                    _currentCancellationTokenSource.Cancel();
                     
-                    // UIスレッドで状態更新（即座に）
-                    Application.Current.Dispatcher.Invoke(() =>
+                    // UI状態を即座に更新
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
-                        StatusChanged?.Invoke(this, "停止要求中...");
-                    });
-                    
-                    // 強制タイムアウト設定（5秒後に強制終了）
-                    Task.Run(async () =>
-                    {
-                        await Task.Delay(5000); // 5秒待機
-                        
-                        if (IsRunning)
-                        {
-                            _logger.LogWarning("マクロが5秒以内に停止しなかったため、強制終了します");
-                            await Application.Current.Dispatcher.InvokeAsync(() =>
-                            {
-                                IsRunning = false;
-                                StatusChanged?.Invoke(this, "強制停止完了");
-                            });
-                            
-                            // ListPanelの状態もリセット
-                            var listPanelViewModel = _serviceProvider.GetService<ListPanelViewModel>();
-                            listPanelViewModel?.SetRunningState(false);
-                            listPanelViewModel?.CompleteProgress();
-                        }
+                        StatusChanged?.Invoke(this, "停止処理中...");
                     });
                 }
                 else
                 {
-                    _logger.LogWarning("キャンセル要求: 既にキャンセルされているか、トークンソースがnullです");
+                    _logger.LogWarning("キャンセル要求: 既にキャンセル済みかトークンソースがnull");
                     
-                    // 状態が不整合の場合は強制リセット
-                    Application.Current.Dispatcher.Invoke(() =>
+                    // 状態が不正な場合は強制リセット
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (IsRunning)
                         {
                             IsRunning = false;
-                            StatusChanged?.Invoke(this, "状態リセット完了");
+                            StatusChanged?.Invoke(this, "強制停止完了");
+                            
+                            // ListPanelの状態もリセット
+                            var listPanelViewModel = _serviceProvider.GetService<ListPanelViewModel>();
+                            listPanelViewModel?.SetRunningState(false);
                         }
                     });
                 }
@@ -476,7 +458,7 @@ namespace AutoTool.Services.UI
             catch (Exception ex)
             {
                 _logger.LogError(ex, "停止処理中にエラー");
-                Application.Current.Dispatcher.Invoke(() =>
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     StatusChanged?.Invoke(this, $"停止エラー: {ex.Message}");
                     IsRunning = false;
@@ -491,10 +473,10 @@ namespace AutoTool.Services.UI
                 var listPanelViewModel = _serviceProvider.GetService<ListPanelViewModel>();
                 if (listPanelViewModel == null)
                 {
-                    _logger.LogError("ListPanelViewModel が解決できません。実行を中止します。");
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    _logger.LogError("ListPanelViewModel が見つかりません。実行を中止します。");
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        StatusChanged?.Invoke(this, "実行エラー: ListPanel VM 未解決");
+                        StatusChanged?.Invoke(this, "実行エラー: ListPanel VM 取得失敗");
                     });
                     return;
                 }
@@ -508,15 +490,15 @@ namespace AutoTool.Services.UI
                 if (listPanelViewModel.Items.Count == 0)
                 {
                     _logger.LogWarning("実行対象コマンドがありません");
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         StatusChanged?.Invoke(this, "実行対象がありません");
                     });
                     return;
                 }
 
-                // 準備（UIスレッドで実行）
-                await Application.Current.Dispatcher.InvokeAsync(() =>
+                // 開始処理（UI スレッドで実行）
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     IsRunning = true;
                     StatusChanged?.Invoke(this, "実行中...");
@@ -528,7 +510,7 @@ namespace AutoTool.Services.UI
                 _currentCancellationTokenSource = new CancellationTokenSource();
                 var token = _currentCancellationTokenSource.Token;
 
-                // MacroFactory にサービスを渡す
+                // MacroFactory にサービスを設定
                 MacroFactory.SetServiceProvider(_serviceProvider);
                 if (_pluginService != null)
                 {
@@ -540,28 +522,13 @@ namespace AutoTool.Services.UI
 
                 try
                 {
-                    var result = await Task.Run(() =>
-                    {
-                        try
-                        {
-                            var root = MacroFactory.CreateMacro(itemsSnapshot);
-                            return ExecuteMacroSynchronously(root, token);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            _logger.LogInformation("マクロがキャンセルされました");
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "マクロ実行中にエラー");
-                            throw;
-                        }
-                    }, token).ConfigureAwait(false);
+                    // マクロ実行をバックグラウンドで開始
+                    var root = MacroFactory.CreateMacro(itemsSnapshot);
+                    var result = await root.Execute(token);
 
                     _logger.LogInformation("マクロ実行完了: {Result}", result);
                     
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         StatusChanged?.Invoke(this, result ? "実行完了" : "一部失敗/中断");
                     });
@@ -569,7 +536,7 @@ namespace AutoTool.Services.UI
                 catch (OperationCanceledException)
                 {
                     _logger.LogInformation("マクロがキャンセルされました");
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         StatusChanged?.Invoke(this, "実行キャンセル");
                     });
@@ -577,21 +544,20 @@ namespace AutoTool.Services.UI
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "マクロ実行中にエラー");
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         StatusChanged?.Invoke(this, $"実行エラー: {ex.Message}");
                     });
                 }
                 finally
                 {
-                    // 終了処理（UIスレッドで実行）
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    // 終了処理（UI スレッドで実行）
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         IsRunning = false;
                     });
                     
                     listPanelViewModel.SetRunningState(false);
-                    listPanelViewModel.CompleteProgress();
                     
                     _currentCancellationTokenSource?.Dispose();
                     _currentCancellationTokenSource = null;
@@ -600,38 +566,15 @@ namespace AutoTool.Services.UI
             catch (Exception ex)
             {
                 _logger.LogError(ex, "StartMacroAsync 内でエラー");
-                await Application.Current.Dispatcher.InvokeAsync(() =>
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     StatusChanged?.Invoke(this, $"実行エラー: {ex.Message}");
                     IsRunning = false;
                 });
-            }
-        }
-
-        /// <summary>
-        /// マクロを同期的に実行（バックグラウンドスレッド用）
-        /// </summary>
-        private bool ExecuteMacroSynchronously(ICommand root, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var task = root.Execute(cancellationToken);
                 
-                // CancellationTokenを監視しながら同期待機
-                while (!task.IsCompleted)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    Thread.Sleep(50); // UIの応答性を保つための短い待機
-                }
-                
-                return task.Result;
-            }
-            catch (AggregateException ex)
-            {
-                // AggregateExceptionを展開
-                if (ex.InnerException is OperationCanceledException)
-                    throw ex.InnerException;
-                throw;
+                // ListPanelの状態もリセット
+                var listPanelViewModel = _serviceProvider.GetService<ListPanelViewModel>();
+                listPanelViewModel?.SetRunningState(false);
             }
         }
 

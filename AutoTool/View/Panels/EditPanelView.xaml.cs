@@ -9,7 +9,7 @@ namespace AutoTool.View.Panels
     /// <summary>
     /// EditPanelView.xaml の相互作用ロジック（DI対応）
     /// </summary>
-    public partial class EditPanelView : UserControl
+    public partial class EditPanelView : System.Windows.Controls.UserControl
     {
         private ILogger<EditPanelView>? _logger;
 

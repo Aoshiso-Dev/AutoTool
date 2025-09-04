@@ -194,10 +194,10 @@ namespace AutoTool.View.Converters
                 return nestLevel switch
                 {
                     0 => System.Windows.Media.Brushes.Transparent,
-                    1 => new SolidColorBrush(Color.FromArgb(30, 0, 100, 200)), // 薄い青
-                    2 => new SolidColorBrush(Color.FromArgb(30, 0, 150, 100)), // 薄い緑
-                    3 => new SolidColorBrush(Color.FromArgb(30, 200, 100, 0)), // 薄いオレンジ
-                    _ => new SolidColorBrush(Color.FromArgb(30, 150, 0, 150))   // 薄い紫
+                    1 => new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 0, 100, 200)), // 薄い青
+                    2 => new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 0, 150, 100)), // 薄い緑
+                    3 => new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 200, 100, 0)), // 薄いオレンジ
+                    _ => new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 150, 0, 150))   // 薄い紫
                 };
             }
             return System.Windows.Media.Brushes.Transparent;
@@ -250,9 +250,67 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// コマンドタイプをアイコンに変換するコンバーター
+    /// コマンドタイプを絵文字アイコンに変換するコンバーター（実行状態対応）
     /// </summary>
-    public class CommandTypeToIconConverter : IValueConverter
+    public class CommandTypeToIconConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values.Length >= 3 && values[0] is string itemType)
+            {
+                var isRunning = values[1] is bool running && running;
+                var isEnabled = values[2] is bool enabled && enabled;
+
+                // 実行中の場合は特別なアイコン
+                if (isRunning)
+                {
+                    return "▶️"; // 実行中アイコン
+                }
+
+                // 無効な場合はグレーアウトされた感じのアイコン
+                if (!isEnabled)
+                {
+                    return "⚫"; // 無効アイコン
+                }
+
+                // 通常のコマンドタイプ別アイコン
+                return itemType switch
+                {
+                    "Wait_Image" => "⏱️",
+                    "Click_Image" => "🖱️",
+                    "Click_Image_AI" => "🤖",
+                    "Hotkey" => "⌨️",
+                    "Click" => "👆",
+                    "Wait" => "⏸️",
+                    "Loop" => "🔄",
+                    "Loop_End" => "🔚",
+                    "Loop_Break" => "⚡",
+                    "IF_ImageExist" => "❓",
+                    "IF_ImageNotExist" => "❗",
+                    "IF_ImageExist_AI" => "🔍",
+                    "IF_ImageNotExist_AI" => "🔍",
+                    "IF_End" => "✅",
+                    "IF_Variable" => "📊",
+                    "Execute" => "🚀",
+                    "SetVariable" => "📝",
+                    "SetVariable_AI" => "🧠",
+                    "Screenshot" => "📸",
+                    _ => "📄"
+                };
+            }
+            return "📄";
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// 単一値版のコマンドタイプアイコンコンバーター（後方互換性用）
+    /// </summary>
+    public class CommandTypeToIconSingleConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
@@ -300,7 +358,7 @@ namespace AutoTool.View.Converters
         {
             if (value is bool isRunning && isRunning)
             {
-                return new SolidColorBrush(Color.FromRgb(0, 120, 215)); // 青いハイライト
+                return new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215)); // 青いハイライト
             }
             return System.Windows.Media.Brushes.Transparent;
         }
@@ -360,7 +418,7 @@ namespace AutoTool.View.Converters
         {
             if (value is bool isRunning && isRunning)
             {
-                return new SolidColorBrush(Color.FromRgb(0, 120, 215)); // 青いテキスト
+                return new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215)); // 青いテキスト
             }
             return System.Windows.Media.Brushes.Black;
         }

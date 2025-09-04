@@ -14,7 +14,7 @@ namespace AutoTool.View
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MonitoringPanel : UserControl
+    public partial class MonitoringPanel : System.Windows.Controls.UserControl
     {
         public MonitoringPanel()
         {

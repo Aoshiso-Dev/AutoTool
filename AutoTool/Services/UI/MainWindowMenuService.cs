@@ -135,7 +135,7 @@ namespace AutoTool.Services.UI
         {
             try
             {
-                var openFileDialog = new OpenFileDialog
+                var openFileDialog = new Microsoft.Win32.OpenFileDialog
                 {
                     Title = "マクロファイルを開く",
                     Filter = "AutoTool マクロファイル (*.atm)|*.atm|JSONファイル (*.json)|*.json|すべてのファイル (*.*)|*.*",
@@ -190,7 +190,7 @@ namespace AutoTool.Services.UI
         {
             try
             {
-                var saveFileDialog = new SaveFileDialog
+                var saveFileDialog = new Microsoft.Win32.SaveFileDialog
                 {
                     Title = "マクロファイルを名前を付けて保存",
                     Filter = "AutoTool マクロファイル (*.atm)|*.atm|JSONファイル (*.json)|*.json|すべてのファイル (*.*)|*.*",
@@ -284,7 +284,7 @@ namespace AutoTool.Services.UI
         {
             try
             {
-                var openFileDialog = new OpenFileDialog
+                var openFileDialog = new Microsoft.Win32.OpenFileDialog
                 {
                     Title = "プラグインファイルを選択",
                     Filter = "プラグインファイル (*.dll)|*.dll|すべてのファイル (*.*)|*.*",

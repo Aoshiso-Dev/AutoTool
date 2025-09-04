@@ -198,7 +198,7 @@ namespace AutoTool.Services.UI
         {
             try
             {
-                var app = Application.Current;
+                var app = System.Windows.Application.Current;
                 if (app == null) return;
 
                 // 現在のテーマリソースを削除
@@ -230,11 +230,11 @@ namespace AutoTool.Services.UI
             }
         }
 
-        private void RemoveCurrentThemeResources(Application app)
+        private void RemoveCurrentThemeResources(System.Windows.Application app)
         {
             try
             {
-                // テーマ関連のリソース辞書を削除（AutoToolのテーマファイルのみ）
+                // テーマ関連のリソースのみ削除（AutoToolのテーマファイルのみ）
                 var toRemove = app.Resources.MergedDictionaries
                     .Where(rd => rd.Source?.ToString().Contains("AutoTool") == true && 
                                 rd.Source?.ToString().Contains("Themes") == true)
@@ -245,11 +245,11 @@ namespace AutoTool.Services.UI
                     app.Resources.MergedDictionaries.Remove(rd);
                 }
 
-                _logger.LogDebug("既存テーマリソース削除完了: {Count}個", toRemove.Count);
+                _logger.LogDebug("既存テーマリソース削除数: {Count}件", toRemove.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "既存テーマリソース削除中に警告");
+                _logger.LogWarning(ex, "既存テーマリソース削除時に例外");
             }
         }
 
@@ -273,31 +273,30 @@ namespace AutoTool.Services.UI
             {
                 try
                 {
-                    // システムテーマ変更時に自動適用
-                    Application.Current?.Dispatcher.BeginInvoke(() =>
+                    // システムテーマ変更時に即反映
+                    System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
                     {
                         ApplySystemTheme();
-                        _logger.LogInformation("システムテーマ変更に追従しました");
+                        _logger.LogInformation("システムテーマ変更に対応しました");
                     });
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "システムテーマ変更追従中にエラー");
+                    _logger.LogError(ex, "システムテーマ変更反映時に例外");
                 }
             }
         }
-
         private void ApplySystemTheme()
         {
             try
             {
-                // Windowsのダークモード設定を取得
+                // Windowsのダークモード設定取得
                 var isDarkMode = IsSystemDarkMode();
                 var systemTheme = isDarkMode ? AppTheme.Dark : AppTheme.Light;
                 var systemThemeDefinition = ThemeDefinitionFactory.GetThemeDefinition(systemTheme);
 
-                // システムテーマを適用（ただし設定は Auto のまま）
-                RemoveCurrentThemeResources(Application.Current);
+                // システムテーマを適用（既存はAutoのみ）
+                RemoveCurrentThemeResources(System.Windows.Application.Current);
                 
                 if (!string.IsNullOrEmpty(systemThemeDefinition.ResourceDictionary))
                 {
@@ -306,15 +305,15 @@ namespace AutoTool.Services.UI
                         Source = new Uri(systemThemeDefinition.ResourceDictionary, UriKind.RelativeOrAbsolute)
                     };
                     
-                    Application.Current.Resources.MergedDictionaries.Insert(0, themeResourceDictionary);
+                    System.Windows.Application.Current.Resources.MergedDictionaries.Insert(0, themeResourceDictionary);
                 }
 
-                _logger.LogDebug("システム自動テーマ適用: {SystemTheme} (ダークモード: {IsDark})", 
+                _logger.LogDebug("システム用テーマ適用: {SystemTheme} (ダーク: {IsDark})", 
                     systemTheme, isDarkMode);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "システム自動テーマ適用中にエラー");
+                _logger.LogError(ex, "システム用テーマ適用時に例外");
             }
         }
 

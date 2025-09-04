@@ -9,6 +9,7 @@ using AutoTool.Services.Safety;
 using AutoTool.ViewModel;
 using AutoTool.Helpers;
 using AutoTool.Logging;
+using AutoTool.List.Class; // CommandListService用
 
 namespace AutoTool.Bootstrap
 {
@@ -96,6 +97,8 @@ namespace AutoTool.Bootstrap
                 var serviceTypes = new[]
                 {
                     typeof(ILogger<MainWindowViewModel>),
+                    typeof(ILogger<CommandListService>), // CommandListService用のILoggerを追加
+                    typeof(CommandListService), // CommandListServiceを追加
                     typeof(AutoTool.Services.IRecentFileService),
                     typeof(AutoTool.Services.Plugin.IPluginService),
                     typeof(AutoTool.Services.UI.IMainWindowMenuService),
@@ -120,11 +123,11 @@ namespace AutoTool.Bootstrap
                     }
                 }
                 
-                logger.LogDebug("=== 登録サービス確認完了 ===");
+                logger.LogDebug("=== 登録サービス確認終了 ===");
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "サービス確認中にエラー");
+                logger.LogWarning(ex, "サービス確認時にエラー");
             }
         }
 

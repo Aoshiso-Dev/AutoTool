@@ -10,7 +10,7 @@ namespace AutoTool.View.Base
     /// <summary>
     /// DI対応のView基底クラス
     /// </summary>
-    public abstract class DIViewBase : UserControl
+    public abstract class DIViewBase : System.Windows.Controls.UserControl
     {
         protected ILogger? Logger { get; private set; }
         protected IServiceProvider? ServiceProvider { get; private set; }
@@ -39,7 +39,7 @@ namespace AutoTool.View.Base
 
         private void InitializeDI()
         {
-            if (Application.Current is App app && app.Services != null)
+            if (System.Windows.Application.Current is App app && app.Services != null)
             {
                 ServiceProvider = app.Services;
                 Logger = ServiceProvider.GetService<ILogger<DIViewBase>>();
@@ -49,7 +49,7 @@ namespace AutoTool.View.Base
             }
             else
             {
-                throw new InvalidOperationException("DIコンテナが利用できません");
+                throw new InvalidOperationException("DIコンテナが利用不可です");
             }
         }
 
@@ -135,7 +135,7 @@ namespace AutoTool.View.Base
 
         private void InitializeDI()
         {
-            if (Application.Current is App app && app.Services != null)
+            if (System.Windows.Application.Current is App app && app.Services != null)
             {
                 ServiceProvider = app.Services;
                 Logger = ServiceProvider.GetService<ILogger<DIWindowBase>>();
@@ -145,7 +145,7 @@ namespace AutoTool.View.Base
             }
             else
             {
-                throw new InvalidOperationException("DIコンテナが利用できません");
+                throw new InvalidOperationException("DIコンテナが利用不可です");
             }
         }
 

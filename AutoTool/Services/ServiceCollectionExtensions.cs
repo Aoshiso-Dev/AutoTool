@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using AutoTool.Services.Plugin;
+using AutoTool.Services.Mouse;
 using AutoTool.ViewModel;
 using AutoTool.ViewModel.Panels;
 using AutoTool.List.Class;
@@ -41,6 +42,9 @@ namespace AutoTool.Services
             // ファイルサービス
             services.AddSingleton<IRecentFileService, RecentFileService>();
 
+            // マウスサービス
+            services.AddSingleton<IMouseService, MouseService>();
+
             // 変数ストアサービス（AutoTool版を登録）
             services.AddSingleton<AutoTool.Services.IVariableStore, AutoTool.Services.VariableStore>();
 
@@ -74,7 +78,7 @@ namespace AutoTool.Services
             services.AddSingleton<ListPanelViewModel>();
 
             // モデル登録
-            services.AddTransient<CommandList>();
+            services.AddSingleton<CommandListService>(); // CommandListServiceを登録
             services.AddTransient<BasicCommandItem>();
 
             // JSON設定登録
@@ -112,6 +116,9 @@ namespace AutoTool.Services
                     }
                 };
             });
+
+            // WindowInfoService
+            services.AddSingleton<AutoTool.Services.Window.IWindowInfoService, AutoTool.Services.Window.WindowInfoService>();
 
             return services;
         }

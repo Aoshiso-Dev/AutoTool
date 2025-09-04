@@ -11,7 +11,7 @@ using System.Reflection;
 namespace AutoTool.Model.CommandDefinition
 {
     /// <summary>
-    /// コマンド定義から自動的にタイプやファクトリを生成するクラス
+    /// コマンド定義を自動的にタイプ・ファクトリを生成するクラス
     /// </summary>
     public static class CommandRegistry
     {
@@ -23,7 +23,7 @@ namespace AutoTool.Model.CommandDefinition
         private static readonly ConcurrentDictionary<string, (Type CommandType, Type SettingsType)> _commandMapping = new();
 
         /// <summary>
-        /// よく使用されるコマンドタイプ名の定数
+        /// よく使用するコマンドタイプ名の定数
         /// </summary>
         public static class CommandTypes
         {
@@ -91,46 +91,46 @@ namespace AutoTool.Model.CommandDefinition
                     CommandTypes.Execute => 6,
                     CommandTypes.Screenshot => 6,
 
-                    // 9. その他・未分類
+                    // 9. その他・拡張機能
                     _ => 9
                 };
             }
 
             /// <summary>
-            /// 同じ優先度グループ内での詳細な順序を取得
+            /// 同一優先度グループでの詳細な順序を取得
             /// </summary>
             public static int GetSubPriority(string commandType)
             {
                 return commandType switch
                 {
-                    // クリック操作グループ内での順序
+                    // クリック操作グループでの順序
                     CommandTypes.Click => 1,          // 通常クリック
                     CommandTypes.ClickImage => 2,     // 画像クリック
                     CommandTypes.ClickImageAI => 3,   // AIクリック
 
-                    // 基本操作グループ内での順序
+                    // 基本操作グループでの順序
                     CommandTypes.Hotkey => 1,         // ホットキー
                     CommandTypes.Wait => 2,           // 待機
                     CommandTypes.WaitImage => 3,      // 画像待機
 
-                    // ループ制御グループ内での順序
+                    // ループ制御グループでの順序
                     CommandTypes.Loop => 1,           // ループ開始
                     CommandTypes.LoopBreak => 2,      // ループ中断
                     CommandTypes.LoopEnd => 3,        // ループ終了
 
-                    // IF文制御グループ内での順序
+                    // IF文制御グループでの順序
                     CommandTypes.IfImageExist => 1,      // 画像存在
                     CommandTypes.IfImageNotExist => 2,   // 画像非存在
                     CommandTypes.IfImageExistAI => 3,    // AI画像存在
                     CommandTypes.IfImageNotExistAI => 4, // AI画像非存在
-                    CommandTypes.IfVariable => 5,        // 変数条件
+                    CommandTypes.IfVariable => 5,        // 変数判定
                     CommandTypes.IfEnd => 6,             // IF終了
 
-                    // 変数操作グループ内での順序
+                    // 変数操作グループでの順序
                     CommandTypes.SetVariable => 1,    // 変数設定
                     CommandTypes.SetVariableAI => 2,  // AI変数設定
 
-                    // システム操作グループ内での順序
+                    // システム操作グループでの順序
                     CommandTypes.Execute => 1,        // プログラム実行
                     CommandTypes.Screenshot => 2,     // スクリーンショット
 

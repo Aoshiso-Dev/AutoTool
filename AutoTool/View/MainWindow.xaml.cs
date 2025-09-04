@@ -42,7 +42,7 @@ namespace AutoTool
             {
                 _logger?.LogError(ex, "MainWindow DI初期化中にエラーが発生");
                 
-                MessageBox.Show(
+                System.Windows.MessageBox.Show(
                     $"MainWindow初期化中にエラーが発生しました。\n\nエラー詳細:\n{ex.Message}",
                     "警告",
                     MessageBoxButton.OK,
@@ -56,7 +56,7 @@ namespace AutoTool
         /// </summary>
         private void InitializeDI()
         {
-            if (Application.Current is App app && app.Services != null)
+            if (System.Windows.Application.Current is App app && app.Services != null)
             {
                 _serviceProvider = app.Services;
                 _logger = _serviceProvider.GetService<ILogger<MainWindow>>();

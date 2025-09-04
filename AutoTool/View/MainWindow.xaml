@@ -13,7 +13,8 @@
         Height="{Binding WindowHeight, Mode=TwoWay}" 
         Width="{Binding WindowWidth, Mode=TwoWay}"
         WindowState="{Binding WindowState, Mode=TwoWay}"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        FontFamily="Segoe UI, Segoe UI Emoji, Segoe UI Symbol">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -209,7 +210,7 @@
                     <!-- Command List Header -->
                     <Border Grid.Row="0" Background="LightGray" Padding="5">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="📋 コマンドリスト" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <TextBlock Text="コマンドリスト" FontWeight="Bold" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding CommandCount, StringFormat=' ({0}個)'}" 
                                        FontSize="11" Foreground="#666" VerticalAlignment="Center" Margin="5,0,0,0"/>
                         </StackPanel>
@@ -232,7 +233,7 @@
                         <!-- Log Header -->
                         <Border Grid.Row="0" Background="LightGray" Padding="5">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="📝 実行ログ" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="実行ログ" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <Button Content="クリア" Command="{Binding ClearLogCommand}" 
                                         Width="50" Height="20" Margin="10,0,0,0" FontSize="10"/>
                             </StackPanel>
@@ -265,7 +266,7 @@
 
                     <!-- Edit Header -->
                     <Border Grid.Row="0" Background="LightGray" Padding="5">
-                        <TextBlock Text="⚙️ コマンド設定" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="コマンド設定" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </Border>
 
                     <!-- Edit Content - replaced with EditPanelView UserControl -->

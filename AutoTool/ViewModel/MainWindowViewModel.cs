@@ -315,6 +315,11 @@ namespace AutoTool.ViewModel
                         IsRunning = isRunning;
                         OnPropertyChanged(nameof(CanRunMacro));
                         OnPropertyChanged(nameof(CanStopMacro));
+                        
+                        // ListPanelにも実行状態を通知
+                        WeakReferenceMessenger.Default.Send(new MacroExecutionStateMessage(isRunning));
+                        
+                        _logger.LogDebug("マクロ実行状態変更: {IsRunning}", isRunning);
                     };
 
                     // ステータス変更の監視

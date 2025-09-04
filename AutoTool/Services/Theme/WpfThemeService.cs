@@ -149,7 +149,7 @@ namespace AutoTool.Services.Theme
         {
             try
             {
-                var app = Application.Current;
+                var app = System.Windows.Application.Current;
                 if (app?.Resources == null) return;
 
                 // テーマ関連のリソースディクショナリを削除
@@ -176,10 +176,10 @@ namespace AutoTool.Services.Theme
         {
             try
             {
-                var app = Application.Current;
+                var app = System.Windows.Application.Current;
                 if (app?.Resources == null)
                 {
-                    _logger.LogWarning("Application.Current.Resources が null です");
+                    _logger.LogWarning("System.Windows.Application.Current.Resources が null です");
                     return;
                 }
 

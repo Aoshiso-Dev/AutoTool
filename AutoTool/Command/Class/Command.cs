@@ -154,6 +154,9 @@ namespace AutoTool.Command.Class
         protected readonly IServiceProvider? _serviceProvider;
         protected CommandExecutionContext? _executionContext;
 
+        // 追加: マクロファイルのベースパス（相対パス解決用）
+        private static string _macroFileBasePath = string.Empty;
+
         // ICommandインターフェースの実装
         public int LineNumber { get; set; }
         public bool IsEnabled { get; set; } = true;
@@ -172,6 +175,79 @@ namespace AutoTool.Command.Class
         public event EventHandler? OnFinishCommand;
         public event EventHandler<string>? OnDoingCommand;
         public event EventHandler<Exception>? OnErrorCommand;
+
+        /// <summary>
+        /// マクロファイルのベースパスを設定（全コマンドで共有）
+        /// </summary>
+        public static void SetMacroFileBasePath(string? macroFilePath)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(macroFilePath) && File.Exists(macroFilePath))
+                {
+                    _macroFileBasePath = Path.GetDirectoryName(macroFilePath) ?? string.Empty;
+                    System.Diagnostics.Debug.WriteLine($"[BaseCommand] マクロファイルベースパス設定: {_macroFileBasePath}");
+                }
+                else
+                {
+                    _macroFileBasePath = string.Empty;
+                    System.Diagnostics.Debug.WriteLine($"[BaseCommand] マクロファイルベースパスクリア");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[BaseCommand] マクロファイルベースパス設定エラー: {ex.Message}");
+                _macroFileBasePath = string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// 相対パスまたは絶対パスを解決して、実際のファイルパスを返す
+        /// </summary>
+        protected string ResolvePath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return path;
+
+            try
+            {
+                // 既に絶対パスの場合
+                if (Path.IsPathRooted(path))
+                {
+                    return path;
+                }
+
+                // 相対パスの場合、マクロファイルのベースパスから解決
+                if (!string.IsNullOrEmpty(_macroFileBasePath))
+                {
+                    var resolvedPath = Path.Combine(_macroFileBasePath, path);
+                    resolvedPath = Path.GetFullPath(resolvedPath); // 正規化
+
+                    // 解決されたパスにファイルが存在するか確認
+                    if (File.Exists(resolvedPath) || Directory.Exists(resolvedPath))
+                    {
+                        _logger?.LogTrace("相対パス解決成功: {RelativePath} -> {AbsolutePath}", path, resolvedPath);
+                        return resolvedPath;
+                    }
+                }
+
+                // カレントディレクトリからの相対パスとして試行
+                var currentDirPath = Path.GetFullPath(path);
+                if (File.Exists(currentDirPath) || Directory.Exists(currentDirPath))
+                {
+                    _logger?.LogTrace("カレントディレクトリから解決: {RelativePath} -> {AbsolutePath}", path, currentDirPath);
+                    return currentDirPath;
+                }
+
+                _logger?.LogTrace("パス解決失敗、元のパスを返す: {Path}", path);
+                return path;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "パス解決中にエラー: {Path}", path);
+                return path;
+            }
+        }
 
         protected BaseCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
         {
@@ -274,56 +350,88 @@ namespace AutoTool.Command.Class
         }
 
         /// <summary>
-        /// ファイル存在チェック（エラー時に例外を投げる）
+        /// ファイル存在チェック（エラー時に例外を投げる）- 相対パス対応版
         /// </summary>
         protected void ValidateFileExists(string filePath, string fileDescription)
         {
             if (string.IsNullOrEmpty(filePath))
                 return; // 空の場合はチェックしない
 
-            var absolutePath = Path.IsPathRooted(filePath) ? filePath : Path.Combine(Environment.CurrentDirectory, filePath);
+            var resolvedPath = ResolvePath(filePath);
+            
+            _logger?.LogDebug("[ValidateFileExists] ファイル検証: 元パス={OriginalPath}, 解決パス={ResolvedPath}", filePath, resolvedPath);
 
-            if (!File.Exists(absolutePath))
+            if (!File.Exists(resolvedPath))
             {
-                throw new FileNotFoundException($"{fileDescription}が見つかりません: {filePath}\n確認したパス: {absolutePath}");
+                var errorMessage = $"{fileDescription}が見つかりません: {filePath}";
+                if (filePath != resolvedPath)
+                {
+                    errorMessage += $"\n解決されたパス: {resolvedPath}";
+                }
+                errorMessage += $"\nマクロファイルベースパス: {_macroFileBasePath}";
+                
+                _logger?.LogError("[ValidateFileExists] ファイル不存在: {ErrorMessage}", errorMessage);
+                throw new FileNotFoundException(errorMessage);
             }
+            
+            _logger?.LogDebug("[ValidateFileExists] ファイル存在確認成功: {ResolvedPath}", resolvedPath);
         }
 
         /// <summary>
-        /// ディレクトリ存在チェック（エラー時に例外を投げる）
+        /// ディレクトリ存在チェック（エラー時に例外を投げる）- 相対パス対応版
         /// </summary>
         protected void ValidateDirectoryExists(string directoryPath, string directoryDescription)
         {
             if (string.IsNullOrEmpty(directoryPath))
                 return; // 空の場合はチェックしない
 
-            var absolutePath = Path.IsPathRooted(directoryPath) ? directoryPath : Path.Combine(Environment.CurrentDirectory, directoryPath);
+            var resolvedPath = ResolvePath(directoryPath);
+            
+            _logger?.LogDebug("[ValidateDirectoryExists] ディレクトリ検証: 元パス={OriginalPath}, 解決パス={ResolvedPath}", directoryPath, resolvedPath);
 
-            if (!Directory.Exists(absolutePath))
+            if (!Directory.Exists(resolvedPath))
             {
-                throw new DirectoryNotFoundException($"{directoryDescription}が見つかりません: {directoryPath}\n確認したパス: {absolutePath}");
+                var errorMessage = $"{directoryDescription}が見つかりません: {directoryPath}";
+                if (directoryPath != resolvedPath)
+                {
+                    errorMessage += $"\n解決されたパス: {resolvedPath}";
+                }
+                errorMessage += $"\nマクロファイルベースパス: {_macroFileBasePath}";
+                
+                _logger?.LogError("[ValidateDirectoryExists] ディレクトリ不存在: {ErrorMessage}", errorMessage);
+                throw new DirectoryNotFoundException(errorMessage);
             }
+            
+            _logger?.LogDebug("[ValidateDirectoryExists] ディレクトリ存在確認成功: {ResolvedPath}", resolvedPath);
         }
 
         /// <summary>
-        /// 保存先ディレクトリの親フォルダ存在チェック
+        /// 保存先ディレクトリの親フォルダ存在チェック - 相対パス対応版
         /// </summary>
         protected void ValidateSaveDirectoryParentExists(string directoryPath, string directoryDescription)
         {
             if (string.IsNullOrEmpty(directoryPath))
                 return; // 空の場合はチェックしない
 
-            var absolutePath = Path.IsPathRooted(directoryPath) ? directoryPath : Path.Combine(Environment.CurrentDirectory, directoryPath);
+            var resolvedPath = ResolvePath(directoryPath);
 
             // ディレクトリが既に存在する場合はOK
-            if (Directory.Exists(absolutePath))
+            if (Directory.Exists(resolvedPath))
                 return;
 
             // 親ディレクトリが存在するかチェック
-            var parentDir = Path.GetDirectoryName(absolutePath);
+            var parentDir = Path.GetDirectoryName(resolvedPath);
             if (string.IsNullOrEmpty(parentDir) || !Directory.Exists(parentDir))
             {
-                throw new DirectoryNotFoundException($"{directoryDescription}の親フォルダが見つかりません: {directoryPath}\n親フォルダ: {parentDir ?? "不明"}");
+                var errorMessage = $"{directoryDescription}の親フォルダが見つかりません: {directoryPath}";
+                if (directoryPath != resolvedPath)
+                {
+                    errorMessage += $"\n解決されたパス: {resolvedPath}";
+                }
+                errorMessage += $"\n親フォルダ: {parentDir ?? "不明"}";
+                errorMessage += $"\nマクロファイルベースパス: {_macroFileBasePath}";
+                
+                throw new DirectoryNotFoundException(errorMessage);
             }
         }
 
@@ -450,13 +558,10 @@ namespace AutoTool.Command.Class
                     baseChild.SetExecutionContext(_executionContext);
                 }
 
-                // 子コマンドのLineNumberが設定されていない場合、親から継承
-                if (child.LineNumber <= 0 && this.LineNumber > 0)
-                {
-                    child.LineNumber = this.LineNumber;
-                    _logger?.LogDebug("[ExecuteChildrenAsync] 子コマンドにLineNumber設定: {ChildType} -> Line {LineNumber}", 
-                        child.GetType().Name, child.LineNumber);
-                }
+                // 子コマンドのLineNumberは既に設定済みなので、ここでは変更しない
+                // （MacroFactoryでペア再構築時に正しく設定されている）
+                _logger?.LogDebug("[ExecuteChildrenAsync] 子コマンド実行: {ChildType} (Line: {LineNumber})", 
+                    child.GetType().Name, child.LineNumber);
 
                 var result = await child.Execute(cancellationToken);
                 if (!result)
@@ -470,13 +575,14 @@ namespace AutoTool.Command.Class
         /// </summary>
         protected void ReportProgress(double elapsedMilliseconds, double totalMilliseconds)
         {
-            int trend = totalMilliseconds <= 0 ? 100 :
+            int progress = totalMilliseconds <= 0 ? 100 :
                 Math.Max(0, Math.Min(100, (int)Math.Round((elapsedMilliseconds / totalMilliseconds) * 100)));
 
             _logger?.LogTrace("[ReportProgress] 進捗報告: {Progress}% ({Elapsed}/{Total}ms) - {Description} (Line: {LineNumber})", 
-                trend, elapsedMilliseconds, totalMilliseconds, Description, LineNumber);
+                progress, elapsedMilliseconds, totalMilliseconds, Description, LineNumber);
 
-            WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(this, trend));
+            // 進捗更新メッセージを送信
+            WeakReferenceMessenger.Default.Send(new UpdateProgressMessage(this, progress));
         }
 
         /// <summary>
@@ -634,12 +740,16 @@ namespace AutoTool.Command.Class
             var settings = Settings;
             if (settings == null) return false;
 
+            // 相対パスを解決して実際の検索に使用
+            var resolvedImagePath = ResolvePath(settings.ImagePath);
+            _logger?.LogDebug("[DoExecuteAsync] WaitImage 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", settings.ImagePath, resolvedImagePath);
+
             var stopwatch = Stopwatch.StartNew();
 
             while (stopwatch.ElapsedMilliseconds < settings.Timeout)
             {
                 var point = await ImageSearchHelper.SearchImage(
-                    settings.ImagePath, cancellationToken, settings.Threshold,
+                    resolvedImagePath, cancellationToken, settings.Threshold,
                     settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
 
                 if (point != null)
@@ -707,12 +817,16 @@ namespace AutoTool.Command.Class
             var settings = Settings;
             if (settings == null) return false;
 
+            // 相対パスを解決して実際の検索に使用
+            var resolvedImagePath = ResolvePath(settings.ImagePath);
+            _logger?.LogDebug("[DoExecuteAsync] ClickImage 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", settings.ImagePath, resolvedImagePath);
+
             var stopwatch = Stopwatch.StartNew();
 
             while (stopwatch.ElapsedMilliseconds < settings.Timeout)
             {
                 var point = await ImageSearchHelper.SearchImage(
-                    settings.ImagePath, cancellationToken, settings.Threshold,
+                    resolvedImagePath, cancellationToken, settings.Threshold,
                     settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
 
                 if (point != null)
@@ -971,17 +1085,16 @@ namespace AutoTool.Command.Class
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // 子コマンドのLineNumberを確実に設定
-                if (child.LineNumber <= 0)
+                // 実行コンテキストを設定
+                if (child is BaseCommand baseChild && _executionContext != null)
                 {
-                    // LoopCommandの次の行から順番に設定
-                    var parentLineNumber = this.LineNumber;
-                    var childIndex = Children.ToList().IndexOf(child);
-                    child.LineNumber = parentLineNumber + childIndex + 1;
-                    
-                    _logger?.LogDebug("[LoopCommand.ExecuteChildrenAsync] 子コマンドLineNumber設定: {ChildType} -> Line {LineNumber}", 
-                        child.GetType().Name, child.LineNumber);
+                    baseChild.SetExecutionContext(_executionContext);
                 }
+
+                // 子コマンドのLineNumberは既に設定済みなので、ここでは変更しない
+                // （MacroFactoryでペア再構築時に正しく設定されている）
+                _logger?.LogDebug("[LoopCommand.ExecuteChildrenAsync] 子コマンド実行: {ChildType} (Line: {LineNumber})", 
+                    child.GetType().Name, child.LineNumber);
 
                 try
                 {
@@ -1020,6 +1133,40 @@ namespace AutoTool.Command.Class
         }
 
         protected abstract Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken);
+
+        /// <summary>
+        /// If文用の子コマンド実行（LineNumber保持）
+        /// </summary>
+        protected new async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
+        {
+            foreach (var child in Children)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // 実行コンテキストを設定
+                if (child is BaseCommand baseChild && _executionContext != null)
+                {
+                    baseChild.SetExecutionContext(_executionContext);
+                }
+
+                // 子コマンドのLineNumberは既に設定済み
+                _logger?.LogDebug("[IfCommand.ExecuteChildrenAsync] 子コマンド実行: {ChildType} (Line: {LineNumber})", 
+                    child.GetType().Name, child.LineNumber);
+
+                try
+                {
+                    var result = await child.Execute(cancellationToken);
+                    if (!result)
+                        return false;
+                }
+                catch (LoopBreakException)
+                {
+                    // LoopBreakExceptionは上位のLoopCommandに伝播
+                    throw;
+                }
+            }
+            return true;
+        }
     }
 
     /// <summary>
@@ -1056,8 +1203,12 @@ namespace AutoTool.Command.Class
             var settings = Settings;
             if (settings == null) return false;
 
+            // 相対パスを解決して実際の検索に使用
+            var resolvedImagePath = ResolvePath(settings.ImagePath);
+            _logger?.LogDebug("[EvaluateConditionAsync] IfImageExist 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", settings.ImagePath, resolvedImagePath);
+
             var point = await ImageSearchHelper.SearchImage(
-                settings.ImagePath, cancellationToken, settings.Threshold,
+                resolvedImagePath, cancellationToken, settings.Threshold,
                 settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
 
             if (point != null)
@@ -1105,8 +1256,12 @@ namespace AutoTool.Command.Class
             var settings = Settings;
             if (settings == null) return false;
 
+            // 相対パスを解決して実際の検索に使用
+            var resolvedImagePath = ResolvePath(settings.ImagePath);
+            _logger?.LogDebug("[EvaluateConditionAsync] IfImageNotExist 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", settings.ImagePath, resolvedImagePath);
+
             var point = await ImageSearchHelper.SearchImage(
-                settings.ImagePath, cancellationToken, settings.Threshold,
+                resolvedImagePath, cancellationToken, settings.Threshold,
                 settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
 
             if (point == null)
@@ -1115,7 +1270,7 @@ namespace AutoTool.Command.Class
                 return true;
             }
 
-            LogMessage($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+            LogMessage($"画像が見つかりしました。({point.Value.X}, {point.Value.Y})");
             return false;
         }
     }
@@ -1152,7 +1307,11 @@ namespace AutoTool.Command.Class
                 throw new Exception("If内に要素がありません。");
             }
 
-            YoloWin.Init(settings.ModelPath, 640, true);
+            // 相対パスを解決して実際のモデル読み込みに使用
+            var resolvedModelPath = ResolvePath(settings.ModelPath);
+            _logger?.LogDebug("[EvaluateConditionAsync] IfImageExistAI 解決されたModelPath: {OriginalPath} -> {ResolvedPath}", settings.ModelPath, resolvedModelPath);
+
+            YoloWin.Init(resolvedModelPath, 640, true);
 
             // AI検出は即座に実行し、ループやタイムアウトは行わない
             var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
@@ -1205,7 +1364,11 @@ namespace AutoTool.Command.Class
                 throw new Exception("If内に要素がありません。");
             }
 
-            YoloWin.Init(settings.ModelPath, 640, true);
+            // 相対パスを解決して実際のモデル読み込みに使用
+            var resolvedModelPath = ResolvePath(settings.ModelPath);
+            _logger?.LogDebug("[EvaluateConditionAsync] IfImageNotExistAI 解決されたModelPath: {OriginalPath} -> {ResolvedPath}", settings.ModelPath, resolvedModelPath);
+
+            YoloWin.Init(resolvedModelPath, 640, true);
 
             // AI検出は即座に実行し、ループやタイムアウトは行わない
             var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
@@ -1370,11 +1533,21 @@ namespace AutoTool.Command.Class
 
             try
             {
+                // 相対パスを解決して実際の実行に使用
+                var resolvedProgramPath = ResolvePath(settings.ProgramPath);
+                var resolvedWorkingDirectory = !string.IsNullOrEmpty(settings.WorkingDirectory) ? ResolvePath(settings.WorkingDirectory) : string.Empty;
+                
+                _logger?.LogDebug("[DoExecuteAsync] Execute 解決されたProgramPath: {OriginalPath} -> {ResolvedPath}", settings.ProgramPath, resolvedProgramPath);
+                if (!string.IsNullOrEmpty(settings.WorkingDirectory))
+                {
+                    _logger?.LogDebug("[DoExecuteAsync] Execute 解決されたWorkingDirectory: {OriginalPath} -> {ResolvedPath}", settings.WorkingDirectory, resolvedWorkingDirectory);
+                }
+
                 var startInfo = new ProcessStartInfo
                 {
-                    FileName = settings.ProgramPath,
+                    FileName = resolvedProgramPath,
                     Arguments = settings.Arguments,
-                    WorkingDirectory = settings.WorkingDirectory,
+                    WorkingDirectory = resolvedWorkingDirectory,
                     UseShellExecute = true,
                 };
                 await Task.Run(() =>
@@ -1441,7 +1614,11 @@ namespace AutoTool.Command.Class
             var settings = Settings;
             if (settings == null) return false;
 
-            YoloWin.Init(settings.ModelPath, 640, true);
+            // 相対パスを解決して実際のモデル読み込みに使用
+            var resolvedModelPath = ResolvePath(settings.ModelPath);
+            _logger?.LogDebug("[DoExecuteAsync] SetVariableAI 解決されたModelPath: {OriginalPath} -> {ResolvedPath}", settings.ModelPath, resolvedModelPath);
+
+            YoloWin.Init(resolvedModelPath, 640, true);
 
             var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
 
@@ -1502,7 +1679,9 @@ namespace AutoTool.Command.Class
             {
                 var dir = string.IsNullOrWhiteSpace(settings.SaveDirectory)
                     ? Path.Combine(Environment.CurrentDirectory, "Screenshots")
-                    : settings.SaveDirectory;
+                    : ResolvePath(settings.SaveDirectory); // 相対パスを解決
+
+                _logger?.LogDebug("[DoExecuteAsync] Screenshot 解決された保存ディレクトリ: {OriginalPath} -> {ResolvedPath}", settings.SaveDirectory ?? "(empty)", dir);
 
                 if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
@@ -1565,7 +1744,11 @@ namespace AutoTool.Command.Class
             var settings = Settings;
             if (settings == null) return false;
 
-            YoloWin.Init(settings.ModelPath, 640, true);
+            // 相対パスを解決して実際のモデル読み込みに使用
+            var resolvedModelPath = ResolvePath(settings.ModelPath);
+            _logger?.LogDebug("[DoExecuteAsync] ClickImageAI 解決されたModelPath: {OriginalPath} -> {ResolvedPath}", settings.ModelPath, resolvedModelPath);
+
+            YoloWin.Init(resolvedModelPath, 640, true);
 
             var det = YoloWin.DetectFromWindowTitle(settings.WindowTitle, (float)settings.ConfThreshold, (float)settings.IoUThreshold).Detections;
             var targetDetections = det.Where(d => d.ClassId == settings.ClassID).ToList();

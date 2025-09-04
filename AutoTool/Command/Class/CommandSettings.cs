@@ -26,7 +26,7 @@ namespace AutoTool.Command.Class
     {
         public string ImagePath { get; set; } = string.Empty;
         public double Threshold { get; set; } = 0.8;
-        public Color? SearchColor { get; set; } = null;
+        public System.Windows.Media.Color? SearchColor { get; set; } = null;
 
         public virtual void Validate()
         {

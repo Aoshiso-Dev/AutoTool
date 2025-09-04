@@ -63,7 +63,7 @@ namespace AutoTool.Model
         {
             if (string.IsNullOrEmpty(filePath))
             {
-                var dialog = new OpenFileDialog()
+                var dialog = new Microsoft.Win32.OpenFileDialog()
                 {
                     Title = _fileTypeInfo.Title,
                     Filter = _fileTypeInfo.Filter,
@@ -102,7 +102,7 @@ namespace AutoTool.Model
 
         public void SaveFileAs()
         {
-            var dialog = new SaveFileDialog()
+            var dialog = new Microsoft.Win32.SaveFileDialog()
             {
                 Title = _fileTypeInfo.Title,
                 Filter = _fileTypeInfo.Filter,

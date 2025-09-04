@@ -33,7 +33,7 @@ namespace AutoTool.Logging
     {
         private readonly string _logDirectory;
         private readonly string _filePrefix;
-        private readonly Timer _flushTimer;
+        private readonly System.Threading.Timer _flushTimer;
         private readonly object _sync = new();
         private StreamWriter? _writer;
         private DateTime _currentDate = DateTime.Today;
@@ -50,7 +50,7 @@ namespace AutoTool.Logging
             _options = options ?? new SimpleFileLoggerOptions();
             Directory.CreateDirectory(_logDirectory);
             OpenWriter(forceSequenceReset: true);
-            _flushTimer = new Timer(_ => Flush(false), null, _options.FlushIntervalMs, _options.FlushIntervalMs);
+            _flushTimer = new System.Threading.Timer(_ => Flush(false), null, _options.FlushIntervalMs, _options.FlushIntervalMs);
         }
 
         private void OpenWriter(bool forceSequenceReset = false)

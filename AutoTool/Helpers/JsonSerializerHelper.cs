@@ -8,11 +8,13 @@ using Microsoft.Extensions.Logging;
 using AutoTool.Model.List.Interface;
 using AutoTool.Model.List.Type;
 using AutoTool.Model.List.Class;
+using System.Windows.Input;
+using System.Linq; // 追加
 
 namespace AutoTool.Helpers
 {
     /// <summary>
-    /// JSON シリアライゼーション ヘルパー（DI対応）
+    /// JSON シリアライザー ヘルパー（DI対応）
     /// </summary>
     public static class JsonSerializerHelper
     {
@@ -31,8 +33,8 @@ namespace AutoTool.Helpers
         {
             WriteIndented = true,
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            PropertyNamingPolicy = null, // CamelCaseを無効化して元の名前を保持
-            PropertyNameCaseInsensitive = true, // 大文字小文字を区別しない
+            PropertyNamingPolicy = null,
+            PropertyNameCaseInsensitive = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             // 参照保持を有効化
             ReferenceHandler = ReferenceHandler.Preserve,
@@ -41,6 +43,7 @@ namespace AutoTool.Helpers
             ReadCommentHandling = JsonCommentHandling.Skip, // コメントをスキップ
             Converters =
             {
+                new MouseButtonEnumConverter(), // 追加: マウスボタン用カスタムコンバーター
                 new CommandListItemConverter(),
                 new CommandListItemListConverter(),
                 new CommandListItemObservableCollectionConverter(),
@@ -61,6 +64,7 @@ namespace AutoTool.Helpers
             ReadCommentHandling = JsonCommentHandling.Skip, // コメントをスキップ
             Converters =
             {
+                new MouseButtonEnumConverter(), // 追加: マウスボタン用カスタムコンバーター
                 new CommandListItemConverter(),
                 new CommandListItemListConverter(),
                 new CommandListItemObservableCollectionConverter(),
@@ -68,31 +72,37 @@ namespace AutoTool.Helpers
             }
         };
 
-        /// <summary>
-        /// ログ出力ヘルパー
-        /// </summary>
+        // ===== ログヘルパ（string.Format を使わず例外を防ぐ） =====
+        private static string CombineMessage(string message, object[] args)
+        {
+            if (args == null || args.Length == 0) return message;
+            // ストラクチャードログの {Name} プレースホルダーはそのまま残し、末尾に値を列挙
+            var argList = string.Join(", ", args.Select((a, i) => $"arg{i}={a}"));
+            return $"{message} | {argList}"; // 安全な連結
+        }
+
         private static void LogDebug(string message, params object[] args)
         {
             _logger?.LogDebug(message, args);
-            System.Diagnostics.Debug.WriteLine($"[JsonSerializerHelper] {string.Format(message, args)}");
+            System.Diagnostics.Debug.WriteLine("[JsonSerializerHelper] " + CombineMessage(message, args));
         }
 
         private static void LogInformation(string message, params object[] args)
         {
             _logger?.LogInformation(message, args);
-            System.Diagnostics.Debug.WriteLine($"[JsonSerializerHelper] {string.Format(message, args)}");
+            System.Diagnostics.Debug.WriteLine("[JsonSerializerHelper] " + CombineMessage(message, args));
         }
 
         private static void LogWarning(string message, params object[] args)
         {
             _logger?.LogWarning(message, args);
-            System.Diagnostics.Debug.WriteLine($"[JsonSerializerHelper] WARNING: {string.Format(message, args)}");
+            System.Diagnostics.Debug.WriteLine("[JsonSerializerHelper] WARNING: " + CombineMessage(message, args));
         }
 
         private static void LogError(Exception? ex, string message, params object[] args)
         {
             _logger?.LogError(ex, message, args);
-            System.Diagnostics.Debug.WriteLine($"[JsonSerializerHelper] ERROR: {string.Format(message, args)} - {ex?.Message}");
+            System.Diagnostics.Debug.WriteLine("[JsonSerializerHelper] ERROR: " + CombineMessage(message, args) + (ex != null ? $" - {ex.Message}" : string.Empty));
         }
 
         /// <summary>
@@ -124,7 +134,7 @@ namespace AutoTool.Helpers
             catch (Exception ex)
             {
                 LogError(ex, "ファイル保存失敗: {FilePath}", filePath);
-                throw;
+                throw new InvalidOperationException($"ファイル保存に失敗しました: {ex.Message}", ex);
             }
         }
 
@@ -147,7 +157,6 @@ namespace AutoTool.Helpers
                 LogDebug("ファイル読み込み完了: 文字数={Length}", json.Length);
                 LogDebug("JSON先頭200文字: {JsonStart}", json.Substring(0, Math.Min(200, json.Length)));
 
-                // JSONの構造を判定
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
@@ -155,7 +164,6 @@ namespace AutoTool.Helpers
 
                 try
                 {
-                    // 1. 参照保持形式かチェック ($id, $values プロパティの存在)
                     if (root.ValueKind == JsonValueKind.Object && 
                         root.TryGetProperty("$id", out var idProp) && 
                         root.TryGetProperty("$values", out var valuesProp))
@@ -169,7 +177,6 @@ namespace AutoTool.Helpers
                         return result;
                     }
                     
-                    // 2. 通常の配列形式
                     if (root.ValueKind == JsonValueKind.Array)
                     {
                         LogInformation("通常の配列形式のJSONを検出: 要素数={Count}", root.GetArrayLength());
@@ -178,7 +185,6 @@ namespace AutoTool.Helpers
                         return result;
                     }
 
-                    // 3. 通常のオブジェクト形式
                     LogInformation("通常のオブジェクト形式のJSONを検出");
                     var objResult = JsonSerializer.Deserialize<T>(json, OptionsWithoutReferences);
                     LogInformation("通常のオブジェクト形式でのデシリアライズ成功");
@@ -187,8 +193,6 @@ namespace AutoTool.Helpers
                 catch (JsonException ex)
                 {
                     LogError(ex, "JSON形式自動判定デシリアライズ失敗");
-                    
-                    // 最後の手段：参照保持なしで再試行
                     try
                     {
                         LogDebug("フォールバック: 参照保持なしで再試行");
@@ -428,7 +432,92 @@ namespace AutoTool.Helpers
         public override void Write(Utf8JsonWriter writer, ICommandListItem value, JsonSerializerOptions options)
         {
             System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] Write: {value.ItemType} ({value.GetType().Name})");
-            JsonSerializer.Serialize(writer, value, value.GetType(), options);
+            
+            // 循環参照対策：シンプルなプロパティのみシリアライズする一時オブジェクトを作成
+            try
+            {
+                // 循環参照の原因となりやすいPairプロパティなどを除外したシリアライズ
+                var safeOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = options.WriteIndented,
+                    Encoder = options.Encoder,
+                    PropertyNamingPolicy = options.PropertyNamingPolicy,
+                    PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                    MaxDepth = 32, // 深度制限を追加
+                    // ReferenceHandlerは使わず、循環参照を避ける
+                    NumberHandling = options.NumberHandling,
+                    AllowTrailingCommas = options.AllowTrailingCommas,
+                    ReadCommentHandling = options.ReadCommentHandling,
+                    Converters = 
+                    {
+                        new MouseButtonEnumConverter(),
+                        new JsonStringEnumConverter()
+                        // CommandListItemConverterは除外して循環を避ける
+                    }
+                };
+
+                JsonSerializer.Serialize(writer, value, value.GetType(), safeOptions);
+            }
+            catch (JsonException ex) when (ex.Message.Contains("cycle"))
+            {
+                System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] 循環参照検出、フォールバック実行: {ex.Message}");
+                
+                // フォールバック：基本プロパティのみの辞書を作成してシリアライズ
+                var safeData = new Dictionary<string, object?>
+                {
+                    ["ItemType"] = value.ItemType,
+                    ["IsEnable"] = value.IsEnable,
+                    ["LineNumber"] = value.LineNumber,
+                    ["Comment"] = value.Comment,
+                    ["Description"] = value.Description,
+                    ["IsRunning"] = value.IsRunning,
+                    ["IsSelected"] = value.IsSelected,
+                    ["NestLevel"] = value.NestLevel,
+                    ["IsInLoop"] = value.IsInLoop,
+                    ["IsInIf"] = value.IsInIf,
+                    ["Progress"] = value.Progress
+                };
+
+                // 型固有プロパティを安全に追加
+                var properties = value.GetType().GetProperties();
+                foreach (var prop in properties)
+                {
+                    if (prop.Name == "Pair") continue; // 循環参照の原因となるPairは除外
+                    if (safeData.ContainsKey(prop.Name)) continue; // 既に追加済み
+                    
+                    try
+                    {
+                        var propValue = prop.GetValue(value);
+                        // 複雑なオブジェクトは文字列化
+                        if (propValue != null && !IsSimpleType(prop.PropertyType))
+                        {
+                            safeData[prop.Name] = propValue.ToString();
+                        }
+                        else
+                        {
+                            safeData[prop.Name] = propValue;
+                        }
+                    }
+                    catch
+                    {
+                        // プロパティ取得に失敗した場合はスキップ
+                    }
+                }
+
+                JsonSerializer.Serialize(writer, safeData);
+            }
+        }
+
+        private static bool IsSimpleType(Type type)
+        {
+            return type.IsPrimitive || 
+                   type == typeof(string) || 
+                   type == typeof(DateTime) || 
+                   type == typeof(decimal) || 
+                   type == typeof(Guid) ||
+                   type.IsEnum ||
+                   (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) && IsSimpleType(type.GetGenericArguments()[0]));
         }
 
         private static Type? GetItemTypeFromString(string itemType)
@@ -597,6 +686,43 @@ namespace AutoTool.Helpers
             var listConverter = new CommandListItemListConverter();
             listConverter.Write(writer, value.ToList(), options);
             System.Diagnostics.Debug.WriteLine("[CommandListItemObservableCollectionConverter] Write完了");
+        }
+    }
+
+    /// <summary>
+    /// MouseButton を数値/文字列両対応で復元し、保存時は文字列で出力するコンバーター
+    /// </summary>
+    public class MouseButtonEnumConverter : JsonConverter<MouseButton>
+    {
+        public override MouseButton Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            try
+            {
+                switch (reader.TokenType)
+                {
+                    case JsonTokenType.String:
+                        var s = reader.GetString();
+                        if (string.IsNullOrWhiteSpace(s)) return MouseButton.Left;
+                        if (Enum.TryParse<MouseButton>(s, true, out var mbFromString)) return mbFromString;
+                        if (int.TryParse(s, out var intFromString) && Enum.IsDefined(typeof(MouseButton), intFromString))
+                            return (MouseButton)intFromString;
+                        break;
+                    case JsonTokenType.Number:
+                        if (reader.TryGetInt32(out var num) && Enum.IsDefined(typeof(MouseButton), num))
+                            return (MouseButton)num;
+                        break;
+                }
+            }
+            catch
+            {
+                // 無視して既定へ
+            }
+            return MouseButton.Left; // フォールバック
+        }
+
+        public override void Write(Utf8JsonWriter writer, MouseButton value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
         }
     }
 }

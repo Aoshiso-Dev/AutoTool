@@ -36,7 +36,7 @@ namespace AutoTool.Services.Performance
     public class PerformanceMonitoringService : ObservableObject, IPerformanceMonitoringService
     {
         private readonly ILogger<PerformanceMonitoringService> _logger;
-        private readonly Timer _monitoringTimer;
+        private readonly System.Threading.Timer _monitoringTimer;
         private readonly Process _currentProcess;
         private readonly PerformanceCounter? _cpuCounter;
         
@@ -84,7 +84,7 @@ namespace AutoTool.Services.Performance
             try
             {
                 _cpuCounter = new PerformanceCounter("Process", "% Processor Time", _currentProcess.ProcessName, true);
-                _cpuCounter.NextValue(); // 初回呼び出し（値は無効）
+                _cpuCounter.NextValue(); // 初回は捨てる（値は無効）
             }
             catch (Exception ex)
             {
@@ -92,8 +92,8 @@ namespace AutoTool.Services.Performance
                 _cpuCounter = null;
             }
 
-            // 軽量タイマー（5秒間隔）
-            _monitoringTimer = new Timer(UpdatePerformanceMetrics, null, Timeout.Infinite, 5000);
+            // タイマー（5秒間隔）
+            _monitoringTimer = new System.Threading.Timer(UpdatePerformanceMetrics, null, Timeout.Infinite, 5000);
             
             _lastCpuTime = DateTime.UtcNow;
             _lastTotalProcessorTime = _currentProcess.TotalProcessorTime;

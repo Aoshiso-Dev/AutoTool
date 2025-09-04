@@ -11,7 +11,7 @@ namespace AutoTool.Command.Interface
     {
         string ImagePath { get; set; }
         double Threshold { get; set; }
-        Color? SearchColor { get; set; }
+        System.Windows.Media.Color? SearchColor { get; set; }
         int Timeout { get; set; }
         int Interval { get; set; }
         string WindowTitle { get; set; }
@@ -22,7 +22,7 @@ namespace AutoTool.Command.Interface
     {
         string ImagePath { get; set; }
         double Threshold { get; set; }
-        Color? SearchColor { get; set; }
+        System.Windows.Media.Color? SearchColor { get; set; }
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
     }
@@ -31,7 +31,7 @@ namespace AutoTool.Command.Interface
     {
         string ImagePath { get; set; }
         double Threshold { get; set; }
-        Color? SearchColor { get; set; }
+        System.Windows.Media.Color? SearchColor { get; set; }
         int Timeout { get; set; }
         int Interval { get; set; }
         MouseButton Button { get; set; }
@@ -84,7 +84,7 @@ namespace AutoTool.Command.Interface
     {
         string ImagePath { get; set; }
         double Threshold { get; set; }
-        Color? SearchColor { get; set; }
+        System.Windows.Media.Color? SearchColor { get; set; }
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
     }

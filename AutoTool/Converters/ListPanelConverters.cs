@@ -111,26 +111,26 @@ namespace AutoTool.Converters
                     if (item.IsRunning || isCurrentExecuting)
                     {
                         System.Diagnostics.Debug.WriteLine($"  -> 黄色ハイライト適用: {item.ItemType}");
-                        return new SolidColorBrush(Color.FromArgb(150, 255, 255, 0)); // 半透明黄色
+                        return new SolidColorBrush(System.Windows.Media.Color.FromArgb(150, 255, 255, 0)); // 半透明黄色
                     }
                     else if (!item.IsEnable)
                     {
                         System.Diagnostics.Debug.WriteLine($"  -> グレーアウト適用: {item.ItemType}");
-                        return new SolidColorBrush(Color.FromArgb(80, 128, 128, 128));
+                        return new SolidColorBrush(System.Windows.Media.Color.FromArgb(80, 128, 128, 128));
                     }
                     
                     // ネストレベルに応じた背景色（改良版）
                     var nestBrush = item.NestLevel switch
                     {
-                        0 => Brushes.Transparent,
+                        0 => System.Windows.Media.Brushes.Transparent,
                         1 => item.IsInLoop && item.IsInIf 
-                             ? new SolidColorBrush(Color.FromArgb(40, 128, 0, 128)) // Loop + If: 紫
+                             ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 128, 0, 128)) // Loop + If: 紫
                              : item.IsInLoop 
-                               ? new SolidColorBrush(Color.FromArgb(25, 0, 150, 255))   // Loop: 青
-                               : new SolidColorBrush(Color.FromArgb(25, 0, 200, 100)),  // If: 緑
-                        2 => new SolidColorBrush(Color.FromArgb(35, 255, 140, 0)),     // オレンジ
-                        3 => new SolidColorBrush(Color.FromArgb(45, 200, 0, 200)),     // マゼンタ
-                        _ => new SolidColorBrush(Color.FromArgb(55, 100, 100, 100))    // グレー
+                               ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(25, 0, 150, 255))   // Loop: 青
+                               : new SolidColorBrush(System.Windows.Media.Color.FromArgb(25, 0, 200, 100)),  // If: 緑
+                        2 => new SolidColorBrush(System.Windows.Media.Color.FromArgb(35, 255, 140, 0)),     // オレンジ
+                        3 => new SolidColorBrush(System.Windows.Media.Color.FromArgb(45, 200, 0, 200)),     // マゼンタ
+                        _ => new SolidColorBrush(System.Windows.Media.Color.FromArgb(55, 100, 100, 100))    // グレー
                     };
                     
                     System.Diagnostics.Debug.WriteLine($"  -> ネストレベル背景適用: {item.ItemType}, Level={item.NestLevel}, InLoop={item.IsInLoop}, InIf={item.IsInIf}");
@@ -138,12 +138,12 @@ namespace AutoTool.Converters
                 }
                 
                 System.Diagnostics.Debug.WriteLine("ExecutionStateToBackgroundConverter: 値が不正またはnull");
-                return Brushes.Transparent;
+                return System.Windows.Media.Brushes.Transparent;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"ExecutionStateToBackgroundConverter エラー: {ex.Message}");
-                return Brushes.Transparent;
+                return System.Windows.Media.Brushes.Transparent;
             }
         }
 

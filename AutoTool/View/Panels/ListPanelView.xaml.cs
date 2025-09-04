@@ -6,14 +6,14 @@ namespace AutoTool.View.Panels
     /// <summary>
     /// ListPanelView.xaml の相互作用ロジック（DI対応）
     /// </summary>
-    public partial class ListPanelView : UserControl
+    public partial class ListPanelView : System.Windows.Controls.UserControl
     {
         public ListPanelView()
         {
             InitializeComponent();
         }
 
-        // レガシーサポート用コンストラクタ（段階的移行のため）
+        // DIコンストラクタ（主にテストのため）
         public ListPanelView(ListPanelViewModel viewModel) : this()
         {
             DataContext = viewModel;
