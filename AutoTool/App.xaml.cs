@@ -77,6 +77,10 @@ namespace AutoTool
                 var jsonLogger = loggerFactory.CreateLogger("JsonSerializerHelper");
                 JsonSerializerHelper.SetLogger(jsonLogger);
 
+                // ViewModelLocatorを初期化（ViewのDI対応）
+                ViewModelLocator.Initialize(serviceProvider);
+                _logger.LogInformation("ViewModelLocator初期化完了");
+
                 // メインウィンドウを作成して表示
                 var mainWindowViewModel = serviceProvider.GetRequiredService<MainWindowViewModel>();
                 var mainWindow = new MainWindow

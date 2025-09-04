@@ -526,7 +526,7 @@ namespace AutoTool.Command.Class
         /// </summary>
         protected string GetVariable(string name, string defaultValue = "")
         {
-            var variableStore = GetService<IVariableStore>();
+            var variableStore = GetService<global::AutoTool.Services.IVariableStore>();
             return variableStore?.Get(name) ?? defaultValue;
         }
 
@@ -535,7 +535,7 @@ namespace AutoTool.Command.Class
         /// </summary>
         protected void SetVariable(string name, string value)
         {
-            var variableStore = GetService<IVariableStore>();
+            var variableStore = GetService<global::AutoTool.Services.IVariableStore>();
             variableStore?.Set(name, value);
         }
 
@@ -1404,14 +1404,14 @@ namespace AutoTool.Command.Class
             _variableStore = GetService<IVariableStore>();
         }
 
-        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             var settings = Settings;
-            if (settings == null) return Task.FromResult(false);
+            if (settings == null) return false;
 
             _variableStore?.Set(settings.Name, settings.Value);
             LogMessage($"変数を設定しました。{settings.Name} = \"{settings.Value}\"");
-            return Task.FromResult(true);
+            return true;
         }
     }
 
@@ -1436,10 +1436,10 @@ namespace AutoTool.Command.Class
             }
         }
 
-        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             var settings = Settings;
-            if (settings == null) return Task.FromResult(false);
+            if (settings == null) return false;
 
             YoloWin.Init(settings.ModelPath, 640, true);
 
@@ -1470,7 +1470,7 @@ namespace AutoTool.Command.Class
                 }
             }
 
-            return Task.FromResult(true);
+            return true;
         }
     }
 
@@ -1635,7 +1635,7 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// 変数ストアのインターフェース（DI対応・拡張版）
     /// </summary>
-    namespace MacroPanels.Command.Interface
+    namespace AutoTool.Command.Interface
     {
         /// <summary>
         /// 変数ストアのインターフェース

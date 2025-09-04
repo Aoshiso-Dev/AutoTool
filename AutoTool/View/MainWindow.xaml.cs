@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using AutoTool.ViewModel;
 using AutoTool.ViewModel.Panels;
+using AutoTool.Services.UI;
 
 namespace AutoTool
 {
@@ -12,7 +13,9 @@ namespace AutoTool
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly ILogger<MainWindow>? _logger;
+        private ILogger<MainWindow>? _logger;
+        private IServiceProvider? _serviceProvider;
+        private IDataContextLocator? _dataContextLocator;
 
         /// <summary>
         /// MainWindowのコンストラクタ
@@ -20,46 +23,112 @@ namespace AutoTool
         public MainWindow()
         {
             InitializeComponent();
+            
+            // Loadedイベントでワンタイムのみ初期化
+            Loaded += MainWindow_Loaded;
+        }
 
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
             try
             {
-                // App.xamlからサービスを取得してViewModelを設定
-                if (Application.Current is App app && app._host != null)
-                {
-                    // DIからMainWindowViewModelを取得
-                    var mainViewModel = app._host.Services.GetRequiredService<MainWindowViewModel>();
-                    DataContext = mainViewModel;
-
-                    // DIからListPanelViewModelを取得してListPanelViewに設定
-                    var listPanelViewModel = app._host.Services.GetRequiredService<ListPanelViewModel>();
-                    CommandListPanel.DataContext = listPanelViewModel;
-
-                    // DI関連EditPanelViewModel取得してEditPanelViewに設定
-                    var editPanelViewModel = app._host.Services.GetRequiredService<EditPanelViewModel>();
-                    EditPanelViewControl.DataContext = editPanelViewModel; // 修正: 直接EditPanelVMをバインド
-
-                    // ロガー取得
-                    _logger = app._host.Services.GetService<ILogger<MainWindow>>();
-                    
-                    _logger?.LogInformation("MainWindow DI + Messaging初期化完了");
-                }
-                else
-                {
-                    throw new InvalidOperationException("アプリケーションまたはホストサービスが利用できません。");
-                }
+                InitializeDI();
+                SetupViewModels();
+                TestVariableStore();
+                
+                _logger?.LogInformation("MainWindow DI初期化完了 - All services resolved successfully");
             }
             catch (Exception ex)
             {
-                // フォールバックとして最小限のViewModelを作成
+                _logger?.LogError(ex, "MainWindow DI初期化中にエラーが発生");
+                
                 MessageBox.Show(
-                    $"初期化中にエラーが発生しました。必要なサービスが利用できない可能性があります。\n\nエラー詳細:\n{ex.Message}",
+                    $"MainWindow初期化中にエラーが発生しました。\n\nエラー詳細:\n{ex.Message}",
                     "警告",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning
                 );
-                
-                // エラー時として null を設定
-                DataContext = null;
+            }
+        }
+
+        /// <summary>
+        /// DI初期化
+        /// </summary>
+        private void InitializeDI()
+        {
+            if (Application.Current is App app && app._host != null)
+            {
+                _serviceProvider = app._host.Services;
+                _logger = _serviceProvider.GetService<ILogger<MainWindow>>();
+                _dataContextLocator = _serviceProvider.GetService<IDataContextLocator>();
+
+                _logger?.LogDebug("MainWindow DI初期化完了");
+            }
+            else
+            {
+                throw new InvalidOperationException("DIコンテナが利用できません");
+            }
+        }
+
+        /// <summary>
+        /// ViewModelを設定
+        /// </summary>
+        private void SetupViewModels()
+        {
+            if (_serviceProvider == null) return;
+
+            try
+            {
+                // MainWindowのViewModel設定
+                var mainViewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
+                DataContext = mainViewModel;
+                _logger?.LogDebug("MainWindowViewModel設定完了");
+
+                // ListPanelのViewModel設定
+                var listPanelViewModel = _serviceProvider.GetRequiredService<ListPanelViewModel>();
+                CommandListPanel.DataContext = listPanelViewModel;
+                _logger?.LogDebug("ListPanelViewModel設定完了");
+
+                // EditPanelのViewModel設定
+                var editPanelViewModel = _serviceProvider.GetRequiredService<EditPanelViewModel>();
+                EditPanelViewControl.DataContext = editPanelViewModel;
+                _logger?.LogDebug("EditPanelViewModel設定完了");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "ViewModel設定中にエラーが発生");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// VariableStoreの動作確認
+        /// </summary>
+        private void TestVariableStore()
+        {
+            if (_serviceProvider == null) return;
+
+            try
+            {
+                var variableStore = _serviceProvider.GetService<AutoTool.Services.IVariableStore>();
+                if (variableStore == null)
+                {
+                    _logger?.LogWarning("AutoTool.Services.IVariableStore service is not registered in DI container");
+                }
+                else
+                {
+                    _logger?.LogDebug("AutoTool.Services.IVariableStore service successfully resolved from DI container");
+                    
+                    // 動作テスト
+                    variableStore.Set("TestVariable", "Hello AutoTool DI!");
+                    var testValue = variableStore.Get("TestVariable");
+                    _logger?.LogInformation("VariableStore動作テスト: TestVariable = {Value} (Count: {Count})", 
+                        testValue, variableStore.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "VariableStore動作確認中にエラーが発生");
             }
         }
 
@@ -76,9 +145,10 @@ namespace AutoTool
                     viewModel.Cleanup();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // ignore
+                _logger?.LogError(ex, "ウィンドウクローズ処理中にエラーが発生");
+                // ignore - アプリケーション終了時なのでエラーを無視
             }
         }
 

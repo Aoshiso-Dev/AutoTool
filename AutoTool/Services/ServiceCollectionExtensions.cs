@@ -40,17 +40,23 @@ namespace AutoTool.Services
             // ファイルサービス
             services.AddSingleton<IRecentFileService, RecentFileService>();
 
-            // ViewModelの登録（シングルトン）
+            // 変数ストアサービス（AutoTool版を登録）
+            services.AddSingleton<AutoTool.Services.IVariableStore, AutoTool.Services.VariableStore>();
+
+            // UI関連サービス（View-ViewModel DI対応）
+            services.AddSingleton<AutoTool.Services.UI.IDataContextLocator, AutoTool.Services.UI.DataContextLocator>();
+
+            // ViewModel的登録（シングルトン）
             services.AddSingleton<EditPanelViewModel>();
             services.AddSingleton<MainWindowViewModel>();
             services.AddSingleton<FavoritePanelViewModel>();
             services.AddSingleton<ListPanelViewModel>();
 
-            // モデルの登録
+            // モデル的登録
             services.AddTransient<CommandList>();
             services.AddTransient<BasicCommandItem>();
 
-            // JSON設定の登録
+            // JSON設定的登録
             services.AddSingleton<JsonSerializerOptions>(provider =>
             {
                 return new JsonSerializerOptions
@@ -70,6 +76,10 @@ namespace AutoTool.Services
                 var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
                 var logger = loggerFactory.CreateLogger("JsonSerializerHelper");
                 JsonSerializerHelper.SetLogger(logger);
+                
+                // CommandFactoryにもServiceProviderを設定
+                AutoTool.Command.Class.CommandFactory.SetServiceProvider(provider);
+                
                 return provider;
             });
 
