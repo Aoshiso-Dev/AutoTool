@@ -100,10 +100,10 @@ namespace AutoTool.ViewModel
         private ObservableCollection<string> _logEntries = new();
         
         [ObservableProperty]
-        private ObservableCollection<CommandTypeInfo> _itemTypes = new();
+        private ObservableCollection<CommandDisplayItem> _itemTypes = new();
         
         [ObservableProperty]
-        private CommandTypeInfo? _selectedItemType;
+        private CommandDisplayItem? _selectedItemType;
 
         // EditPanel統合プロパティ（EditPanelViewModelから転送）
         [ObservableProperty]
@@ -664,17 +664,6 @@ namespace AutoTool.ViewModel
         public bool CanStopMacro => IsRunning;
 
         /// <summary>
-        /// コマンドタイプ情報クラス
-        /// </summary>
-        public class CommandTypeInfo
-        {
-            public string TypeName { get; set; } = string.Empty;
-            public string DisplayName { get; set; } = string.Empty;
-            public string Category { get; set; } = string.Empty;
-            public Type? ItemType { get; set; }
-        }
-
-        /// <summary>
         /// DI対応コンストラクタ
         /// </summary>
         public MainWindowViewModel(
@@ -829,37 +818,25 @@ namespace AutoTool.ViewModel
                 // EditPanelViewModelのItemTypesを使用
                 if (_editPanelViewModel?.ItemTypes != null)
                 {
-                    var commandTypes = _editPanelViewModel.ItemTypes
-                        .Select(item => new CommandTypeInfo
-                        {
-                            TypeName = item.TypeName,
-                            DisplayName = item.DisplayName,
-                            Category = item.Category,
-                            ItemType = typeof(BasicCommandItem)
-                        })
-                        .ToList();
-
-                    ItemTypes = new ObservableCollection<CommandTypeInfo>(commandTypes);
+                    ItemTypes = new ObservableCollection<CommandDisplayItem>(_editPanelViewModel.ItemTypes);
                     SelectedItemType = ItemTypes.FirstOrDefault();
                     _logger.LogDebug("ItemTypes初期化完了（EditPanelから）: {Count}個", ItemTypes.Count);
                 }
                 else
                 {
-                    // フォールバック
-                    var commandTypes = new List<CommandTypeInfo>
-                    {
-                        new CommandTypeInfo { TypeName = "Wait", DisplayName = "待機", Category = "基本", ItemType = typeof(BasicCommandItem) },
-                        new CommandTypeInfo { TypeName = "Click", DisplayName = "クリック", Category = "基本", ItemType = typeof(BasicCommandItem) },
-                        new CommandTypeInfo { TypeName = "Wait_Image", DisplayName = "画像待機", Category = "画像", ItemType = typeof(BasicCommandItem) },
-                        new CommandTypeInfo { TypeName = "Click_Image", DisplayName = "画像クリック", Category = "画像", ItemType = typeof(BasicCommandItem) },
-                        new CommandTypeInfo { TypeName = "Hotkey", DisplayName = "ホットキー", Category = "入力", ItemType = typeof(BasicCommandItem) },
-                        new CommandTypeInfo { TypeName = "Loop", DisplayName = "ループ開始", Category = "制御", ItemType = typeof(BasicCommandItem) },
-                        new CommandTypeInfo { TypeName = "Loop_End", DisplayName = "ループ終了", Category = "制御", ItemType = typeof(BasicCommandItem) },
-                        new CommandTypeInfo { TypeName = "IF_ImageExist", DisplayName = "画像存在判定", Category = "条件", ItemType = typeof(BasicCommandItem) },
-                        new CommandTypeInfo { TypeName = "IF_End", DisplayName = "条件終了", Category = "条件", ItemType = typeof(BasicCommandItem) }
-                    };
+                    // フォールバック: CommandRegistryから直接取得
+                    AutoTool.Model.CommandDefinition.CommandRegistry.Initialize();
+                    
+                    var commandTypes = AutoTool.Model.CommandDefinition.CommandRegistry.GetOrderedTypeNames()
+                        .Select(typeName => new CommandDisplayItem
+                        {
+                            TypeName = typeName,
+                            DisplayName = AutoTool.Model.CommandDefinition.CommandRegistry.DisplayOrder.GetDisplayName(typeName),
+                            Category = AutoTool.Model.CommandDefinition.CommandRegistry.DisplayOrder.GetCategoryName(typeName)
+                        })
+                        .ToList();
 
-                    ItemTypes = new ObservableCollection<CommandTypeInfo>(commandTypes);
+                    ItemTypes = new ObservableCollection<CommandDisplayItem>(commandTypes);
                     SelectedItemType = ItemTypes.FirstOrDefault();
                     _logger.LogDebug("ItemTypes初期化完了（フォールバック）: {Count}個", ItemTypes.Count);
                 }
@@ -869,9 +846,9 @@ namespace AutoTool.ViewModel
                 _logger.LogError(ex, "ItemTypes初期化中にエラーが発生しました");
                 
                 // フォールバック
-                ItemTypes = new ObservableCollection<CommandTypeInfo>
+                ItemTypes = new ObservableCollection<CommandDisplayItem>
                 {
-                    new CommandTypeInfo { TypeName = "Wait", DisplayName = "待機", Category = "基本", ItemType = typeof(object) }
+                    new CommandDisplayItem { TypeName = "Wait", DisplayName = "待機", Category = "基本" }
                 };
                 SelectedItemType = ItemTypes.FirstOrDefault();
             }

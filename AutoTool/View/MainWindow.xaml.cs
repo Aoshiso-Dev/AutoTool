@@ -34,11 +34,9 @@ namespace AutoTool
                     var listPanelViewModel = app._host.Services.GetRequiredService<ListPanelViewModel>();
                     CommandListPanel.DataContext = listPanelViewModel;
 
-                    // DIからEditPanelViewModelを取得してEditPanelViewに設定
+                    // DI関連EditPanelViewModel取得してEditPanelViewに設定
                     var editPanelViewModel = app._host.Services.GetRequiredService<EditPanelViewModel>();
-                    EditPanelViewControl.DataContext = mainViewModel; // 継続: MainWindowVM経由でバインド
-                    // または直接VMを割り当てる場合は以下
-                    // EditPanelViewControl.DataContext = editPanelViewModel;
+                    EditPanelViewControl.DataContext = editPanelViewModel; // 修正: 直接EditPanelVMをバインド
 
                     // ロガー取得
                     _logger = app._host.Services.GetService<ILogger<MainWindow>>();

@@ -16,6 +16,7 @@ using System.Windows.Forms;
 using System.Windows.Media;
 using System.IO;
 using AutoTool.ViewModel.Shared;
+using System.Runtime.CompilerServices;
 
 namespace AutoTool.ViewModel.Panels
 {
@@ -665,7 +666,7 @@ namespace AutoTool.ViewModel.Panels
             return default(T)!;
         }
 
-        private void SetItemProperty(string propertyName, object? value)
+        private void SetItemProperty(string propertyName, object? value, [System.Runtime.CompilerServices.CallerMemberName] string? callerName = null)
         {
             if (Item == null || _isUpdating) return;
 
@@ -675,8 +676,8 @@ namespace AutoTool.ViewModel.Panels
                 if (property != null && property.CanWrite)
                 {
                     property.SetValue(Item, value);
-                    OnPropertyChanged();
-                    _logger.LogDebug("プロパティ更新: {Property} = {Value}", propertyName, value);
+                    OnPropertyChanged(callerName); // 呼び出し元のプロパティ名を通知
+                    _logger.LogDebug("プロパティ更新: {Property} = {Value} (Caller: {Caller})", propertyName, value, callerName);
                 }
             }
             catch (Exception ex)
@@ -692,15 +693,28 @@ namespace AutoTool.ViewModel.Panels
         [RelayCommand]
         private void BrowseImageFile()
         {
-            var openFileDialog = new OpenFileDialog
+            try
             {
-                Filter = "画像ファイル (*.jpg;*.jpeg;*.png;*.bmp)|*.jpg;*.jpeg;*.png;*.bmp|すべてのファイル (*.*)|*.*",
-                Title = "画像ファイルを選択"
-            };
+                var openFileDialog = new OpenFileDialog
+                {
+                    Filter = "画像ファイル (*.jpg;*.jpeg;*.png;*.bmp)|*.jpg;*.jpeg;*.png;*.bmp|すべてのファイル (*.*)|*.*",
+                    Title = "画像ファイルを選択"
+                };
 
-            if (openFileDialog.ShowDialog() == true)
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    _logger.LogDebug("画像ファイル選択: {FilePath}", openFileDialog.FileName);
+                    ImagePath = openFileDialog.FileName;
+                    _logger.LogDebug("ImagePath設定完了: {ImagePath}", ImagePath);
+                }
+                else
+                {
+                    _logger.LogDebug("画像ファイル選択がキャンセルされました");
+                }
+            }
+            catch (Exception ex)
             {
-                ImagePath = openFileDialog.FileName;
+                _logger.LogError(ex, "画像ファイル選択中にエラーが発生しました");
             }
         }
 
