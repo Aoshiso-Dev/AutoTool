@@ -1005,6 +1005,9 @@ namespace AutoTool.ViewModel
             OnPropertyChanged(nameof(CanRunMacro));
             OnPropertyChanged(nameof(CanStopMacro));
             
+            // RunMacroCommandのCanExecuteを更新
+            RunMacroCommand.NotifyCanExecuteChanged();
+            
             // EditPanelViewModelにも実行状態を設定
             if (_editPanelViewModel != null)
             {
@@ -1017,6 +1020,9 @@ namespace AutoTool.ViewModel
         partial void OnCommandCountChanged(int value)
         {
             UpdateProperties();
+            
+            // RunMacroCommandのCanExecuteを更新
+            RunMacroCommand.NotifyCanExecuteChanged();
         }
 
         /// <summary>
@@ -1247,6 +1253,297 @@ namespace AutoTool.ViewModel
             }
         }
 
+        [RelayCommand(CanExecute = nameof(CanExecuteRunMacro))]
+        private void RunMacro()
+        {
+            try
+            {
+                if (IsRunning)
+                {
+                    _logger.LogInformation("停止要求を送信します");
+                    
+                    // 即座にUI状態を更新して応答性を向上
+                    StatusMessage = "停止要求を送信しました";
+                    RunMacroCommand.NotifyCanExecuteChanged();
+                    
+                    // 停止処理を別タスクで実行（UIをブロックしない）
+                    _ = Task.Run(() => StopMacroInternal());
+                }
+                else
+                {
+                    _logger.LogInformation("実行要求を開始します");
+                    StatusMessage = "実行準備中...";
+                    RunMacroCommand.NotifyCanExecuteChanged();
+                    
+                    // 非同期でマクロ実行を開始（UIスレッドをブロックしない）
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await StartMacroAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "バックグラウンドマクロ実行中にエラー");
+                            await Application.Current.Dispatcher.InvokeAsync(() =>
+                            {
+                                StatusMessage = $"実行エラー: {ex.Message}";
+                                IsRunning = false;
+                                RunMacroCommand.NotifyCanExecuteChanged();
+                            });
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "RunMacroCommand 実行中にエラー");
+                Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    StatusMessage = $"実行エラー: {ex.Message}";
+                    IsRunning = false;
+                    RunMacroCommand.NotifyCanExecuteChanged();
+                });
+            }
+        }
+
+        private bool CanExecuteRunMacro()
+        {
+            // 実行中でも停止のために実行可能、実行中でない場合はコマンドがある場合のみ実行可能
+            return IsRunning || (!IsRunning && CommandCount > 0);
+        }
+
+        private void StopMacroInternal()
+        {
+            try
+            {
+                _logger.LogInformation("停止要求を受信しました");
+                
+                if (_currentCancellationTokenSource != null && !_currentCancellationTokenSource.IsCancellationRequested)
+                {
+                    // 即座にキャンセル要求
+                    _currentCancellationTokenSource.Cancel();
+                    _logger.LogInformation("キャンセル要求を送信しました");
+                    
+                    // UIスレッドで状態更新（即座に）
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        StatusMessage = "停止要求中...";
+                        // 強制的に停止状態の見た目に変更
+                        OnPropertyChanged(nameof(IsRunning));
+                        RunMacroCommand.NotifyCanExecuteChanged();
+                    });
+                    
+                    // 強制タイムアウト設定（5秒後に強制終了）
+                    Task.Run(async () =>
+                    {
+                        await Task.Delay(5000); // 5秒待機
+                        
+                        if (IsRunning)
+                        {
+                            _logger.LogWarning("マクロが5秒以内に停止しなかったため、強制終了します");
+                            await Application.Current.Dispatcher.InvokeAsync(() =>
+                            {
+                                IsRunning = false;
+                                StatusMessage = "強制停止完了";
+                                RunMacroCommand.NotifyCanExecuteChanged();
+                            });
+                            
+                            // ListPanelの状態もリセット
+                            var listPanelViewModel = _serviceProvider.GetService<ListPanelViewModel>();
+                            listPanelViewModel?.SetRunningState(false);
+                            listPanelViewModel?.CompleteProgress();
+                        }
+                    });
+                }
+                else
+                {
+                    _logger.LogWarning("キャンセル要求: 既にキャンセルされているか、トークンソースがnullです");
+                    
+                    // 状態が不整合の場合は強制リセット
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (IsRunning)
+                        {
+                            IsRunning = false;
+                            StatusMessage = "状態リセット完了";
+                            RunMacroCommand.NotifyCanExecuteChanged();
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "停止処理中にエラー");
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    StatusMessage = $"停止エラー: {ex.Message}";
+                    IsRunning = false;
+                    RunMacroCommand.NotifyCanExecuteChanged();
+                });
+            }
+        }
+
+        private void SetupRunStopMessaging()
+        {
+            _messenger.Register<RunMessage>(this, (r, m) => { _ = StartMacroAsync(); });
+            _messenger.Register<StopMessage>(this, (r, m) => { StopMacroInternal(); });
+        }
+
+        private async Task StartMacroAsync()
+        {
+            try
+            {
+                var listPanelViewModel = _serviceProvider.GetService<ListPanelViewModel>();
+                if (listPanelViewModel == null)
+                {
+                    _logger.LogError("ListPanelViewModel が解決できません。実行を中止します。");
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        StatusMessage = "実行エラー: ListPanel VM 未解決";
+                    });
+                    return;
+                }
+
+                if (IsRunning)
+                {
+                    _logger.LogWarning("既に実行中のため開始しません");
+                    return;
+                }
+                
+                if (listPanelViewModel.Items.Count == 0)
+                {
+                    _logger.LogWarning("実行対象コマンドがありません");
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        StatusMessage = "実行対象がありません";
+                    });
+                    return;
+                }
+
+                // 準備（UIスレッドで実行）
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    IsRunning = true;
+                    StatusMessage = "実行中...";
+                });
+                
+                listPanelViewModel.SetRunningState(true);
+                listPanelViewModel.InitializeProgress();
+                
+                _currentCancellationTokenSource = new CancellationTokenSource();
+                var token = _currentCancellationTokenSource.Token;
+
+                // MacroFactory にサービスを渡す
+                MacroFactory.SetServiceProvider(_serviceProvider);
+                if (_pluginService != null)
+                {
+                    MacroFactory.SetPluginService(_pluginService);
+                }
+
+                // スナップショットを作成
+                var itemsSnapshot = listPanelViewModel.Items.ToList();
+
+                try
+                {
+                    // 🔧 修正: Task.Run内でawaitを使わず、完全に別スレッドで実行
+                    var result = await Task.Run(() =>
+                    {
+                        try
+                        {
+                            var root = MacroFactory.CreateMacro(itemsSnapshot);
+                            // 同期的に実行し、内部でCancellationTokenを適切に処理
+                            return ExecuteMacroSynchronously(root, token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            _logger.LogInformation("マクロがキャンセルされました");
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "マクロ実行中にエラー");
+                            throw;
+                        }
+                    }, token).ConfigureAwait(false);
+
+                    _logger.LogInformation("マクロ実行完了: {Result}", result);
+                    
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        StatusMessage = result ? "実行完了" : "一部失敗/中断";
+                    });
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInformation("マクロがキャンセルされました");
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        StatusMessage = "実行キャンセル";
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "マクロ実行中にエラー");
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        StatusMessage = $"実行エラー: {ex.Message}";
+                    });
+                }
+                finally
+                {
+                    // 終了処理（UIスレッドで実行）
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        IsRunning = false;
+                    });
+                    
+                    listPanelViewModel.SetRunningState(false);
+                    listPanelViewModel.CompleteProgress();
+                    
+                    _currentCancellationTokenSource?.Dispose();
+                    _currentCancellationTokenSource = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "StartMacroAsync 内でエラー");
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    StatusMessage = $"実行エラー: {ex.Message}";
+                    IsRunning = false;
+                });
+            }
+        }
+
+        /// <summary>
+        /// マクロを同期的に実行（バックグラウンドスレッド用）
+        /// </summary>
+        private bool ExecuteMacroSynchronously(AutoTool.Command.Interface.ICommand root, CancellationToken cancellationToken)
+        {
+            try
+            {
+                // Task.Resultを使用して同期的に実行
+                var task = root.Execute(cancellationToken);
+                
+                // CancellationTokenを監視しながら同期待機
+                while (!task.IsCompleted)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Thread.Sleep(50); // UIの応答性を保つための短い待機
+                }
+                
+                return task.Result;
+            }
+            catch (AggregateException ex)
+            {
+                // AggregateExceptionを展開
+                if (ex.InnerException is OperationCanceledException)
+                    throw ex.InnerException;
+                throw;
+            }
+        }
+
         [RelayCommand]
         private void AddCommand()
         {
@@ -1350,136 +1647,6 @@ namespace AutoTool.ViewModel
             {
                 _logger.LogError(ex, "RedoCommand 実行中にエラー");
             }
-        }
-
-        [RelayCommand]
-        private void RunMacro()
-        {
-            try
-            {
-                if (IsRunning)
-                {
-                    _logger.LogInformation("停止要求を送信します");
-                    _messenger.Send(new StopMessage());
-                    StatusMessage = "停止要求を送信しました";
-                }
-                else
-                {
-                    _logger.LogInformation("実行要求を送信します");
-                    _messenger.Send(new RunMessage());
-                    StatusMessage = "実行要求を送信しました";
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "RunMacroCommand 実行中にエラー");
-                StatusMessage = $"実行エラー: {ex.Message}";
-            }
-        }
-
-        private async Task StartMacroAsync()
-        {
-            try
-            {
-                var listPanelViewModel = _serviceProvider.GetService<ListPanelViewModel>();
-                if (listPanelViewModel == null)
-                {
-                    _logger.LogError("ListPanelViewModel が解決できません。実行を中止します。");
-                    StatusMessage = "実行エラー: ListPanel VM 未解決";
-                    return;
-                }
-
-                if (IsRunning)
-                {
-                    _logger.LogWarning("既に実行中のため開始しません");
-                    return;
-                }
-                if (listPanelViewModel.Items.Count == 0)
-                {
-                    _logger.LogWarning("実行対象コマンドがありません");
-                    StatusMessage = "実行対象がありません";
-                    return;
-                }
-
-                // 準備
-                IsRunning = true;
-                listPanelViewModel.SetRunningState(true);
-                listPanelViewModel.InitializeProgress();
-                _currentCancellationTokenSource = new CancellationTokenSource();
-                var token = _currentCancellationTokenSource.Token;
-
-                // MacroFactory にサービスを渡す
-                MacroFactory.SetServiceProvider(_serviceProvider);
-                if (_pluginService != null)
-                {
-                    MacroFactory.SetPluginService(_pluginService);
-                }
-
-                // スナップショットを作成
-                var itemsSnapshot = listPanelViewModel.Items.ToList();
-
-                await Task.Run(async () =>
-                {
-                    try
-                    {
-                        // マクロを生成して実行
-                        var root = MacroFactory.CreateMacro(itemsSnapshot);
-                        var result = await root.Execute(token);
-                        _logger.LogInformation("マクロ実行完了: {Result}", result);
-                        StatusMessage = result ? "実行完了" : "一部失敗/中断";
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        _logger.LogInformation("マクロがキャンセルされました");
-                        StatusMessage = "実行キャンセル";
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "マクロ実行中にエラー");
-                        StatusMessage = $"実行エラー: {ex.Message}";
-                    }
-                    finally
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            listPanelViewModel.SetRunningState(false);
-                            listPanelViewModel.CompleteProgress();
-                            IsRunning = false;
-                            _currentCancellationTokenSource?.Dispose();
-                            _currentCancellationTokenSource = null;
-                        });
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "StartMacroAsync 内でエラー");
-                StatusMessage = $"実行エラー: {ex.Message}";
-                IsRunning = false;
-            }
-        }
-
-        private void StopMacroInternal()
-        {
-            try
-            {
-                if (_currentCancellationTokenSource != null && ! _currentCancellationTokenSource.IsCancellationRequested)
-                {
-                    _currentCancellationTokenSource.Cancel();
-                    _logger.LogInformation("キャンセル要求を送信しました");
-                    StatusMessage = "停止要求中...";
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "停止処理中にエラー");
-            }
-        }
-
-        private void SetupRunStopMessaging()
-        {
-            _messenger.Register<RunMessage>(this, (r, m) => { _ = StartMacroAsync(); });
-            _messenger.Register<StopMessage>(this, (r, m) => { StopMacroInternal(); });
         }
     }
 }

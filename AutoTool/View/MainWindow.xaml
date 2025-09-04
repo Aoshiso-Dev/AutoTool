@@ -103,18 +103,22 @@
 
         <!-- Toolbar with integrated button panel -->
         <ToolBarTray Grid.Row="1">
-            <ToolBar IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
-                <!-- File operations -->
-                <Button Content="開く" Command="{Binding OpenFileCommand}" ToolTip="ファイルを開く (Ctrl+O)" />
-                <Button Content="保存" Command="{Binding SaveFileCommand}" ToolTip="ファイルを保存 (Ctrl+S)" />
+            <ToolBar>
+                <!-- File operations - disabled during execution -->
+                <Button Content="開く" Command="{Binding OpenFileCommand}" ToolTip="ファイルを開く (Ctrl+O)" 
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" />
+                <Button Content="保存" Command="{Binding SaveFileCommand}" ToolTip="ファイルを保存 (Ctrl+S)" 
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" />
                 <Separator />
                 
-                <!-- Undo/Redo -->
-                <Button Content="元に戻す" Command="{Binding UndoCommand}" ToolTip="元に戻す (Ctrl+Z)"/>
-                <Button Content="やり直し" Command="{Binding RedoCommand}" ToolTip="やり直し (Ctrl+Y)"/>
+                <!-- Undo/Redo - disabled during execution -->
+                <Button Content="元に戻す" Command="{Binding UndoCommand}" ToolTip="元に戻す (Ctrl+Z)"
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                <Button Content="やり直し" Command="{Binding RedoCommand}" ToolTip="やり直し (Ctrl+Y)"
+                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
                 <Separator />
                 
-                <!-- Execution control -->
+                <!-- Execution control - always enabled -->
                 <Button Command="{Binding RunMacroCommand}" Width="100" Margin="2" Foreground="White">
                     <Button.Style>
                         <Style TargetType="Button">
@@ -131,7 +135,7 @@
                 </Button>
                 <Separator />
                 
-                <!-- List operations -->
+                <!-- List operations - disabled during execution -->
                 <ComboBox ItemsSource="{Binding ItemTypes}" 
                           SelectedItem="{Binding SelectedItemType}" 
                           DisplayMemberPath="DisplayName"
@@ -156,7 +160,7 @@
                         Width="50" Height="Auto" Margin="2"/>
                 <Separator />
                 
-                <!-- Debug test buttons -->
+                <!-- Debug test buttons - disabled during execution -->
                 <Button Content="TEST" Command="{Binding AddTestCommandCommand}" 
                         IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
                         Width="50" Height="Auto" Margin="2" 
