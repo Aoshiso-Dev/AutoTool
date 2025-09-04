@@ -64,9 +64,10 @@ namespace AutoTool.Model.MacroFactory
                 pairFixSw.Stop();
                 _logger?.LogDebug("[MacroFactory:{Session}] Pair rebuild elapsed={Ms}ms", sessionId, pairFixSw.ElapsedMilliseconds);
 
+                // ルートコマンドのLineNumberを適切に設定（マクロ全体のエントリポイントとして0を使用）
                 var root = new LoopCommand(null, new LoopCommandSettings() { LoopCount = 1 }, _serviceProvider)
                 {
-                    LineNumber = 0
+                    LineNumber = 0 // ルートコマンドは0に設定
                 };
 
                 var childSw = Stopwatch.StartNew();
@@ -74,7 +75,12 @@ namespace AutoTool.Model.MacroFactory
                 foreach (var child in childCommands) root.AddChild(child);
                 childSw.Stop();
                 swTotal.Stop();
+                
                 _logger?.LogDebug("[MacroFactory:{Session}] CreateMacro complete Children={ChildCount} TotalElapsed={TotalMs}ms BuildElapsed={BuildMs}ms", sessionId, root.Children.Count(), swTotal.ElapsedMilliseconds, childSw.ElapsedMilliseconds);
+                
+                // デバッグ: 作成されたコマンドのLineNumberを検証
+                ValidateCommandLineNumbers(root, sessionId);
+                
                 return root;
             }
             catch (Exception ex)
@@ -82,6 +88,48 @@ namespace AutoTool.Model.MacroFactory
                 swTotal.Stop();
                 _logger?.LogError(ex, "[MacroFactory:{Session}] CreateMacro failed after {Ms}ms", sessionId, swTotal.ElapsedMilliseconds);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// 作成されたコマンドのLineNumberを検証（デバッグ用）
+        /// </summary>
+        private static void ValidateCommandLineNumbers(AutoTool.Command.Interface.ICommand root, int sessionId)
+        {
+            try
+            {
+                var commands = new List<AutoTool.Command.Interface.ICommand>();
+                CollectAllCommands(root, commands);
+                
+                var invalidCommands = commands.Where(c => c.LineNumber <= 0 && c != root).ToList();
+                if (invalidCommands.Count > 0)
+                {
+                    _logger?.LogWarning("[MacroFactory:{Session}] LineNumber=0のコマンドが{Count}個見つかりました:", sessionId, invalidCommands.Count);
+                    foreach (var cmd in invalidCommands.Take(5)) // 最初の5個まで表示
+                    {
+                        _logger?.LogWarning("[MacroFactory:{Session}]   {Type} (Line: {Line})", sessionId, cmd.GetType().Name, cmd.LineNumber);
+                    }
+                }
+                else
+                {
+                    _logger?.LogDebug("[MacroFactory:{Session}] 全コマンドのLineNumber検証完了: {Total}個", sessionId, commands.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "[MacroFactory:{Session}] LineNumber検証中にエラー", sessionId);
+            }
+        }
+
+        /// <summary>
+        /// すべてのコマンドを再帰的に収集
+        /// </summary>
+        private static void CollectAllCommands(AutoTool.Command.Interface.ICommand command, List<AutoTool.Command.Interface.ICommand> commands)
+        {
+            commands.Add(command);
+            foreach (var child in command.Children)
+            {
+                CollectAllCommands(child, commands);
             }
         }
 
@@ -140,7 +188,7 @@ namespace AutoTool.Model.MacroFactory
         {
             if (depth > MaxRecursionDepth)
             {
-                throw new InvalidOperationException($"ネストが深すぎます (>{MaxRecursionDepth}) Line={parent.LineNumber}");
+                throw new InvalidOperationException($"ネストレベルが過剰 (>{MaxRecursionDepth}) Line={parent.LineNumber}");
             }
             var commands = new List<AutoTool.Command.Interface.ICommand>();
             var swPerItem = new Stopwatch();
@@ -188,39 +236,40 @@ namespace AutoTool.Model.MacroFactory
                         var pluginCommand = _pluginService.CreatePluginCommand(pluginId, commandId, parent, _serviceProvider);
                         if (pluginCommand is AutoTool.Command.Interface.ICommand autoToolCommand)
                         {
-                            _logger?.LogDebug("[MacroFactory:{Session}] プラグインコマンド作成: {PluginId}.{CommandId} line={Line}", sessionId, pluginId, commandId, listItem.LineNumber);
+                            autoToolCommand.LineNumber = listItem.LineNumber; // LineNumber設定
+                            _logger?.LogDebug("[MacroFactory:{Session}] プラグインコマンド生成: {PluginId}.{CommandId} line={Line}", sessionId, pluginId, commandId, listItem.LineNumber);
                             return autoToolCommand;
                         }
                         else
                         {
-                            _logger?.LogWarning("[MacroFactory:{Session}] プラグインコマンド未解決: {PluginId}.{CommandId} line={Line}", sessionId, pluginId, commandId, listItem.LineNumber);
+                            _logger?.LogWarning("[MacroFactory:{Session}] プラグインコマンド生成失敗: {PluginId}.{CommandId} line={Line}", sessionId, pluginId, commandId, listItem.LineNumber);
                         }
                     }
                 }
                 switch (listItem)
                 {
                     case WaitImageItem waitImageItem:
-                        command = new WaitImageCommand(parent, waitImageItem, _serviceProvider);
+                        command = new WaitImageCommand(parent, waitImageItem, _serviceProvider) { LineNumber = waitImageItem.LineNumber };
                         break;
                     case ClickImageItem clickImageItem:
-                        command = new ClickImageCommand(parent, clickImageItem, _serviceProvider);
+                        command = new ClickImageCommand(parent, clickImageItem, _serviceProvider) { LineNumber = clickImageItem.LineNumber };
                         break;
                     case ClickImageAIItem clickImageAIItem:
-                        command = new ClickImageAICommand(parent, clickImageAIItem, _serviceProvider);
+                        command = new ClickImageAICommand(parent, clickImageAIItem, _serviceProvider) { LineNumber = clickImageAIItem.LineNumber };
                         break;
                     case HotkeyItem hotkeyItem:
-                        command = new HotkeyCommand(parent, hotkeyItem, _serviceProvider);
+                        command = new HotkeyCommand(parent, hotkeyItem, _serviceProvider) { LineNumber = hotkeyItem.LineNumber };
                         break;
                     case ClickItem clickItem:
-                        command = new ClickCommand(parent, clickItem, _serviceProvider);
+                        command = new ClickCommand(parent, clickItem, _serviceProvider) { LineNumber = clickItem.LineNumber };
                         break;
                     case WaitItem waitItem:
-                        command = new WaitCommand(parent, waitItem, _serviceProvider);
+                        command = new WaitCommand(parent, waitItem, _serviceProvider) { LineNumber = waitItem.LineNumber };
                         break;
                     case LoopItem loopItem:
                         {
                             var loopCommand = new LoopCommand(parent, loopItem, _serviceProvider) { LineNumber = loopItem.LineNumber };
-                            if (loopItem.Pair == null) throw new InvalidOperationException($"Loop (行 {loopItem.LineNumber}) に対応するEndLoopがありません");
+                            if (loopItem.Pair == null) throw new InvalidOperationException($"Loop (行 {loopItem.LineNumber}) に対応するEndLoopが見つかりません");
                             var childItems = GetChildrenListItems(listItem, listItems);
                             if (childItems.Count == 0) throw new InvalidOperationException($"Loop (行 {loopItem.LineNumber}) 内にコマンドがありません");
                             var childCommands = ListItemToCommand(loopCommand, childItems, depth + 1, sessionId);
@@ -230,14 +279,15 @@ namespace AutoTool.Model.MacroFactory
                         }
                         break;
                     case LoopBreakItem loopBreakItem:
-                        command = new LoopBreakCommand(parent, loopBreakItem, _serviceProvider);
+                        command = new LoopBreakCommand(parent, loopBreakItem, _serviceProvider) { LineNumber = loopBreakItem.LineNumber };
                         break;
                     case LoopEndItem:
                         break;
                     case IfImageExistItem ifImageExistItem:
                         {
                             var ifCommand = CreateIfCommandInstance(parent, ifImageExistItem);
-                            if (ifImageExistItem.Pair == null) throw new InvalidOperationException($"IfImageExist (行 {ifImageExistItem.LineNumber}) に対応するEndIfがありません");
+                            ifCommand.LineNumber = ifImageExistItem.LineNumber; // LineNumber設定
+                            if (ifImageExistItem.Pair == null) throw new InvalidOperationException($"IfImageExist (行 {ifImageExistItem.LineNumber}) に対応するEndIfが見つかりません");
                             var childItems = GetChildrenListItems(listItem, listItems);
                             var childCommands = ListItemToCommand(ifCommand, childItems, depth + 1, sessionId);
                             foreach (var c in childCommands) ifCommand.AddChild(c);
@@ -248,7 +298,8 @@ namespace AutoTool.Model.MacroFactory
                     case IfImageNotExistItem ifImageNotExistItem:
                         {
                             var ifCommand = CreateIfCommandInstance(parent, ifImageNotExistItem);
-                            if (ifImageNotExistItem.Pair == null) throw new InvalidOperationException($"IfImageNotExist (行 {ifImageNotExistItem.LineNumber}) に対応するEndIfがありません");
+                            ifCommand.LineNumber = ifImageNotExistItem.LineNumber; // LineNumber設定
+                            if (ifImageNotExistItem.Pair == null) throw new InvalidOperationException($"IfImageNotExist (行 {ifImageNotExistItem.LineNumber}) に対応するEndIfが見つかりません");
                             var childItems = GetChildrenListItems(listItem, listItems);
                             var childCommands = ListItemToCommand(ifCommand, childItems, depth + 1, sessionId);
                             foreach (var c in childCommands) ifCommand.AddChild(c);
@@ -258,8 +309,8 @@ namespace AutoTool.Model.MacroFactory
                         break;
                     case IfImageExistAIItem ifImageExistAIItem:
                         {
-                            var ifCommand = new IfImageExistAICommand(parent, ifImageExistAIItem, _serviceProvider);
-                            if (ifImageExistAIItem.Pair == null) throw new InvalidOperationException($"IfImageExistAI (行 {ifImageExistAIItem.LineNumber}) に対応するEndIfがありません");
+                            var ifCommand = new IfImageExistAICommand(parent, ifImageExistAIItem, _serviceProvider) { LineNumber = ifImageExistAIItem.LineNumber };
+                            if (ifImageExistAIItem.Pair == null) throw new InvalidOperationException($"IfImageExistAI (行 {ifImageExistAIItem.LineNumber}) に対応するEndIfが見つかりません");
                             var childItems = GetChildrenListItems(listItem, listItems);
                             var childCommands = ListItemToCommand(ifCommand, childItems, depth + 1, sessionId);
                             foreach (var c in childCommands) ifCommand.AddChild(c);
@@ -269,8 +320,8 @@ namespace AutoTool.Model.MacroFactory
                         break;
                     case IfImageNotExistAIItem ifImageNotExistAIItem:
                         {
-                            var ifCommand = new IfImageNotExistAICommand(parent, ifImageNotExistAIItem, _serviceProvider);
-                            if (ifImageNotExistAIItem.Pair == null) throw new InvalidOperationException($"IfImageNotExistAI (行 {ifImageNotExistAIItem.LineNumber}) に対応するEndIfがありません");
+                            var ifCommand = new IfImageNotExistAICommand(parent, ifImageNotExistAIItem, _serviceProvider) { LineNumber = ifImageNotExistAIItem.LineNumber };
+                            if (ifImageNotExistAIItem.Pair == null) throw new InvalidOperationException($"IfImageNotExistAI (行 {ifImageNotExistAIItem.LineNumber}) に対応するEndIfが見つかりません");
                             var childItems = GetChildrenListItems(listItem, listItems);
                             var childCommands = ListItemToCommand(ifCommand, childItems, depth + 1, sessionId);
                             foreach (var c in childCommands) ifCommand.AddChild(c);
@@ -280,8 +331,8 @@ namespace AutoTool.Model.MacroFactory
                         break;
                     case IfVariableItem ifVariableItem:
                         {
-                            var ifCommand = new IfVariableCommand(parent, ifVariableItem, _serviceProvider);
-                            if (ifVariableItem.Pair == null) throw new InvalidOperationException($"IfVariable (行 {ifVariableItem.LineNumber}) に対応するEndIfがありません");
+                            var ifCommand = new IfVariableCommand(parent, ifVariableItem, _serviceProvider) { LineNumber = ifVariableItem.LineNumber };
+                            if (ifVariableItem.Pair == null) throw new InvalidOperationException($"IfVariable (行 {ifVariableItem.LineNumber}) に対応するEndIfが見つかりません");
                             var childItems = GetChildrenListItems(listItem, listItems);
                             var childCommands = ListItemToCommand(ifCommand, childItems, depth + 1, sessionId);
                             foreach (var c in childCommands) ifCommand.AddChild(c);
@@ -292,25 +343,25 @@ namespace AutoTool.Model.MacroFactory
                     case IfEndItem:
                         break;
                     case ExecuteItem executeItem:
-                        command = new ExecuteCommand(parent, executeItem, _serviceProvider);
+                        command = new ExecuteCommand(parent, executeItem, _serviceProvider) { LineNumber = executeItem.LineNumber };
                         break;
                     case SetVariableItem setVariableItem:
-                        command = new SetVariableCommand(parent, setVariableItem, _serviceProvider);
+                        command = new SetVariableCommand(parent, setVariableItem, _serviceProvider) { LineNumber = setVariableItem.LineNumber };
                         break;
                     case SetVariableAIItem setVariableAIItem:
-                        command = new SetVariableAICommand(parent, setVariableAIItem, _serviceProvider);
+                        command = new SetVariableAICommand(parent, setVariableAIItem, _serviceProvider) { LineNumber = setVariableAIItem.LineNumber };
                         break;
                     case ScreenshotItem screenshotItem:
-                        command = new ScreenshotCommand(parent, screenshotItem, _serviceProvider);
+                        command = new ScreenshotCommand(parent, screenshotItem, _serviceProvider) { LineNumber = screenshotItem.LineNumber };
                         break;
                     default:
-                        _logger?.LogWarning("[MacroFactory:{Session}] 未対応のコマンドタイプ: {CommandType}", sessionId, listItem.GetType().Name);
+                        _logger?.LogWarning("[MacroFactory:{Session}] 未知のリストアイテム: {CommandType}", sessionId, listItem.GetType().Name);
                         break;
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "[MacroFactory:{Session}] コマンド作成中エラー type={Type} line={Line}", sessionId, listItem.GetType().Name, listItem.LineNumber);
+                _logger?.LogError(ex, "[MacroFactory:{Session}] コマンド生成中にエラー発生 [ type={Type} line={Line}", sessionId, listItem.GetType().Name, listItem.LineNumber);
                 throw;
             }
             return command;
@@ -321,12 +372,16 @@ namespace AutoTool.Model.MacroFactory
         /// </summary>
         private static AutoTool.Command.Interface.ICommand CreateIfCommandInstance(AutoTool.Command.Interface.ICommand parent, ICommandListItem listItem)
         {
-            return listItem switch
+            AutoTool.Command.Interface.ICommand command = listItem switch
             {
                 IfImageExistItem ifImageExistItem => new IfImageExistCommand(parent, ifImageExistItem, _serviceProvider),
                 IfImageNotExistItem ifImageNotExistItem => new IfImageNotExistCommand(parent, ifImageNotExistItem, _serviceProvider),
                 _ => throw new NotSupportedException($"未対応のIfアイテム: {listItem.GetType().Name}")
             };
+            
+            // LineNumberを設定
+            command.LineNumber = listItem.LineNumber;
+            return command;
         }
 
         /// <summary>

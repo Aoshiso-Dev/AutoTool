@@ -173,6 +173,7 @@ namespace AutoTool.ViewModel.Panels
             WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (r, m) => OnCommandStarted(m));
             WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (r, m) => OnCommandFinished(m));
             WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (r, m) => OnProgressUpdated(m));
+            WeakReferenceMessenger.Default.Register<DoingCommandMessage>(this, (r, m) => OnCommandDoing(m));
             
             // ファイル操作メッセージの処理（両方のメッセージタイプに対応）
             WeakReferenceMessenger.Default.Register<LoadMessage>(this, (r, m) => LoadFileInternal(m.FilePath ?? string.Empty));
@@ -824,18 +825,34 @@ namespace AutoTool.ViewModel.Panels
 
         #region コマンド実行状態管理
 
+        // 最後に実行されたアイテムを追跡
+        private ICommandListItem? _lastExecutedItem;
+        private readonly Dictionary<string, int> _executionCounter = new();
+
         private void OnCommandStarted(StartCommandMessage message)
         {
             try
             {
+                _logger.LogDebug("=== OnCommandStarted開始 ===");
+                _logger.LogDebug("メッセージ受信: Line={LineNumber}, Type={ItemType}", message.LineNumber, message.ItemType);
+                
+                // 実行カウンターを更新
+                var key = $"{message.ItemType}";
+                _executionCounter[key] = _executionCounter.GetValueOrDefault(key, 0) + 1;
+                _logger.LogDebug("実行カウンター更新: {ItemType} = {Count}", message.ItemType, _executionCounter[key]);
+                
                 // より柔軟な検索ロジック
                 var item = FindMatchingItem(message.LineNumber, message.ItemType);
                 
                 if (item != null)
                 {
+                    _logger.LogDebug("アイテム発見: Line={LineNumber}, Type={ItemType}, IsEnable={IsEnable}, IsRunning={IsRunning}", 
+                        item.LineNumber, item.ItemType, item.IsEnable, item.IsRunning);
+                        
                     item.IsRunning = true;
                     item.Progress = 0;
                     CurrentExecutingItem = item;
+                    _lastExecutedItem = item;
                     
                     _logger.LogDebug("コマンド開始: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType})", 
                         item.LineNumber, message.LineNumber, item.ItemType, message.ItemType);
@@ -844,20 +861,30 @@ namespace AutoTool.ViewModel.Panels
                     OnPropertyChanged(nameof(Items));
                     OnPropertyChanged(nameof(CurrentExecutingItem));
                     OnPropertyChanged(nameof(CurrentExecutingDescription));
+                    
+                    _logger.LogDebug("UI更新完了: CurrentExecutingDescription={Description}", CurrentExecutingDescription);
                 }
                 else
                 {
                     _logger.LogWarning("コマンド開始: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}", 
                         message.LineNumber, message.ItemType);
                     
-                    // デバッグ情報を出力
-                    _logger.LogDebug("現在のアイテム一覧:");
-                    foreach (var debugItem in Items.Take(10))
+                    // 詳細なデバッグ情報を出力
+                    _logger.LogDebug("現在のアイテム一覧 (総数: {Count}):", Items.Count);
+                    _logger.LogDebug("実行カウンター状況:");
+                    foreach (var kvp in _executionCounter)
                     {
-                        _logger.LogDebug("  Line {LineNumber}: {ItemType} (IsEnable: {IsEnable})", 
-                            debugItem.LineNumber, debugItem.ItemType, debugItem.IsEnable);
+                        _logger.LogDebug("  {ItemType}: {Count}回", kvp.Key, kvp.Value);
+                    }
+                    
+                    foreach (var debugItem in Items.Take(15))
+                    {
+                        _logger.LogDebug("  Line {LineNumber}: {ItemType} (IsEnable: {IsEnable}, IsRunning: {IsRunning}, Progress: {Progress})", 
+                            debugItem.LineNumber, debugItem.ItemType, debugItem.IsEnable, debugItem.IsRunning, debugItem.Progress);
                     }
                 }
+                
+                _logger.LogDebug("=== OnCommandStarted終了 ===");
             }
             catch (Exception ex)
             {
@@ -869,10 +896,16 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
+                _logger.LogDebug("=== OnCommandFinished開始 ===");
+                _logger.LogDebug("メッセージ受信: Line={LineNumber}, Type={ItemType}", message.LineNumber, message.ItemType);
+                
                 var item = FindMatchingItem(message.LineNumber, message.ItemType);
                 
                 if (item != null)
                 {
+                    _logger.LogDebug("アイテム発見: Line={LineNumber}, Type={ItemType}, IsRunning={IsRunning}", 
+                        item.LineNumber, item.ItemType, item.IsRunning);
+                        
                     item.IsRunning = false;
                     item.Progress = 100;
                     
@@ -880,6 +913,7 @@ namespace AutoTool.ViewModel.Panels
                     {
                         _completedCommands++;
                         UpdateProgress(_completedCommands);
+                        _logger.LogDebug("進捗更新: 完了コマンド数={CompletedCommands}", _completedCommands);
                     }
                     
                     _logger.LogDebug("コマンド完了: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType})", 
@@ -889,12 +923,15 @@ namespace AutoTool.ViewModel.Panels
                     if (CurrentExecutingItem == item)
                     {
                         CurrentExecutingItem = null;
+                        _logger.LogDebug("CurrentExecutingItemをクリア");
                     }
                     
                     // UIに変更を通知
                     OnPropertyChanged(nameof(Items));
                     OnPropertyChanged(nameof(CurrentExecutingItem));
                     OnPropertyChanged(nameof(CurrentExecutingDescription));
+                    
+                    _logger.LogDebug("UI更新完了: CurrentExecutingDescription={Description}", CurrentExecutingDescription);
                     
                     // 一定時間後にプログレスをリセット
                     Task.Delay(1000).ContinueWith(_ => 
@@ -903,6 +940,7 @@ namespace AutoTool.ViewModel.Panels
                         {
                             item.Progress = 0;
                             OnPropertyChanged(nameof(Items));
+                            _logger.LogTrace("プログレスリセット完了: Line={LineNumber}", item.LineNumber);
                         }
                     });
                 }
@@ -911,6 +949,8 @@ namespace AutoTool.ViewModel.Panels
                     _logger.LogWarning("コマンド完了: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}", 
                         message.LineNumber, message.ItemType);
                 }
+                
+                _logger.LogDebug("=== OnCommandFinished終了 ===");
             }
             catch (Exception ex)
             {
@@ -927,11 +967,78 @@ namespace AutoTool.ViewModel.Panels
                 if (item != null && item.IsRunning)
                 {
                     item.Progress = message.Progress;
+                    
+                    _logger.LogTrace("進捗更新: Line {LineNumber} ({MessageLineNumber}) - {Progress}% - {ItemType} ({MessageItemType})", 
+                        item.LineNumber, message.LineNumber, message.Progress, item.ItemType, message.ItemType);
+                        
+                    // UIに変更を通知
+                    OnPropertyChanged(nameof(Items));
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "進捗更新処理中にエラーが発生しました");
+            }
+        }
+
+        private void OnCommandDoing(DoingCommandMessage message)
+        {
+            try
+            {
+                _logger.LogDebug("=== OnCommandDoing開始 ===");
+                _logger.LogDebug("メッセージ受信: Line={LineNumber}, Type={ItemType}, Detail={Detail}", 
+                    message.LineNumber, message.ItemType, message.Detail);
+                
+                var item = FindMatchingItem(message.LineNumber, message.ItemType);
+                
+                if (item != null)
+                {
+                    _logger.LogDebug("アイテム発見: Line={LineNumber}, Type={ItemType}, IsRunning={IsRunning}", 
+                        item.LineNumber, item.ItemType, item.IsRunning);
+                        
+                    // コマンドが実行中であることを確認
+                    if (!item.IsRunning)
+                    {
+                        _logger.LogDebug("実行状態でないアイテムを実行中に設定: Line={LineNumber}, Type={ItemType}", 
+                            item.LineNumber, item.ItemType);
+                        
+                        item.IsRunning = true;
+                        item.Progress = 0;
+                        CurrentExecutingItem = item;
+                        
+                        _logger.LogDebug("DoingMessage受信時にコマンド実行状態を設定: Line {LineNumber} - {ItemType}", 
+                            item.LineNumber, item.ItemType);
+                    }
+                    
+                    // UIに変更を通知
+                    OnPropertyChanged(nameof(Items));
+                    OnPropertyChanged(nameof(CurrentExecutingItem));
+                    OnPropertyChanged(nameof(CurrentExecutingDescription));
+                    
+                    _logger.LogDebug("UI更新完了: CurrentExecutingDescription={Description}", CurrentExecutingDescription);
+                    
+                    _logger.LogTrace("コマンド実行中: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType}) - {Detail}", 
+                        item.LineNumber, message.LineNumber, item.ItemType, message.ItemType, message.Detail);
+                }
+                else
+                {
+                    _logger.LogWarning("DoingMessage: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}", 
+                        message.LineNumber, message.ItemType);
+                        
+                    // 詳細なデバッグ情報を出力
+                    _logger.LogDebug("DoingMessage - 現在のアイテム一覧 (総数: {Count}):", Items.Count);
+                    foreach (var debugItem in Items.Take(10))
+                    {
+                        _logger.LogDebug("  Line {LineNumber}: {ItemType} (IsEnable: {IsEnable}, IsRunning: {IsRunning})", 
+                            debugItem.LineNumber, debugItem.ItemType, debugItem.IsEnable, debugItem.IsRunning);
+                    }
+                }
+                
+                _logger.LogDebug("=== OnCommandDoing終了 ===");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "DoingMessage処理中にエラーが発生しました");
             }
         }
 
@@ -941,37 +1048,197 @@ namespace AutoTool.ViewModel.Panels
             {
                 var cleanMessageType = CleanItemType(messageItemType);
                 
+                _logger.LogTrace("=== FindMatchingItem開始 ===");
+                _logger.LogTrace("検索条件: MessageLine={MessageLine}, MessageType={MessageType}, CleanType={CleanType}", 
+                    messageLineNumber, messageItemType, cleanMessageType);
+                
+                // 修正: LineNumber=0の場合のみ実行順序ベースの検索を行う
+                // LineNumber > 0の場合は通常の検索を優先
+                
+                // 1. 正確な一致を最優先（LineNumber + ItemType）
                 var exactMatch = Items.FirstOrDefault(x => 
                     x.LineNumber == messageLineNumber && 
                     (x.ItemType == messageItemType || x.ItemType == cleanMessageType));
                     
                 if (exactMatch != null)
                 {
+                    _logger.LogTrace("FindMatchingItem: 正確な一致発見 - Line:{Line}, Type:{Type}", 
+                        exactMatch.LineNumber, exactMatch.ItemType);
                     return exactMatch;
                 }
 
-                var sameLineItems = Items.Where(x => x.LineNumber == messageLineNumber).ToList();
+                // 2. LineNumberが一致するもの（複数ある場合は最初の有効なもの）
+                var sameLineItems = Items.Where(x => x.LineNumber == messageLineNumber && x.IsEnable).ToList();
+                _logger.LogTrace("同一行の有効アイテム数: {Count}", sameLineItems.Count);
+                
                 if (sameLineItems.Count == 1)
                 {
+                    _logger.LogTrace("FindMatchingItem: 同一行の有効アイテム発見 - Line:{Line}, Type:{Type}", 
+                        sameLineItems[0].LineNumber, sameLineItems[0].ItemType);
+                    return sameLineItems[0];
+                }
+                else if (sameLineItems.Count > 1)
+                {
+                    // 複数ある場合はタイプが類似しているものを優先
+                    var similarTypeMatch = sameLineItems.FirstOrDefault(x => 
+                        AreItemTypesSimilar(x.ItemType, messageItemType));
+                    if (similarTypeMatch != null)
+                    {
+                        _logger.LogTrace("FindMatchingItem: 同一行の類似タイプ発見 - Line:{Line}, Type:{Type}", 
+                            similarTypeMatch.LineNumber, similarTypeMatch.ItemType);
+                        return similarTypeMatch;
+                    }
+                    
+                    // 類似タイプがない場合は最初のもの
+                    _logger.LogTrace("FindMatchingItem: 同一行の最初のアイテム選択 - Line:{Line}, Type:{Type}", 
+                        sameLineItems[0].LineNumber, sameLineItems[0].ItemType);
                     return sameLineItems[0];
                 }
 
+                // 3. LineNumber=0の場合のみ実行順序ベースの検索を使用
+                if (messageLineNumber == 0)
+                {
+                    _logger.LogTrace("LineNumber=0のため実行順序ベース検索を実行");
+                    return FindItemByExecutionOrder(messageItemType, cleanMessageType);
+                }
+
+                // 4. 近い行番号でタイプが一致するもの（±3の範囲）
+                var nearbyMatch = Items.FirstOrDefault(x => 
+                    Math.Abs(x.LineNumber - messageLineNumber) <= 3 && 
+                    x.IsEnable &&
+                    (x.ItemType == messageItemType || x.ItemType == cleanMessageType ||
+                     AreItemTypesSimilar(x.ItemType, messageItemType)));
+                     
+                if (nearbyMatch != null)
+                {
+                    _logger.LogTrace("FindMatchingItem: 近隣行でタイプ一致 - Line:{Line}, Type:{Type} (距離:{Distance})", 
+                        nearbyMatch.LineNumber, nearbyMatch.ItemType, Math.Abs(nearbyMatch.LineNumber - messageLineNumber));
+                    return nearbyMatch;
+                }
+
+                _logger.LogWarning("FindMatchingItem: 一致するアイテムが見つかりません - MessageLine:{MessageLine}, MessageType:{MessageType}", 
+                    messageLineNumber, messageItemType);
+
+                _logger.LogTrace("=== FindMatchingItem終了: null ===");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "FindMatchingItem中にエラー");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// LineNumber=0の場合の実行順序ベースの検索
+        /// </summary>
+        private ICommandListItem? FindItemByExecutionOrder(string messageItemType, string cleanMessageType)
+        {
+            try
+            {
+                _logger.LogTrace("実行順序ベース検索開始: MessageType={MessageType}, CleanType={CleanType}", 
+                    messageItemType, cleanMessageType);
+
+                // 1. 現在実行中のアイテムからタイプ一致を検索
                 var runningItems = Items.Where(x => x.IsRunning).ToList();
+                _logger.LogTrace("実行中のアイテム数: {Count}", runningItems.Count);
+                
                 foreach (var runningItem in runningItems)
                 {
                     if (runningItem.ItemType == messageItemType || 
                         runningItem.ItemType == cleanMessageType ||
                         AreItemTypesSimilar(runningItem.ItemType, messageItemType))
                     {
+                        _logger.LogTrace("FindItemByExecutionOrder: 実行中アイテムからタイプ一致 - Line:{Line}, Type:{Type}", 
+                            runningItem.LineNumber, runningItem.ItemType);
                         return runningItem;
                     }
                 }
 
+                // 2. 実行可能な次のアイテムを検索（順序考慮）
+                var nextExecutableItem = FindNextExecutableItem(messageItemType, cleanMessageType);
+                if (nextExecutableItem != null)
+                {
+                    _logger.LogTrace("FindItemByExecutionOrder: 次の実行可能アイテム発見 - Line:{Line}, Type:{Type}", 
+                        nextExecutableItem.LineNumber, nextExecutableItem.ItemType);
+                    return nextExecutableItem;
+                }
+
+                // 3. タイプのみで一致（最初に見つかったもの）
+                var typeOnlyMatch = Items.FirstOrDefault(x => 
+                    x.IsEnable &&
+                    (x.ItemType == messageItemType || x.ItemType == cleanMessageType ||
+                     AreItemTypesSimilar(x.ItemType, messageItemType)));
+                     
+                if (typeOnlyMatch != null)
+                {
+                    _logger.LogTrace("FindItemByExecutionOrder: タイプのみ一致 - Line:{Line}, Type:{Type}", 
+                        typeOnlyMatch.LineNumber, typeOnlyMatch.ItemType);
+                    return typeOnlyMatch;
+                }
+
+                _logger.LogWarning("FindItemByExecutionOrder: 実行順序ベース検索で一致するアイテムが見つかりません");
                 return null;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "FindMatchingItem中にエラー");
+                _logger.LogError(ex, "FindItemByExecutionOrder中にエラー");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 実行順序を考慮して次に実行されるべきアイテムを検索
+        /// </summary>
+        private ICommandListItem? FindNextExecutableItem(string messageItemType, string cleanMessageType)
+        {
+            try
+            {
+                // 最後に実行されたアイテムを取得
+                var lastExecutedItem = CurrentExecutingItem ?? 
+                    Items.Where(x => x.Progress > 0).OrderByDescending(x => x.Progress).FirstOrDefault() ??
+                    Items.FirstOrDefault(x => x.IsRunning);
+
+                if (lastExecutedItem != null)
+                {
+                    _logger.LogTrace("最後の実行アイテム: Line={LineNumber}, Type={ItemType}", 
+                        lastExecutedItem.LineNumber, lastExecutedItem.ItemType);
+
+                    // 次に実行されるべきアイテムを論理的順序で検索
+                    var candidateItems = Items.Where(x => 
+                        x.IsEnable && 
+                        x.LineNumber > lastExecutedItem.LineNumber &&
+                        (x.ItemType == messageItemType || x.ItemType == cleanMessageType ||
+                         AreItemTypesSimilar(x.ItemType, messageItemType))).ToList();
+
+                    if (candidateItems.Count > 0)
+                    {
+                        var nextItem = candidateItems.OrderBy(x => x.LineNumber).First();
+                        _logger.LogTrace("論理的次のアイテム発見: Line={LineNumber}, Type={ItemType}", 
+                            nextItem.LineNumber, nextItem.ItemType);
+                        return nextItem;
+                    }
+                }
+
+                // フォールバック: 最初の未実行のマッチするアイテム
+                var firstMatch = Items.Where(x => 
+                    x.IsEnable && 
+                    !x.IsRunning && 
+                    x.Progress == 0 &&
+                    (x.ItemType == messageItemType || x.ItemType == cleanMessageType ||
+                     AreItemTypesSimilar(x.ItemType, messageItemType))).OrderBy(x => x.LineNumber).FirstOrDefault();
+
+                if (firstMatch != null)
+                {
+                    _logger.LogTrace("最初の未実行アイテム発見: Line={LineNumber}, Type={ItemType}", 
+                        firstMatch.LineNumber, firstMatch.ItemType);
+                }
+
+                return firstMatch;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "FindNextExecutableItem中にエラー");
                 return null;
             }
         }
@@ -1008,35 +1275,75 @@ namespace AutoTool.ViewModel.Panels
                 ("IfImageNotExistAI", "IF_ImageNotExist_AI") or ("IF_ImageNotExist_AI", "IfImageNotExistAI") => true,
                 ("SetVariableAI", "SetVariable_AI") or ("SetVariable_AI", "SetVariableAI") => true,
                 ("IfVariable", "IF_Variable") or ("IF_Variable", "IfVariable") => true,
+                ("Wait", "Wait") => true, // Waitコマンドの一致条件を追加
                 _ => false
             };
         }
 
         public void SetRunningState(bool isRunning) 
         {
+            _logger.LogDebug("=== SetRunningState開始: {IsRunning} ===", isRunning);
+            
             IsRunning = isRunning;
             StatusMessage = isRunning ? "実行中..." : "準備完了";
             _logger.LogDebug("実行状態を設定: {IsRunning}", isRunning);
             
             if (isRunning)
             {
+                _logger.LogDebug("実行開始 - プログレス初期化");
                 InitializeProgress();
                 _completedCommands = 0;
-            }
-            else
-            {
-                if (ShowProgress)
-                {
-                    CompleteProgress();
-                }
                 
+                // 実行カウンターをリセット
+                _executionCounter.Clear();
+                _lastExecutedItem = null;
+                _logger.LogDebug("実行カウンターと追跡状態をリセット");
+                
+                // 全アイテムの実行状態をリセット
                 foreach (var item in Items)
                 {
                     item.IsRunning = false;
                     item.Progress = 0;
                 }
-                CurrentExecutingItem = null;
+                
+                _logger.LogDebug("実行開始 - 全アイテム状態リセット完了");
             }
+            else
+            {
+                _logger.LogDebug("実行終了 - クリーンアップ開始");
+                
+                if (ShowProgress)
+                {
+                    CompleteProgress();
+                }
+                
+                // 実行カウンターと追跡状態をクリア
+                _executionCounter.Clear();
+                _lastExecutedItem = null;
+                
+                // 全アイテムの実行状態をクリア
+                var runningCount = 0;
+                foreach (var item in Items)
+                {
+                    if (item.IsRunning)
+                    {
+                        runningCount++;
+                        item.IsRunning = false;
+                        item.Progress = 0;
+                    }
+                }
+                
+                CurrentExecutingItem = null;
+                
+                _logger.LogDebug("実行終了 - {RunningCount}個のアイテムの実行状態をクリア", runningCount);
+                
+                // UIに変更を通知
+                OnPropertyChanged(nameof(Items));
+                OnPropertyChanged(nameof(CurrentExecutingItem));
+                OnPropertyChanged(nameof(CurrentExecutingDescription));
+            }
+            
+            _logger.LogDebug("=== SetRunningState終了: {IsRunning} ===", isRunning);
         }
 
         #endregion

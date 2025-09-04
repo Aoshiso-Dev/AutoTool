@@ -307,11 +307,7 @@ namespace AutoTool.Command.Class
                 return false;
             }
             
-            if (IsRunning) 
-            {
-                _logger?.LogDebug("[CanExecute] IsRunning=true: {Description}", Description);
-                return false;
-            }
+            // IsRunningのチェックを完全に削除（Execute()内でCanExecute()を呼ぶため）
             
             try
             {
@@ -440,35 +436,37 @@ namespace AutoTool.Command.Class
         /// </summary>
         public virtual async Task<bool> Execute(CancellationToken cancellationToken)
         {
-            _logger?.LogDebug("[Execute] 実行開始: {Description} (Line: {LineNumber}, Type: {Type})", Description, LineNumber, GetType().Name);
-            
-            if (!CanExecute())
-            {
-                _logger?.LogWarning("[Execute] CanExecute=false: {Description} (Line: {LineNumber})", Description, LineNumber);
-                LogMessage("コマンドは実行できません（無効またはエラー）");
-                return false;
-            }
-
-            IsRunning = true;
-            ExecutionStats.StartTime = DateTime.Now;
-            ExecutionStats.TotalCommands++;
-
-            _logger?.LogDebug("[Execute] コマンド実行開始メッセージ送信: {Description} (Line: {LineNumber})", Description, LineNumber);
-            OnStartCommand?.Invoke(this, EventArgs.Empty);
-            WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
+            var stopwatch = Stopwatch.StartNew();
 
             try
             {
-                // 実行前にファイル検証を行う
+                _logger?.LogDebug("[Execute] 実行開始: {Description} (Line: {LineNumber}, Type: {Type})", Description, LineNumber, GetType().Name);
+
+                // 実行前の検証（IsRunning=falseの状態でチェック）
+                if (!CanExecute())
+                {
+                    _logger?.LogWarning("[Execute] CanExecute() が false を返しました: {Description}", Description);
+                    return false;
+                }
+
+                // 実行前検証を実行
                 _logger?.LogDebug("[Execute] 実行前検証開始: {Description}", Description);
-                ValidateFiles();
                 ValidateSettings();
+                ValidateFiles();
                 _logger?.LogDebug("[Execute] 実行前検証完了: {Description}", Description);
 
+                // ここでIsRunningを設定（CanExecuteチェック後）
+                IsRunning = true;
+
+                // コマンド実行開始メッセージを送信
+                _logger?.LogDebug("[Execute] コマンド実行開始メッセージ送信: {Description} (Line: {LineNumber})", Description, LineNumber);
+                WeakReferenceMessenger.Default.Send(new StartCommandMessage(this));
+
+                // 実際のコマンド実行
                 _logger?.LogDebug("[Execute] DoExecuteAsync開始: {Description}", Description);
                 var result = await DoExecuteAsync(cancellationToken);
                 _logger?.LogDebug("[Execute] DoExecuteAsync完了: {Description} - Result: {Result}", Description, result);
-                
+
                 ExecutionStats.ExecutedCommands++;
                 if (result)
                 {
@@ -478,62 +476,32 @@ namespace AutoTool.Command.Class
                 {
                     ExecutionStats.FailedCommands++;
                 }
-                
-                ExecutionStats.EndTime = DateTime.Now;
-                ExecutionStats.TotalExecutionTime = ExecutionStats.EndTime.Value - ExecutionStats.StartTime;
 
+                // コマンド実行完了メッセージを送信
                 _logger?.LogDebug("[Execute] コマンド完了メッセージ送信: {Description} (Line: {LineNumber})", Description, LineNumber);
                 WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+
                 return result;
             }
             catch (OperationCanceledException)
             {
-                LogMessage("コマンドがキャンセルされました");
-                ExecutionStats.SkippedCommands++;
+                _logger?.LogInformation("コマンドがキャンセルされました");
                 WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
                 throw;
-            }
-            catch (LoopBreakException)
-            {
-                // LoopBreakExceptionはそのまま上位に伝播
-                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
-                throw;
-            }
-            catch (FileNotFoundException ex)
-            {
-                LogMessage($"❌ ファイルエラー: {ex.Message}");
-                OnErrorCommand?.Invoke(this, ex);
-                ExecutionStats.FailedCommands++;
-                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
-                _logger?.LogError(ex, "[Execute] ファイル不存在エラー: {Description}", Description);
-                return false;
-            }
-            catch (DirectoryNotFoundException ex)
-            {
-                LogMessage($"❌ ディレクトリエラー: {ex.Message}");
-                OnErrorCommand?.Invoke(this, ex);
-                ExecutionStats.FailedCommands++;
-                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
-                _logger?.LogError(ex, "[Execute] ディレクトリ不存在エラー: {Description}", Description);
-                return false;
             }
             catch (Exception ex)
             {
-                LogMessage($"❌ 実行エラー: {ex.Message}");
-                OnErrorCommand?.Invoke(this, ex);
                 _logger?.LogError(ex, "[Execute] コマンド実行中にエラーが発生しました: {Description}", Description);
+                ExecutionStats.ExecutedCommands++;
                 ExecutionStats.FailedCommands++;
                 WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
-                return false;
+                throw;
             }
             finally
             {
+                stopwatch.Stop();
+                ExecutionStats.TotalExecutionTime = ExecutionStats.TotalExecutionTime.Add(stopwatch.Elapsed);
                 IsRunning = false;
-                if (!ExecutionStats.EndTime.HasValue)
-                {
-                    ExecutionStats.EndTime = DateTime.Now;
-                    ExecutionStats.TotalExecutionTime = ExecutionStats.EndTime.Value - ExecutionStats.StartTime;
-                }
                 _logger?.LogDebug("[Execute] 実行終了: {Description} (Line: {LineNumber})", Description, LineNumber);
             }
         }
@@ -601,11 +569,10 @@ namespace AutoTool.Command.Class
         /// </summary>
         protected void LogMessage(string message)
         {
-            OnDoingCommand?.Invoke(this, message);
+            _logger?.LogInformation(message);
+            
+            // DoingCommandMessageを送信してUIに実行中状態を通知
             WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, message));
-            _logger?.LogInformation("{Message}", message);
-
-            // ファイル出力は MacroPanelViewModel 側(Start/Doing/Finishメッセージ受信)で一元管理
         }
 
         /// <summary>
@@ -1017,16 +984,37 @@ namespace AutoTool.Command.Class
             if (settings == null) return false;
 
             var stopwatch = Stopwatch.StartNew();
+            var totalWaitMs = settings.Wait;
+            int lastReportedProgress = -1;
 
-            while (stopwatch.ElapsedMilliseconds < settings.Wait)
+            LogMessage($"待機開始 ({totalWaitMs}ms)");
+
+            while (stopwatch.ElapsedMilliseconds < totalWaitMs)
             {
-                if (cancellationToken.IsCancellationRequested) return false;
+                if (cancellationToken.IsCancellationRequested) 
+                {
+                    LogMessage("待機がキャンセルされました");
+                    return false;
+                }
 
-                ReportProgress(stopwatch.ElapsedMilliseconds, settings.Wait);
-                await Task.Delay(50, cancellationToken);
+                var elapsed = stopwatch.ElapsedMilliseconds;
+                var currentProgress = totalWaitMs > 0 ? (int)((elapsed / (double)totalWaitMs) * 100) : 100;
+                
+                // 進捗が変わった場合のみ報告（頻度を減らすため）
+                if (currentProgress != lastReportedProgress)
+                {
+                    ReportProgress(elapsed, totalWaitMs);
+                    lastReportedProgress = currentProgress;
+                    
+                    // より詳細な状態報告
+                    var remaining = totalWaitMs - elapsed;
+                    LogMessage($"待機中... {currentProgress}% (残り約{remaining}ms)");
+                }
+
+                await Task.Delay(100, cancellationToken); // 100msごとに確認
             }
 
-            LogMessage("待機が完了しました。");
+            LogMessage("待機が完了しました");
             return true;
         }
     }
@@ -1124,11 +1112,20 @@ namespace AutoTool.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
+            LogMessage("条件評価を開始します");
+            
             var condition = await EvaluateConditionAsync(cancellationToken);
+            
             if (condition)
             {
+                LogMessage("条件が真のため、子コマンドを実行します");
                 return await ExecuteChildrenAsync(cancellationToken);
             }
+            else
+            {
+                LogMessage("条件が偽のため、子コマンドをスキップします");
+            }
+            
             return true; // 条件が偽でも成功として扱う
         }
 
@@ -1201,11 +1198,17 @@ namespace AutoTool.Command.Class
         protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
         {
             var settings = Settings;
-            if (settings == null) return false;
+            if (settings == null) 
+            {
+                LogMessage("設定が無効です");
+                return false;
+            }
 
             // 相対パスを解決して実際の検索に使用
             var resolvedImagePath = ResolvePath(settings.ImagePath);
             _logger?.LogDebug("[EvaluateConditionAsync] IfImageExist 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", settings.ImagePath, resolvedImagePath);
+
+            LogMessage($"画像の存在を確認中: {Path.GetFileName(resolvedImagePath)}");
 
             var point = await ImageSearchHelper.SearchImage(
                 resolvedImagePath, cancellationToken, settings.Threshold,
@@ -1213,11 +1216,11 @@ namespace AutoTool.Command.Class
 
             if (point != null)
             {
-                LogMessage($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+                LogMessage($"画像が見つかりました（条件: 真）: ({point.Value.X}, {point.Value.Y})");
                 return true;
             }
 
-            LogMessage("画像が見つかりませんでした。");
+            LogMessage("画像が見つかりませんでした（条件: 偽）");
             return false;
         }
     }
@@ -1254,11 +1257,17 @@ namespace AutoTool.Command.Class
         protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
         {
             var settings = Settings;
-            if (settings == null) return false;
+            if (settings == null) 
+            {
+                LogMessage("設定が無効です");
+                return false;
+            }
 
             // 相対パスを解決して実際の検索に使用
             var resolvedImagePath = ResolvePath(settings.ImagePath);
             _logger?.LogDebug("[EvaluateConditionAsync] IfImageNotExist 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", settings.ImagePath, resolvedImagePath);
+
+            LogMessage($"画像の非存在を確認中: {Path.GetFileName(resolvedImagePath)}");
 
             var point = await ImageSearchHelper.SearchImage(
                 resolvedImagePath, cancellationToken, settings.Threshold,
@@ -1266,11 +1275,11 @@ namespace AutoTool.Command.Class
 
             if (point == null)
             {
-                LogMessage("画像が見つかりませんでした。");
+                LogMessage("画像が見つかりませんでした（条件: 真）");
                 return true;
             }
 
-            LogMessage($"画像が見つかりしました。({point.Value.X}, {point.Value.Y})");
+            LogMessage($"画像が見つかりました（条件: 偽）: ({point.Value.X}, {point.Value.Y})");
             return false;
         }
     }
@@ -1302,14 +1311,11 @@ namespace AutoTool.Command.Class
             var settings = Settings;
             if (settings == null) return false;
 
-            if (Children == null || !Children.Any())
-            {
-                throw new Exception("If内に要素がありません。");
-            }
-
             // 相対パスを解決して実際のモデル読み込みに使用
             var resolvedModelPath = ResolvePath(settings.ModelPath);
             _logger?.LogDebug("[EvaluateConditionAsync] IfImageExistAI 解決されたModelPath: {OriginalPath} -> {ResolvedPath}", settings.ModelPath, resolvedModelPath);
+
+            LogMessage($"AI検出を開始中: ClassID {settings.ClassID}");
 
             YoloWin.Init(resolvedModelPath, 640, true);
 
@@ -1322,12 +1328,12 @@ namespace AutoTool.Command.Class
 
                 if (best.ClassId == settings.ClassID)
                 {
-                    LogMessage($"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) ClassId: {best.ClassId}");
+                    LogMessage($"AI画像が見つかりました（条件: 真）: ({best.Rect.X}, {best.Rect.Y}) ClassId: {best.ClassId}");
                     return true;
                 }
             }
 
-            LogMessage("画像が見つかりませんでした。");
+            LogMessage("AI画像が見つかりませんでした（条件: 偽）");
             return false;
         }
     }
@@ -1357,16 +1363,17 @@ namespace AutoTool.Command.Class
         protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
         {
             var settings = Settings;
-            if (settings == null) return false;
-
-            if (Children == null || !Children.Any())
+            if (settings == null) 
             {
-                throw new Exception("If内に要素がありません。");
+                LogMessage("設定が無効です");
+                return false;
             }
 
             // 相対パスを解決して実際のモデル読み込みに使用
             var resolvedModelPath = ResolvePath(settings.ModelPath);
             _logger?.LogDebug("[EvaluateConditionAsync] IfImageNotExistAI 解決されたModelPath: {OriginalPath} -> {ResolvedPath}", settings.ModelPath, resolvedModelPath);
+
+            LogMessage($"AI非検出を確認中: ClassID {settings.ClassID}");
 
             YoloWin.Init(resolvedModelPath, 640, true);
 
@@ -1378,11 +1385,11 @@ namespace AutoTool.Command.Class
 
             if (targetDetections.Count == 0)
             {
-                LogMessage($"クラスID {settings.ClassID} の画像が見つかりませんでした。");
+                LogMessage($"AI画像が見つかりませんでした（条件: 真）: ClassID {settings.ClassID}");
                 return true;
             }
 
-            LogMessage($"クラスID {settings.ClassID} の画像が見つかりました。");
+            LogMessage($"AI画像が見つかりました（条件: 偽）: ClassID {settings.ClassID}");
             return false;
         }
     }
@@ -1405,18 +1412,20 @@ namespace AutoTool.Command.Class
         protected override async Task<bool> EvaluateConditionAsync(CancellationToken cancellationToken)
         {
             var settings = Settings;
-            if (settings == null) return false;
-
-            if (Children == null || !Children.Any())
+            if (settings == null) 
             {
-                throw new Exception("If内に要素がありません。");
+                LogMessage("設定が無効です");
+                return false;
             }
 
             var lhs = _variableStore?.Get(settings.Name) ?? string.Empty;
             var rhs = settings.Value ?? string.Empty;
 
+            LogMessage($"変数条件を評価中: {settings.Name}({lhs}) {settings.Operator} {rhs}");
+
             bool result = Evaluate(lhs, rhs, settings.Operator);
-            LogMessage($"IfVariable: {settings.Name}({lhs}) {settings.Operator} {rhs} => {result}");
+            
+            LogMessage($"変数条件の結果: {settings.Name}({lhs}) {settings.Operator} {rhs} => {(result ? "真" : "偽")}");
 
             return result;
         }
