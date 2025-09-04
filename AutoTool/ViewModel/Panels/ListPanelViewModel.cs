@@ -953,25 +953,60 @@ namespace AutoTool.ViewModel.Panels
             try
             {
                 var nestLevel = 0;
+                var loopStack = new Stack<ICommandListItem>(); // Loop開始コマンドのスタック
+                var ifStack = new Stack<ICommandListItem>(); // If開始コマンドのスタック
 
                 foreach (var item in _items)
                 {
-                    // ネストレベルを減らすコマンド（終了系）
-                    if (IsEndCommand(item.ItemType))
+                    // 終了コマンドの場合、対応する開始コマンドを探してネストレベルを調整
+                    if (item.ItemType == "Loop_End")
                     {
-                        nestLevel = Math.Max(0, nestLevel - 1);
+                        if (loopStack.Count > 0)
+                        {
+                            loopStack.Pop();
+                            nestLevel = Math.Max(0, nestLevel - 1);
+                        }
+                    }
+                    else if (item.ItemType == "IF_End")
+                    {
+                        if (ifStack.Count > 0)
+                        {
+                            ifStack.Pop();
+                            nestLevel = Math.Max(0, nestLevel - 1);
+                        }
                     }
 
+                    // 現在のアイテムのネストレベルを設定
                     item.NestLevel = nestLevel;
+                    
+                    // ネスト内にいることを示すフラグを設定
+                    item.IsInLoop = loopStack.Count > 0;
+                    item.IsInIf = ifStack.Count > 0;
 
-                    // ネストレベルを増やすコマンド（開始系）
-                    if (IsStartCommand(item.ItemType))
+                    // 開始コマンドの場合、スタックに積んでネストレベルを増加
+                    if (item.ItemType == "Loop")
                     {
+                        loopStack.Push(item);
+                        nestLevel++;
+                    }
+                    else if (IsIfCommand(item.ItemType))
+                    {
+                        ifStack.Push(item);
                         nestLevel++;
                     }
                 }
 
-                _logger.LogDebug("ネストレベル計算完了");
+                // 残った開始コマンドがあれば警告
+                if (loopStack.Count > 0)
+                {
+                    _logger.LogWarning("対応するLoop_Endが見つからないLoopコマンドが{Count}個あります", loopStack.Count);
+                }
+                if (ifStack.Count > 0)
+                {
+                    _logger.LogWarning("対応するIF_Endが見つからないIfコマンドが{Count}個あります", ifStack.Count);
+                }
+
+                _logger.LogDebug("改良版ネストレベル計算完了: 最大ネスト{MaxLevel}", nestLevel);
             }
             catch (Exception ex)
             {

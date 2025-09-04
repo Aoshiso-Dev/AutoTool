@@ -17,8 +17,16 @@ namespace AutoTool.Converters
         {
             if (value is ICommandListItem item)
             {
-                var indent = item.NestLevel * 20; // 1レベルにつき20ピクセル
-                return new Thickness(indent, 2, 0, 2);
+                // ネストレベルに応じたインデント
+                // レベル0: インデントなし
+                // レベル1: 25px (Loop/If内)
+                // レベル2: 45px (Loop内のIf、またはIf内のLoop)
+                // レベル3: 65px (複雑な入れ子)
+                var baseIndent = item.NestLevel * 20; // 基本インデント
+                var extraIndent = item.NestLevel > 0 ? 5 : 0; // 1レベル目以降は少し余分にインデント
+                var totalIndent = baseIndent + extraIndent;
+                
+                return new Thickness(totalIndent, 2, 0, 2);
             }
             return new Thickness(0, 2, 0, 2);
         }
@@ -39,12 +47,37 @@ namespace AutoTool.Converters
             if (value is ICommandListItem item)
             {
                 var prefix = "";
+                
+                // ネストレベルに応じた視覚的な表現
                 for (int i = 0; i < item.NestLevel; i++)
                 {
-                    prefix += "　　"; // 全角スペース2つでインデント
+                    if (i == 0)
+                        prefix += "├── "; // 最初のレベルは├──
+                    else
+                        prefix += "│   "; // その後のレベルは│とスペース
                 }
                 
                 var displayName = AutoTool.Model.CommandDefinition.CommandRegistry.DisplayOrder.GetDisplayName(item.ItemType) ?? item.ItemType;
+                
+                // 終了コマンドは特別な表記
+                if (item.ItemType == "Loop_End" || item.ItemType == "IF_End")
+                {
+                    if (item.NestLevel > 0)
+                    {
+                        // 終了コマンドは└──で表現
+                        prefix = "";
+                        for (int i = 0; i < item.NestLevel - 1; i++)
+                        {
+                            prefix += "│   ";
+                        }
+                        prefix += "└── ";
+                    }
+                    else
+                    {
+                        prefix = "└── ";
+                    }
+                }
+                
                 return $"{prefix}{displayName}";
             }
             return value?.ToString() ?? "";
@@ -72,13 +105,13 @@ namespace AutoTool.Converters
                     // デバッグログ出力
                     System.Diagnostics.Debug.WriteLine($"ExecutionStateToBackgroundConverter: Item={item.ItemType}(行{item.LineNumber}), IsRunning={item.IsRunning}, CurrentExecuting={currentExecutingItem?.ItemType ?? "null"}");
                     
-                    // 現在実行中のアイテムかチェック
+                    // 現在実行中のアイテムをチェック
                     var isCurrentExecuting = IsCurrentExecutingItem(item, currentExecutingItem);
                     
                     if (item.IsRunning || isCurrentExecuting)
                     {
                         System.Diagnostics.Debug.WriteLine($"  -> 黄色ハイライト適用: {item.ItemType}");
-                        return new SolidColorBrush(Color.FromArgb(150, 255, 255, 0)); // より濃い黄色
+                        return new SolidColorBrush(Color.FromArgb(150, 255, 255, 0)); // 半透明黄色
                     }
                     else if (!item.IsEnable)
                     {
@@ -86,17 +119,21 @@ namespace AutoTool.Converters
                         return new SolidColorBrush(Color.FromArgb(80, 128, 128, 128));
                     }
                     
-                    // ネストレベルに応じた背景色
+                    // ネストレベルに応じた背景色（改良版）
                     var nestBrush = item.NestLevel switch
                     {
                         0 => Brushes.Transparent,
-                        1 => new SolidColorBrush(Color.FromArgb(25, 0, 100, 255)),
-                        2 => new SolidColorBrush(Color.FromArgb(35, 0, 150, 255)),
-                        3 => new SolidColorBrush(Color.FromArgb(45, 0, 200, 255)),
-                        _ => new SolidColorBrush(Color.FromArgb(55, 0, 255, 255))
+                        1 => item.IsInLoop && item.IsInIf 
+                             ? new SolidColorBrush(Color.FromArgb(40, 128, 0, 128)) // Loop + If: 紫
+                             : item.IsInLoop 
+                               ? new SolidColorBrush(Color.FromArgb(25, 0, 150, 255))   // Loop: 青
+                               : new SolidColorBrush(Color.FromArgb(25, 0, 200, 100)),  // If: 緑
+                        2 => new SolidColorBrush(Color.FromArgb(35, 255, 140, 0)),     // オレンジ
+                        3 => new SolidColorBrush(Color.FromArgb(45, 200, 0, 200)),     // マゼンタ
+                        _ => new SolidColorBrush(Color.FromArgb(55, 100, 100, 100))    // グレー
                     };
                     
-                    System.Diagnostics.Debug.WriteLine($"  -> ネストレベル背景適用: {item.ItemType}, Level={item.NestLevel}");
+                    System.Diagnostics.Debug.WriteLine($"  -> ネストレベル背景適用: {item.ItemType}, Level={item.NestLevel}, InLoop={item.IsInLoop}, InIf={item.IsInIf}");
                     return nestBrush;
                 }
                 
@@ -139,17 +176,42 @@ namespace AutoTool.Converters
                     if (item.IsRunning)
                     {
                         System.Diagnostics.Debug.WriteLine($"ExecutionStateToIconConverter: {item.ItemType} -> ? (実行中)");
-                        return "?";
+                        return "?"; // 実行中
                     }
                     else if (!item.IsEnable)
                     {
                         System.Diagnostics.Debug.WriteLine($"ExecutionStateToIconConverter: {item.ItemType} -> ? (無効)");
-                        return "?";
+                        return "?"; // 無効
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine($"ExecutionStateToIconConverter: {item.ItemType} -> ? (停止)");
-                        return "?";
+                        // コマンドタイプに応じたアイコン
+                        var icon = item.ItemType switch
+                        {
+                            "Loop" => "??",
+                            "Loop_End" => "??",
+                            "Loop_Break" => "?",
+                            "IF_ImageExist" => "??",
+                            "IF_ImageNotExist" => "??",
+                            "IF_ImageExist_AI" => "??",
+                            "IF_ImageNotExist_AI" => "??",
+                            "IF_Variable" => "??",
+                            "IF_End" => "?",
+                            "Wait_Image" => "?",
+                            "Click_Image" => "??",
+                            "Click_Image_AI" => "??",
+                            "Hotkey" => "?",
+                            "Click" => "??",
+                            "Wait" => "?",
+                            "Execute" => "??",
+                            "SetVariable" => "??",
+                            "SetVariable_AI" => "??",
+                            "Screenshot" => "??",
+                            _ => "??"
+                        };
+                        
+                        System.Diagnostics.Debug.WriteLine($"ExecutionStateToIconConverter: {item.ItemType} -> {icon} (待機)");
+                        return icon;
                     }
                 }
                 return "?";
@@ -222,7 +284,7 @@ namespace AutoTool.Converters
     }
 
     /// <summary>
-    /// ペアリング表示用コンバーター
+    /// ペアリング表示用コンバーター（改良版）
     /// </summary>
     public class PairLineNumberConverter : IValueConverter
     {
@@ -237,13 +299,40 @@ namespace AutoTool.Converters
                     var pairValue = pairProperty.GetValue(item) as ICommandListItem;
                     if (pairValue != null)
                     {
-                        return $"{item.LineNumber}->{pairValue.LineNumber}";
+                        // 開始コマンドと終了コマンドで表示を変える
+                        if (item.ItemType == "Loop")
+                            return $"{item.LineNumber}┬{pairValue.LineNumber}"; // Loop開始
+                        else if (item.ItemType == "Loop_End")
+                            return $"{pairValue.LineNumber}┴{item.LineNumber}"; // Loop終了
+                        else if (IsIfCommand(item.ItemType))
+                            return $"{item.LineNumber}┬{pairValue.LineNumber}"; // If開始
+                        else if (item.ItemType == "IF_End")
+                            return $"{pairValue.LineNumber}┴{item.LineNumber}"; // If終了
+                        else
+                            return $"{item.LineNumber}?{pairValue.LineNumber}"; // その他のペア
                     }
                 }
-                return $"{item.LineNumber}-->";
+                
+                // ペアがない場合の表示
+                if (item.ItemType == "Loop" || IsIfCommand(item.ItemType))
+                    return $"{item.LineNumber}┬?"; // 開始コマンドで対応する終了がない
+                else if (item.ItemType == "Loop_End" || item.ItemType == "IF_End")
+                    return $"?┴{item.LineNumber}"; // 終了コマンドで対応する開始がない
+                else
+                    return $"{item.LineNumber}"; // 通常のコマンド
             }
             return "";
         }
+
+        private bool IsIfCommand(string itemType) => itemType switch
+        {
+            "IF_ImageExist" => true,
+            "IF_ImageNotExist" => true,
+            "IF_ImageExist_AI" => true,
+            "IF_ImageNotExist_AI" => true,
+            "IF_Variable" => true,
+            _ => false
+        };
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {

@@ -20,7 +20,7 @@
     <!-- ListBoxItem Style -->
     <Style x:Key="CommandListItemStyle" TargetType="{x:Type ListBoxItem}">
         <Setter Property="Margin" Value="{Binding ., Converter={StaticResource NestLevelToMarginConverter}}"/>
-        <Setter Property="Padding" Value="5,3"/>
+        <Setter Property="Padding" Value="8,4"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
         <Setter Property="BorderBrush" Value="#E0E0E0"/>
         <Setter Property="Template">
@@ -31,7 +31,7 @@
                             Padding="{TemplateBinding Padding}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             BorderBrush="{TemplateBinding BorderBrush}"
-                            CornerRadius="3">
+                            CornerRadius="2">
                         <Border.Background>
                             <MultiBinding Converter="{StaticResource ExecutionStateToBackgroundConverter}">
                                 <Binding Path="."/>
@@ -50,10 +50,10 @@
                             <!-- Execution State Icon -->
                             <TextBlock Grid.Column="0" 
                                        Text="{Binding ., Converter={StaticResource ExecutionStateToIconConverter}}"
-                                       Margin="0,0,5,0"
+                                       Margin="0,0,8,0"
                                        VerticalAlignment="Center"
                                        FontFamily="Segoe UI Symbol"
-                                       FontSize="12">
+                                       FontSize="14">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Style.Triggers>
@@ -81,59 +81,68 @@
                                 </TextBlock.Style>
                             </TextBlock>
                             
-                            <!-- Line Number with Pairing Info -->
+                            <!-- Line Number with Enhanced Pairing Info -->
                             <TextBlock Grid.Column="1" 
                                        Text="{Binding ., Converter={StaticResource PairLineNumberConverter}}"
-                                       Margin="0,0,5,0"
+                                       Margin="0,0,8,0"
                                        VerticalAlignment="Center"
                                        FontFamily="Consolas"
                                        FontSize="11"
-                                       Foreground="#666"/>
+                                       Foreground="#666"
+                                       FontWeight="SemiBold"/>
                             
-                            <!-- Command Name + Comment -->
+                            <!-- Command Name + Comment with Enhanced Nesting -->
                             <StackPanel Grid.Column="2" 
                                         Orientation="Horizontal"
                                         VerticalAlignment="Center">
                                 <TextBlock Text="{Binding ., Converter={StaticResource NestLevelToDisplayTextConverter}}"
                                            VerticalAlignment="Center"
+                                           FontFamily="Consolas"
+                                           FontSize="12"
                                            FontWeight="{Binding IsEnable, Converter={StaticResource BoolToFontWeightConverter}}"/>
                                 <TextBlock Text="{Binding ., Converter={StaticResource CommentDisplayConverter}}"
                                            VerticalAlignment="Center"
-                                           Foreground="#888"
-                                           FontStyle="Italic"/>
+                                           Foreground="#666"
+                                           FontSize="11"
+                                           FontStyle="Italic"
+                                           Margin="8,0,0,0"/>
                             </StackPanel>
                             
                             <!-- Progress Bar -->
                             <ProgressBar Grid.Column="3"
                                          Width="80"
-                                         Height="4"
-                                         Margin="5,0,0,0"
+                                         Height="6"
+                                         Margin="8,0,0,0"
                                          VerticalAlignment="Center"
                                          Value="{Binding Progress}"
                                          Maximum="100"
                                          Visibility="{Binding ., Converter={StaticResource ProgressVisibilityConverter}}"
                                          Background="#E0E0E0"
-                                         Foreground="#4CAF50"/>
+                                         Foreground="#4CAF50"
+                                         BorderThickness="1"
+                                         BorderBrush="#DDD"/>
                         </Grid>
                     </Border>
                     
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="#0078D4"/>
+                            <Setter TargetName="Border" Property="BorderThickness" Value="2"/>
                             <Setter TargetName="Border" Property="Background">
                                 <Setter.Value>
-                                    <SolidColorBrush Color="#3399FF" Opacity="0.3"/>
+                                    <SolidColorBrush Color="#E3F2FD" Opacity="0.8"/>
                                 </Setter.Value>
                             </Setter>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Border" Property="Background">
                                 <Setter.Value>
-                                    <SolidColorBrush Color="#E3F2FD"/>
+                                    <SolidColorBrush Color="#F0F8FF"/>
                                 </Setter.Value>
                             </Setter>
                         </Trigger>
                         <DataTrigger Binding="{Binding IsEnable}" Value="False">
-                            <Setter Property="Opacity" Value="0.6"/>
+                            <Setter Property="Opacity" Value="0.5"/>
                         </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
