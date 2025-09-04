@@ -55,6 +55,37 @@ namespace AutoTool.ViewModel.Panels
         [ObservableProperty]
         private ObservableCollection<Key> _keyList = new();
 
+        // 画像プレビュー関連プロパティ
+        [ObservableProperty]
+        private System.Windows.Media.ImageSource? _imagePreview;
+
+        [ObservableProperty]
+        private bool _hasImagePreview = false;
+
+        [ObservableProperty]
+        private string _imageInfo = string.Empty;
+
+        [ObservableProperty]
+        private bool _hasImageInfo = false;
+
+        [ObservableProperty]
+        private string _modelInfo = string.Empty;
+
+        [ObservableProperty]
+        private bool _hasModelInfo = false;
+
+        [ObservableProperty]
+        private string _programInfo = string.Empty;
+
+        [ObservableProperty]
+        private bool _hasProgramInfo = false;
+
+        [ObservableProperty]
+        private string _saveDirectoryInfo = string.Empty;
+
+        [ObservableProperty]
+        private bool _hasSaveDirectoryInfo = false;
+
         // Selected items
         private CommandDisplayItem? _selectedItemTypeObj;
         public CommandDisplayItem? SelectedItemTypeObj
@@ -246,6 +277,9 @@ namespace AutoTool.ViewModel.Panels
                     SelectedItemTypeObj = null;
                 }
 
+                // 画像プレビューを更新
+                UpdateImagePreview();
+
                 // 全ての判定プロパティを更新
                 NotifyAllPropertiesChanged();
                 
@@ -373,7 +407,12 @@ namespace AutoTool.ViewModel.Panels
         public string ImagePath
         {
             get => GetItemProperty<string>("ImagePath") ?? string.Empty;
-            set => SetItemProperty("ImagePath", value);
+            set 
+            { 
+                SetItemProperty("ImagePath", value);
+                // 画像パスが変更された時に画像プレビューを更新
+                UpdateImagePreview();
+            }
         }
 
         public double Threshold
@@ -559,7 +598,11 @@ namespace AutoTool.ViewModel.Panels
         public string ModelPath
         {
             get => GetItemProperty<string>("ModelPath") ?? string.Empty;
-            set => SetItemProperty("ModelPath", value);
+            set 
+            { 
+                SetItemProperty("ModelPath", value);
+                UpdateModelInfo();
+            }
         }
 
         public int ClassID
@@ -589,7 +632,11 @@ namespace AutoTool.ViewModel.Panels
         public string ProgramPath
         {
             get => GetItemProperty<string>("ProgramPath") ?? string.Empty;
-            set => SetItemProperty("ProgramPath", value);
+            set 
+            { 
+                SetItemProperty("ProgramPath", value);
+                UpdateProgramInfo();
+            }
         }
 
         public string Arguments
@@ -613,9 +660,12 @@ namespace AutoTool.ViewModel.Panels
         public string SaveDirectory
         {
             get => GetItemProperty<string>("SaveDirectory") ?? string.Empty;
-            set => SetItemProperty("SaveDirectory", value);
+            set 
+            { 
+                SetItemProperty("SaveDirectory", value);
+                UpdateSaveDirectoryInfo();
+            }
         }
-
         #endregion
 
         #region Helper Methods
@@ -667,6 +717,154 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
+        /// <summary>
+        /// 画像プレビューを更新
+        /// </summary>
+        private void UpdateImagePreview()
+        {
+            try
+            {
+                var imagePath = ImagePath;
+                if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+                {
+                    ImagePreview = null;
+                    HasImagePreview = false;
+                    ImageInfo = string.Empty;
+                    HasImageInfo = false;
+                    _logger.LogDebug("画像プレビューをクリア: {ImagePath}", imagePath ?? "empty");
+                    return;
+                }
+
+                // ファイル情報を取得
+                var fileInfo = new FileInfo(imagePath);
+                
+                // 画像をBitmapImageとして読み込み
+                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+                bitmap.DecodePixelWidth = 300; // プレビュー用にリサイズ
+                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                bitmap.Freeze(); // UI スレッド外からの使用のためFreeze
+
+                ImagePreview = bitmap;
+                HasImagePreview = true;
+
+                // 画像情報を設定
+                var fileSizeKB = fileInfo.Length / 1024.0;
+                ImageInfo = $"{bitmap.PixelWidth} x {bitmap.PixelHeight} px, {fileSizeKB:F1} KB";
+                HasImageInfo = true;
+                
+                _logger.LogInformation("画像プレビューを更新: {ImagePath} ({Width}x{Height}, {Size:F1}KB)", 
+                    imagePath, bitmap.PixelWidth, bitmap.PixelHeight, fileSizeKB);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "画像プレビュー更新エラー: {ImagePath}", ImagePath);
+                ImagePreview = null;
+                HasImagePreview = false;
+                ImageInfo = "画像読み込みエラー";
+                HasImageInfo = true;
+            }
+        }
+
+        /// <summary>
+        /// モデルファイル情報を更新
+        /// </summary>
+        private void UpdateModelInfo()
+        {
+            try
+            {
+                var modelPath = ModelPath;
+                if (string.IsNullOrEmpty(modelPath) || !File.Exists(modelPath))
+                {
+                    ModelInfo = string.Empty;
+                    HasModelInfo = false;
+                    return;
+                }
+
+                var fileInfo = new FileInfo(modelPath);
+                var fileSizeMB = fileInfo.Length / (1024.0 * 1024.0);
+                ModelInfo = $"{fileSizeMB:F1} MB, {fileInfo.LastWriteTime:yyyy/MM/dd HH:mm}";
+                HasModelInfo = true;
+                
+                _logger.LogDebug("モデル情報を更新: {ModelPath} ({Size:F1}MB)", modelPath, fileSizeMB);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "モデル情報更新エラー: {ModelPath}", ModelPath);
+                ModelInfo = "ファイル情報取得エラー";
+                HasModelInfo = true;
+            }
+        }
+
+        /// <summary>
+        /// プログラムファイル情報を更新
+        /// </summary>
+        private void UpdateProgramInfo()
+        {
+            try
+            {
+                var programPath = ProgramPath;
+                if (string.IsNullOrEmpty(programPath) || !File.Exists(programPath))
+                {
+                    ProgramInfo = string.Empty;
+                    HasProgramInfo = false;
+                    return;
+                }
+
+                var fileInfo = new FileInfo(programPath);
+                var fileSizeMB = fileInfo.Length / (1024.0 * 1024.0);
+                ProgramInfo = $"{fileSizeMB:F1} MB, {fileInfo.LastWriteTime:yyyy/MM/dd HH:mm}";
+                HasProgramInfo = true;
+                
+                _logger.LogDebug("プログラム情報を更新: {ProgramPath} ({Size:F1}MB)", programPath, fileSizeMB);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "プログラム情報更新エラー: {ProgramPath}", ProgramPath);
+                ProgramInfo = "ファイル情報取得エラー";
+                HasProgramInfo = true;
+            }
+        }
+
+        /// <summary>
+        /// 保存ディレクトリ情報を更新
+        /// </summary>
+        private void UpdateSaveDirectoryInfo()
+        {
+            try
+            {
+                var saveDir = SaveDirectory;
+                if (string.IsNullOrEmpty(saveDir))
+                {
+                    SaveDirectoryInfo = string.Empty;
+                    HasSaveDirectoryInfo = false;
+                    return;
+                }
+
+                if (Directory.Exists(saveDir))
+                {
+                    var dirInfo = new DirectoryInfo(saveDir);
+                    var fileCount = dirInfo.GetFiles().Length;
+                    SaveDirectoryInfo = $"既存ディレクトリ: {fileCount} ファイル";
+                    HasSaveDirectoryInfo = true;
+                }
+                else
+                {
+                    SaveDirectoryInfo = "新規ディレクトリ (作成予定)";
+                    HasSaveDirectoryInfo = true;
+                }
+                
+                _logger.LogDebug("保存ディレクトリ情報を更新: {SaveDir}", saveDir);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "保存ディレクトリ情報更新エラー: {SaveDir}", SaveDirectory);
+                SaveDirectoryInfo = "ディレクトリ情報取得エラー";
+                HasSaveDirectoryInfo = true;
+            }
+        }
         #endregion
 
         #region Commands
@@ -692,6 +890,20 @@ namespace AutoTool.ViewModel.Panels
             catch (Exception ex)
             {
                 _logger.LogError(ex, "画像ファイル選択中にエラー");
+            }
+        }
+
+        [RelayCommand]
+        private void ClearImagePreview()
+        {
+            try
+            {
+                ImagePath = string.Empty;
+                _logger.LogInformation("画像パスをクリア");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "画像パスクリア中にエラー");
             }
         }
 
