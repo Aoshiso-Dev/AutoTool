@@ -24,6 +24,7 @@ using AutoTool.ViewModel.Panels;
 using System.Threading;
 using System.Windows.Input;
 using System.Windows.Media;
+using AutoTool.Model.MacroFactory; // add macro factory
 
 namespace AutoTool.ViewModel
 {
@@ -747,6 +748,7 @@ namespace AutoTool.ViewModel
             try
             {
                 SetupMessaging();
+                SetupRunStopMessaging();
                 _logger.LogDebug("Messaging初期化完了");
             }
             catch (Exception ex)
@@ -1196,6 +1198,241 @@ namespace AutoTool.ViewModel
                 _logger.LogError(ex, "実行ハイライトテスト中にエラーが発生しました");
                 LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] エラー: 実行ハイライトテスト失敗 - {ex.Message}");
             }
+        }
+
+        [RelayCommand]
+        private void AddCommand()
+        {
+            try
+            {
+                if (SelectedItemType != null)
+                {
+                    _logger.LogDebug("追加要求: {Type}", SelectedItemType.TypeName);
+                    _messenger.Send(new AddMessage(SelectedItemType.TypeName));
+                }
+                else
+                {
+                    _logger.LogWarning("追加要求: SelectedItemType が null です");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "AddCommand 実行中にエラー");
+            }
+        }
+
+        [RelayCommand]
+        private void DeleteCommand()
+        {
+            try
+            {
+                _logger.LogDebug("削除要求を送信");
+                _messenger.Send(new DeleteMessage());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "DeleteCommand 実行中にエラー");
+            }
+        }
+
+        [RelayCommand]
+        private void UpCommand()
+        {
+            try
+            {
+                _logger.LogDebug("上移動要求を送信");
+                _messenger.Send(new UpMessage());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "UpCommand 実行中にエラー");
+            }
+        }
+
+        [RelayCommand]
+        private void DownCommand()
+        {
+            try
+            {
+                _logger.LogDebug("下移動要求を送信");
+                _messenger.Send(new DownMessage());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "DownCommand 実行中にエラー");
+            }
+        }
+
+        [RelayCommand]
+        private void ClearCommand()
+        {
+            try
+            {
+                _logger.LogDebug("クリア要求を送信");
+                _messenger.Send(new ClearMessage());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ClearCommand 実行中にエラー");
+            }
+        }
+
+        [RelayCommand]
+        private void UndoCommand()
+        {
+            try
+            {
+                _logger.LogDebug("Undo要求を送信");
+                _messenger.Send(new UndoMessage());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "UndoCommand 実行中にエラー");
+            }
+        }
+
+        [RelayCommand]
+        private void RedoCommand()
+        {
+            try
+            {
+                _logger.LogDebug("Redo要求を送信");
+                _messenger.Send(new RedoMessage());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "RedoCommand 実行中にエラー");
+            }
+        }
+
+        [RelayCommand]
+        private void RunMacro()
+        {
+            try
+            {
+                if (IsRunning)
+                {
+                    _logger.LogInformation("停止要求を送信します");
+                    _messenger.Send(new StopMessage());
+                    StatusMessage = "停止要求を送信しました";
+                }
+                else
+                {
+                    _logger.LogInformation("実行要求を送信します");
+                    _messenger.Send(new RunMessage());
+                    StatusMessage = "実行要求を送信しました";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "RunMacroCommand 実行中にエラー");
+                StatusMessage = $"実行エラー: {ex.Message}";
+            }
+        }
+
+        private async Task StartMacroAsync()
+        {
+            try
+            {
+                var listPanelViewModel = _serviceProvider.GetService<ListPanelViewModel>();
+                if (listPanelViewModel == null)
+                {
+                    _logger.LogError("ListPanelViewModel が解決できません。実行を中止します。");
+                    StatusMessage = "実行エラー: ListPanel VM 未解決";
+                    return;
+                }
+
+                if (IsRunning)
+                {
+                    _logger.LogWarning("既に実行中のため開始しません");
+                    return;
+                }
+                if (listPanelViewModel.Items.Count == 0)
+                {
+                    _logger.LogWarning("実行対象コマンドがありません");
+                    StatusMessage = "実行対象がありません";
+                    return;
+                }
+
+                // 準備
+                IsRunning = true;
+                listPanelViewModel.SetRunningState(true);
+                listPanelViewModel.InitializeProgress();
+                _currentCancellationTokenSource = new CancellationTokenSource();
+                var token = _currentCancellationTokenSource.Token;
+
+                // MacroFactory にサービスを渡す
+                MacroFactory.SetServiceProvider(_serviceProvider);
+                if (_pluginService != null)
+                {
+                    MacroFactory.SetPluginService(_pluginService);
+                }
+
+                // スナップショットを作成
+                var itemsSnapshot = listPanelViewModel.Items.ToList();
+
+                await Task.Run(async () =>
+                {
+                    try
+                    {
+                        // マクロを生成して実行
+                        var root = MacroFactory.CreateMacro(itemsSnapshot);
+                        var result = await root.Execute(token);
+                        _logger.LogInformation("マクロ実行完了: {Result}", result);
+                        StatusMessage = result ? "実行完了" : "一部失敗/中断";
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _logger.LogInformation("マクロがキャンセルされました");
+                        StatusMessage = "実行キャンセル";
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "マクロ実行中にエラー");
+                        StatusMessage = $"実行エラー: {ex.Message}";
+                    }
+                    finally
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            listPanelViewModel.SetRunningState(false);
+                            listPanelViewModel.CompleteProgress();
+                            IsRunning = false;
+                            _currentCancellationTokenSource?.Dispose();
+                            _currentCancellationTokenSource = null;
+                        });
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "StartMacroAsync 内でエラー");
+                StatusMessage = $"実行エラー: {ex.Message}";
+                IsRunning = false;
+            }
+        }
+
+        private void StopMacroInternal()
+        {
+            try
+            {
+                if (_currentCancellationTokenSource != null && ! _currentCancellationTokenSource.IsCancellationRequested)
+                {
+                    _currentCancellationTokenSource.Cancel();
+                    _logger.LogInformation("キャンセル要求を送信しました");
+                    StatusMessage = "停止要求中...";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "停止処理中にエラー");
+            }
+        }
+
+        private void SetupRunStopMessaging()
+        {
+            _messenger.Register<RunMessage>(this, (r, m) => { _ = StartMacroAsync(); });
+            _messenger.Register<StopMessage>(this, (r, m) => { StopMacroInternal(); });
         }
     }
 }
