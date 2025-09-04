@@ -184,10 +184,10 @@ namespace AutoTool.ViewModel.Panels
             WeakReferenceMessenger.Default.Register<RedoMessage>(this, (r, m) => RedoInternal());
             
             // アイテムタイプ変更メッセージの処理
-            // WeakReferenceMessenger.Default.Register<ChangeItemTypeMessage>(this, (r, m) => ChangeItemType(m.OldItem, m.NewItem)); // 一時的にコメントアウト
+            WeakReferenceMessenger.Default.Register<ChangeItemTypeMessage>(this, (r, m) => ChangeItemType(m.OldItem, m.NewItem));
             
             // リストビュー更新メッセージの処理
-            // WeakReferenceMessenger.Default.Register<RefreshListViewMessage>(this, (r, m) => RefreshList()); // 一時的にコメントアウト
+            WeakReferenceMessenger.Default.Register<RefreshListViewMessage>(this, (r, m) => RefreshList());
             
             // コマンド実行状態メッセージの処理
             WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (r, m) => OnCommandStarted(m));
@@ -199,7 +199,7 @@ namespace AutoTool.ViewModel.Panels
             WeakReferenceMessenger.Default.Register<SaveFileMessage>(this, (r, m) => SaveFileInternal(m.FilePath));
             
             // マクロ実行状態メッセージの処理
-            // WeakReferenceMessenger.Default.Register<MacroExecutionStateMessage>(this, (r, m) => SetRunningState(m.IsRunning)); // 一時的にコメントアウト
+            WeakReferenceMessenger.Default.Register<MacroExecutionStateMessage>(this, (r, m) => SetRunningState(m.IsRunning));
         }
 
         partial void OnSelectedItemChanged(ICommandListItem? value)

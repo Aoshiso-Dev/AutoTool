@@ -103,11 +103,12 @@ namespace AutoTool.ViewModel.Panels
         public bool IsNotNullItem => SelectedItem != null;
         public bool IsListEmpty => SelectedItem == null;
         public bool IsListNotEmpty => SelectedItem != null;
+        public bool IsListNotEmptyButNoSelection => false; // EditPanelでは常にfalse（選択されたアイテムがある場合のみ表示されるため）
 
-        public EditPanelViewModel(ILogger<EditPanelViewModel> logger, IMessenger messenger)
+        public EditPanelViewModel(ILogger<EditPanelViewModel> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+            _messenger = WeakReferenceMessenger.Default;
 
             InitializeCollections();
             SetupMessaging();
@@ -117,16 +118,40 @@ namespace AutoTool.ViewModel.Panels
 
         private void SetupMessaging()
         {
-            _messenger.Register<ChangeSelectedMessage>(this, (r, m) => 
+            try
             {
-                SelectedItem = m.SelectedItem;
-            });
+                _messenger.Register<ChangeSelectedMessage>(this, (r, m) => 
+                {
+                    _logger.LogDebug("ChangeSelectedMessage受信: {ItemType}", m.SelectedItem?.ItemType ?? "null");
+                    SelectedItem = m.SelectedItem;
+                });
+
+                _messenger.Register<ChangeItemTypeMessage>(this, (r, m) =>
+                {
+                    _logger.LogDebug("ChangeItemTypeMessage受信: {OldType} -> {NewType}", 
+                        m.OldItem?.ItemType, m.NewItem?.ItemType);
+                });
+
+                _messenger.Register<MacroExecutionStateMessage>(this, (r, m) =>
+                {
+                    _logger.LogDebug("MacroExecutionStateMessage受信: {IsRunning}", m.IsRunning);
+                    IsRunning = m.IsRunning;
+                });
+
+                _logger.LogDebug("メッセージング設定完了");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "メッセージング設定中にエラー");
+            }
         }
 
         private void InitializeCollections()
         {
             try
             {
+                _logger.LogDebug("コレクション初期化開始");
+
                 // CommandTypes
                 CommandRegistry.Initialize();
                 var displayItems = CommandRegistry.GetOrderedTypeNames()
@@ -138,11 +163,13 @@ namespace AutoTool.ViewModel.Panels
                     })
                     .ToList();
                 ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
+                _logger.LogDebug("ItemTypes初期化完了: {Count}個", ItemTypes.Count);
 
                 // MouseButtons
                 MouseButtons.Clear();
                 foreach (var button in Enum.GetValues(typeof(MouseButton)).Cast<MouseButton>())
                     MouseButtons.Add(button);
+                _logger.LogDebug("MouseButtons初期化完了: {Count}個", MouseButtons.Count);
 
                 // Keys
                 KeyList.Clear();
@@ -157,6 +184,7 @@ namespace AutoTool.ViewModel.Panels
                 };
                 foreach (var key in commonKeys)
                     KeyList.Add(key);
+                _logger.LogDebug("KeyList初期化完了: {Count}個", KeyList.Count);
 
                 // Operators
                 Operators.Clear();
@@ -171,11 +199,13 @@ namespace AutoTool.ViewModel.Panels
                 Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "EndsWith", DisplayName = "終わる (EndsWith)" });
                 Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsEmpty", DisplayName = "空である (IsEmpty)" });
                 Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsNotEmpty", DisplayName = "空でない (IsNotEmpty)" });
+                _logger.LogDebug("Operators初期化完了: {Count}個", Operators.Count);
 
                 // AI Detect Modes
                 AiDetectModes.Clear();
                 AiDetectModes.Add(new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Class", DisplayName = "クラス検出" });
                 AiDetectModes.Add(new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Count", DisplayName = "数量検出" });
+                _logger.LogDebug("AiDetectModes初期化完了: {Count}個", AiDetectModes.Count);
 
                 // Background Click Methods
                 BackgroundClickMethods.Clear();
@@ -187,12 +217,14 @@ namespace AutoTool.ViewModel.Panels
                 BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 5, DisplayName = "GameFullscreen" });
                 BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 6, DisplayName = "GameLowLevel" });
                 BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 7, DisplayName = "GameVirtualMouse" });
+                _logger.LogDebug("BackgroundClickMethods初期化完了: {Count}個", BackgroundClickMethods.Count);
 
-                _logger.LogDebug("EditPanelViewModel コレクション初期化完了");
+                _logger.LogInformation("EditPanelViewModel コレクション初期化完了");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "EditPanelViewModel コレクション初期化中にエラー");
+                throw;
             }
         }
 
@@ -289,7 +321,7 @@ namespace AutoTool.ViewModel.Panels
                 nameof(IsScreenshotItem), nameof(IsImageBasedItem), nameof(IsAIBasedItem),
                 nameof(IsVariableItem), nameof(IsLoopRelatedItem), nameof(IsIfRelatedItem),
                 nameof(ShowWindowInfo), nameof(ShowAdvancedSettings), nameof(IsNotNullItem),
-                nameof(IsListEmpty), nameof(IsListNotEmpty),
+                nameof(IsListEmpty), nameof(IsListNotEmpty), nameof(IsListNotEmptyButNoSelection),
                 // 値プロパティ
                 nameof(Comment), nameof(WindowTitle), nameof(WindowClassName),
                 nameof(ImagePath), nameof(Threshold), nameof(SearchColor),
@@ -307,6 +339,8 @@ namespace AutoTool.ViewModel.Panels
             {
                 OnPropertyChanged(property);
             }
+            
+            _logger.LogDebug("全プロパティ変更通知完了: {Count}個", properties.Length);
         }
 
         #region Properties for data binding (安全な実装)
@@ -420,27 +454,13 @@ namespace AutoTool.ViewModel.Panels
             set => SetItemProperty("Key", value);
         }
 
-        // Wait time properties
+        // Wait time properties - WaitItemのWaitプロパティ（ミリ秒）に対応
         public int WaitHours
         {
             get
             {
-                if (SelectedItem == null) return 0;
-                try
-                {
-                    var property = SelectedItem.GetType().GetProperty("WaitTime");
-                    if (property != null)
-                    {
-                        var value = property.GetValue(SelectedItem);
-                        if (value is TimeSpan timeSpan)
-                            return (int)timeSpan.TotalHours;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug("プロパティ取得エラー: WaitHours - {Error}", ex.Message);
-                }
-                return 0;
+                var waitMs = GetItemProperty<int>("Wait");
+                return (int)TimeSpan.FromMilliseconds(waitMs).TotalHours;
             }
             set => SetWaitTime(hours: value);
         }
@@ -449,22 +469,8 @@ namespace AutoTool.ViewModel.Panels
         {
             get
             {
-                if (SelectedItem == null) return 0;
-                try
-                {
-                    var property = SelectedItem.GetType().GetProperty("WaitTime");
-                    if (property != null)
-                    {
-                        var value = property.GetValue(SelectedItem);
-                        if (value is TimeSpan timeSpan)
-                            return timeSpan.Minutes;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug("プロパティ取得エラー: WaitMinutes - {Error}", ex.Message);
-                }
-                return 0;
+                var waitMs = GetItemProperty<int>("Wait");
+                return TimeSpan.FromMilliseconds(waitMs).Minutes;
             }
             set => SetWaitTime(minutes: value);
         }
@@ -473,22 +479,8 @@ namespace AutoTool.ViewModel.Panels
         {
             get
             {
-                if (SelectedItem == null) return 0;
-                try
-                {
-                    var property = SelectedItem.GetType().GetProperty("WaitTime");
-                    if (property != null)
-                    {
-                        var value = property.GetValue(SelectedItem);
-                        if (value is TimeSpan timeSpan)
-                            return timeSpan.Seconds;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug("プロパティ取得エラー: WaitSeconds - {Error}", ex.Message);
-                }
-                return 0;
+                var waitMs = GetItemProperty<int>("Wait");
+                return TimeSpan.FromMilliseconds(waitMs).Seconds;
             }
             set => SetWaitTime(seconds: value);
         }
@@ -497,22 +489,8 @@ namespace AutoTool.ViewModel.Panels
         {
             get
             {
-                if (SelectedItem == null) return 0;
-                try
-                {
-                    var property = SelectedItem.GetType().GetProperty("WaitTime");
-                    if (property != null)
-                    {
-                        var value = property.GetValue(SelectedItem);
-                        if (value is TimeSpan timeSpan)
-                            return timeSpan.Milliseconds;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug("プロパティ取得エラー: WaitMilliseconds - {Error}", ex.Message);
-                }
-                return 0;
+                var waitMs = GetItemProperty<int>("Wait");
+                return TimeSpan.FromMilliseconds(waitMs).Milliseconds;
             }
             set => SetWaitTime(milliseconds: value);
         }
@@ -523,24 +501,34 @@ namespace AutoTool.ViewModel.Panels
 
             try
             {
-                var currentHours = WaitHours;
-                var currentMinutes = WaitMinutes;
-                var currentSeconds = WaitSeconds;
-                var currentMilliseconds = WaitMilliseconds;
+                // 現在の値を取得
+                var currentWaitMs = GetItemProperty<int>("Wait");
+                var currentTime = TimeSpan.FromMilliseconds(currentWaitMs);
 
                 var newTime = new TimeSpan(
                     0, // days
-                    hours ?? currentHours,
-                    minutes ?? currentMinutes,
-                    seconds ?? currentSeconds,
-                    milliseconds ?? currentMilliseconds
+                    hours ?? (int)currentTime.TotalHours,
+                    minutes ?? currentTime.Minutes,
+                    seconds ?? currentTime.Seconds,
+                    milliseconds ?? currentTime.Milliseconds
                 );
 
-                SetItemProperty("WaitTime", newTime);
+                // WaitItemのWaitプロパティ（ミリ秒）に設定
+                var totalMs = (int)newTime.TotalMilliseconds;
+                SetItemProperty("Wait", totalMs);
+                
+                // 他の時間プロパティの更新通知
+                OnPropertyChanged(nameof(WaitHours));
+                OnPropertyChanged(nameof(WaitMinutes));
+                OnPropertyChanged(nameof(WaitSeconds));
+                OnPropertyChanged(nameof(WaitMilliseconds));
+                
+                _logger.LogDebug("Wait時間設定: {Hours}h {Minutes}m {Seconds}s {Milliseconds}ms (総計: {TotalMs}ms)", 
+                    newTime.Hours, newTime.Minutes, newTime.Seconds, newTime.Milliseconds, totalMs);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "WaitTime設定エラー");
+                _logger.LogError(ex, "Wait時間設定エラー");
             }
         }
 
@@ -871,6 +859,97 @@ namespace AutoTool.ViewModel.Panels
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern bool GetCursorPos(out System.Drawing.Point lpPoint);
+
+        #endregion
+
+        #region Diagnostics
+
+        /// <summary>
+        /// バインディング診断メソッド - デバッグ用
+        /// </summary>
+        public void DiagnosticProperties()
+        {
+            try
+            {
+                _logger.LogInformation("=== EditPanelViewModel プロパティ診断 ===");
+                _logger.LogInformation("SelectedItem: {SelectedItem}", SelectedItem?.ItemType ?? "null");
+                _logger.LogInformation("IsNotNullItem: {IsNotNullItem}", IsNotNullItem);
+                _logger.LogInformation("IsListEmpty: {IsListEmpty}", IsListEmpty);
+                _logger.LogInformation("IsListNotEmpty: {IsListNotEmpty}", IsListNotEmpty);
+                _logger.LogInformation("IsWaitImageItem: {IsWaitImageItem}", IsWaitImageItem);
+                _logger.LogInformation("IsClickImageItem: {IsClickImageItem}", IsClickImageItem);
+                _logger.LogInformation("IsWaitItem: {IsWaitItem}", IsWaitItem);
+                _logger.LogInformation("ShowWindowInfo: {ShowWindowInfo}", ShowWindowInfo);
+                _logger.LogInformation("ShowAdvancedSettings: {ShowAdvancedSettings}", ShowAdvancedSettings);
+                _logger.LogInformation("ItemTypes.Count: {Count}", ItemTypes.Count);
+                _logger.LogInformation("SelectedItemTypeObj: {SelectedItemTypeObj}", SelectedItemTypeObj?.DisplayName ?? "null");
+                
+                if (SelectedItem != null)
+                {
+                    _logger.LogInformation("SelectedItem詳細:");
+                    _logger.LogInformation("  ItemType: {ItemType}", SelectedItem.ItemType);
+                    _logger.LogInformation("  Comment: {Comment}", SelectedItem.Comment);
+                    _logger.LogInformation("  LineNumber: {LineNumber}", SelectedItem.LineNumber);
+                    _logger.LogInformation("  IsEnable: {IsEnable}", SelectedItem.IsEnable);
+                    _logger.LogInformation("  ActualType: {ActualType}", SelectedItem.GetType().Name);
+                    
+                    // WaitItemの場合は待機時間プロパティを詳細チェック
+                    if (IsWaitItem)
+                    {
+                        _logger.LogInformation("  Wait関連プロパティ診断:");
+                        var waitMs = GetItemProperty<int>("Wait");
+                        _logger.LogInformation("    Wait (ミリ秒): {WaitMs}", waitMs);
+                        _logger.LogInformation("    WaitHours: {WaitHours}", WaitHours);
+                        _logger.LogInformation("    WaitMinutes: {WaitMinutes}", WaitMinutes);
+                        _logger.LogInformation("    WaitSeconds: {WaitSeconds}", WaitSeconds);
+                        _logger.LogInformation("    WaitMilliseconds: {WaitMilliseconds}", WaitMilliseconds);
+                    }
+                    
+                    // リフレクションで利用可能なプロパティを一覧表示
+                    _logger.LogInformation("  利用可能なプロパティ:");
+                    var props = SelectedItem.GetType().GetProperties();
+                    foreach (var prop in props.Take(10)) // 最初の10個だけ
+                    {
+                        try
+                        {
+                            var value = prop.GetValue(SelectedItem);
+                            _logger.LogInformation("    {PropertyName}: {Value} ({Type})", 
+                                prop.Name, value ?? "null", prop.PropertyType.Name);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogInformation("    {PropertyName}: エラー ({Error})", prop.Name, ex.Message);
+                        }
+                    }
+                }
+                
+                _logger.LogInformation("=== 診断完了 ===");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "プロパティ診断中にエラー");
+            }
+        }
+
+        /// <summary>
+        /// バインディングテスト用メソッド
+        /// </summary>
+        public void TestPropertyNotification()
+        {
+            try
+            {
+                _logger.LogInformation("プロパティ変更通知テスト開始");
+                
+                // 全ての判定プロパティを明示的に更新
+                NotifyAllPropertiesChanged();
+                
+                _logger.LogInformation("プロパティ変更通知テスト完了");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "プロパティ変更通知テスト中にエラー");
+            }
+        }
 
         #endregion
     }

@@ -194,9 +194,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" MinWidth="350"/>
                     <ColumnDefinition Width="5"/>
-                    <ColumnDefinition Width="300" MinWidth="250"/>
-                    <ColumnDefinition Width="5"/>
-                    <ColumnDefinition Width="250" MinWidth="200"/>
+                    <ColumnDefinition Width="450"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Left Panel: Enhanced Command List with Progress -->
@@ -273,64 +271,8 @@
                     <!-- Edit Content - replaced with EditPanelView UserControl -->
                     <panels:EditPanelView Grid.Row="1" x:Name="EditPanelViewControl" />
                 </Grid>
-
-                <!-- Splitter 2 -->
-                <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
-                              Background="LightGray" ShowsPreview="True"/>
-
-                <!-- Right Panel: Favorites & Settings -->
-                <Grid Grid.Column="4">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- Favorites Header -->
-                    <Border Grid.Row="0" Background="LightGray" Padding="5">
-                        <TextBlock Text="⭐ お気に入り" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    </Border>
-
-                    <!-- Favorites Content -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" 
-                                  Margin="10" Padding="5">
-                        <StackPanel>
-                            <!-- Favorites feature description -->
-                            <Border BorderBrush="LightGreen" BorderThickness="1" Padding="10" Margin="0,10">
-                                <StackPanel>
-                                    <TextBlock Text="⭐ お気に入り機能" FontWeight="Bold" Foreground="DarkGreen"/>
-                                    <TextBlock Text="よく使用するマクロやコマンドパターンを保存して、すぐに呼び出せる機能です。" 
-                                               FontSize="11" Foreground="DarkGreen" TextWrapping="Wrap" Margin="0,5"/>
-                                    <TextBlock Text="今後のバージョンで実装予定です。" 
-                                               FontSize="11" Foreground="DarkGreen" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Settings feature description -->
-                            <Border BorderBrush="LightCoral" BorderThickness="1" Padding="10" Margin="0,10">
-                                <StackPanel>
-                                    <TextBlock Text="⚙️ 設定機能" FontWeight="Bold" Foreground="DarkRed"/>
-                                    <TextBlock Text="アプリケーションの動作設定、テーマ変更、ショートカットキーの設定などを行えます。" 
-                                               FontSize="11" Foreground="DarkRed" TextWrapping="Wrap" Margin="0,5"/>
-                                    <TextBlock Text="今後のバージョンで実装予定です。" 
-                                               FontSize="11" Foreground="DarkRed" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Progress info panel -->
-                            <Border BorderBrush="LightBlue" BorderThickness="1" Padding="10" Margin="0,10">
-                                <StackPanel>
-                                    <TextBlock Text="📊 実行進捗情報" FontWeight="Bold" Foreground="DarkBlue"/>
-                                    <TextBlock Text="{Binding ProgressText}" 
-                                               FontSize="12" Foreground="DarkBlue" Margin="0,5"/>
-                                    <TextBlock Text="{Binding CurrentExecutingDescription}" 
-                                               FontSize="11" Foreground="DarkBlue" TextWrapping="Wrap" Margin="0,2"/>
-                                    <TextBlock Text="{Binding EstimatedTimeRemaining, StringFormat='残り時間: {0}'}" 
-                                               FontSize="10" Foreground="DarkBlue" Margin="0,2"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </Grid>
+                 
+                
             </Grid>
         </Grid>
 

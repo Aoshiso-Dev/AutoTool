@@ -92,7 +92,18 @@ namespace AutoTool
                 // EditPanelのViewModel設定
                 var editPanelViewModel = _serviceProvider.GetRequiredService<EditPanelViewModel>();
                 EditPanelViewControl.DataContext = editPanelViewModel;
-                _logger?.LogDebug("EditPanelViewModel設定完了");
+                _logger?.LogDebug("EditPanelViewModel設定完了: {TypeName}", editPanelViewModel.GetType().FullName);
+                
+                // EditPanelViewModelの診断テストを実行
+                if (editPanelViewModel is AutoTool.ViewModel.Panels.EditPanelViewModel autoToolEditVM)
+                {
+                    autoToolEditVM.DiagnosticProperties();
+                    _logger?.LogInformation("EditPanelViewModel診断テスト実行完了");
+                }
+                else
+                {
+                    _logger?.LogWarning("EditPanelViewModelが期待される型ではありません: {ActualType}", editPanelViewModel?.GetType().FullName ?? "null");
+                }
             }
             catch (Exception ex)
             {
