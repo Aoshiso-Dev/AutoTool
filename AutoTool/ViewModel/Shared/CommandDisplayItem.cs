@@ -12,7 +12,7 @@ namespace AutoTool.ViewModel.Shared
         public string Category { get; init; } = string.Empty;      // カテゴリ名
 
         /// <summary>
-        /// デバッグ用の文字列表現（DisplayNameではなくTypeNameを返す）
+        /// デバッグ用の文字列表示（DisplayNameではなくTypeNameを返す）
         /// </summary>
         public override string ToString() => $"{DisplayName} ({TypeName})";
         
@@ -25,32 +25,5 @@ namespace AutoTool.ViewModel.Shared
         {
             return TypeName.GetHashCode();
         }
-    }
-
-    /// <summary>
-    /// 演算子アイテム
-    /// </summary>
-    public class OperatorItem
-    {
-        public string Key { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
-    }
-
-    /// <summary>
-    /// AI検出モードアイテム
-    /// </summary>
-    public class AIDetectModeItem
-    {
-        public string Key { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
-    }
-
-    /// <summary>
-    /// バックグラウンドクリック方式アイテム
-    /// </summary>
-    public class BackgroundClickMethodItem
-    {
-        public int Value { get; set; }
-        public string DisplayName { get; set; } = string.Empty;
     }
 }

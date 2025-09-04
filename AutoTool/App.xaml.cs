@@ -1,28 +1,23 @@
 ﻿using System;
-using System.Configuration;
-using System.Data;
 using System.Windows;
 using System.IO;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using AutoTool.Services;
-using AutoTool.Services.Safety;
-using AutoTool.Services.Configuration;
-using AutoTool.Logging; // 追加: ファイルロガー
-using AutoTool.ViewModel; // MainWindowViewModelの名前空間
-using AutoTool.Helpers;
+using Microsoft.Extensions.DependencyInjection;
+using AutoTool.Bootstrap;
+using AutoTool.ViewModel;
 
 namespace AutoTool
 {
     /// <summary>
-    /// Interaction logic for App.xaml
+    /// アプリケーションエントリポイント（クリーンアーキテクチャ対応）
     /// </summary>
     public partial class App : Application
     {
-        internal IHost? _host;
+        private IApplicationBootstrapper? _bootstrapper;
         private ILogger<App>? _logger;
+
+        // Bootstrapper経由でHostにアクセス
+        internal IServiceProvider? Services => _bootstrapper?.Host?.Services;
 
         /// <summary>
         /// アプリケーション開始時の処理
@@ -31,76 +26,39 @@ namespace AutoTool
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("=== App.OnStartup 開始 ===");
-                // Settings.json (全体設定 + Logging) を生成/確保
+                // 設定ファイルの準備
                 EnsureSettingsFile();
-                // 例外ハンドラーを早期に設定
-                this.DispatcherUnhandledException += Application_DispatcherUnhandledException;
-                AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
                 
-                // 安全な起動チェック
-                if (!SafeActivator.CanActivateApplication())
+                // 例外ハンドラーの設定
+                SetupExceptionHandling();
+                
+                // アプリケーションの初期化
+                _bootstrapper = new ApplicationBootstrapper();
+                var initSuccess = await _bootstrapper.InitializeAsync();
+                
+                if (!initSuccess)
                 {
-                    MessageBox.Show("アプリケーションの起動に失敗しました。",
-                        "起動エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                    Shutdown();
+                    ShowErrorAndShutdown("アプリケーションの初期化に失敗しました。詳細はログを確認してください。");
                     return;
                 }
 
-                // ホストビルダーの作成
-                var hostBuilder = CreateHostBuilder();
-                _host = hostBuilder.Build();
-
-                // サービスプロバイダーから必要なサービスを取得
-                var serviceProvider = _host.Services;
-                _logger = serviceProvider.GetRequiredService<ILogger<App>>();
-
+                // ロガーを取得
+                _logger = _bootstrapper.Host.Services.GetRequiredService<ILogger<App>>();
                 _logger.LogInformation("AutoTool アプリケーション開始");
 
-                // ホストを開始
-                await _host.StartAsync();
-
-                // プラグインシステムを初期化
-                var pluginService = serviceProvider.GetService<AutoTool.Services.Plugin.IPluginService>();
-                if (pluginService != null)
-                {
-                    await pluginService.LoadAllPluginsAsync();
-                    _logger.LogInformation("プラグインシステム初期化完了");
-                }
-
-                // MacroFactoryとCommandRegistryの初期化
-                AutoTool.Model.MacroFactory.MacroFactory.SetServiceProvider(serviceProvider);
-                AutoTool.Model.CommandDefinition.CommandRegistry.Initialize();
-
-                // JsonSerializerHelperのロガーを初期化
-                var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-                var jsonLogger = loggerFactory.CreateLogger("JsonSerializerHelper");
-                JsonSerializerHelper.SetLogger(jsonLogger);
-
-                // ViewModelLocatorを初期化（ViewのDI対応）
-                ViewModelLocator.Initialize(serviceProvider);
-                _logger.LogInformation("ViewModelLocator初期化完了");
-
-                // メインウィンドウを作成して表示
-                var mainWindowViewModel = serviceProvider.GetRequiredService<MainWindowViewModel>();
-                var mainWindow = new MainWindow
-                {
-                    DataContext = mainWindowViewModel
-                };
-                MainWindow = mainWindow;
-                mainWindow.Show();
-
-                System.Diagnostics.Debug.WriteLine("=== App.OnStartup 完了 ===");
-                _logger.LogInformation("MainWindow作成とDataContext設定完了");
+                // メインウィンドウの作成と表示
+                CreateAndShowMainWindow();
+                
+                _logger.LogInformation("MainWindow作成と表示完了");
             }
             catch (Exception ex)
             {
-                var errorMessage = $"アプリケーション起動中にエラーが発生しました: {ex.Message}";
-                System.Diagnostics.Debug.WriteLine(errorMessage);
-                _logger?.LogCritical(ex, "アプリケーション起動エラー");
+                var detailMessage = $"アプリケーション起動中にエラーが発生しました:\n\n" +
+                                   $"エラータイプ: {ex.GetType().Name}\n" +
+                                   $"メッセージ: {ex.Message}\n\n" +
+                                   $"スタックトレース:\n{ex.StackTrace}";
                 
-                MessageBox.Show(errorMessage, "起動エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                Shutdown();
+                ShowErrorAndShutdown(detailMessage);
             }
 
             base.OnStartup(e);
@@ -113,12 +71,9 @@ namespace AutoTool
         {
             try
             {
-                _logger?.LogInformation("AutoTool アプリケーション終了");
-
-                if (_host != null)
+                if (_bootstrapper != null)
                 {
-                    await _host.StopAsync();
-                    _host.Dispose();
+                    await _bootstrapper.ShutdownAsync();
                 }
             }
             catch (Exception ex)
@@ -132,153 +87,253 @@ namespace AutoTool
         }
 
         /// <summary>
-        /// ハンドルされていない例外の処理
+        /// 例外ハンドリングの設定
         /// </summary>
-        private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        private void SetupExceptionHandling()
+        {
+            DispatcherUnhandledException += Application_DispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        }
+
+        /// <summary>
+        /// メインウィンドウの作成と表示（エラーハンドリング強化）
+        /// </summary>
+        private void CreateAndShowMainWindow()
+        {
+            if (_bootstrapper?.Host == null)
+            {
+                throw new InvalidOperationException("Bootstrapper Host が初期化されていません");
+            }
+
+            try
+            {
+                _logger?.LogInformation("MainWindowViewModel の取得を開始します");
+                
+                // 依存関係の詳細チェック
+                var services = _bootstrapper.Host.Services;
+                
+                // 必要な依存関係が登録されているかチェック
+                var requiredServices = new[]
+                {
+                    typeof(ILogger<MainWindowViewModel>),
+                    typeof(IServiceProvider),
+                    typeof(AutoTool.Services.IRecentFileService),
+                    typeof(AutoTool.Services.Plugin.IPluginService),
+                    typeof(AutoTool.Services.UI.IMainWindowMenuService),
+                    typeof(AutoTool.Services.UI.IMainWindowButtonService)
+                };
+
+                foreach (var serviceType in requiredServices)
+                {
+                    var service = services.GetService(serviceType);
+                    if (service == null)
+                    {
+                        _logger?.LogError("必須サービスが見つかりません: {ServiceType}", serviceType.Name);
+                        throw new InvalidOperationException($"必須サービスが見つかりません: {serviceType.Name}");
+                    }
+                    else
+                    {
+                        _logger?.LogDebug("サービス確認OK: {ServiceType}", serviceType.Name);
+                    }
+                }
+
+                var mainWindowViewModel = services.GetRequiredService<MainWindowViewModel>();
+                _logger?.LogInformation("MainWindowViewModel の取得に成功しました");
+                
+                var mainWindow = new MainWindow
+                {
+                    DataContext = mainWindowViewModel
+                };
+                
+                MainWindow = mainWindow;
+                mainWindow.Show();
+                
+                _logger?.LogInformation("MainWindow の表示が完了しました");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "MainWindow作成中にエラー");
+                throw new InvalidOperationException($"MainWindow作成に失敗: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// エラー表示と終了（詳細エラー情報付き）
+        /// </summary>
+        private void ShowErrorAndShutdown(string message)
+        {
+            // コンソールにも出力
+            Console.WriteLine($"[FATAL ERROR] {DateTime.Now}: {message}");
+            
+            MessageBox.Show(message, "起動エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
+        }
+
+        /// <summary>
+        /// UI例外ハンドラー
+        /// </summary>
+        private void Application_DispatcherUnhandledException(object sender, 
+            System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             try
             {
-                var errorDetails = $"UI Thread Exception: {e.Exception}";
-                System.Diagnostics.Debug.WriteLine(errorDetails);
                 _logger?.LogCritical(e.Exception, "ハンドルされていないUI例外が発生しました");
 
-                // DefaultBinderエラーの特別処理
-                if (e.Exception is System.Reflection.TargetParameterCountException ||
-                    e.Exception.Message.Contains("DefaultBinder") ||
-                    e.Exception.Message.Contains("Object reference not set"))
+                // 軽微なエラーは継続、重大なエラーは終了
+                if (IsMinorError(e.Exception))
                 {
-                    System.Diagnostics.Debug.WriteLine("DefaultBinder関連エラーを検出しました");
-                    _logger?.LogWarning("DefaultBinder関連エラーが発生しました。継続して実行します。");
-                    
-                    var message = "アプリケーションで軽微なエラーが発生しました。\n" +
-                                "継続して実行します。\n\n" +
-                                "エラーの詳細:\n" + e.Exception.Message;
-
-                    MessageBox.Show(message, "情報", 
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                    
-                    e.Handled = true; // エラーを処理済みとしてアプリケーションを継続
-                    return;
-                }
-
-                // その他の一般的なエラー
-                var userMessage = $"予期しないエラーが発生しました。\n\n{e.Exception.Message}\n\nアプリケーションを継続しますか？";
-
-                var result = MessageBox.Show(userMessage, "予期しないエラー", 
-                    MessageBoxButton.YesNo, MessageBoxImage.Error);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    e.Handled = true;
-                    _logger?.LogInformation("ユーザーがアプリケーション継続を選択しました");
-                    System.Diagnostics.Debug.WriteLine("エラー処理: 継続選択");
+                    HandleMinorError(e);
                 }
                 else
                 {
-                    _logger?.LogInformation("ユーザーがアプリケーション終了を選択しました");
-                    System.Diagnostics.Debug.WriteLine("エラー処理: 終了選択");
-                    Current?.Shutdown(1);
+                    HandleCriticalError(e);
                 }
             }
             catch (Exception ex)
             {
                 // 最後の砦
-                System.Diagnostics.Debug.WriteLine($"例外ハンドラーでさらに例外が発生: {ex}");
-                MessageBox.Show(
-                    "重大なエラーが発生しました。アプリケーションを強制終了します。", 
-                    "システムエラー", 
-                    MessageBoxButton.OK, 
-                    MessageBoxImage.Stop);
-                Current?.Shutdown(1);
+                MessageBox.Show("重大なエラーが発生しました。アプリケーションを強制終了します。", 
+                    "システムエラー", MessageBoxButton.OK, MessageBoxImage.Stop);
+                Shutdown(1);
             }
         }
 
         /// <summary>
-        /// アプリケーションドメインレベルの例外処理
+        /// AppDomain例外ハンドラー
         /// </summary>
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             try
             {
                 var exception = e.ExceptionObject as Exception;
-                var errorDetails = $"AppDomain Exception: {exception}";
-                System.Diagnostics.Debug.WriteLine(errorDetails);
                 _logger?.LogCritical(exception, "ハンドルされていないAppDomain例外が発生しました");
 
                 if (exception != null)
                 {
-                    MessageBox.Show(
-                        $"重大なエラーが発生しました。アプリケーションを終了します。\n\n{exception.Message}",
-                        "重大なエラー",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                    var detailMessage = $"重大なエラーが発生しました:\n\n" +
+                                       $"タイプ: {exception.GetType().Name}\n" +
+                                       $"メッセージ: {exception.Message}\n\n" +
+                                       $"スタックトレース:\n{exception.StackTrace}";
+                    
+                    MessageBox.Show(detailMessage, "重大なエラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"AppDomain例外ハンドラーでエラー: {ex}");
+                // 緊急フォールバック
+                MessageBox.Show("システムエラーが発生しました。", "エラー", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         /// <summary>
-        /// Settings.json (全設定 + Logging) を exe ディレクトリに生成。旧 appsettings.json (AppData) が存在し新設定が無い場合は移行。
+        /// 軽微なエラーかどうかを判定
         /// </summary>
-        private void EnsureSettingsFile()
+        private static bool IsMinorError(Exception exception)
+        {
+            return exception is System.Reflection.TargetParameterCountException ||
+                   exception.Message.Contains("DefaultBinder") ||
+                   exception.Message.Contains("Object reference not set");
+        }
+
+        /// <summary>
+        /// 軽微なエラーの処理
+        /// </summary>
+        private void HandleMinorError(System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            _logger?.LogWarning("軽微なエラーが発生しました。継続して実行します。");
+            
+            MessageBox.Show("アプリケーションで軽微なエラーが発生しました。\n継続して実行します。\n\n" +
+                          $"エラーの詳細:\n{e.Exception.Message}", "情報", 
+                          MessageBoxButton.OK, MessageBoxImage.Information);
+            
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// 重大なエラーの処理
+        /// </summary>
+        private void HandleCriticalError(System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            var userMessage = $"予期しないエラーが発生しました。\n\n{e.Exception.Message}\n\n" +
+                             "アプリケーションを継続しますか？";
+
+            var result = MessageBox.Show(userMessage, "予期しないエラー", 
+                MessageBoxButton.YesNo, MessageBoxImage.Error);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                e.Handled = true;
+                _logger?.LogInformation("ユーザーがアプリケーション継続を選択しました");
+            }
+            else
+            {
+                _logger?.LogInformation("ユーザーがアプリケーション終了を選択しました");
+                Shutdown(1);
+            }
+        }
+
+        /// <summary>
+        /// Settings.jsonファイルの確保
+        /// </summary>
+        private static void EnsureSettingsFile()
         {
             try
             {
                 var exeDir = AppContext.BaseDirectory;
                 var settingsPath = Path.Combine(exeDir, "Settings.json");
 
-                // 旧形式 (AppData) から移行
-                var oldPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AutoTool", "appsettings.json");
+                // 旧形式からの移行
+                var oldPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+                    "AutoTool", "appsettings.json");
+                
                 if (!File.Exists(settingsPath) && File.Exists(oldPath))
                 {
-                    try
-                    {
-                        File.Copy(oldPath, settingsPath, overwrite: false);
-                    }
-                    catch { /* ignore */ }
+                    File.Copy(oldPath, settingsPath, overwrite: false);
                 }
 
+                // ファイルが存在しない場合はEnhancedConfigurationServiceが自動作成するため、
+                // ここでは最小限の処理のみ
                 if (!File.Exists(settingsPath))
                 {
-                    var sample = "{\n  \"Logging\": {\n    \"LogLevel\": {\n      \"Default\": \"Information\",\n      \"Microsoft\": \"Warning\",\n      \"Microsoft.Hosting.Lifetime\": \"Information\",\n      \"AutoTool\": \"Debug\"\n    }\n  },\n  \"App\": {\n    \"Theme\": \"Light\",\n    \"Language\": \"ja-JP\",\n    \"AutoSave\": true,\n    \"AutoSaveInterval\": 300\n  },\n  \"Macro\": {\n    \"DefaultTimeout\": 5000,\n    \"DefaultInterval\": 100\n  },\n  \"UI\": {\n    \"GridSplitterPosition\": 0.5,\n    \"TabIndex\": { \n      \"List\": 0,\n      \"Edit\": 0\n    }\n  }\n}";
-                    File.WriteAllText(settingsPath, sample);
+                    CreateMinimalSettingsFile(settingsPath);
                 }
             }
-            catch { /* ignore */ }
+            catch (Exception ex)
+            {
+                // 設定ファイル作成に失敗してもアプリケーションは起動する
+                // EnhancedConfigurationServiceが代替処理を行う
+                System.Diagnostics.Debug.WriteLine($"Settings.json作成警告: {ex.Message}");
+            }
         }
 
         /// <summary>
-        /// ホストビルダー (Settings.json を統合設定として使用)
+        /// 最小限の設定ファイルの作成（詳細はEnhancedConfigurationServiceに委譲）
         /// </summary>
-        private static IHostBuilder CreateHostBuilder()
+        private static void CreateMinimalSettingsFile(string path)
         {
-            return Host.CreateDefaultBuilder()
-                .ConfigureAppConfiguration((ctx, cfg) =>
+            var minimalSettings = """
                 {
-                    cfg.SetBasePath(AppContext.BaseDirectory);
-                    cfg.AddJsonFile("Settings.json", optional: true, reloadOnChange: true);
-                    // 環境変数/コマンドラインも反映可能に
-                    cfg.AddEnvironmentVariables(prefix: "AUTOTOOL_");
-                })
-                .ConfigureLogging((ctx, logging) =>
-                {
-                    logging.ClearProviders();
-                    logging.SetMinimumLevel(LogLevel.Trace);
-                    logging.AddConfiguration(ctx.Configuration.GetSection("Logging"));
-                    logging.AddConsole();
-                    logging.AddDebug();
-                    logging.AddSimpleFile();
-                    var configured = ctx.Configuration["Logging:LogLevel:Default"] ?? "(null)";
-                    System.Diagnostics.Debug.WriteLine($"[Logging] Configured Default LogLevel = {configured}");
-                })
-                .ConfigureServices((context, services) =>
-                {
-                    services.AddAutoToolServices();
-                    services.AddTransient<MainWindowViewModel>();
-                });
+                  "Logging": {
+                    "LogLevel": {
+                      "Default": "Information",
+                      "AutoTool": "Debug"
+                    }
+                  },
+                  "App": {
+                    "Theme": "Light",
+                    "Language": "ja-JP",
+                    "AutoSave": true,
+                    "AutoSaveInterval": 300
+                  },
+                  "Macro": {
+                    "DefaultTimeout": 5000,
+                    "DefaultInterval": 100
+                  }
+                }
+                """;
+            
+            File.WriteAllText(path, minimalSettings);
         }
     }
 }

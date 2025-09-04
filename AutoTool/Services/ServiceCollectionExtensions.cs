@@ -10,6 +10,7 @@ using AutoTool.Model.List.Interface;
 using AutoTool.Helpers;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.Messaging;
+using System;
 
 namespace AutoTool.Services
 {
@@ -43,20 +44,40 @@ namespace AutoTool.Services
             // 変数ストアサービス（AutoTool版を登録）
             services.AddSingleton<AutoTool.Services.IVariableStore, AutoTool.Services.VariableStore>();
 
+            // マクロ実行サービス
+            services.AddSingleton<AutoTool.Services.Execution.IMacroExecutionService, AutoTool.Services.Execution.MacroExecutionService>();
+
+            // 設定管理サービス
+            services.AddSingleton<AutoTool.Services.Configuration.IEnhancedConfigurationService, AutoTool.Services.Configuration.EnhancedConfigurationService>();
+
             // UI関連サービス（View-ViewModel DI対応）
             services.AddSingleton<AutoTool.Services.UI.IDataContextLocator, AutoTool.Services.UI.DataContextLocator>();
+            services.AddSingleton<AutoTool.Services.UI.IUIStateService, AutoTool.Services.UI.UIStateService>();
+            services.AddSingleton<AutoTool.Services.UI.IWindowSettingsService, AutoTool.Services.UI.WindowSettingsService>();
+            services.AddSingleton<AutoTool.Services.UI.IEnhancedThemeService, AutoTool.Services.UI.EnhancedThemeService>();
+            services.AddSingleton<AutoTool.Services.UI.IAppSettingsService, AutoTool.Services.UI.AppSettingsService>();
+            
+            // EditPanelPropertyService (廃止予定) - 後方互換性のため一時的に保持
+            services.AddSingleton<AutoTool.Services.UI.IEditPanelPropertyService, AutoTool.Services.UI.EditPanelPropertyService>();
+            
+            // MainWindow関連サービス
+            services.AddSingleton<AutoTool.Services.UI.IMainWindowMenuService, AutoTool.Services.UI.MainWindowMenuService>();
+            services.AddSingleton<AutoTool.Services.UI.IMainWindowButtonService, AutoTool.Services.UI.MainWindowButtonService>();
 
-            // ViewModel的登録（シングルトン）
+            // アプリケーション初期化サービス
+            services.AddSingleton<AutoTool.Bootstrap.IApplicationBootstrapper, AutoTool.Bootstrap.ApplicationBootstrapper>();
+
+            // ViewModel登録（シングルトン） - 標準MVVM方式に統一
             services.AddSingleton<EditPanelViewModel>();
             services.AddSingleton<MainWindowViewModel>();
             services.AddSingleton<FavoritePanelViewModel>();
             services.AddSingleton<ListPanelViewModel>();
 
-            // モデル的登録
+            // モデル登録
             services.AddTransient<CommandList>();
             services.AddTransient<BasicCommandItem>();
 
-            // JSON設定的登録
+            // JSON設定登録
             services.AddSingleton<JsonSerializerOptions>(provider =>
             {
                 return new JsonSerializerOptions
@@ -67,20 +88,29 @@ namespace AutoTool.Services
                 };
             });
 
-            // CommandListItemファクトリーパターンの追加
+            // CommandListItemファクトリーパターン
             services.AddSingleton<ICommandListItemFactory, CommandListItemFactory>();
 
-            // JsonSerializerHelperにロガーを設定
-            services.AddSingleton<IServiceProvider>(provider =>
+            // JsonSerializerHelperにロガーを設定（循環参照を避けるため初期化時に処理）
+            services.AddSingleton<Action<IServiceProvider>>(provider =>
             {
-                var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-                var logger = loggerFactory.CreateLogger("JsonSerializerHelper");
-                JsonSerializerHelper.SetLogger(logger);
-                
-                // CommandFactoryにもServiceProviderを設定
-                AutoTool.Command.Class.CommandFactory.SetServiceProvider(provider);
-                
-                return provider;
+                return (sp) =>
+                {
+                    try
+                    {
+                        var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+                        var logger = loggerFactory.CreateLogger("JsonSerializerHelper");
+                        JsonSerializerHelper.SetLogger(logger);
+                        
+                        // CommandFactoryにもServiceProviderを設定
+                        AutoTool.Command.Class.CommandFactory.SetServiceProvider(sp);
+                    }
+                    catch (Exception ex)
+                    {
+                        // フォールバック: コンソールに出力
+                        Console.WriteLine($"JsonSerializerHelper初期化エラー: {ex.Message}");
+                    }
+                };
             });
 
             return services;

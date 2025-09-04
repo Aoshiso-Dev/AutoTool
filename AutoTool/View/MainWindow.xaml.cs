@@ -56,9 +56,9 @@ namespace AutoTool
         /// </summary>
         private void InitializeDI()
         {
-            if (Application.Current is App app && app._host != null)
+            if (Application.Current is App app && app.Services != null)
             {
-                _serviceProvider = app._host.Services;
+                _serviceProvider = app.Services;
                 _logger = _serviceProvider.GetService<ILogger<MainWindow>>();
                 _dataContextLocator = _serviceProvider.GetService<IDataContextLocator>();
 

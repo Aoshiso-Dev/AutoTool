@@ -1,0 +1,27 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information",
+      "AutoTool": "Debug"
+    }
+  },
+  "App": {
+    "Theme": "Light",
+    "Language": "ja-JP", 
+    "AutoSave": true,
+    "AutoSaveInterval": 300
+  },
+  "Macro": {
+    "DefaultTimeout": 5000,
+    "DefaultInterval": 100
+  },
+  "UI": {
+    "GridSplitterPosition": 0.5,
+    "TabIndex": {
+      "List": 0,
+      "Edit": 0
+    }
+  }
+}

@@ -39,9 +39,9 @@ namespace AutoTool.View.Base
 
         private void InitializeDI()
         {
-            if (Application.Current is App app && app._host != null)
+            if (Application.Current is App app && app.Services != null)
             {
-                ServiceProvider = app._host.Services;
+                ServiceProvider = app.Services;
                 Logger = ServiceProvider.GetService<ILogger<DIViewBase>>();
                 DataContextLocator = ServiceProvider.GetService<IDataContextLocator>();
 
@@ -135,9 +135,9 @@ namespace AutoTool.View.Base
 
         private void InitializeDI()
         {
-            if (Application.Current is App app && app._host != null)
+            if (Application.Current is App app && app.Services != null)
             {
-                ServiceProvider = app._host.Services;
+                ServiceProvider = app.Services;
                 Logger = ServiceProvider.GetService<ILogger<DIWindowBase>>();
                 DataContextLocator = ServiceProvider.GetService<IDataContextLocator>();
 

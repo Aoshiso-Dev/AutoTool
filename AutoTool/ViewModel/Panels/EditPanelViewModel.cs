@@ -12,35 +12,42 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows.Input;
-using System.Windows.Forms;
 using System.Windows.Media;
 using System.IO;
 using AutoTool.ViewModel.Shared;
 using System.Runtime.CompilerServices;
+using System;
+using System.Linq;
 
 namespace AutoTool.ViewModel.Panels
 {
     /// <summary>
-    /// Edit Panel用のViewModel (統合版)
+    /// 標準MVVMパターンによるEditPanelViewModel (統一版)
     /// </summary>
     public partial class EditPanelViewModel : ObservableObject
     {
         private readonly ILogger<EditPanelViewModel> _logger;
+        private readonly IMessenger _messenger;
         private bool _isUpdating = false;
-        private ICommandListItem? _item;
+        
+        [ObservableProperty]
+        private ICommandListItem? _selectedItem;
+
+        [ObservableProperty]
+        private bool _isRunning = false;
 
         // Collections for binding
         [ObservableProperty]
         private ObservableCollection<CommandDisplayItem> _itemTypes = new();
 
         [ObservableProperty]
-        private ObservableCollection<OperatorItem> _operators = new();
+        private ObservableCollection<AutoTool.ViewModel.Shared.OperatorItem> _operators = new();
 
         [ObservableProperty]
-        private ObservableCollection<AIDetectModeItem> _aiDetectModes = new();
+        private ObservableCollection<AutoTool.ViewModel.Shared.AIDetectModeItem> _aiDetectModes = new();
 
         [ObservableProperty]
-        private ObservableCollection<BackgroundClickMethodItem> _backgroundClickMethods = new();
+        private ObservableCollection<AutoTool.ViewModel.Shared.BackgroundClickMethodItem> _backgroundClickMethods = new();
 
         [ObservableProperty]
         private ObservableCollection<MouseButton> _mouseButtons = new();
@@ -62,83 +69,66 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        [ObservableProperty]
-        private bool _isRunning = false;
+        // アイテムタイプ判定プロパティ
+        public bool IsWaitImageItem => SelectedItem?.ItemType == "Wait_Image";
+        public bool IsClickImageItem => SelectedItem?.ItemType == "Click_Image";
+        public bool IsClickImageAIItem => SelectedItem?.ItemType == "Click_Image_AI";
+        public bool IsHotkeyItem => SelectedItem?.ItemType == "Hotkey";
+        public bool IsClickItem => SelectedItem?.ItemType == "Click";
+        public bool IsWaitItem => SelectedItem?.ItemType == "Wait";
+        public bool IsLoopItem => SelectedItem?.ItemType == "Loop";
+        public bool IsLoopEndItem => SelectedItem?.ItemType == "Loop_End";
+        public bool IsLoopBreakItem => SelectedItem?.ItemType == "Loop_Break";
+        public bool IsIfImageExistItem => SelectedItem?.ItemType == "IF_ImageExist";
+        public bool IsIfImageNotExistItem => SelectedItem?.ItemType == "IF_ImageNotExist";
+        public bool IsIfImageExistAIItem => SelectedItem?.ItemType == "IF_ImageExist_AI";
+        public bool IsIfImageNotExistAIItem => SelectedItem?.ItemType == "IF_ImageNotExist_AI";
+        public bool IsIfEndItem => SelectedItem?.ItemType == "IF_End";
+        public bool IsIfVariableItem => SelectedItem?.ItemType == "IF_Variable";
+        public bool IsExecuteItem => SelectedItem?.ItemType == "Execute";
+        public bool IsSetVariableItem => SelectedItem?.ItemType == "SetVariable";
+        public bool IsSetVariableAIItem => SelectedItem?.ItemType == "SetVariable_AI";
+        public bool IsScreenshotItem => SelectedItem?.ItemType == "Screenshot";
 
-        // アイテムプロパティ
-        public ICommandListItem? Item
-        {
-            get => _item;
-            set
-            {
-                if (SetProperty(ref _item, value))
-                {
-                    OnItemChanged();
-                }
-            }
-        }
-
-        // 判定プロパティ
-        public bool IsNotNullItem => Item != null;
-        public bool IsListEmpty => !IsNotNullItem;
-        public bool IsListNotEmpty => IsNotNullItem;
-        public bool IsListNotEmptyButNoSelection => false; // TODO: 実装が必要な場合
-
-        // アイテムタイプ判定
-        public bool IsWaitImageItem => Item?.ItemType == "Wait_Image";
-        public bool IsClickImageItem => Item?.ItemType == "Click_Image";
-        public bool IsClickImageAIItem => Item?.ItemType == "Click_Image_AI";
-        public bool IsHotkeyItem => Item?.ItemType == "Hotkey";
-        public bool IsClickItem => Item?.ItemType == "Click";
-        public bool IsWaitItem => Item?.ItemType == "Wait";
-        public bool IsLoopItem => Item?.ItemType == "Loop";
-        public bool IsLoopEndItem => Item?.ItemType == "Loop_End";
-        public bool IsLoopBreakItem => Item?.ItemType == "Loop_Break";
-        public bool IsIfImageExistItem => Item?.ItemType == "IF_ImageExist";
-        public bool IsIfImageNotExistItem => Item?.ItemType == "IF_ImageNotExist";
-        public bool IsIfImageExistAIItem => Item?.ItemType == "IF_ImageExist_AI";
-        public bool IsIfImageNotExistAIItem => Item?.ItemType == "IF_ImageNotExist_AI";
-        public bool IsIfEndItem => Item?.ItemType == "IF_End";
-        public bool IsIfVariableItem => Item?.ItemType == "IF_Variable";
-        public bool IsExecuteItem => Item?.ItemType == "Execute";
-        public bool IsSetVariableItem => Item?.ItemType == "SetVariable";
-        public bool IsSetVariableAIItem => Item?.ItemType == "SetVariable_AI";
-        public bool IsScreenshotItem => Item?.ItemType == "Screenshot";
-
-        // 複合条件
-        public bool IsImageBasedItem => IsWaitImageItem || IsClickImageItem || IsIfImageExistItem || IsIfImageNotExistItem;
+        // 複合条件判定
+        public bool IsImageBasedItem => IsWaitImageItem || IsClickImageItem || IsIfImageExistItem || IsIfImageNotExistItem || IsScreenshotItem;
         public bool IsAIBasedItem => IsClickImageAIItem || IsIfImageExistAIItem || IsIfImageNotExistAIItem || IsSetVariableAIItem;
-        public bool IsVariableItem => IsSetVariableItem || IsIfVariableItem || IsSetVariableAIItem;
+        public bool IsVariableItem => IsIfVariableItem || IsSetVariableItem || IsSetVariableAIItem;
         public bool IsLoopRelatedItem => IsLoopItem || IsLoopEndItem || IsLoopBreakItem;
         public bool IsIfRelatedItem => IsIfImageExistItem || IsIfImageNotExistItem || IsIfImageExistAIItem || IsIfImageNotExistAIItem || IsIfVariableItem || IsIfEndItem;
 
-        // 表示制御
-        public bool ShowWindowInfo => IsNotNullItem && (IsWaitImageItem || IsClickImageItem || IsClickImageAIItem || IsIfImageExistItem || IsIfImageNotExistItem || IsIfImageExistAIItem || IsIfImageNotExistAIItem || IsHotkeyItem || IsClickItem || IsScreenshotItem || IsSetVariableAIItem);
-        public bool ShowAdvancedSettings => IsNotNullItem && !IsLoopBreakItem;
+        // 表示制御プロパティ
+        public bool ShowWindowInfo => IsWaitImageItem || IsClickImageItem || IsHotkeyItem || IsClickItem || IsScreenshotItem || IsAIBasedItem;
+        public bool ShowAdvancedSettings => IsClickImageItem || IsClickItem || (IsAIBasedItem && !IsIfRelatedItem);
+        public bool IsNotNullItem => SelectedItem != null;
+        public bool IsListEmpty => SelectedItem == null;
+        public bool IsListNotEmpty => SelectedItem != null;
 
-        public EditPanelViewModel(ILogger<EditPanelViewModel> logger)
+        public EditPanelViewModel(ILogger<EditPanelViewModel> logger, IMessenger messenger)
         {
-            _logger = logger;
-            SetupMessaging();
-            InitializeItemTypes();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+
             InitializeCollections();
-            _logger.LogDebug("EditPanelViewModel初期化完了");
+            SetupMessaging();
+            
+            _logger.LogInformation("EditPanelViewModel (統一版) を初期化しました");
         }
 
         private void SetupMessaging()
         {
-            WeakReferenceMessenger.Default.Register<ChangeSelectedMessage>(this, (r, m) => 
+            _messenger.Register<ChangeSelectedMessage>(this, (r, m) => 
             {
-                Item = m.SelectedItem;
+                SelectedItem = m.SelectedItem;
             });
         }
 
-        private void InitializeItemTypes()
+        private void InitializeCollections()
         {
             try
             {
+                // CommandTypes
                 CommandRegistry.Initialize();
-
                 var displayItems = CommandRegistry.GetOrderedTypeNames()
                     .Select(typeName => new CommandDisplayItem
                     {
@@ -147,156 +137,91 @@ namespace AutoTool.ViewModel.Panels
                         Category = CommandRegistry.DisplayOrder.GetCategoryName(typeName)
                     })
                     .ToList();
-
                 ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
+
+                // MouseButtons
+                MouseButtons.Clear();
+                foreach (var button in Enum.GetValues(typeof(MouseButton)).Cast<MouseButton>())
+                    MouseButtons.Add(button);
+
+                // Keys
+                KeyList.Clear();
+                var commonKeys = new[]
+                {
+                    Key.Escape, Key.Enter, Key.Space, Key.Tab, Key.Back, Key.Delete,
+                    Key.F1, Key.F2, Key.F3, Key.F4, Key.F5, Key.F6, Key.F7, Key.F8, Key.F9, Key.F10, Key.F11, Key.F12,
+                    Key.A, Key.B, Key.C, Key.D, Key.E, Key.F, Key.G, Key.H, Key.I, Key.J, Key.K, Key.L, Key.M,
+                    Key.N, Key.O, Key.P, Key.Q, Key.R, Key.S, Key.T, Key.U, Key.V, Key.W, Key.X, Key.Y, Key.Z,
+                    Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9,
+                    Key.Up, Key.Down, Key.Left, Key.Right, Key.Home, Key.End, Key.PageUp, Key.PageDown
+                };
+                foreach (var key in commonKeys)
+                    KeyList.Add(key);
+
+                // Operators
+                Operators.Clear();
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "==", DisplayName = "等しい (==)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "!=", DisplayName = "等しくない (!=)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = ">", DisplayName = "より大きい (>)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "<", DisplayName = "より小さい (<)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = ">=", DisplayName = "以上 (>=)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "<=", DisplayName = "以下 (<=)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "Contains", DisplayName = "含む (Contains)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "StartsWith", DisplayName = "始まる (StartsWith)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "EndsWith", DisplayName = "終わる (EndsWith)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsEmpty", DisplayName = "空である (IsEmpty)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsNotEmpty", DisplayName = "空でない (IsNotEmpty)" });
+
+                // AI Detect Modes
+                AiDetectModes.Clear();
+                AiDetectModes.Add(new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Class", DisplayName = "クラス検出" });
+                AiDetectModes.Add(new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Count", DisplayName = "数量検出" });
+
+                // Background Click Methods
+                BackgroundClickMethods.Clear();
+                BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 0, DisplayName = "SendMessage" });
+                BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 1, DisplayName = "PostMessage" });
+                BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 2, DisplayName = "AutoDetectChild" });
+                BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 3, DisplayName = "TryAll" });
+                BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 4, DisplayName = "GameDirectInput" });
+                BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 5, DisplayName = "GameFullscreen" });
+                BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 6, DisplayName = "GameLowLevel" });
+                BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 7, DisplayName = "GameVirtualMouse" });
+
+                _logger.LogDebug("EditPanelViewModel コレクション初期化完了");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ItemTypes初期化中にエラーが発生しました");
+                _logger.LogError(ex, "EditPanelViewModel コレクション初期化中にエラー");
             }
         }
 
-        private void InitializeCollections()
-        {
-            // MouseButton の初期化
-            MouseButtons.Clear();
-            foreach (var button in Enum.GetValues(typeof(MouseButton)).Cast<MouseButton>())
-                MouseButtons.Add(button);
-
-            // Key の初期化
-            KeyList.Clear();
-            var commonKeys = new[]
-            {
-                Key.Escape, Key.Enter, Key.Space, Key.Tab, Key.Back, Key.Delete,
-                Key.F1, Key.F2, Key.F3, Key.F4, Key.F5, Key.F6, Key.F7, Key.F8, Key.F9, Key.F10, Key.F11, Key.F12,
-                Key.A, Key.B, Key.C, Key.D, Key.E, Key.F, Key.G, Key.H, Key.I, Key.J, Key.K, Key.L, Key.M,
-                Key.N, Key.O, Key.P, Key.Q, Key.R, Key.S, Key.T, Key.U, Key.V, Key.W, Key.X, Key.Y, Key.Z,
-                Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9,
-                Key.Up, Key.Down, Key.Left, Key.Right, Key.Home, Key.End, Key.PageUp, Key.PageDown
-            };
-            foreach (var key in commonKeys)
-                KeyList.Add(key);
-
-            // Operator の初期化
-            Operators.Clear();
-            Operators.Add(new OperatorItem { Key = "==", DisplayName = "等しい (==)" });
-            Operators.Add(new OperatorItem { Key = "!=", DisplayName = "等しくない (!=)" });
-            Operators.Add(new OperatorItem { Key = ">", DisplayName = "より大きい (>)" });
-            Operators.Add(new OperatorItem { Key = "<", DisplayName = "より小さい (<)" });
-            Operators.Add(new OperatorItem { Key = ">=", DisplayName = "以上 (>=)" });
-            Operators.Add(new OperatorItem { Key = "<=", DisplayName = "以下 (<=)" });
-            Operators.Add(new OperatorItem { Key = "Contains", DisplayName = "含む (Contains)" });
-            Operators.Add(new OperatorItem { Key = "StartsWith", DisplayName = "始まる (StartsWith)" });
-            Operators.Add(new OperatorItem { Key = "EndsWith", DisplayName = "終わる (EndsWith)" });
-            Operators.Add(new OperatorItem { Key = "IsEmpty", DisplayName = "空である (IsEmpty)" });
-            Operators.Add(new OperatorItem { Key = "IsNotEmpty", DisplayName = "空でない (IsNotEmpty)" });
-
-            // AI Detect Mode の初期化
-            AiDetectModes.Clear();
-            AiDetectModes.Add(new AIDetectModeItem { Key = "Class", DisplayName = "クラス検出" });
-            AiDetectModes.Add(new AIDetectModeItem { Key = "Count", DisplayName = "数量検出" });
-
-            // Background Click Method の初期化
-            BackgroundClickMethods.Clear();
-            BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 0, DisplayName = "SendMessage" });
-            BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 1, DisplayName = "PostMessage" });
-            BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 2, DisplayName = "AutoDetectChild" });
-            BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 3, DisplayName = "TryAll" });
-            BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 4, DisplayName = "GameDirectInput" });
-            BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 5, DisplayName = "GameFullscreen" });
-            BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 6, DisplayName = "GameLowLevel" });
-            BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 7, DisplayName = "GameVirtualMouse" });
-        }
-
-        private void OnItemChanged()
+        // OnSelectedItemChangedはObservablePropertyで自動生成される partial void
+        partial void OnSelectedItemChanged(ICommandListItem? value)
         {
             try
             {
                 _isUpdating = true;
 
-                // 全ての判定プロパティを更新
-                OnPropertyChanged(nameof(IsNotNullItem));
-                OnPropertyChanged(nameof(IsListEmpty));
-                OnPropertyChanged(nameof(IsListNotEmpty));
-                OnPropertyChanged(nameof(IsWaitImageItem));
-                OnPropertyChanged(nameof(IsClickImageItem));
-                OnPropertyChanged(nameof(IsClickImageAIItem));
-                OnPropertyChanged(nameof(IsHotkeyItem));
-                OnPropertyChanged(nameof(IsClickItem));
-                OnPropertyChanged(nameof(IsWaitItem));
-                OnPropertyChanged(nameof(IsLoopItem));
-                OnPropertyChanged(nameof(IsLoopEndItem));
-                OnPropertyChanged(nameof(IsLoopBreakItem));
-                OnPropertyChanged(nameof(IsIfImageExistItem));
-                OnPropertyChanged(nameof(IsIfImageNotExistItem));
-                OnPropertyChanged(nameof(IsIfImageExistAIItem));
-                OnPropertyChanged(nameof(IsIfImageNotExistAIItem));
-                OnPropertyChanged(nameof(IsIfEndItem));
-                OnPropertyChanged(nameof(IsIfVariableItem));
-                OnPropertyChanged(nameof(IsExecuteItem));
-                OnPropertyChanged(nameof(IsSetVariableItem));
-                OnPropertyChanged(nameof(IsSetVariableAIItem));
-                OnPropertyChanged(nameof(IsScreenshotItem));
-                OnPropertyChanged(nameof(IsImageBasedItem));
-                OnPropertyChanged(nameof(IsAIBasedItem));
-                OnPropertyChanged(nameof(IsVariableItem));
-                OnPropertyChanged(nameof(IsLoopRelatedItem));
-                OnPropertyChanged(nameof(IsIfRelatedItem));
-                OnPropertyChanged(nameof(ShowWindowInfo));
-                OnPropertyChanged(nameof(ShowAdvancedSettings));
-
-                // 値プロパティも更新通知
-                OnPropertyChanged(nameof(Comment));
-                OnPropertyChanged(nameof(WindowTitle));
-                OnPropertyChanged(nameof(WindowClassName));
-                OnPropertyChanged(nameof(ImagePath));
-                OnPropertyChanged(nameof(Threshold));
-                OnPropertyChanged(nameof(SearchColor));
-                OnPropertyChanged(nameof(Timeout));
-                OnPropertyChanged(nameof(Interval));
-                OnPropertyChanged(nameof(MouseButton));
-                OnPropertyChanged(nameof(ClickX));
-                OnPropertyChanged(nameof(ClickY));
-                OnPropertyChanged(nameof(UseBackgroundClick));
-                OnPropertyChanged(nameof(BackgroundClickMethod));
-                OnPropertyChanged(nameof(CtrlKey));
-                OnPropertyChanged(nameof(AltKey));
-                OnPropertyChanged(nameof(ShiftKey));
-                OnPropertyChanged(nameof(SelectedKey));
-                OnPropertyChanged(nameof(WaitHours));
-                OnPropertyChanged(nameof(WaitMinutes));
-                OnPropertyChanged(nameof(WaitSeconds));
-                OnPropertyChanged(nameof(WaitMilliseconds));
-                OnPropertyChanged(nameof(LoopCount));
-                OnPropertyChanged(nameof(VariableName));
-                OnPropertyChanged(nameof(VariableValue));
-                OnPropertyChanged(nameof(VariableOperator));
-                OnPropertyChanged(nameof(ModelPath));
-                OnPropertyChanged(nameof(ClassID));
-                OnPropertyChanged(nameof(ConfThreshold));
-                OnPropertyChanged(nameof(IoUThreshold));
-                OnPropertyChanged(nameof(AiDetectMode));
-                OnPropertyChanged(nameof(ProgramPath));
-                OnPropertyChanged(nameof(Arguments));
-                OnPropertyChanged(nameof(WorkingDirectory));
-                OnPropertyChanged(nameof(WaitForExit));
-                OnPropertyChanged(nameof(SaveDirectory));
-
-                if (Item != null)
+                // アイテムタイプの選択を更新
+                if (value != null)
                 {
-                    // アイテムタイプの選択を更新
-                    var displayItem = ItemTypes.FirstOrDefault(x => x.TypeName == Item.ItemType);
+                    var displayItem = ItemTypes.FirstOrDefault(x => x.TypeName == value.ItemType);
                     SelectedItemTypeObj = displayItem;
-                    _logger.LogDebug("アイテム変更: {ItemType}", Item.ItemType);
                 }
                 else
                 {
                     SelectedItemTypeObj = null;
                 }
+
+                // 全ての判定プロパティを更新
+                NotifyAllPropertiesChanged();
+                
+                _logger.LogDebug("SelectedItem変更: {ItemType}", value?.ItemType ?? "null");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "アイテム変更処理中にエラーが発生しました");
+                _logger.LogError(ex, "SelectedItem変更処理中にエラー");
             }
             finally
             {
@@ -306,42 +231,42 @@ namespace AutoTool.ViewModel.Panels
 
         private void OnSelectedItemTypeObjChanged(CommandDisplayItem? value)
         {
-            if (_isUpdating || value == null || Item == null) return;
+            if (_isUpdating || value == null || SelectedItem == null) return;
 
             try
             {
-                _logger.LogDebug("アイテムタイプ変更要求: {OldType} -> {NewType}", Item.ItemType, value.TypeName);
+                _logger.LogDebug("ItemType変更要求: {OldType} -> {NewType}", SelectedItem.ItemType, value.TypeName);
 
                 // 新しいタイプのアイテムを作成
                 var newItem = CommandRegistry.CreateCommandItem(value.TypeName);
                 if (newItem == null)
                 {
-                    _logger.LogWarning("新しいアイテムの作成に失敗しました: {TypeName}", value.TypeName);
+                    _logger.LogWarning("新しいアイテムの作成に失敗: {TypeName}", value.TypeName);
                     return;
                 }
 
                 // 基本プロパティを引き継ぎ
-                newItem.LineNumber = Item.LineNumber;
-                newItem.IsEnable = Item.IsEnable;
-                newItem.Comment = Item.Comment;
-                newItem.IsSelected = Item.IsSelected;
-                newItem.IsRunning = Item.IsRunning;
-                newItem.NestLevel = Item.NestLevel;
+                newItem.LineNumber = SelectedItem.LineNumber;
+                newItem.IsEnable = SelectedItem.IsEnable;
+                newItem.Comment = SelectedItem.Comment;
+                newItem.IsSelected = SelectedItem.IsSelected;
+                newItem.IsRunning = SelectedItem.IsRunning;
+                newItem.NestLevel = SelectedItem.NestLevel;
 
                 // リストの該当アイテムを置換
-                WeakReferenceMessenger.Default.Send(new ChangeItemTypeMessage(Item, newItem));
+                _messenger.Send(new ChangeItemTypeMessage(SelectedItem, newItem));
 
-                _logger.LogInformation("アイテムタイプを変更しました: {OldType} -> {NewType}", Item.ItemType, value.TypeName);
+                _logger.LogInformation("ItemType変更完了: {OldType} -> {NewType}", SelectedItem.ItemType, value.TypeName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "アイテムタイプ変更中にエラーが発生しました");
+                _logger.LogError(ex, "ItemType変更中にエラー");
                 
                 // 失敗した場合は元の選択状態に戻す
                 _isUpdating = true;
                 try
                 {
-                    var oldDisplayItem = ItemTypes.FirstOrDefault(x => x.TypeName == Item.ItemType);
+                    var oldDisplayItem = ItemTypes.FirstOrDefault(x => x.TypeName == SelectedItem.ItemType);
                     SelectedItemTypeObj = oldDisplayItem;
                 }
                 finally
@@ -351,16 +276,49 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        #region Properties for data binding (基本実装)
+        private void NotifyAllPropertiesChanged()
+        {
+            var properties = new[]
+            {
+                nameof(IsWaitImageItem), nameof(IsClickImageItem), nameof(IsClickImageAIItem),
+                nameof(IsHotkeyItem), nameof(IsClickItem), nameof(IsWaitItem),
+                nameof(IsLoopItem), nameof(IsLoopEndItem), nameof(IsLoopBreakItem),
+                nameof(IsIfImageExistItem), nameof(IsIfImageNotExistItem), nameof(IsIfImageExistAIItem),
+                nameof(IsIfImageNotExistAIItem), nameof(IsIfEndItem), nameof(IsIfVariableItem),
+                nameof(IsExecuteItem), nameof(IsSetVariableItem), nameof(IsSetVariableAIItem),
+                nameof(IsScreenshotItem), nameof(IsImageBasedItem), nameof(IsAIBasedItem),
+                nameof(IsVariableItem), nameof(IsLoopRelatedItem), nameof(IsIfRelatedItem),
+                nameof(ShowWindowInfo), nameof(ShowAdvancedSettings), nameof(IsNotNullItem),
+                nameof(IsListEmpty), nameof(IsListNotEmpty),
+                // 値プロパティ
+                nameof(Comment), nameof(WindowTitle), nameof(WindowClassName),
+                nameof(ImagePath), nameof(Threshold), nameof(SearchColor),
+                nameof(Timeout), nameof(Interval), nameof(MouseButton),
+                nameof(ClickX), nameof(ClickY), nameof(UseBackgroundClick), nameof(BackgroundClickMethod),
+                nameof(CtrlKey), nameof(AltKey), nameof(ShiftKey), nameof(SelectedKey),
+                nameof(WaitHours), nameof(WaitMinutes), nameof(WaitSeconds), nameof(WaitMilliseconds),
+                nameof(LoopCount), nameof(VariableName), nameof(VariableValue), nameof(VariableOperator),
+                nameof(ModelPath), nameof(ClassID), nameof(ConfThreshold), nameof(IoUThreshold),
+                nameof(AiDetectMode), nameof(ProgramPath), nameof(Arguments), nameof(WorkingDirectory),
+                nameof(WaitForExit), nameof(SaveDirectory)
+            };
+
+            foreach (var property in properties)
+            {
+                OnPropertyChanged(property);
+            }
+        }
+
+        #region Properties for data binding (安全な実装)
 
         public string Comment
         {
-            get => Item?.Comment ?? string.Empty;
+            get => SelectedItem?.Comment ?? string.Empty;
             set
             {
-                if (Item != null && Item.Comment != value)
+                if (SelectedItem != null && SelectedItem.Comment != value)
                 {
-                    Item.Comment = value;
+                    SelectedItem.Comment = value;
                     OnPropertyChanged();
                 }
             }
@@ -462,95 +420,127 @@ namespace AutoTool.ViewModel.Panels
             set => SetItemProperty("Key", value);
         }
 
+        // Wait time properties
         public int WaitHours
         {
             get
             {
-                if (Item == null) return 0;
-                var milliseconds = GetItemProperty<int>("Wait");
-                return milliseconds / (1000 * 60 * 60);
+                if (SelectedItem == null) return 0;
+                try
+                {
+                    var property = SelectedItem.GetType().GetProperty("WaitTime");
+                    if (property != null)
+                    {
+                        var value = property.GetValue(SelectedItem);
+                        if (value is TimeSpan timeSpan)
+                            return (int)timeSpan.TotalHours;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug("プロパティ取得エラー: WaitHours - {Error}", ex.Message);
+                }
+                return 0;
             }
-            set
-            {
-                if (Item == null) return;
-                var currentMs = GetItemProperty<int>("Wait");
-                var minutes = (currentMs / (1000 * 60)) % 60;
-                var seconds = (currentMs / 1000) % 60;
-                var ms = currentMs % 1000;
-                var totalMs = (value * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + ms;
-                SetItemProperty("Wait", totalMs);
-                OnPropertyChanged(nameof(WaitMinutes));
-                OnPropertyChanged(nameof(WaitSeconds));
-                OnPropertyChanged(nameof(WaitMilliseconds));
-            }
+            set => SetWaitTime(hours: value);
         }
 
         public int WaitMinutes
         {
             get
             {
-                if (Item == null) return 0;
-                var milliseconds = GetItemProperty<int>("Wait");
-                return (milliseconds / (1000 * 60)) % 60;
+                if (SelectedItem == null) return 0;
+                try
+                {
+                    var property = SelectedItem.GetType().GetProperty("WaitTime");
+                    if (property != null)
+                    {
+                        var value = property.GetValue(SelectedItem);
+                        if (value is TimeSpan timeSpan)
+                            return timeSpan.Minutes;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug("プロパティ取得エラー: WaitMinutes - {Error}", ex.Message);
+                }
+                return 0;
             }
-            set
-            {
-                if (Item == null) return;
-                var currentMs = GetItemProperty<int>("Wait");
-                var hours = currentMs / (1000 * 60 * 60);
-                var seconds = (currentMs / 1000) % 60;
-                var ms = currentMs % 1000;
-                var totalMs = (hours * 60 * 60 * 1000) + (value * 60 * 1000) + (seconds * 1000) + ms;
-                SetItemProperty("Wait", totalMs);
-                OnPropertyChanged(nameof(WaitHours));
-                OnPropertyChanged(nameof(WaitSeconds));
-                OnPropertyChanged(nameof(WaitMilliseconds));
-            }
+            set => SetWaitTime(minutes: value);
         }
 
         public int WaitSeconds
         {
             get
             {
-                if (Item == null) return 0;
-                var milliseconds = GetItemProperty<int>("Wait");
-                return (milliseconds / 1000) % 60;
+                if (SelectedItem == null) return 0;
+                try
+                {
+                    var property = SelectedItem.GetType().GetProperty("WaitTime");
+                    if (property != null)
+                    {
+                        var value = property.GetValue(SelectedItem);
+                        if (value is TimeSpan timeSpan)
+                            return timeSpan.Seconds;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug("プロパティ取得エラー: WaitSeconds - {Error}", ex.Message);
+                }
+                return 0;
             }
-            set
-            {
-                if (Item == null) return;
-                var currentMs = GetItemProperty<int>("Wait");
-                var hours = currentMs / (1000 * 60 * 60);
-                var minutes = (currentMs / (1000 * 60)) % 60;
-                var ms = currentMs % 1000;
-                var totalMs = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (value * 1000) + ms;
-                SetItemProperty("Wait", totalMs);
-                OnPropertyChanged(nameof(WaitHours));
-                OnPropertyChanged(nameof(WaitMinutes));
-                OnPropertyChanged(nameof(WaitMilliseconds));
-            }
+            set => SetWaitTime(seconds: value);
         }
 
         public int WaitMilliseconds
         {
             get
             {
-                if (Item == null) return 0;
-                var milliseconds = GetItemProperty<int>("Wait");
-                return milliseconds % 1000;
+                if (SelectedItem == null) return 0;
+                try
+                {
+                    var property = SelectedItem.GetType().GetProperty("WaitTime");
+                    if (property != null)
+                    {
+                        var value = property.GetValue(SelectedItem);
+                        if (value is TimeSpan timeSpan)
+                            return timeSpan.Milliseconds;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug("プロパティ取得エラー: WaitMilliseconds - {Error}", ex.Message);
+                }
+                return 0;
             }
-            set
+            set => SetWaitTime(milliseconds: value);
+        }
+
+        private void SetWaitTime(int? hours = null, int? minutes = null, int? seconds = null, int? milliseconds = null)
+        {
+            if (SelectedItem == null) return;
+
+            try
             {
-                if (Item == null) return;
-                var currentMs = GetItemProperty<int>("Wait");
-                var hours = currentMs / (1000 * 60 * 60);
-                var minutes = (currentMs / (1000 * 60)) % 60;
-                var seconds = (currentMs / 1000) % 60;
-                var totalMs = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + value;
-                SetItemProperty("Wait", totalMs);
-                OnPropertyChanged(nameof(WaitHours));
-                OnPropertyChanged(nameof(WaitMinutes));
-                OnPropertyChanged(nameof(WaitSeconds));
+                var currentHours = WaitHours;
+                var currentMinutes = WaitMinutes;
+                var currentSeconds = WaitSeconds;
+                var currentMilliseconds = WaitMilliseconds;
+
+                var newTime = new TimeSpan(
+                    0, // days
+                    hours ?? currentHours,
+                    minutes ?? currentMinutes,
+                    seconds ?? currentSeconds,
+                    milliseconds ?? currentMilliseconds
+                );
+
+                SetItemProperty("WaitTime", newTime);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "WaitTime設定エラー");
             }
         }
 
@@ -562,20 +552,20 @@ namespace AutoTool.ViewModel.Panels
 
         public string VariableName
         {
-            get => GetItemProperty<string>("Name") ?? string.Empty;
-            set => SetItemProperty("Name", value);
+            get => GetItemProperty<string>("VariableName") ?? string.Empty;
+            set => SetItemProperty("VariableName", value);
         }
 
         public string VariableValue
         {
-            get => GetItemProperty<string>("Value") ?? string.Empty;
-            set => SetItemProperty("Value", value);
+            get => GetItemProperty<string>("VariableValue") ?? string.Empty;
+            set => SetItemProperty("VariableValue", value);
         }
 
         public string VariableOperator
         {
-            get => GetItemProperty<string>("Operator") ?? "==";
-            set => SetItemProperty("Operator", value);
+            get => GetItemProperty<string>("VariableOperator") ?? string.Empty;
+            set => SetItemProperty("VariableOperator", value);
         }
 
         public string ModelPath
@@ -604,8 +594,8 @@ namespace AutoTool.ViewModel.Panels
 
         public string AiDetectMode
         {
-            get => GetItemProperty<string>("AIDetectMode") ?? "Class";
-            set => SetItemProperty("AIDetectMode", value);
+            get => GetItemProperty<string>("AiDetectMode") ?? string.Empty;
+            set => SetItemProperty("AiDetectMode", value);
         }
 
         public string ProgramPath
@@ -644,14 +634,14 @@ namespace AutoTool.ViewModel.Panels
 
         private T GetItemProperty<T>(string propertyName)
         {
-            if (Item == null) return default(T)!;
+            if (SelectedItem == null) return default(T)!;
 
             try
             {
-                var property = Item.GetType().GetProperty(propertyName);
+                var property = SelectedItem.GetType().GetProperty(propertyName);
                 if (property != null)
                 {
-                    var value = property.GetValue(Item);
+                    var value = property.GetValue(SelectedItem);
                     if (value is T tValue)
                         return tValue;
                     if (value != null && typeof(T).IsAssignableFrom(value.GetType()))
@@ -666,23 +656,26 @@ namespace AutoTool.ViewModel.Panels
             return default(T)!;
         }
 
-        private void SetItemProperty(string propertyName, object? value, [System.Runtime.CompilerServices.CallerMemberName] string? callerName = null)
+        private void SetItemProperty(string propertyName, object? value, [CallerMemberName] string? callerName = null)
         {
-            if (Item == null || _isUpdating) return;
+            if (SelectedItem == null) return;
 
             try
             {
-                var property = Item.GetType().GetProperty(propertyName);
+                var property = SelectedItem.GetType().GetProperty(propertyName);
                 if (property != null && property.CanWrite)
                 {
-                    property.SetValue(Item, value);
-                    OnPropertyChanged(callerName); // 呼び出し元のプロパティ名を通知
-                    _logger.LogDebug("プロパティ更新: {Property} = {Value} (Caller: {Caller})", propertyName, value, callerName);
+                    var currentValue = property.GetValue(SelectedItem);
+                    if (!Equals(currentValue, value))
+                    {
+                        property.SetValue(SelectedItem, value);
+                        OnPropertyChanged(callerName);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogDebug("プロパティ設定エラー: {Property} - {Error}", propertyName, ex.Message);
+                _logger.LogError(ex, "プロパティ設定エラー: {Property} = {Value}", propertyName, value);
             }
         }
 
@@ -697,90 +690,187 @@ namespace AutoTool.ViewModel.Panels
             {
                 var openFileDialog = new OpenFileDialog
                 {
-                    Filter = "画像ファイル (*.jpg;*.jpeg;*.png;*.bmp)|*.jpg;*.jpeg;*.png;*.bmp|すべてのファイル (*.*)|*.*",
-                    Title = "画像ファイルを選択"
+                    Title = "画像ファイルを選択",
+                    Filter = "画像ファイル (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp|すべてのファイル (*.*)|*.*",
+                    DefaultExt = ".png"
                 };
 
                 if (openFileDialog.ShowDialog() == true)
                 {
-                    _logger.LogDebug("画像ファイル選択: {FilePath}", openFileDialog.FileName);
                     ImagePath = openFileDialog.FileName;
-                    _logger.LogDebug("ImagePath設定完了: {ImagePath}", ImagePath);
-                }
-                else
-                {
-                    _logger.LogDebug("画像ファイル選択がキャンセルされました");
+                    _logger.LogInformation("画像ファイルを選択: {ImagePath}", ImagePath);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "画像ファイル選択中にエラーが発生しました");
+                _logger.LogError(ex, "画像ファイル選択中にエラー");
             }
         }
 
         [RelayCommand]
         private void BrowseModelFile()
         {
-            var openFileDialog = new OpenFileDialog
+            try
             {
-                Filter = "ONNXモデルファイル (*.onnx)|*.onnx|すべてのファイル (*.*)|*.*",
-                Title = "ONNXモデルファイルを選択"
-            };
+                var openFileDialog = new OpenFileDialog
+                {
+                    Title = "AIモデルファイルを選択",
+                    Filter = "ONNXファイル (*.onnx)|*.onnx|すべてのファイル (*.*)|*.*",
+                    DefaultExt = ".onnx"
+                };
 
-            if (openFileDialog.ShowDialog() == true)
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    ModelPath = openFileDialog.FileName;
+                    _logger.LogInformation("モデルファイルを選択: {ModelPath}", ModelPath);
+                }
+            }
+            catch (Exception ex)
             {
-                ModelPath = openFileDialog.FileName;
+                _logger.LogError(ex, "モデルファイル選択中にエラー");
             }
         }
 
         [RelayCommand]
         private void BrowseProgramFile()
         {
-            var openFileDialog = new OpenFileDialog
+            try
             {
-                Filter = "実行可能ファイル (*.exe)|*.exe|すべてのファイル (*.*)|*.*",
-                Title = "実行するプログラムを選択"
-            };
+                var openFileDialog = new OpenFileDialog
+                {
+                    Title = "実行ファイルを選択",
+                    Filter = "実行ファイル (*.exe)|*.exe|すべてのファイル (*.*)|*.*",
+                    DefaultExt = ".exe"
+                };
 
-            if (openFileDialog.ShowDialog() == true)
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    ProgramPath = openFileDialog.FileName;
+                    _logger.LogInformation("実行ファイルを選択: {ProgramPath}", ProgramPath);
+                }
+            }
+            catch (Exception ex)
             {
-                ProgramPath = openFileDialog.FileName;
+                _logger.LogError(ex, "実行ファイル選択中にエラー");
             }
         }
 
         [RelayCommand]
         private void BrowseWorkingDirectory()
         {
-            // TODO: フォルダ選択ダイアログの実装
-            _logger.LogDebug("作業ディレクトリ選択要求");
+            try
+            {
+                // Microsoft.Win32.CommonOpenFileDialogを使用（Windows用）
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "作業ディレクトリを選択してください",
+                    CheckFileExists = false,
+                    CheckPathExists = true,
+                    FileName = "フォルダを選択"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var selectedPath = Path.GetDirectoryName(dialog.FileName);
+                    if (!string.IsNullOrEmpty(selectedPath))
+                    {
+                        WorkingDirectory = selectedPath;
+                        _logger.LogInformation("作業ディレクトリを選択: {WorkingDirectory}", WorkingDirectory);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "作業ディレクトリ選択中にエラー");
+            }
         }
 
         [RelayCommand]
         private void BrowseSaveDirectory()
         {
-            // TODO: フォルダ選択ダイアログの実装
-            _logger.LogDebug("保存先ディレクトリ選択要求");
+            try
+            {
+                // Microsoft.Win32.CommonOpenFileDialogを使用（Windows用）
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "保存ディレクトリを選択してください",
+                    CheckFileExists = false,
+                    CheckPathExists = true,
+                    FileName = "フォルダを選択"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var selectedPath = Path.GetDirectoryName(dialog.FileName);
+                    if (!string.IsNullOrEmpty(selectedPath))
+                    {
+                        SaveDirectory = selectedPath;
+                        _logger.LogInformation("保存ディレクトリを選択: {SaveDirectory}", SaveDirectory);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "保存ディレクトリ選択中にエラー");
+            }
         }
 
         [RelayCommand]
         private void GetMousePosition()
         {
-            // TODO: マウス位置取得の実装
-            _logger.LogDebug("マウス位置取得要求");
+            try
+            {
+                // WinAPIを使用してマウス位置を取得
+                var point = new System.Drawing.Point();
+                if (GetCursorPos(out point))
+                {
+                    ClickX = point.X;
+                    ClickY = point.Y;
+                    _logger.LogInformation("マウス位置を取得: ({X}, {Y})", ClickX, ClickY);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "マウス位置取得中にエラー");
+            }
         }
 
         [RelayCommand]
         private void GetWindowInfo()
         {
-            _logger.LogDebug("ウィンドウ情報取得要求");
+            try
+            {
+                // WindowHelper機能を使用してウィンドウ情報を取得
+                _logger.LogInformation("ウィンドウ情報取得機能（未実装）");
+                // TODO: WindowHelperとの連携実装
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ウィンドウ情報取得中にエラー");
+            }
         }
 
         [RelayCommand]
         private void ClearWindowInfo()
         {
-            WindowTitle = string.Empty;
-            WindowClassName = string.Empty;
+            try
+            {
+                WindowTitle = string.Empty;
+                WindowClassName = string.Empty;
+                _logger.LogInformation("ウィンドウ情報をクリア");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ウィンドウ情報クリア中にエラー");
+            }
         }
+
+        #endregion
+
+        #region Win32 API
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out System.Drawing.Point lpPoint);
 
         #endregion
     }
