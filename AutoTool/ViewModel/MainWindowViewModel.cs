@@ -24,7 +24,7 @@ using AutoTool.ViewModel.Panels;
 using System.Threading;
 using System.Windows.Input;
 using System.Windows.Media;
-using AutoTool.Model.MacroFactory; // add macro factory
+using AutoTool.Model.MacroFactory;
 
 namespace AutoTool.ViewModel
 {
@@ -891,7 +891,7 @@ namespace AutoTool.ViewModel
         /// </summary>
         private void UpdateEditPanelProperties()
         {
-            // EditPanelのすべての判定プロパティを更新
+            // 判定系
             OnPropertyChanged(nameof(IsWaitImageItem));
             OnPropertyChanged(nameof(IsClickImageItem));
             OnPropertyChanged(nameof(IsClickImageAIItem));
@@ -912,17 +912,64 @@ namespace AutoTool.ViewModel
             OnPropertyChanged(nameof(IsSetVariableAIItem));
             OnPropertyChanged(nameof(IsScreenshotItem));
             
-            // 複合条件プロパティの更新
+            // 複合条件
             OnPropertyChanged(nameof(IsImageBasedItem));
             OnPropertyChanged(nameof(IsAIBasedItem));
             OnPropertyChanged(nameof(IsVariableItem));
             OnPropertyChanged(nameof(IsLoopRelatedItem));
             OnPropertyChanged(nameof(IsIfRelatedItem));
             
-            // 表示制御プロパティの更新
+            // 表示制御
             OnPropertyChanged(nameof(ShowWindowInfo));
             OnPropertyChanged(nameof(ShowAdvancedSettings));
-            
+
+            // 値プロパティ（UIに表示される数値/テキスト類）
+            OnPropertyChanged(nameof(Comment));
+            OnPropertyChanged(nameof(WindowTitle));
+            OnPropertyChanged(nameof(WindowClassName));
+            OnPropertyChanged(nameof(ImagePath));
+            OnPropertyChanged(nameof(Threshold));
+            OnPropertyChanged(nameof(SearchColor));
+            OnPropertyChanged(nameof(Timeout));
+            OnPropertyChanged(nameof(Interval));
+            OnPropertyChanged(nameof(MouseButton));
+            OnPropertyChanged(nameof(ClickX));
+            OnPropertyChanged(nameof(ClickY));
+            OnPropertyChanged(nameof(UseBackgroundClick));
+            OnPropertyChanged(nameof(BackgroundClickMethod));
+            OnPropertyChanged(nameof(CtrlKey));
+            OnPropertyChanged(nameof(AltKey));
+            OnPropertyChanged(nameof(ShiftKey));
+            OnPropertyChanged(nameof(SelectedKey));
+            OnPropertyChanged(nameof(WaitHours));
+            OnPropertyChanged(nameof(WaitMinutes));
+            OnPropertyChanged(nameof(WaitSeconds));
+            OnPropertyChanged(nameof(WaitMilliseconds));
+            OnPropertyChanged(nameof(LoopCount));
+            OnPropertyChanged(nameof(VariableName));
+            OnPropertyChanged(nameof(VariableValue));
+            OnPropertyChanged(nameof(VariableOperator));
+            OnPropertyChanged(nameof(ModelPath));
+            OnPropertyChanged(nameof(ClassID));
+            OnPropertyChanged(nameof(ConfThreshold));
+            OnPropertyChanged(nameof(IoUThreshold));
+            OnPropertyChanged(nameof(AiDetectMode));
+            OnPropertyChanged(nameof(ProgramPath));
+            OnPropertyChanged(nameof(Arguments));
+            OnPropertyChanged(nameof(WorkingDirectory));
+            OnPropertyChanged(nameof(WaitForExit));
+            OnPropertyChanged(nameof(SaveDirectory));
+
+            // コレクション（必要に応じて）
+            OnPropertyChanged(nameof(MouseButtons));
+            OnPropertyChanged(nameof(KeyList));
+            OnPropertyChanged(nameof(Operators));
+            OnPropertyChanged(nameof(AiDetectModes));
+            OnPropertyChanged(nameof(BackgroundClickMethods));
+
+            // アイテムタイプ選択
+            OnPropertyChanged(nameof(SelectedItemTypeObj));
+
             _logger.LogDebug("EditPanelプロパティを更新しました");
         }
 

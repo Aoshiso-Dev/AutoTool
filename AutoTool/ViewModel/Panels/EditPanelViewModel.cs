@@ -244,6 +244,43 @@ namespace AutoTool.ViewModel.Panels
                 OnPropertyChanged(nameof(ShowWindowInfo));
                 OnPropertyChanged(nameof(ShowAdvancedSettings));
 
+                // 値プロパティも更新通知
+                OnPropertyChanged(nameof(Comment));
+                OnPropertyChanged(nameof(WindowTitle));
+                OnPropertyChanged(nameof(WindowClassName));
+                OnPropertyChanged(nameof(ImagePath));
+                OnPropertyChanged(nameof(Threshold));
+                OnPropertyChanged(nameof(SearchColor));
+                OnPropertyChanged(nameof(Timeout));
+                OnPropertyChanged(nameof(Interval));
+                OnPropertyChanged(nameof(MouseButton));
+                OnPropertyChanged(nameof(ClickX));
+                OnPropertyChanged(nameof(ClickY));
+                OnPropertyChanged(nameof(UseBackgroundClick));
+                OnPropertyChanged(nameof(BackgroundClickMethod));
+                OnPropertyChanged(nameof(CtrlKey));
+                OnPropertyChanged(nameof(AltKey));
+                OnPropertyChanged(nameof(ShiftKey));
+                OnPropertyChanged(nameof(SelectedKey));
+                OnPropertyChanged(nameof(WaitHours));
+                OnPropertyChanged(nameof(WaitMinutes));
+                OnPropertyChanged(nameof(WaitSeconds));
+                OnPropertyChanged(nameof(WaitMilliseconds));
+                OnPropertyChanged(nameof(LoopCount));
+                OnPropertyChanged(nameof(VariableName));
+                OnPropertyChanged(nameof(VariableValue));
+                OnPropertyChanged(nameof(VariableOperator));
+                OnPropertyChanged(nameof(ModelPath));
+                OnPropertyChanged(nameof(ClassID));
+                OnPropertyChanged(nameof(ConfThreshold));
+                OnPropertyChanged(nameof(IoUThreshold));
+                OnPropertyChanged(nameof(AiDetectMode));
+                OnPropertyChanged(nameof(ProgramPath));
+                OnPropertyChanged(nameof(Arguments));
+                OnPropertyChanged(nameof(WorkingDirectory));
+                OnPropertyChanged(nameof(WaitForExit));
+                OnPropertyChanged(nameof(SaveDirectory));
+
                 if (Item != null)
                 {
                     // アイテムタイプの選択を更新
@@ -424,10 +461,97 @@ namespace AutoTool.ViewModel.Panels
             set => SetItemProperty("Key", value);
         }
 
-        public int WaitHours { get; set; }
-        public int WaitMinutes { get; set; }
-        public int WaitSeconds { get; set; }
-        public int WaitMilliseconds { get; set; }
+        public int WaitHours
+        {
+            get
+            {
+                if (Item == null) return 0;
+                var milliseconds = GetItemProperty<int>("Wait");
+                return milliseconds / (1000 * 60 * 60);
+            }
+            set
+            {
+                if (Item == null) return;
+                var currentMs = GetItemProperty<int>("Wait");
+                var minutes = (currentMs / (1000 * 60)) % 60;
+                var seconds = (currentMs / 1000) % 60;
+                var ms = currentMs % 1000;
+                var totalMs = (value * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + ms;
+                SetItemProperty("Wait", totalMs);
+                OnPropertyChanged(nameof(WaitMinutes));
+                OnPropertyChanged(nameof(WaitSeconds));
+                OnPropertyChanged(nameof(WaitMilliseconds));
+            }
+        }
+
+        public int WaitMinutes
+        {
+            get
+            {
+                if (Item == null) return 0;
+                var milliseconds = GetItemProperty<int>("Wait");
+                return (milliseconds / (1000 * 60)) % 60;
+            }
+            set
+            {
+                if (Item == null) return;
+                var currentMs = GetItemProperty<int>("Wait");
+                var hours = currentMs / (1000 * 60 * 60);
+                var seconds = (currentMs / 1000) % 60;
+                var ms = currentMs % 1000;
+                var totalMs = (hours * 60 * 60 * 1000) + (value * 60 * 1000) + (seconds * 1000) + ms;
+                SetItemProperty("Wait", totalMs);
+                OnPropertyChanged(nameof(WaitHours));
+                OnPropertyChanged(nameof(WaitSeconds));
+                OnPropertyChanged(nameof(WaitMilliseconds));
+            }
+        }
+
+        public int WaitSeconds
+        {
+            get
+            {
+                if (Item == null) return 0;
+                var milliseconds = GetItemProperty<int>("Wait");
+                return (milliseconds / 1000) % 60;
+            }
+            set
+            {
+                if (Item == null) return;
+                var currentMs = GetItemProperty<int>("Wait");
+                var hours = currentMs / (1000 * 60 * 60);
+                var minutes = (currentMs / (1000 * 60)) % 60;
+                var ms = currentMs % 1000;
+                var totalMs = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (value * 1000) + ms;
+                SetItemProperty("Wait", totalMs);
+                OnPropertyChanged(nameof(WaitHours));
+                OnPropertyChanged(nameof(WaitMinutes));
+                OnPropertyChanged(nameof(WaitMilliseconds));
+            }
+        }
+
+        public int WaitMilliseconds
+        {
+            get
+            {
+                if (Item == null) return 0;
+                var milliseconds = GetItemProperty<int>("Wait");
+                return milliseconds % 1000;
+            }
+            set
+            {
+                if (Item == null) return;
+                var currentMs = GetItemProperty<int>("Wait");
+                var hours = currentMs / (1000 * 60 * 60);
+                var minutes = (currentMs / (1000 * 60)) % 60;
+                var seconds = (currentMs / 1000) % 60;
+                var totalMs = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + value;
+                SetItemProperty("Wait", totalMs);
+                OnPropertyChanged(nameof(WaitHours));
+                OnPropertyChanged(nameof(WaitMinutes));
+                OnPropertyChanged(nameof(WaitSeconds));
+            }
+        }
 
         public int LoopCount
         {

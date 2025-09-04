@@ -69,9 +69,9 @@
                 
                 <!-- Currently Executing Command Info -->
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="?" 
+                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                               Text="&#xE121;"
                                Foreground="#4CAF50"
-                               FontFamily="Segoe UI Symbol"
                                Margin="0,0,5,0"/>
                     <TextBlock Text="{Binding CurrentExecutingDescription}"
                                FontSize="11"
@@ -167,7 +167,7 @@
                                    Width="20"
                                    TextAlignment="Center"
                                    VerticalAlignment="Center"
-                                   FontFamily="Segoe UI Symbol"
+                                   FontFamily="Segoe MDL2 Assets"
                                    FontSize="12"
                                    Margin="2,0"/>
 
@@ -192,24 +192,24 @@
                                        FontSize="11"/>
                         </StackPanel>
 
-                        <!-- Individual Progress Indicator -->
+                        <!-- Individual Progress Indicator (text) -->
                         <TextBlock Grid.Column="4" Grid.Row="0"
                                    Text="{Binding Progress, StringFormat='{}{0}%'}"
                                    VerticalAlignment="Center"
                                    FontFamily="Consolas"
                                    FontSize="10"
                                    Foreground="#666"
-                                   Margin="5,0"
-                                   Visibility="{Binding IsRunning, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                   Margin="5,0"/>
 
                         <!-- Individual Progress Bar -->
                         <ProgressBar Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="5"
-                                     Height="3"
-                                     Margin="5,0,5,2"
+                                     Height="8"
+                                     Margin="5,2,5,4"
                                      Value="{Binding Progress}"
-                                     Visibility="{Binding Converter={StaticResource ProgressVisibilityConverter}}"
+                                     ToolTip="{Binding Progress, StringFormat='Progress: {0}%'}"
                                      Foreground="#4CAF50"
-                                     Background="#E0E0E0"/>
+                                     Background="#E0E0E0"
+                                     Visibility="Visible"/>
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
@@ -228,7 +228,8 @@
                                             <StackPanel VerticalAlignment="Center" 
                                                         HorizontalAlignment="Center"
                                                         Opacity="0.6">
-                                                <TextBlock Text="??" 
+                                                <TextBlock FontFamily="Segoe MDL2 Assets"
+                                                           Text="&#xE8FD;"
                                                            FontSize="48" 
                                                            HorizontalAlignment="Center"
                                                            Margin="0,0,0,10"/>
