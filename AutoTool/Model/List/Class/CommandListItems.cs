@@ -320,13 +320,13 @@ namespace AutoTool.Model.List.Class
             get
             {
                 var target = FormatWindowTarget(WindowTitle, WindowClassName);
-                
+
                 // HotkeyTextが設定されている場合はそれを使用
                 if (!string.IsNullOrEmpty(HotkeyText))
                 {
                     return $"対象：{target} / キー：{HotkeyText}";
                 }
-                
+
                 var keys = new List<string>();
 
                 if (Ctrl) keys.Add("Ctrl");
@@ -435,7 +435,7 @@ namespace AutoTool.Model.List.Class
         private int _wait = 5000;
 
         new public string Description => $"待機時間:{Wait}ms";
-        
+
         public WaitItem() { }
 
         public WaitItem(WaitItem? item = null) : base(item)
@@ -500,7 +500,7 @@ namespace AutoTool.Model.List.Class
         new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
 
         public LoopEndItem() { }
-        
+
         public LoopEndItem(LoopEndItem? item = null) : base(item)
         {
             if (item != null)
@@ -1009,5 +1009,124 @@ namespace AutoTool.Model.List.Class
         }
 
         public new ICommandListItem Clone() => new ClickImageAIItem(this);
+    }
+
+    // ===== 新規: AutoCommand(Attribute) ベースのコマンド用 ListItem 定義 =====
+    // TextInputCommand (AutoCommand("TextInput", ...)) 用
+    [CommandDefinition("TextInput", typeof(TextInputCommand), typeof(TextInputCommand.TextInputSettings), CommandCategory.Action)]
+    public partial class TextInputItem : CommandListItem, ICommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _text = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private int _interval = 50;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowClassName = string.Empty;
+        new public string Description => $"対象：{FormatWindowTarget(_windowTitle, _windowClassName)} / 文字数:{(_text?.Length ?? 0)} / 間隔:{_interval}ms";
+        public TextInputItem() { }
+        public TextInputItem(TextInputItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                _text = item._text;
+                _interval = item._interval;
+                _windowTitle = item._windowTitle;
+                _windowClassName = item._windowClassName;
+            }
+        }
+        public new ICommandListItem Clone() => new TextInputItem(this);
+    }
+
+    [CommandDefinition("PasteClipboard", typeof(PasteClipboardCommand), typeof(PasteClipboardCommand.PasteSettings), CommandCategory.Action)]
+    public partial class PasteClipboardItem : CommandListItem, ICommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private int _waitTime = 100;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowClassName = string.Empty;
+        new public string Description => $"対象：{FormatWindowTarget(_windowTitle, _windowClassName)} / 待機:{_waitTime}ms";
+        public PasteClipboardItem() { }
+        public PasteClipboardItem(PasteClipboardItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                _waitTime = item._waitTime;
+                _windowTitle = item._windowTitle;
+                _windowClassName = item._windowClassName;
+            }
+        }
+        public new ICommandListItem Clone() => new PasteClipboardItem(this);
+    }
+
+    [CommandDefinition("FileDragDrop", typeof(FileDragDropCommand), typeof(FileDragDropCommand.DragDropSettings), CommandCategory.Action)]
+    public partial class FileDragDropItem : CommandListItem, ICommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _sourceFile = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private int _dropX = 100;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private int _dropY = 100;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowClassName = string.Empty;
+        new public string Description => $"対象：{FormatWindowTarget(_windowTitle, _windowClassName)} / ファイル:{FormatFileName(_sourceFile)} / 座標:({_dropX},{_dropY})";
+        public FileDragDropItem() { }
+        public FileDragDropItem(FileDragDropItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                _sourceFile = item._sourceFile;
+                _dropX = item._dropX;
+                _dropY = item._dropY;
+                _windowTitle = item._windowTitle;
+                _windowClassName = item._windowClassName;
+            }
+        }
+        public new ICommandListItem Clone() => new FileDragDropItem(this);
+    }
+
+    [CommandDefinition("ActivateWindow", typeof(ActivateWindowCommand), typeof(ActivateWindowCommand.ActivateSettings), CommandCategory.System)]
+    public partial class ActivateWindowItem : CommandListItem, ICommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowTitle = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private string _windowClassName = string.Empty;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private bool _bringToFront = true;
+        new public string Description => $"ウィンドウ:{FormatWindowTarget(_windowTitle, _windowClassName)} / 最前面:{(_bringToFront ? "Yes" : "No")}";
+
+        public ActivateWindowItem() { }
+        public ActivateWindowItem(ActivateWindowItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                _windowTitle = item._windowTitle;
+                _windowClassName = item._windowClassName;
+                _bringToFront = item._bringToFront;
+            }
+        }
+        public new ICommandListItem Clone() => new ActivateWindowItem(this);
     }
 }
