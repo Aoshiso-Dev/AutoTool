@@ -15,6 +15,42 @@ namespace AutoTool.ViewModel.Shared
     }
 
     /// <summary>
+    /// Undo/Redoマネージャーのインターフェース
+    /// </summary>
+    public interface IUndoRedoManager
+    {
+        /// <summary>
+        /// コマンドを実行してUndoスタックに追加
+        /// </summary>
+        void ExecuteCommand(IUndoRedoCommand command);
+
+        /// <summary>
+        /// 直前の操作を元に戻す
+        /// </summary>
+        bool Undo();
+
+        /// <summary>
+        /// 直前のUndoをやり直す
+        /// </summary>
+        bool Redo();
+
+        /// <summary>
+        /// Undoが可能かどうか
+        /// </summary>
+        bool CanUndo { get; }
+
+        /// <summary>
+        /// Redoが可能かどうか
+        /// </summary>
+        bool CanRedo { get; }
+
+        /// <summary>
+        /// 履歴をクリア
+        /// </summary>
+        void Clear();
+    }
+
+    /// <summary>
     /// Undo/Redo機能の履歴管理（Phase 5統合版）
     /// </summary>
     public class CommandHistoryManager

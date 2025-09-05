@@ -74,6 +74,9 @@ namespace AutoTool.Services
             // Command List Item Factory
             services.AddSingleton<IUniversalCommandItemFactory, UniversalCommandItemFactory>();
 
+            // Undo/Redo System
+            services.AddSingleton<AutoTool.ViewModel.Shared.CommandHistoryManager>();
+
             // Dummy services for missing dependencies
             services.AddSingleton<IDataContextLocator, DataContextLocator>();
 
