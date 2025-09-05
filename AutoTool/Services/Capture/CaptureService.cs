@@ -143,7 +143,7 @@ namespace AutoTool.Services.Capture
         /// <summary>
         /// キーキャプチャを実行
         /// </summary>
-        public async Task<Key?> CaptureKeyAsync(string title)
+        public async Task<KeyCaptureResult?> CaptureKeyAsync(string title)
         {
             try
             {
@@ -152,10 +152,10 @@ namespace AutoTool.Services.Capture
                 var dialog = new KeyCaptureDialog(title);
                 var result = await dialog.ShowAsync();
                 
-                if (result.HasValue)
+                if (result != null)
                 {
-                    _logger.LogInformation("キーキャプチャ完了: {Key}", result.Value);
-                    return result.Value;
+                    _logger.LogInformation("キーキャプチャ成功: {Key}", result.DisplayText);
+                    return result;
                 }
 
                 return null;
@@ -196,8 +196,6 @@ namespace AutoTool.Services.Capture
         /// </summary>
         private async Task<System.Drawing.Point?> WaitForRightClickPositionAsync()
         {
-            var tcs = new TaskCompletionSource<System.Drawing.Point?>();
-            
             try
             {
                 var result = System.Windows.MessageBox.Show(
@@ -208,32 +206,28 @@ namespace AutoTool.Services.Capture
 
                 if (result != MessageBoxResult.OK)
                 {
-                    tcs.SetResult(null);
-                    return await tcs.Task;
+                    return null;
                 }
 
-                // 右クリックイベントを監視
+                // 右クリックイベントを捕捉
                 var hookResult = await WaitForRightClickHookAsync();
-                tcs.SetResult(hookResult);
-                
-                return await tcs.Task;
+                return hookResult;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "右クリック待機エラー");
-                tcs.SetResult(null);
-                return await tcs.Task;
+                return null;
             }
         }
 
         /// <summary>
-        /// 右クリックフックを待機（改良版）
+        /// 右クリックフックを待機（実装）
         /// </summary>
         private async Task<System.Drawing.Point?> WaitForRightClickHookAsync()
         {
             try
             {
-                // 右クリック監視ダイアログを表示
+                // 右クリック捕捉ダイアログを表示
                 var waitDialog = new RightClickWaitDialog();
                 var result = await waitDialog.ShowAsync();
                 
@@ -281,7 +275,7 @@ namespace AutoTool.Services.Capture
     }
 
     /// <summary>
-    /// キーキャプチャダイアログ（簡易実装）
+    /// キーキャプチャダイアログ（WPF実装）
     /// </summary>
     internal class KeyCaptureDialog
     {
@@ -292,49 +286,44 @@ namespace AutoTool.Services.Capture
             _title = title;
         }
 
-        public async Task<Key?> ShowAsync()
+        public async Task<KeyCaptureResult?> ShowAsync()
         {
-            try
+            return await Task.Run(() =>
             {
-                var commonKeys = new[]
+                KeyCaptureResult? result = null;
+                
+                // UIスレッドで実行
+                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    Key.F1, Key.F2, Key.F3, Key.F4, Key.F5, Key.F6,
-                    Key.F7, Key.F8, Key.F9, Key.F10, Key.F11, Key.F12,
-                    Key.Escape, Key.Enter, Key.Space, Key.Tab,
-                    Key.A, Key.S, Key.D, Key.W
-                };
-
-                var result = System.Windows.MessageBox.Show(
-                    $"{_title}にF1キーを設定しますか？\n\n（Noを選択すると他のキーから選択できます）",
-                    "キー選択", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-
-                return result switch
-                {
-                    MessageBoxResult.Yes => Key.F1,
-                    MessageBoxResult.No => await ShowKeySelectionAsync(commonKeys),
-                    _ => null
-                };
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private async Task<Key?> ShowKeySelectionAsync(Key[] keys)
-        {
-            var keyNames = string.Join(", ", keys.Take(8).Select(k => k.ToString()));
-            var message = $"以下のキーから選択してください:\n{keyNames}\n\n最初のF1キーを選択しますか？";
-            
-            var result = System.Windows.MessageBox.Show(message, "キー選択", 
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            return result == MessageBoxResult.Yes ? keys.FirstOrDefault() : null;
+                    var window = new KeyCaptureWindow(_title);
+                    
+                    // オーナーウィンドウを設定（可能であれば）
+                    if (System.Windows.Application.Current?.MainWindow != null)
+                    {
+                        window.Owner = System.Windows.Application.Current.MainWindow;
+                    }
+                    
+                    var dialogResult = window.ShowDialog();
+                    
+                    if (dialogResult == true && window.CapturedKey.HasValue)
+                    {
+                        result = new KeyCaptureResult
+                        {
+                            Key = window.CapturedKey.Value,
+                            IsCtrlPressed = window.IsCtrlPressed,
+                            IsAltPressed = window.IsAltPressed,
+                            IsShiftPressed = window.IsShiftPressed
+                        };
+                    }
+                });
+                
+                return result;
+            });
         }
     }
 
     /// <summary>
-    /// 右クリック待機ダイアログ（改良版）
+    /// 右クリック待機ダイアログ（実装）
     /// </summary>
     internal class RightClickWaitDialog
     {
@@ -342,9 +331,9 @@ namespace AutoTool.Services.Capture
         {
             try
             {
-                // より実用的な実装：一定時間待機してから右クリック監視
+                // 右クリック待機を開始
                 var result = System.Windows.MessageBox.Show(
-                    "右クリック待機を開始します。\n\n対象の位置で右クリックしてください。\n5秒後に現在のマウス位置を取得します。\n\nキャンセルするには×ボタンを押してください。",
+                    "右クリック待機を開始します。\n\n対象の位置で右クリックしてください。\n\nキャンセルするには×ボタンを押してください。",
                     "右クリック待機",
                     MessageBoxButton.OKCancel,
                     MessageBoxImage.Information);
@@ -354,17 +343,58 @@ namespace AutoTool.Services.Capture
                     return null;
                 }
 
-                // 簡易実装：ユーザーが準備する時間を与えて、その後位置を取得
-                await Task.Delay(2000); // 2秒待機してユーザーが準備できるように
-                
-                // 現在のマウス位置を取得（実際の実装では右クリックイベントを監視）
-                var currentPos = System.Windows.Forms.Cursor.Position;
-                return new System.Drawing.Point(currentPos.X, currentPos.Y);
+                // MouseHelperのイベントフックを使用して右クリックを待機
+                return await WaitForRightClickWithHookAsync();
             }
             catch
             {
                 return null;
             }
         }
-    }
-}
+
+        /// <summary>
+        /// 実際の右クリックフック処理
+        /// </summary>
+        private async Task<System.Drawing.Point?> WaitForRightClickWithHookAsync()
+        {
+            var tcs = new TaskCompletionSource<System.Drawing.Point?>();
+            
+            try
+            {
+                // マウスイベントフックを開始
+                MouseHelper.Event.StartHook();
+                
+                // 右クリックイベントハンドラを設定
+                void OnRightButtonUp(object? sender, MouseHelper.Event.MouseEventArgs e)
+                {
+                    tcs.TrySetResult(new System.Drawing.Point(e.X, e.Y));
+                }
+
+                MouseHelper.Event.RButtonUp += OnRightButtonUp;
+
+                try
+                {
+                    // 右クリックを待機（タイムアウト付き）
+                    var timeoutTask = Task.Delay(TimeSpan.FromMinutes(1)); // 1分でタイムアウト
+                    var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+                    
+                    if (completedTask == timeoutTask)
+                    {
+                        tcs.TrySetResult(null); // タイムアウト
+                    }
+                    
+                    return await tcs.Task;
+                }
+                finally
+                {
+                    // イベントハンドラを削除
+                    MouseHelper.Event.RButtonUp -= OnRightButtonUp;
+                }
+            }
+            finally
+            {
+                // フックを停止
+                MouseHelper.Event.StopHook();
+            }
+        }
+    }}

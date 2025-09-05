@@ -2176,11 +2176,10 @@ namespace AutoTool.ViewModel.Panels
                     
                     SetDynamicProperty(context.SettingDefinition.PropertyName, color.Value);
                     
-                    // SearchColorプロパティにも設定（Image系コマンドの場合）
-                    var itemType = SelectedItem?.ItemType;
-                    if (IsImageSearchCommand(itemType))
+                    // HotKeyCommandの場合は適切なプロパティに設定
+                    if (SelectedItem?.ItemType == "Hotkey")
                     {
-                        SetDynamicProperty("SearchColor", mediaColor);
+                        SetDynamicProperty("Key", color.Value);
                     }
                     
                     _logger.LogInformation("動的色キャプチャ完了: {Color}", color.Value);
@@ -2210,17 +2209,17 @@ namespace AutoTool.ViewModel.Panels
                 // キャプチャサービスを使用
                 var key = await _captureService.CaptureKeyAsync(context.SettingDefinition.DisplayName);
                 
-                if (key.HasValue)
+                if (key != null)
                 {
-                    SetDynamicProperty(context.SettingDefinition.PropertyName, key.Value);
+                    SetDynamicProperty(context.SettingDefinition.PropertyName, key);
                     
                     // HotKeyCommandの場合は適切なプロパティに設定
                     if (SelectedItem?.ItemType == "Hotkey")
                     {
-                        SetDynamicProperty("Key", key.Value);
+                        SetDynamicProperty("Key", key.Key);
                     }
                     
-                    _logger.LogInformation("動的キーキャプチャ完了: {Key}", key.Value);
+                    _logger.LogInformation("動的キーキャプチャ完了: {Key}", key.DisplayText);
                 }
                 else
                 {
