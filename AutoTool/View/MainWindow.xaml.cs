@@ -16,6 +16,7 @@ namespace AutoTool
         private ILogger<MainWindow>? _logger;
         private IServiceProvider? _serviceProvider;
         private IDataContextLocator? _dataContextLocator;
+        private IMainWindowButtonService? _buttonService;
 
         /// <summary>
         /// MainWindowのコンストラクタ
@@ -24,7 +25,7 @@ namespace AutoTool
         {
             InitializeComponent();
             
-            // Loadedイベントでワンタイムのみ初期化
+            // Loaded event で runtime のみ初期化
             Loaded += MainWindow_Loaded;
         }
 
@@ -40,10 +41,10 @@ namespace AutoTool
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "MainWindow DI初期化中にエラーが発生");
+                _logger?.LogError(ex, "MainWindow DI初期化にエラー発生");
                 
                 System.Windows.MessageBox.Show(
-                    $"MainWindow初期化中にエラーが発生しました。\n\nエラー詳細:\n{ex.Message}",
+                    $"MainWindow初期化にエラーが発生しました。\n\nエラー詳細:\n{ex.Message}",
                     "警告",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning
@@ -61,6 +62,7 @@ namespace AutoTool
                 _serviceProvider = app.Services;
                 _logger = _serviceProvider.GetService<ILogger<MainWindow>>();
                 _dataContextLocator = _serviceProvider.GetService<IDataContextLocator>();
+                _buttonService = _serviceProvider.GetService<IMainWindowButtonService>();
 
                 _logger?.LogDebug("MainWindow DI初期化完了");
             }
@@ -71,7 +73,7 @@ namespace AutoTool
         }
 
         /// <summary>
-        /// ViewModelを設定
+        /// ViewModelの設定
         /// </summary>
         private void SetupViewModels()
         {
@@ -92,80 +94,122 @@ namespace AutoTool
                 // EditPanelのViewModel設定
                 var editPanelViewModel = _serviceProvider.GetRequiredService<EditPanelViewModel>();
                 EditPanelViewControl.DataContext = editPanelViewModel;
-                _logger?.LogDebug("EditPanelViewModel設定完了: {TypeName}", editPanelViewModel.GetType().FullName);
-                
-                // EditPanelViewModelの診断テストを実行
-                if (editPanelViewModel is AutoTool.ViewModel.Panels.EditPanelViewModel autoToolEditVM)
-                {
-                    autoToolEditVM.DiagnosticProperties();
-                    _logger?.LogInformation("EditPanelViewModel診断テスト実行完了");
-                }
-                else
-                {
-                    _logger?.LogWarning("EditPanelViewModelが期待される型ではありません: {ActualType}", editPanelViewModel?.GetType().FullName ?? "null");
-                }
+                _logger?.LogDebug("EditPanelViewModel設定完了");
+
+                _logger?.LogInformation("全ViewModelの設定が完了しました");
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "ViewModel設定中にエラーが発生");
+                _logger?.LogError(ex, "ViewModel設定中にエラー");
                 throw;
             }
         }
 
         /// <summary>
-        /// VariableStoreの動作確認
+        /// VariableStoreのテスト
         /// </summary>
         private void TestVariableStore()
         {
-            if (_serviceProvider == null) return;
-
             try
             {
-                var variableStore = _serviceProvider.GetService<AutoTool.Services.IVariableStore>();
-                if (variableStore == null)
+                var variableStore = _serviceProvider?.GetService<AutoTool.Services.IVariableStore>();
+                if (variableStore != null)
                 {
-                    _logger?.LogWarning("AutoTool.Services.IVariableStore service is not registered in DI container");
-                }
-                else
-                {
-                    _logger?.LogDebug("AutoTool.Services.IVariableStore service successfully resolved from DI container");
-                    
-                    // 動作テスト
-                    variableStore.Set("TestVariable", "Hello AutoTool DI!");
-                    var testValue = variableStore.Get("TestVariable");
-                    _logger?.LogInformation("VariableStore動作テスト: TestVariable = {Value} (Count: {Count})", 
-                        testValue, variableStore.Count);
+                    variableStore.Set("TestVariable", "Hello World");
+                    var value = variableStore.Get("TestVariable");
+                    _logger?.LogDebug("VariableStoreテスト成功: {Value}", value);
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "VariableStore動作確認中にエラーが発生");
+                _logger?.LogWarning(ex, "VariableStoreテスト中にエラー");
             }
         }
 
         /// <summary>
-        /// ウィンドウを閉じる際の処理
+        /// Window closing event handler
         /// </summary>
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             try
             {
-                if (DataContext is MainWindowViewModel viewModel)
+                _logger?.LogInformation("MainWindow終了処理開始");
+                
+                // 実行中の場合は警告
+                if (DataContext is MainWindowViewModel viewModel && (_buttonService?.IsRunning ?? false))
                 {
-                    viewModel.SaveWindowSettings();
-                    viewModel.Cleanup();
+                    var result = System.Windows.MessageBox.Show(
+                        "マクロが実行中です。終了しますか？",
+                        "確認",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+                    
+                    if (result == MessageBoxResult.No)
+                    {
+                        e.Cancel = true;
+                        return;
+                    }
                 }
+                
+                _logger?.LogInformation("MainWindow正常終了");
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "ウィンドウクローズ処理中にエラーが発生");
-                // ignore - アプリケーション終了時なのでエラーを無視
+                _logger?.LogError(ex, "MainWindow終了処理中にエラー");
             }
         }
 
+        /// <summary>
+        /// Debug State Button Click Handler
+        /// </summary>
         private void DebugStateButton_Click(object sender, RoutedEventArgs e)
         {
-            // 既存のデバッグハンドラがある想定。必要であれば実装。
+            try
+            {
+                _logger?.LogInformation("=== DEBUG: 状態確認開始 ===");
+                
+                if (DataContext is MainWindowViewModel mainViewModel)
+                {
+                    _logger?.LogInformation("MainViewModel状態:");
+                    _logger?.LogInformation("  IsRunning: {IsRunning}", _buttonService?.IsRunning ?? false);
+                    _logger?.LogInformation("  CommandCount: {CommandCount}", mainViewModel.CommandCount);
+                    _logger?.LogInformation("  SelectedItemType: {SelectedItemType}", _buttonService?.SelectedItemType?.DisplayName ?? "null");
+                    _logger?.LogInformation("  StatusMessage: {StatusMessage}", mainViewModel.StatusMessage);
+                }
+
+                // EditPanelの状態確認
+                if (EditPanelViewControl.DataContext is EditPanelViewModel editViewModel)
+                {
+                    _logger?.LogInformation("EditPanelViewModel状態:");
+                    _logger?.LogInformation("  SelectedItem: {SelectedItem}", editViewModel.SelectedItem?.ItemType ?? "null");
+                    _logger?.LogInformation("  IsDynamicItem: {IsDynamicItem}", editViewModel.IsDynamicItem);
+                    _logger?.LogInformation("  IsLegacyItem: {IsLegacyItem}", editViewModel.IsLegacyItem);
+                    _logger?.LogInformation("  SettingGroups.Count: {Count}", editViewModel.SettingGroups.Count);
+                    
+                    // 詳細診断実行
+                    editViewModel.DiagnosticProperties();
+                }
+
+                // ListPanelの状態確認
+                if (CommandListPanel.DataContext is ListPanelViewModel listViewModel)
+                {
+                    _logger?.LogInformation("ListPanelViewModel状態:");
+                    _logger?.LogInformation("  Items.Count: {Count}", listViewModel.Items.Count);
+                    _logger?.LogInformation("  SelectedItem: {SelectedItem}", listViewModel.SelectedItem?.ItemType ?? "null");
+                    _logger?.LogInformation("  IsRunning: {IsRunning}", listViewModel.IsRunning);
+                }
+
+                _logger?.LogInformation("=== DEBUG: 状態確認完了 ===");
+                
+                System.Windows.MessageBox.Show("状態確認完了。詳細はログを確認してください。", "デバッグ情報", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "状態確認中にエラー");
+                System.Windows.MessageBox.Show($"状態確認中にエラー: {ex.Message}", "エラー", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

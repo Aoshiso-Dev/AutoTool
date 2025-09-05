@@ -4,6 +4,7 @@ using AutoTool.Model.List.Class;
 using AutoTool.Model.List.Interface;
 using AutoTool.Model.MacroFactory;
 using AutoTool.ViewModel.Shared;
+using AutoTool.Services.Capture;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -26,13 +27,15 @@ using static MouseHelper.Input;
 namespace AutoTool.ViewModel.Panels
 {
     /// <summary>
-    /// 標準MVVMパターンによるEditPanelViewModel (統一版)
+    /// 動的UI生成対応EditPanelViewModel
     /// </summary>
     public partial class EditPanelViewModel : ObservableObject
     {
         private readonly ILogger<EditPanelViewModel> _logger;
         private readonly IMessenger _messenger;
         private readonly AutoTool.Services.Mouse.IMouseService _mouseService;
+        private readonly ICaptureService _captureService;
+        private readonly IServiceProvider _serviceProvider;
         private bool _isUpdating = false;
 
         // マクロファイルのベースパス（相対パス解決用）
@@ -50,7 +53,20 @@ namespace AutoTool.ViewModel.Panels
         [ObservableProperty]
         private string _mouseWaitMessage = string.Empty;
 
-        // Collections for binding
+        // 動的設定UI用の新しいプロパティ
+        [ObservableProperty]
+        private ObservableCollection<SettingCategoryGroup> _settingGroups = new();
+
+        [ObservableProperty]
+        private ObservableCollection<SettingDefinition> _settingDefinitions = new();
+
+        [ObservableProperty]
+        private bool _isDynamicItem = false;
+
+        [ObservableProperty]
+        private bool _isLegacyItem = false;
+
+        // Collections for binding (既存)
         [ObservableProperty]
         private ObservableCollection<CommandDisplayItem> _itemTypes = new();
 
@@ -100,6 +116,10 @@ namespace AutoTool.ViewModel.Panels
         [ObservableProperty]
         private bool _hasSaveDirectoryInfo = false;
 
+        // 動的設定値のディクショナリ
+        [ObservableProperty]
+        private Dictionary<string, object?> _dynamicValues = new();
+
         // Selected items
         private CommandDisplayItem? _selectedItemTypeObj;
         public CommandDisplayItem? SelectedItemTypeObj
@@ -114,7 +134,7 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        // アイテムタイプ判定プロパティ
+        // アイテムタイプ判定プロパティ（既存システム用）
         public bool IsWaitImageItem => SelectedItem?.ItemType == "Wait_Image";
         public bool IsClickImageItem => SelectedItem?.ItemType == "Click_Image";
         public bool IsClickImageAIItem => SelectedItem?.ItemType == "Click_Image_AI";
@@ -148,18 +168,28 @@ namespace AutoTool.ViewModel.Panels
         public bool IsNotNullItem => SelectedItem != null;
         public bool IsListEmpty => SelectedItem == null;
         public bool IsListNotEmpty => SelectedItem != null;
-        public bool IsListNotEmptyButNoSelection => false; // EditPanelでは常にfalse（選択されたアイテムがある場合のみ表示されるため）
+        public bool IsListNotEmptyButNoSelection => false; // EditPanelでは常にfalse
 
-        public EditPanelViewModel(ILogger<EditPanelViewModel> logger, AutoTool.Services.Mouse.IMouseService mouseService)
+        // 動的UI制御プロパティ
+        public bool ShowDynamicSettings => IsDynamicItem && SettingGroups.Count > 0;
+        public bool ShowLegacySettings => IsLegacyItem;
+
+        public EditPanelViewModel(
+            ILogger<EditPanelViewModel> logger, 
+            AutoTool.Services.Mouse.IMouseService mouseService,
+            ICaptureService captureService,
+            IServiceProvider serviceProvider)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mouseService = mouseService ?? throw new ArgumentNullException(nameof(mouseService));
+            _captureService = captureService ?? throw new ArgumentNullException(nameof(captureService));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _messenger = WeakReferenceMessenger.Default;
 
             InitializeCollections();
             SetupMessaging();
 
-            _logger.LogInformation("EditPanelViewModel (統一版) を初期化しました");
+            _logger.LogInformation("EditPanelViewModel (動的UI対応版) を初期化しました");
         }
 
         private void SetupMessaging()
@@ -184,7 +214,7 @@ namespace AutoTool.ViewModel.Panels
                     IsRunning = m.IsRunning;
                 });
 
-                // ファイル読み込み時のベースパス更新（遅延更新付き）
+                // ファイル読み込み時のベースパス更新（遅延更新付き）が発生した場合
                 _messenger.Register<LoadMessage>(this, async (r, m) =>
                 {
                     UpdateMacroFileBasePath(m.FilePath);
@@ -199,6 +229,7 @@ namespace AutoTool.ViewModel.Panels
                     }
                 });
 
+                // LoadFileMessage に対する処理
                 _messenger.Register<LoadFileMessage>(this, async (r, m) =>
                 {
                     UpdateMacroFileBasePath(m.FilePath);
@@ -212,6 +243,7 @@ namespace AutoTool.ViewModel.Panels
                     }
                 });
 
+                // SaveMessage と SaveFileMessage に対する処理
                 _messenger.Register<SaveMessage>(this, (r, m) => UpdateMacroFileBasePath(m.FilePath));
                 _messenger.Register<SaveFileMessage>(this, (r, m) => UpdateMacroFileBasePath(m.FilePath));
 
@@ -312,6 +344,73 @@ namespace AutoTool.ViewModel.Panels
             {
                 _isUpdating = true;
 
+                _logger.LogDebug("SelectedItem変更開始: {ItemType} (ActualType: {ActualType})", 
+                    value?.ItemType ?? "null", value?.GetType().Name ?? "null");
+
+                // 動的システムと従来システムの判定
+                bool isUniversalItem = value is UniversalCommandItem;
+                bool isUniversalWrapper = value is UniversalCommandItemWrapper;
+                
+                if (isUniversalItem || isUniversalWrapper)
+                {
+                    UniversalCommandItem? universalItem = null;
+                    
+                    if (isUniversalItem)
+                    {
+                        universalItem = value as UniversalCommandItem;
+                    }
+                    else if (isUniversalWrapper && value is UniversalCommandItemWrapper wrapper)
+                    {
+                        universalItem = wrapper.UniversalItem;
+                    }
+
+                    if (universalItem != null)
+                    {
+                        // 動的システムの処理
+                        InitializeDynamicSettings(universalItem);
+                        IsDynamicItem = true;
+                        IsLegacyItem = false;
+                        
+                        _logger.LogDebug("動的システムアイテム選択: {ItemType} (設定項目: {SettingCount}個, グループ: {GroupCount}個)", 
+                            value.ItemType, SettingDefinitions.Count, SettingGroups.Count);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("UniversalCommandItemが取得できませんでした");
+                        IsDynamicItem = false;
+                        IsLegacyItem = true;
+                        SettingGroups.Clear();
+                        SettingDefinitions.Clear();
+                    }
+                }
+                else if (value != null)
+                {
+                    // 従来システムの処理
+                    IsDynamicItem = false;
+                    IsLegacyItem = true;
+                    SettingGroups.Clear();
+                    SettingDefinitions.Clear();
+                    
+                    _logger.LogDebug("従来システムアイテム選択: {ItemType}", value.ItemType);
+                }
+                else
+                {
+                    // 選択なし
+                    IsDynamicItem = false;
+                    IsLegacyItem = false;
+                    SettingGroups.Clear();
+                    SettingDefinitions.Clear();
+                    
+                    _logger.LogDebug("アイテム選択なし");
+                }
+
+                // ShowDynamicSettings と ShowLegacySettings の更新を強制
+                OnPropertyChanged(nameof(ShowDynamicSettings));
+                OnPropertyChanged(nameof(ShowLegacySettings));
+
+                _logger.LogDebug("動的設定表示状態: IsDynamicItem={IsDynamic}, IsLegacyItem={IsLegacy}, ShowDynamicSettings={ShowDynamic}, ShowLegacySettings={ShowLegacy}",
+                    IsDynamicItem, IsLegacyItem, ShowDynamicSettings, ShowLegacySettings);
+
                 // アイテムタイプの選択を更新
                 if (value != null)
                 {
@@ -332,7 +431,8 @@ namespace AutoTool.ViewModel.Panels
                 // 全ての判定プロパティを更新
                 NotifyAllPropertiesChanged();
 
-                _logger.LogDebug("SelectedItem変更: {ItemType} (相対パス対応)", value?.ItemType ?? "null");
+                _logger.LogDebug("SelectedItem変更完了: {ItemType} (動的: {IsDynamic}, 従来: {IsLegacy})", 
+                    value?.ItemType ?? "null", IsDynamicItem, IsLegacyItem);
             }
             catch (Exception ex)
             {
@@ -400,13 +500,20 @@ namespace AutoTool.ViewModel.Panels
                 nameof(IsHotkeyItem), nameof(IsClickItem), nameof(IsWaitItem),
                 nameof(IsLoopItem), nameof(IsLoopEndItem), nameof(IsLoopBreakItem),
                 nameof(IsIfImageExistItem), nameof(IsIfImageNotExistItem), nameof(IsIfImageExistAIItem),
-                nameof(IsIfImageNotExistAIItem), nameof(IsIfEndItem), nameof(IsIfEndItem),
+                nameof(IsIfImageNotExistAIItem), nameof(IsIfEndItem),
                 nameof(IsIfVariableItem), nameof(IsExecuteItem), nameof(IsSetVariableItem),
                 nameof(IsSetVariableAIItem), nameof(IsScreenshotItem), nameof(IsImageBasedItem),
                 nameof(IsAIBasedItem), nameof(IsVariableItem), nameof(IsLoopRelatedItem),
                 nameof(IsIfRelatedItem), nameof(ShowWindowInfo), nameof(ShowAdvancedSettings),
                 nameof(IsNotNullItem), nameof(IsListEmpty), nameof(IsListNotEmpty),
                 nameof(IsListNotEmptyButNoSelection)
+            };
+
+            // 動的設定UI制御プロパティを追加
+            var dynamicProperties = new[]
+            {
+                nameof(IsDynamicItem), nameof(IsLegacyItem),
+                nameof(ShowDynamicSettings), nameof(ShowLegacySettings)
             };
 
             // 値プロパティ
@@ -430,13 +537,19 @@ namespace AutoTool.ViewModel.Panels
                 OnPropertyChanged(property);
             }
 
+            // 動的設定プロパティの通知
+            foreach (var property in dynamicProperties)
+            {
+                OnPropertyChanged(property);
+            }
+
             // 値プロパティの通知
             foreach (var property in valueProperties)
             {
                 OnPropertyChanged(property);
             }
 
-            _logger.LogDebug("全プロパティ変更通知完了: {Count}個", properties.Length + valueProperties.Length);
+            _logger.LogDebug("全プロパティ変更通知完了: {Count}個", properties.Length + dynamicProperties.Length + valueProperties.Length);
         }
 
         /// <summary>
@@ -1522,50 +1635,28 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("マウス位置取得開始");
+                _logger.LogInformation("マウス位置取得開始（右クリック待機）");
 
                 IsWaitingForRightClick = true;
-                MouseWaitMessage = "右クリックしてください（取得した位置を X/Y に設定します）";
+                MouseWaitMessage = "対象位置で右クリックしてください";
 
-                // 対象ウィンドウ情報を取得
-                var windowTitle = GetItemProperty<string>("WindowTitle") ?? string.Empty;
-                var windowClassName = GetItemProperty<string>("WindowClassName") ?? string.Empty;
-
-                System.Drawing.Point position;
-
-                // ウィンドウが指定されている場合は右クリック待機モードを使用
-                if (!string.IsNullOrEmpty(windowTitle))
+                // キャプチャサービスを使用
+                var position = await _captureService.CaptureCoordinateAtRightClickAsync();
+                
+                if (position.HasValue)
                 {
-                    _logger.LogInformation("右クリック待機モード開始: ウィンドウ={WindowTitle}, クラス={WindowClassName}",
-                        windowTitle, windowClassName);
+                    // 取得した座標を設定
+                    ClickX = position.Value.X;
+                    ClickY = position.Value.Y;
 
-                    // 右クリック待機（クライアント座標で取得）
-                    position = await _mouseService.WaitForRightClickAsync(windowTitle,
-                        string.IsNullOrEmpty(windowClassName) ? null : windowClassName);
+                    NotifyAllPropertiesChanged();
+
+                    _logger.LogInformation("マウス位置設定完了: ({X}, {Y})", position.Value.X, position.Value.Y);
                 }
                 else
                 {
-                    _logger.LogInformation("右クリック待機モード開始: スクリーン座標");
-
-                    // スクリーン座標で右クリック待機
-                    position = await _mouseService.WaitForRightClickAsync();
+                    _logger.LogInformation("マウス位置取得がキャンセルされました");
                 }
-
-                // 取得した座標を設定
-                ClickX = position.X;
-                ClickY = position.Y;
-
-                NotifyAllPropertiesChanged();
-
-                _logger.LogInformation("マウス位置設定完了: ({X}, {Y})", position.X, position.Y);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("マウス位置取得がキャンセルされました");
-            }
-            catch (TimeoutException ex)
-            {
-                _logger.LogWarning("マウス位置取得がタイムアウトしました: {Message}", ex.Message);
             }
             catch (Exception ex)
             {
@@ -1585,30 +1676,13 @@ namespace AutoTool.ViewModel.Panels
             {
                 _logger.LogInformation("現在のマウス位置取得");
 
-                // 対象ウィンドウ情報を取得
-                var windowTitle = GetItemProperty<string>("WindowTitle") ?? string.Empty;
-                var windowClassName = GetItemProperty<string>("WindowClassName") ?? string.Empty;
-
-                System.Drawing.Point position;
-
-                // ウィンドウが指定されている場合はクライアント座標で取得
-                if (!string.IsNullOrEmpty(windowTitle))
-                {
-                    position = _mouseService.GetClientPosition(windowTitle, 
-                        string.IsNullOrEmpty(windowClassName) ? null : windowClassName);
-                    _logger.LogInformation("クライアント座標取得: ({X}, {Y}) for ウィンドウ={WindowTitle}", 
-                        position.X, position.Y, windowTitle);
-                }
-                else
-                {
-                    position = _mouseService.GetCurrentPosition();
-                    _logger.LogInformation("スクリーン座標取得: ({X}, {Y})", position.X, position.Y);
-                }
+                // キャプチャサービスを使用
+                var position = _captureService.GetCurrentMousePosition();
 
                 // 取得した座標を設定
                 ClickX = position.X;
                 ClickY = position.Y;
-
+                
                 _logger.LogInformation("現在のマウス位置設定完了: ({X}, {Y})", position.X, position.Y);
             }
             catch (Exception ex)
@@ -1622,36 +1696,28 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                if (_isWaitingForRightClick) return; // 他の待機と競合しないように
-                _logger.LogInformation("ウィンドウ情報取得開始 (アクティブにして右クリックで確定 / Escでキャンセル)");
-                IsWaitingForRightClick = true; // 既存のインジケータを流用
-                MouseWaitMessage = "対象ウィンドウをアクティブにして右クリックで確定 (Escでキャンセル)";
+                _logger.LogInformation("ウィンドウ情報取得開始（右クリック待機）");
+                
+                IsWaitingForRightClick = true;
+                MouseWaitMessage = "対象ウィンドウで右クリックしてください";
 
-                var svc = App.Current is AutoTool.App app && app.Services != null
-                    ? app.Services.GetService(typeof(AutoTool.Services.Window.IWindowInfoService)) as AutoTool.Services.Window.IWindowInfoService
-                    : null;
-                if (svc == null)
+                // キャプチャサービスを使用
+                var windowInfo = await _captureService.CaptureWindowInfoAtRightClickAsync();
+                
+                if (windowInfo != null)
                 {
-                    _logger.LogWarning("IWindowInfoServiceが解決できませんでした");
-                    return;
-                }
-                var (title, className) = await svc.WaitForActiveWindowSelectionAsync();
-                if (!string.IsNullOrEmpty(title))
-                {
-                    SetItemProperty("WindowTitle", title, nameof(WindowTitle));
-                    SetItemProperty("WindowClassName", className, nameof(WindowClassName));
+                    SetItemProperty("WindowTitle", windowInfo.Title, nameof(WindowTitle));
+                    SetItemProperty("WindowClassName", windowInfo.ClassName, nameof(WindowClassName));
                     OnPropertyChanged(nameof(WindowTitle));
                     OnPropertyChanged(nameof(WindowClassName));
-                    _logger.LogInformation("ウィンドウ情報取得成功 Title={Title} Class={Class}", title, className);
+                    
+                    _logger.LogInformation("ウィンドウ情報取得成功: Title={Title}, ClassName={ClassName}", 
+                        windowInfo.Title, windowInfo.ClassName);
                 }
                 else
                 {
-                    _logger.LogInformation("ウィンドウ情報は空でした");
+                    _logger.LogInformation("ウィンドウ情報取得がキャンセルされました");
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("ウィンドウ情報取得キャンセル");
             }
             catch (Exception ex)
             {
@@ -1663,5 +1729,608 @@ namespace AutoTool.ViewModel.Panels
                 MouseWaitMessage = string.Empty;
             }
         }
+
+        /// <summary>
+        /// 動的設定の初期化
+        /// </summary>
+        private void InitializeDynamicSettings(UniversalCommandItem universalItem)
+        {
+            try
+            {
+                _logger.LogDebug("動的設定初期化開始: {ItemType}", universalItem.ItemType);
+                
+                // 設定定義を初期化
+                universalItem.InitializeSettingDefinitions();
+                
+                // 設定定義をカテゴリ別にグループ化
+                var definitions = universalItem.SettingDefinitions ?? new List<SettingDefinition>();
+                SettingDefinitions = new ObservableCollection<SettingDefinition>(definitions);
+                
+                _logger.LogDebug("設定定義取得完了: {ItemType}, 項目数: {Count}", universalItem.ItemType, definitions.Count);
+                
+                if (definitions.Count == 0)
+                {
+                    _logger.LogWarning("設定定義が空です: {ItemType}", universalItem.ItemType);
+                    SettingGroups.Clear();
+                    DynamicValues.Clear();
+                    return;
+                }
+                
+                // 動的設定値を初期化
+                InitializeDynamicValues(universalItem, definitions);
+                
+                // 現在値を設定定義に同期
+                SyncCurrentValuesToDefinitions(universalItem, definitions);
+                
+                // カテゴリごとにグループ化
+                var groups = definitions
+                    .GroupBy(d => d.Category ?? "基本設定")
+                    .Select(g => new SettingCategoryGroup
+                    {
+                        Category = g.Key,
+                        Settings = new ObservableCollection<SettingDefinition>(g.ToList())
+                    })
+                    .ToList();
+
+                _logger.LogDebug("設定グループ作成完了: {ItemType}, グループ数: {GroupCount}", universalItem.ItemType, groups.Count);
+                
+                // 各グループの詳細をログ出力
+                foreach (var group in groups)
+                {
+                    _logger.LogDebug("グループ: {Category}, 設定項目数: {SettingCount}", group.Category, group.Settings.Count);
+                    foreach (var setting in group.Settings.Take(3)) // 最初の3つだけ
+                    {
+                        _logger.LogDebug("  - {DisplayName} ({PropertyName}): {ControlType} = {CurrentValue}", 
+                            setting.DisplayName, setting.PropertyName, setting.ControlType, setting.CurrentValue);
+                    }
+                }
+
+                // グローバル設定を適用
+                ApplyGlobalSettings(groups);
+                    
+                SettingGroups = new ObservableCollection<SettingCategoryGroup>(groups);
+                
+                _logger.LogDebug("動的設定初期化完了: {ItemType}, カテゴリ数: {CategoryCount}, 設定項目数: {SettingCount}",
+                    universalItem.ItemType, groups.Count, definitions.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "動的設定初期化エラー: {ItemType}", universalItem.ItemType);
+                SettingGroups.Clear();
+                SettingDefinitions.Clear();
+                DynamicValues.Clear();
+            }
+        }
+
+        /// <summary>
+        /// 動的設定値の初期化
+        /// </summary>
+        private void InitializeDynamicValues(UniversalCommandItem universalItem, List<SettingDefinition> definitions)
+        {
+            DynamicValues.Clear();
+            
+            foreach (var definition in definitions)
+            {
+                var currentValue = universalItem.GetSetting<object>(definition.PropertyName);
+                if (currentValue != null)
+                {
+                    DynamicValues[definition.PropertyName] = currentValue;
+                }
+                else if (definition.DefaultValue != null)
+                {
+                    DynamicValues[definition.PropertyName] = definition.DefaultValue;
+                    universalItem.SetSetting(definition.PropertyName, definition.DefaultValue);
+                }
+                
+                _logger.LogTrace("動的値初期化: {PropertyName} = {Value}", 
+                    definition.PropertyName, DynamicValues.GetValueOrDefault(definition.PropertyName));
+            }
+            
+            OnPropertyChanged(nameof(DynamicValues));
+        }
+
+        /// <summary>
+        /// 現在値を設定定義に同期
+        /// </summary>
+        private void SyncCurrentValuesToDefinitions(UniversalCommandItem universalItem, List<SettingDefinition> definitions)
+        {
+            foreach (var definition in definitions)
+            {
+                var currentValue = DynamicValues.GetValueOrDefault(definition.PropertyName) ?? 
+                                   universalItem.GetSetting<object>(definition.PropertyName) ??
+                                   definition.DefaultValue;
+                
+                definition.CurrentValue = currentValue;
+                
+                _logger.LogTrace("現在値同期: {PropertyName} = {CurrentValue}", 
+                    definition.PropertyName, currentValue);
+            }
+        }
+
+        /// <summary>
+        /// グローバル設定の適用（ソースコレクションの設定など）
+        /// </summary>
+        private void ApplyGlobalSettings(List<SettingCategoryGroup> categoryGroups)
+        {
+            foreach (var group in categoryGroups)
+            {
+                foreach (var setting in group.Settings)
+                {
+                    // ソースコレクションが指定されている場合は実際のコレクションを設定
+                    if (!string.IsNullOrEmpty(setting.SourceCollection))
+                    {
+                        var sourceData = DirectCommandRegistry.GetSourceCollection(setting.SourceCollection);
+                        if (sourceData != null)
+                        {
+                            // ソースデータをSettingDefinitionに格納
+                            setting.SourceItems = sourceData.ToList();
+                            _logger.LogTrace("ソースコレクション設定: {PropertyName} -> {SourceCollection} ({ItemCount}個)",
+                                setting.PropertyName, setting.SourceCollection, sourceData.Length);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 動的プロパティ取得
+        /// </summary>
+        public object? GetDynamicProperty(string propertyName)
+        {
+            if (SelectedItem is UniversalCommandItem universalItem)
+            {
+                return universalItem.GetSetting<object>(propertyName);
+            }
+            else if (DynamicValues.TryGetValue(propertyName, out var value))
+            {
+                return value;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 動的プロパティ設定
+        /// </summary>
+        public void SetDynamicProperty(string propertyName, object? value)
+        {
+            if (SelectedItem is UniversalCommandItem universalItem)
+            {
+                universalItem.SetSetting(propertyName, value);
+                DynamicValues[propertyName] = value;
+                
+                // 設定定義の現在値も更新
+                var settingDefinition = SettingDefinitions.FirstOrDefault(s => s.PropertyName == propertyName);
+                if (settingDefinition != null)
+                {
+                    settingDefinition.CurrentValue = value;
+                    _logger.LogTrace("設定定義の現在値更新: {PropertyName} = {Value}", propertyName, value);
+                }
+                
+                OnPropertyChanged(nameof(DynamicValues));
+                _logger.LogTrace("動的プロパティ設定: {PropertyName} = {Value}", propertyName, value);
+            }
+        }
+
+        /// <summary>
+        /// 動的設定の保存
+        /// </summary>
+        public bool SaveDynamicSettings()
+        {
+            try
+            {
+                if (SelectedItem is not UniversalCommandItem universalItem)
+                    return false;
+
+                // 設定検証
+                var validationErrors = new List<string>();
+                foreach (var definition in SettingDefinitions)
+                {
+                    if (definition.IsRequired)
+                    {
+                        var value = universalItem.GetSetting<object>(definition.PropertyName);
+                        if (value == null || (value is string str && string.IsNullOrWhiteSpace(str)))
+                        {
+                            validationErrors.Add($"{definition.DisplayName}は必須項目です");
+                        }
+                    }
+                }
+
+                if (validationErrors.Count > 0)
+                {
+                    _logger.LogWarning("動的設定検証エラー: {Errors}", string.Join(", ", validationErrors));
+                    return false;
+                }
+
+                _logger.LogInformation("動的設定保存完了: {ItemType}", universalItem.ItemType);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "動的設定保存エラー");
+                return false;
+            }
+        }
+
+        #region Dynamic Action Handlers
+
+        /// <summary>
+        /// 動的アクション実行
+        /// </summary>
+        [RelayCommand]
+        public async Task ExecuteActionAsync(ActionExecutionContext context)
+        {
+            if (SelectedItem == null || string.IsNullOrEmpty(context.ActionType)) return;
+
+            try
+            {
+                _logger.LogDebug("動的アクション実行: {ActionType} for {PropertyName}", 
+                    context.ActionType, context.SettingDefinition.PropertyName);
+
+                switch (context.ActionType)
+                {
+                    case "Browse":
+                        await ExecuteBrowseActionAsync(context);
+                        break;
+                    case "GetMousePosition":
+                        await ExecuteGetMousePositionActionAsync(context);
+                        break;
+                    case "GetCurrentPosition":
+                        ExecuteGetCurrentPositionActionAsync(context);
+                        break;
+                    case "GetWindowInfo":
+                        await ExecuteGetWindowInfoActionAsync(context);
+                        break;
+                    case "CaptureColor":
+                        await ExecuteCaptureColorActionAsync(context);
+                        break;
+                    case "CaptureKey":
+                        await ExecuteCaptureKeyActionAsync(context);
+                        break;
+                    case "Clear":
+                        ExecuteClearAction(context);
+                        break;
+                    default:
+                        _logger.LogWarning("未知のアクション: {ActionType}", context.ActionType);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "アクション実行エラー: {ActionType}", context.ActionType);
+            }
+        }
+
+        private async Task ExecuteBrowseActionAsync(ActionExecutionContext context)
+        {
+            var setting = context.SettingDefinition;
+
+            try
+            {
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = $"{setting.DisplayName}を選択",
+                    Filter = setting.FileFilter ?? "すべてのファイル (*.*)|*.*"
+                };
+                var currentValue = GetDynamicProperty(setting.PropertyName)?.ToString() ?? string.Empty;
+                var currentPath = ResolvePath(currentValue);
+                if (!string.IsNullOrEmpty(currentPath) && File.Exists(currentPath))
+                {
+                    dialog.InitialDirectory = Path.GetDirectoryName(currentPath);
+                    dialog.FileName = Path.GetFileName(currentPath);
+                }
+                else if (!string.IsNullOrEmpty(_macroFileBasePath))
+                {
+                    dialog.InitialDirectory = _macroFileBasePath;
+                }
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var selectedPath = dialog.FileName;
+                    var pathToSave = ConvertToRelativePath(selectedPath);
+                    SetDynamicProperty(setting.PropertyName, pathToSave);
+                    
+                    _logger.LogInformation("ファイル選択: {PropertyName} = {FileName} (相対パス: {RelativePath})", 
+                        setting.PropertyName, selectedPath, pathToSave);
+
+                    // プレビュー更新
+                    if (setting.PropertyName == "ImagePath")
+                    {
+                        UpdateImagePreview();
+                    }
+                    else if (setting.PropertyName == "ModelPath")
+                    {
+                        UpdateModelInfo();
+                    }
+                    else if (setting.PropertyName == "ProgramPath")
+                    {
+                        UpdateProgramInfo();
+                    }
+                    else if (setting.PropertyName == "SaveDirectory")
+                    {
+                        UpdateSaveDirectoryInfo();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ファイル選択アクションエラー: {PropertyName}", setting.PropertyName);
+            }
+        }
+
+        private async Task ExecuteGetMousePositionActionAsync(ActionExecutionContext context)
+        {
+            try
+            {
+                _logger.LogInformation("動的マウス位置取得開始（右クリック待機）");
+
+                IsWaitingForRightClick = true;
+                MouseWaitMessage = "対象位置で右クリックしてください";
+
+                // キャプチャサービスを使用
+                var position = await _captureService.CaptureCoordinateAtRightClickAsync();
+                
+                if (position.HasValue)
+                {
+                    // 動的プロパティに設定
+                    SetDynamicProperty("X", position.Value.X);
+                    SetDynamicProperty("Y", position.Value.Y);
+                    
+                    // CoordinatePickerの場合は統合プロパティにも設定
+                    SetDynamicProperty("MousePosition", position.Value);
+                    
+                    _logger.LogInformation("動的マウス位置設定完了: ({X}, {Y})", position.Value.X, position.Value.Y);
+                }
+                else
+                {
+                    _logger.LogInformation("動的マウス位置取得がキャンセルされました");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "動的マウス位置取得中にエラー");
+            }
+            finally
+            {
+                IsWaitingForRightClick = false;
+                MouseWaitMessage = string.Empty;
+            }
+        }
+
+        private void ExecuteGetCurrentPositionActionAsync(ActionExecutionContext context)
+        {
+            try
+            {
+                _logger.LogInformation("動的現在マウス位置取得");
+
+                // キャプチャサービスを使用
+                var position = _captureService.GetCurrentMousePosition();
+
+                // 動的プロパティに設定
+                SetDynamicProperty("X", position.X);
+                SetDynamicProperty("Y", position.Y);
+                
+                // CoordinatePickerの場合は統合プロパティにも設定
+                SetDynamicProperty("MousePosition", position);
+
+                _logger.LogInformation("動的現在マウス位置設定完了: ({X}, {Y})", position.X, position.Y);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "動的現在マウス位置取得中にエラー");
+            }
+        }
+
+        private async Task ExecuteGetWindowInfoActionAsync(ActionExecutionContext context)
+        {
+            try
+            {
+                _logger.LogInformation("動的ウィンドウ情報取得開始（右クリック待機）");
+                
+                IsWaitingForRightClick = true;
+                MouseWaitMessage = "対象ウィンドウで右クリックしてください";
+
+                // キャプチャサービスを使用
+                var windowInfo = await _captureService.CaptureWindowInfoAtRightClickAsync();
+                
+                if (windowInfo != null)
+                {
+                    SetDynamicProperty("WindowTitle", windowInfo.Title);
+                    SetDynamicProperty("WindowClassName", windowInfo.ClassName);
+                    
+                    _logger.LogInformation("動的ウィンドウ情報取得成功: Title={Title}, ClassName={ClassName}", 
+                        windowInfo.Title, windowInfo.ClassName);
+                }
+                else
+                {
+                    _logger.LogInformation("動的ウィンドウ情報取得がキャンセルされました");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "動的ウィンドウ情報取得中にエラー");
+            }
+            finally
+            {
+                IsWaitingForRightClick = false;
+                MouseWaitMessage = string.Empty;
+            }
+        }
+
+        private async Task ExecuteCaptureColorActionAsync(ActionExecutionContext context)
+        {
+            try
+            {
+                _logger.LogInformation("動的色キャプチャ開始（右クリック待機）");
+                
+                IsWaitingForRightClick = true;
+                MouseWaitMessage = "対象の色で右クリックしてください";
+
+                // キャプチャサービスを使用
+                var color = await _captureService.CaptureColorAtRightClickAsync();
+                
+                if (color.HasValue)
+                {
+                    // System.Drawing.ColorからSystem.Windows.Media.Colorに変換
+                    var mediaColor = System.Windows.Media.Color.FromArgb(
+                        color.Value.A, color.Value.R, color.Value.G, color.Value.B);
+                    
+                    SetDynamicProperty(context.SettingDefinition.PropertyName, color.Value);
+                    
+                    // SearchColorプロパティにも設定（Image系コマンドの場合）
+                    var itemType = SelectedItem?.ItemType;
+                    if (IsImageSearchCommand(itemType))
+                    {
+                        SetDynamicProperty("SearchColor", mediaColor);
+                    }
+                    
+                    _logger.LogInformation("動的色キャプチャ完了: {Color}", color.Value);
+                }
+                else
+                {
+                    _logger.LogInformation("動的色キャプチャがキャンセルされました");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "動的色キャプチャ中にエラー");
+            }
+            finally
+            {
+                IsWaitingForRightClick = false;
+                MouseWaitMessage = string.Empty;
+            }
+        }
+
+        private async Task ExecuteCaptureKeyActionAsync(ActionExecutionContext context)
+        {
+            try
+            {
+                _logger.LogInformation("動的キーキャプチャ開始");
+
+                // キャプチャサービスを使用
+                var key = await _captureService.CaptureKeyAsync(context.SettingDefinition.DisplayName);
+                
+                if (key.HasValue)
+                {
+                    SetDynamicProperty(context.SettingDefinition.PropertyName, key.Value);
+                    
+                    // HotKeyCommandの場合は適切なプロパティに設定
+                    if (SelectedItem?.ItemType == "Hotkey")
+                    {
+                        SetDynamicProperty("Key", key.Value);
+                    }
+                    
+                    _logger.LogInformation("動的キーキャプチャ完了: {Key}", key.Value);
+                }
+                else
+                {
+                    _logger.LogInformation("動的キーキャプチャがキャンセルされました");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "動的キーキャプチャ中にエラー");
+            }
+        }
+
+        /// <summary>
+        /// Image系コマンドかどうかを判定
+        /// </summary>
+        private bool IsImageSearchCommand(string? itemType)
+        {
+            return itemType switch
+            {
+                "WaitImage" or "ClickImage" or "IfImageExist" or "IfImageNotExist" => true,
+                _ => false
+            };
+        }
+
+        private void ExecuteClearAction(ActionExecutionContext context)
+        {
+            var setting = context.SettingDefinition;
+
+            try
+            {
+                // 指定されたプロパティに対してクリア処理
+                if (SelectedItem != null)
+                {
+                    if (setting.PropertyName == "ImagePath")
+                    {
+                        SetDynamicProperty("ImagePath", string.Empty);
+                        UpdateImagePreview();
+                    }
+                    else if (setting.PropertyName == "ModelPath")
+                    {
+                        SetDynamicProperty("ModelPath", string.Empty);
+                        UpdateModelInfo();
+                    }
+                    else if (setting.PropertyName == "ProgramPath")
+                    {
+                        SetDynamicProperty("ProgramPath", string.Empty);
+                        UpdateProgramInfo();
+                    }
+                    else if (setting.PropertyName == "WindowTitle")
+                    {
+                        SetDynamicProperty("WindowTitle", string.Empty);
+                        SetDynamicProperty("WindowClassName", string.Empty);
+                    }
+                    else if (setting.PropertyName == "X" || setting.PropertyName == "Y")
+                    {
+                        SetDynamicProperty("X", 0);
+                        SetDynamicProperty("Y", 0);
+                        SetDynamicProperty("MousePosition", new System.Drawing.Point(0, 0));
+                    }
+                    else
+                    {
+                        // 一般的なクリア処理
+                        var defaultValue = setting.DefaultValue ?? GetDefaultValueForType(setting.PropertyName);
+                        SetDynamicProperty(setting.PropertyName, defaultValue);
+                    }
+                    
+                    _logger.LogInformation("クリアアクション実行: {PropertyName}", setting.PropertyName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "クリアアクションエラー: {PropertyName}", setting.PropertyName);
+            }
+        }
+
+        private object? GetDefaultValueForType(string propertyName)
+        {
+            // プロパティ名に基づいてデフォルト値を返す
+            return propertyName.ToLower() switch
+            {
+                var p when p.Contains("timeout") => 5000,
+                var p when p.Contains("interval") => 500,
+                var p when p.Contains("threshold") => 0.8,
+                var p when p.Contains("count") => 1,
+                var p when p.Contains("x") || p.Contains("y") => 0,
+                var p when p.Contains("path") || p.Contains("title") || p.Contains("name") => string.Empty,
+                var p when p.Contains("enable") || p.Contains("use") => false,
+                _ => null
+            };
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// 設定カテゴリグループ
+    /// </summary>
+    public class SettingCategoryGroup
+    {
+        public string Category { get; set; } = string.Empty;
+        public ObservableCollection<SettingDefinition> Settings { get; set; } = new();
+    }
+
+    /// <summary>
+    /// アクション実行コンテキスト
+    /// </summary>
+    public class ActionExecutionContext
+    {
+        public SettingDefinition SettingDefinition { get; set; } = new();
+        public string ActionType { get; set; } = string.Empty;
+        public Dictionary<string, object> Parameters { get; set; } = new();
     }
 }
