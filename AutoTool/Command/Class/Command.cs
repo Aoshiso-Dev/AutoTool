@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using YoloWinLib;
+using AutoTool.Model.CommandDefinition;
 
 namespace AutoTool.Command.Class
 {
@@ -676,8 +677,51 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// 画像待機コマンド（DI対応）
     /// </summary>
+    [DirectCommand("Wait_Image", "画像待機", "Image", "指定した画像が画面に表示されるまで待機します")]
     public class WaitImageCommand : BaseCommand, IWaitImageCommand
     {
+        [SettingProperty("画像ファイル", SettingControlType.FilePicker,
+            description: "待機する画像ファイル",
+            category: "基本設定",
+            isRequired: true,
+            fileFilter: "画像ファイル (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp")]
+        public string ImagePath { get; set; } = string.Empty;
+
+        [SettingProperty("タイムアウト", SettingControlType.NumberBox,
+            description: "タイムアウト時間（ミリ秒）",
+            category: "基本設定",
+            defaultValue: 5000)]
+        public int Timeout { get; set; } = 5000;
+
+        [SettingProperty("検索間隔", SettingControlType.NumberBox,
+            description: "画像検索の間隔（ミリ秒）",
+            category: "基本設定",
+            defaultValue: 500)]
+        public int Interval { get; set; } = 500;
+
+        [SettingProperty("閾値", SettingControlType.Slider,
+            description: "画像認識の閾値",
+            category: "詳細設定",
+            defaultValue: 0.8,
+            minValue: 0.0,
+            maxValue: 1.0)]
+        public double Threshold { get; set; } = 0.8;
+
+        [SettingProperty("ウィンドウタイトル", SettingControlType.WindowPicker,
+            description: "対象ウィンドウのタイトル",
+            category: "ウィンドウ")]
+        public string WindowTitle { get; set; } = string.Empty;
+
+        [SettingProperty("ウィンドウクラス名", SettingControlType.TextBox,
+            description: "対象ウィンドウのクラス名",
+            category: "ウィンドウ")]
+        public string WindowClassName { get; set; } = string.Empty;
+
+        [SettingProperty("検索色", SettingControlType.ColorPicker,
+            description: "特定の色で検索する場合の色",
+            category: "詳細設定")]
+        public System.Windows.Media.Color? SearchColor { get; set; } = null;
+
         public new IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings!;
 
         public WaitImageCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -688,36 +732,29 @@ namespace AutoTool.Command.Class
 
         protected override void ValidateFiles()
         {
-            var settings = Settings;
-            if (settings != null && !string.IsNullOrEmpty(settings.ImagePath))
+            if (!string.IsNullOrEmpty(ImagePath))
             {
-                _logger?.LogDebug("[ValidateFiles] WaitImage ImagePath検証開始: {ImagePath}", settings.ImagePath);
-                ValidateFileExists(settings.ImagePath, "画像ファイル");
-                _logger?.LogDebug("[ValidateFiles] WaitImage ImagePath検証成功: {ImagePath}", settings.ImagePath);
-            }
-            else
-            {
-                _logger?.LogDebug("[ValidateFiles] WaitImage ImagePathが空またはSettingsがnull: Settings={Settings}, ImagePath={ImagePath}", 
-                    settings?.ToString() ?? "null", settings?.ImagePath ?? "null");
+                _logger?.LogDebug("[ValidateFiles] WaitImage ImagePath検証開始: {ImagePath}", ImagePath);
+                ValidateFileExists(ImagePath, "画像ファイル");
+                _logger?.LogDebug("[ValidateFiles] WaitImage ImagePath検証成功: {ImagePath}", ImagePath);
             }
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            var settings = Settings;
-            if (settings == null) return false;
+            if (string.IsNullOrEmpty(ImagePath)) return false;
 
             // 相対パスを解決して実際の検索に使用
-            var resolvedImagePath = ResolvePath(settings.ImagePath);
-            _logger?.LogDebug("[DoExecuteAsync] WaitImage 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", settings.ImagePath, resolvedImagePath);
+            var resolvedImagePath = ResolvePath(ImagePath);
+            _logger?.LogDebug("[DoExecuteAsync] WaitImage 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", ImagePath, resolvedImagePath);
 
             var stopwatch = Stopwatch.StartNew();
 
-            while (stopwatch.ElapsedMilliseconds < settings.Timeout)
+            while (stopwatch.ElapsedMilliseconds < Timeout)
             {
                 var point = await ImageSearchHelper.SearchImage(
-                    resolvedImagePath, cancellationToken, settings.Threshold,
-                    settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
+                    resolvedImagePath, cancellationToken, Threshold,
+                    SearchColor, WindowTitle, WindowClassName);
 
                 if (point != null)
                 {
@@ -727,8 +764,8 @@ namespace AutoTool.Command.Class
 
                 if (cancellationToken.IsCancellationRequested) return false;
 
-                ReportProgress(stopwatch.ElapsedMilliseconds, settings.Timeout);
-                await Task.Delay(settings.Interval, cancellationToken);
+                ReportProgress(stopwatch.ElapsedMilliseconds, Timeout);
+                await Task.Delay(Interval, cancellationToken);
             }
 
             LogMessage("画像が見つかりませんでした。");
@@ -739,8 +776,71 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// 画像クリックコマンド（DI対応）
     /// </summary>
+    [DirectCommand("Click_Image", "画像クリック", "Image", "指定した画像を検索してクリックします")]
     public class ClickImageCommand : BaseCommand, IClickImageCommand
     {
+        [SettingProperty("画像ファイル", SettingControlType.FilePicker,
+            description: "クリックする画像ファイル",
+            category: "基本設定",
+            isRequired: true,
+            fileFilter: "画像ファイル (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp")]
+        public string ImagePath { get; set; } = string.Empty;
+
+        [SettingProperty("タイムアウト", SettingControlType.NumberBox,
+            description: "タイムアウト時間（ミリ秒）",
+            category: "基本設定",
+            defaultValue: 5000)]
+        public int Timeout { get; set; } = 5000;
+
+        [SettingProperty("検索間隔", SettingControlType.NumberBox,
+            description: "画像検索の間隔（ミリ秒）",
+            category: "基本設定",
+            defaultValue: 500)]
+        public int Interval { get; set; } = 500;
+
+        [SettingProperty("閾値", SettingControlType.Slider,
+            description: "画像認識の閾値",
+            category: "詳細設定",
+            defaultValue: 0.8,
+            minValue: 0.0,
+            maxValue: 1.0)]
+        public double Threshold { get; set; } = 0.8;
+
+        [SettingProperty("マウスボタン", SettingControlType.ComboBox,
+            description: "使用するマウスボタン",
+            category: "操作",
+            sourceCollection: "MouseButtons",
+            defaultValue: System.Windows.Input.MouseButton.Left)]
+        public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
+
+        [SettingProperty("バックグラウンドクリック", SettingControlType.CheckBox,
+            description: "バックグラウンドでクリックする",
+            category: "操作",
+            defaultValue: false)]
+        public bool UseBackgroundClick { get; set; } = false;
+
+        [SettingProperty("バックグラウンドクリック方式", SettingControlType.ComboBox,
+            description: "バックグラウンドクリックの方式",
+            category: "操作",
+            sourceCollection: "BackgroundClickMethods",
+            defaultValue: 0)]
+        public int BackgroundClickMethod { get; set; } = 0;
+
+        [SettingProperty("ウィンドウタイトル", SettingControlType.WindowPicker,
+            description: "対象ウィンドウのタイトル",
+            category: "ウィンドウ")]
+        public string WindowTitle { get; set; } = string.Empty;
+
+        [SettingProperty("ウィンドウクラス名", SettingControlType.TextBox,
+            description: "対象ウィンドウのクラス名",
+            category: "ウィンドウ")]
+        public string WindowClassName { get; set; } = string.Empty;
+
+        [SettingProperty("検索色", SettingControlType.ColorPicker,
+            description: "特定の色で検索する場合の色",
+            category: "詳細設定")]
+        public System.Windows.Media.Color? SearchColor { get; set; } = null;
+
         public new IClickImageCommandSettings Settings => (IClickImageCommandSettings)base.Settings!;
 
         public ClickImageCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -765,50 +865,43 @@ namespace AutoTool.Command.Class
 
         protected override void ValidateFiles()
         {
-            var settings = Settings;
-            if (settings != null && !string.IsNullOrEmpty(settings.ImagePath))
+            if (!string.IsNullOrEmpty(ImagePath))
             {
-                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePath検証開始: {ImagePath}", settings.ImagePath);
-                ValidateFileExists(settings.ImagePath, "画像ファイル");
-                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePath検証成功: {ImagePath}", settings.ImagePath);
-            }
-            else
-            {
-                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePathが空またはSettingsがnull: Settings={Settings}, ImagePath={ImagePath}", 
-                    settings?.ToString() ?? "null", settings?.ImagePath ?? "null");
+                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePath検証開始: {ImagePath}", ImagePath);
+                ValidateFileExists(ImagePath, "画像ファイル");
+                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePath検証成功: {ImagePath}", ImagePath);
             }
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            var settings = Settings;
-            if (settings == null) return false;
+            if (string.IsNullOrEmpty(ImagePath)) return false;
 
             // 相対パスを解決して実際の検索に使用
-            var resolvedImagePath = ResolvePath(settings.ImagePath);
-            _logger?.LogDebug("[DoExecuteAsync] ClickImage 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", settings.ImagePath, resolvedImagePath);
+            var resolvedImagePath = ResolvePath(ImagePath);
+            _logger?.LogDebug("[DoExecuteAsync] ClickImage 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", ImagePath, resolvedImagePath);
 
             var stopwatch = Stopwatch.StartNew();
 
-            while (stopwatch.ElapsedMilliseconds < settings.Timeout)
+            while (stopwatch.ElapsedMilliseconds < Timeout)
             {
                 var point = await ImageSearchHelper.SearchImage(
-                    resolvedImagePath, cancellationToken, settings.Threshold,
-                    settings.SearchColor, settings.WindowTitle, settings.WindowClassName);
+                    resolvedImagePath, cancellationToken, Threshold,
+                    SearchColor, WindowTitle, WindowClassName);
 
                 if (point != null)
                 {
-                    await ExecuteMouseClick(point.Value.X, point.Value.Y, settings.Button,
-                        settings.WindowTitle, settings.WindowClassName, settings.UseBackgroundClick, settings.BackgroundClickMethod);
-                    var extra = settings.UseBackgroundClick ? $"[BG:{GetBgMethodName(settings.BackgroundClickMethod)}]" : string.Empty;
+                    await ExecuteMouseClick(point.Value.X, point.Value.Y, Button,
+                        WindowTitle, WindowClassName, UseBackgroundClick, BackgroundClickMethod);
+                    var extra = UseBackgroundClick ? $"[BG:{GetBgMethodName(BackgroundClickMethod)}]" : string.Empty;
                     LogMessage($"画像をクリックしました。{extra} ({point.Value.X}, {point.Value.Y})");
                     return true;
                 }
 
                 if (cancellationToken.IsCancellationRequested) return false;
 
-                ReportProgress(stopwatch.ElapsedMilliseconds, settings.Timeout);
-                await Task.Delay(settings.Interval, cancellationToken);
+                ReportProgress(stopwatch.ElapsedMilliseconds, Timeout);
+                await Task.Delay(Interval, cancellationToken);
             }
 
             LogMessage("画像が見つかりませんでした。");
@@ -859,8 +952,50 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// ホットキーコマンド（DI対応）
     /// </summary>
+    [DirectCommand("Hotkey", "ホットキー", "Keyboard", "ホットキーを送信します")]
     public class HotkeyCommand : BaseCommand, IHotkeyCommand
     {
+        [SettingProperty("キー", SettingControlType.ComboBox,
+            description: "送信するキー",
+            category: "基本設定",
+            sourceCollection: "Keys",
+            isRequired: true,
+            defaultValue: System.Windows.Input.Key.Enter)]
+        public System.Windows.Input.Key Key { get; set; } = System.Windows.Input.Key.Enter;
+
+        [SettingProperty("Ctrlキー", SettingControlType.CheckBox,
+            description: "Ctrlキーを同時に押下する",
+            category: "修飾キー",
+            defaultValue: false)]
+        public bool Ctrl { get; set; } = false;
+
+        [SettingProperty("Altキー", SettingControlType.CheckBox,
+            description: "Altキーを同時に押下する",
+            category: "修飾キー",
+            defaultValue: false)]
+        public bool Alt { get; set; } = false;
+
+        [SettingProperty("Shiftキー", SettingControlType.CheckBox,
+            description: "Shiftキーを同時に押下する",
+            category: "修飾キー",
+            defaultValue: false)]
+        public bool Shift { get; set; } = false;
+
+        [SettingProperty("ウィンドウタイトル", SettingControlType.WindowPicker,
+            description: "対象ウィンドウのタイトル",
+            category: "ウィンドウ")]
+        public string WindowTitle { get; set; } = string.Empty;
+
+        [SettingProperty("ウィンドウクラス名", SettingControlType.TextBox,
+            description: "対象ウィンドウのクラス名",
+            category: "ウィンドウ")]
+        public string WindowClassName { get; set; } = string.Empty;
+
+        [SettingProperty("ホットキーテキスト", SettingControlType.TextBox,
+            description: "ホットキーの表示テキスト",
+            category: "表示")]
+        public string HotkeyText { get; set; } = string.Empty;
+
         public new IHotkeyCommandSettings Settings => (IHotkeyCommandSettings)base.Settings!;
 
         public HotkeyCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -871,12 +1006,9 @@ namespace AutoTool.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            var settings = Settings;
-            if (settings == null) return false;
-
             await Task.Run(() => KeyHelper.Input.KeyPress(
-                settings.Key, settings.Ctrl, settings.Alt, settings.Shift,
-                settings.WindowTitle, settings.WindowClassName));
+                Key, Ctrl, Alt, Shift,
+                WindowTitle, WindowClassName));
 
             LogMessage("ホットキーを実行しました。");
             return true;
@@ -886,8 +1018,53 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// クリックコマンド（DI対応）
     /// </summary>
+    [DirectCommand("Click", "クリック", "Mouse", "指定した座標をクリックします")]
     public class ClickCommand : BaseCommand, IClickCommand
     {
+        [SettingProperty("X座標", SettingControlType.NumberBox,
+            description: "クリックするX座標",
+            category: "基本設定",
+            isRequired: true,
+            defaultValue: 0)]
+        public int X { get; set; } = 0;
+
+        [SettingProperty("Y座標", SettingControlType.NumberBox,
+            description: "クリックするY座標",
+            category: "基本設定",
+            isRequired: true,
+            defaultValue: 0)]
+        public int Y { get; set; } = 0;
+
+        [SettingProperty("マウスボタン", SettingControlType.ComboBox,
+            description: "使用するマウスボタン",
+            category: "操作",
+            sourceCollection: "MouseButtons",
+            defaultValue: System.Windows.Input.MouseButton.Left)]
+        public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
+
+        [SettingProperty("バックグラウンドクリック", SettingControlType.CheckBox,
+            description: "バックグラウンドでクリックする",
+            category: "操作",
+            defaultValue: false)]
+        public bool UseBackgroundClick { get; set; } = false;
+
+        [SettingProperty("バックグラウンドクリック方式", SettingControlType.ComboBox,
+            description: "バックグラウンドクリックの方式",
+            category: "操作",
+            sourceCollection: "BackgroundClickMethods",
+            defaultValue: 0)]
+        public int BackgroundClickMethod { get; set; } = 0;
+
+        [SettingProperty("ウィンドウタイトル", SettingControlType.WindowPicker,
+            description: "対象ウィンドウのタイトル",
+            category: "ウィンドウ")]
+        public string WindowTitle { get; set; } = string.Empty;
+
+        [SettingProperty("ウィンドウクラス名", SettingControlType.TextBox,
+            description: "対象ウィンドウのクラス名",
+            category: "ウィンドウ")]
+        public string WindowClassName { get; set; } = string.Empty;
+
         public new IClickCommandSettings Settings => (IClickCommandSettings)base.Settings!;
 
         public ClickCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -911,16 +1088,13 @@ namespace AutoTool.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            var settings = Settings;
-            if (settings == null) return false;
+            await ExecuteMouseClick(X, Y, Button,
+                WindowTitle, WindowClassName, UseBackgroundClick, BackgroundClickMethod);
 
-            await ExecuteMouseClick(settings.X, settings.Y, settings.Button,
-                settings.WindowTitle, settings.WindowClassName, settings.UseBackgroundClick, settings.BackgroundClickMethod);
-
-            var target = string.IsNullOrEmpty(settings.WindowTitle) && string.IsNullOrEmpty(settings.WindowClassName)
-                ? "グローバル" : $"{settings.WindowTitle}[{settings.WindowClassName}]";
-            var clickType = settings.UseBackgroundClick ? $"バックグラウンドクリック[{GetBgMethodName(settings.BackgroundClickMethod)}]" : "クリック";
-            LogMessage($"{clickType}しました。対象: {target} ({settings.X}, {settings.Y})");
+            var target = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
+                ? "グローバル" : $"{WindowTitle}[{WindowClassName}]";
+            var clickType = UseBackgroundClick ? $"バックグラウンドクリック[{GetBgMethodName(BackgroundClickMethod)}]" : "クリック";
+            LogMessage($"{clickType}しました。対象: {target} ({X}, {Y})");
             return true;
         }
 
@@ -980,50 +1154,52 @@ namespace AutoTool.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            var settings = Settings;
-            if (settings == null) return false;
-
-            var stopwatch = Stopwatch.StartNew();
-            var totalWaitMs = settings.Wait;
-            int lastReportedProgress = -1;
-
-            LogMessage($"待機開始 ({totalWaitMs}ms)");
-
-            while (stopwatch.ElapsedMilliseconds < totalWaitMs)
+            // 待機時間を設定から取得
+            int waitTime = 1000; // デフォルト1秒
+            if (Settings is IWaitCommandSettings waitSettings)
             {
-                if (cancellationToken.IsCancellationRequested) 
-                {
-                    LogMessage("待機がキャンセルされました");
-                    return false;
-                }
-
-                var elapsed = stopwatch.ElapsedMilliseconds;
-                var currentProgress = totalWaitMs > 0 ? (int)((elapsed / (double)totalWaitMs) * 100) : 100;
-                
-                // 進捗が変わった場合のみ報告（頻度を減らすため）
-                if (currentProgress != lastReportedProgress)
-                {
-                    ReportProgress(elapsed, totalWaitMs);
-                    lastReportedProgress = currentProgress;
-                    
-                    // より詳細な状態報告
-                    var remaining = totalWaitMs - elapsed;
-                    LogMessage($"待機中... {currentProgress}% (残り約{remaining}ms)");
-                }
-
-                await Task.Delay(100, cancellationToken); // 100msごとに確認
+                waitTime = waitSettings.Wait;
             }
 
-            LogMessage("待機が完了しました");
+            LogMessage($"指定された時間({waitTime}ms)待機します。");
+
+            try
+            {
+                var elapsed = 0;
+                var interval = 10; // 10msごとにキャンセルチェック
+                while (elapsed < waitTime)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return false;
+                    var delay = Math.Min(interval, waitTime - elapsed);
+                    await Task.Delay(delay, cancellationToken);
+                    elapsed += delay;
+                    ReportProgress(elapsed, waitTime);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return false;
+            }
+            LogMessage("待機が完了しました。");
             return true;
         }
     }
 
+
     /// <summary>
     /// ループコマンド（DI対応）
     /// </summary>
+    [DirectCommand("Loop", "ループ", "Control", "指定した回数だけ子コマンドを繰り返し実行します")]
     public class LoopCommand : BaseCommand, ILoopCommand
-    {
+        {
+            [SettingProperty("ループ回数", SettingControlType.NumberBox,
+                description: "繰り返し実行する回数",
+                category: "基本設定",
+                isRequired: true,
+                defaultValue: 1)]
+        public int LoopCount { get; set; } = 1;
+
         public new ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings!;
 
         public LoopCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -1034,12 +1210,9 @@ namespace AutoTool.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            var settings = Settings;
-            if (settings == null) return false;
+            LogMessage($"ループを開始します。({LoopCount}回)");
 
-            LogMessage($"ループを開始します。({settings.LoopCount}回)");
-
-            for (int i = 0; i < settings.LoopCount; i++)
+            for (int i = 0; i < LoopCount; i++)
             {
                 if (cancellationToken.IsCancellationRequested) return false;
 
@@ -1053,11 +1226,11 @@ namespace AutoTool.Command.Class
                 catch (LoopBreakException)
                 {
                     // LoopBreakExceptionをキャッチしてこのループを中断
-                    LogMessage($"ループが中断されました。(実行回数: {i + 1}/{settings.LoopCount})");
+                    LogMessage($"ループが中断されました。(実行回数: {i + 1}/{LoopCount})");
                     break; // このループのみを抜ける
                 }
 
-                ReportProgress(i + 1, settings.LoopCount);
+                ReportProgress(i + 1, LoopCount);
             }
 
             LogMessage("ループが完了しました。");
@@ -1494,6 +1667,7 @@ namespace AutoTool.Command.Class
         }
     }
 
+    [DirectCommand("Loop_Break", "ループ中断", "Control", "ループを中断します")]
     public class LoopBreakCommand : BaseCommand, ILoopBreakCommand
     {
         public LoopBreakCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -1511,9 +1685,29 @@ namespace AutoTool.Command.Class
         }
     }
 
-    // その他のコマンド（DI対応）
+    /// <summary>
+    /// プログラム実行コマンド（DI対応）
+    /// </summary>
+    [DirectCommand("Execute", "プログラム実行", "System", "外部プログラムを実行します")]
     public class ExecuteCommand : BaseCommand, IExecuteCommand
     {
+        [SettingProperty("プログラムパス", SettingControlType.FilePicker,
+            description: "実行するプログラムのパス",
+            category: "基本設定",
+            isRequired: true,
+            fileFilter: "実行ファイル (*.exe;*.bat;*.cmd)|*.exe;*.bat;*.cmd|すべてのファイル (*.*)|*.*")]
+        public string ProgramPath { get; set; } = string.Empty;
+
+        [SettingProperty("引数", SettingControlType.TextBox,
+            description: "プログラムに渡す引数",
+            category: "基本設定")]
+        public string Arguments { get; set; } = string.Empty;
+
+        [SettingProperty("作業ディレクトリ", SettingControlType.FolderPicker,
+            description: "プログラムの作業ディレクトリ",
+            category: "詳細設定")]
+        public string WorkingDirectory { get; set; } = string.Empty;
+
         public new IExecuteCommandSettings Settings => (IExecuteCommandSettings)base.Settings!;
 
         public ExecuteCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -1524,38 +1718,36 @@ namespace AutoTool.Command.Class
 
         protected override void ValidateFiles()
         {
-            var settings = Settings;
-            if (settings != null)
+            if (!string.IsNullOrEmpty(ProgramPath))
             {
-                ValidateFileExists(settings.ProgramPath, "実行ファイル");
-                if (!string.IsNullOrEmpty(settings.WorkingDirectory))
-                {
-                    ValidateDirectoryExists(settings.WorkingDirectory, "ワーキングディレクトリ");
-                }
+                ValidateFileExists(ProgramPath, "実行ファイル");
+            }
+            if (!string.IsNullOrEmpty(WorkingDirectory))
+            {
+                ValidateDirectoryExists(WorkingDirectory, "ワーキングディレクトリ");
             }
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            var settings = Settings;
-            if (settings == null) return false;
+            if (string.IsNullOrEmpty(ProgramPath)) return false;
 
             try
             {
                 // 相対パスを解決して実際の実行に使用
-                var resolvedProgramPath = ResolvePath(settings.ProgramPath);
-                var resolvedWorkingDirectory = !string.IsNullOrEmpty(settings.WorkingDirectory) ? ResolvePath(settings.WorkingDirectory) : string.Empty;
+                var resolvedProgramPath = ResolvePath(ProgramPath);
+                var resolvedWorkingDirectory = !string.IsNullOrEmpty(WorkingDirectory) ? ResolvePath(WorkingDirectory) : string.Empty;
                 
-                _logger?.LogDebug("[DoExecuteAsync] Execute 解決されたProgramPath: {OriginalPath} -> {ResolvedPath}", settings.ProgramPath, resolvedProgramPath);
-                if (!string.IsNullOrEmpty(settings.WorkingDirectory))
+                _logger?.LogDebug("[DoExecuteAsync] Execute 解決されたProgramPath: {OriginalPath} -> {ResolvedPath}", ProgramPath, resolvedProgramPath);
+                if (!string.IsNullOrEmpty(WorkingDirectory))
                 {
-                    _logger?.LogDebug("[DoExecuteAsync] Execute 解決されたWorkingDirectory: {OriginalPath} -> {ResolvedPath}", settings.WorkingDirectory, resolvedWorkingDirectory);
+                    _logger?.LogDebug("[DoExecuteAsync] Execute 解決されたWorkingDirectory: {OriginalPath} -> {ResolvedPath}", WorkingDirectory, resolvedWorkingDirectory);
                 }
 
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = resolvedProgramPath,
-                    Arguments = settings.Arguments,
+                    Arguments = Arguments,
                     WorkingDirectory = resolvedWorkingDirectory,
                     UseShellExecute = true,
                 };
@@ -1574,8 +1766,20 @@ namespace AutoTool.Command.Class
         }
     }
 
+    [DirectCommand("Set_Variable", "変数設定", "Variable", "変数に値を設定します")]
     public class SetVariableCommand : BaseCommand, ISetVariableCommand
     {
+        [SettingProperty("変数名", SettingControlType.TextBox,
+            description: "設定する変数の名前",
+            category: "基本設定",
+            isRequired: true)]
+        public string Name { get; set; } = string.Empty;
+
+        [SettingProperty("値", SettingControlType.TextBox,
+            description: "変数に設定する値",
+            category: "基本設定")]
+        public string Value { get; set; } = string.Empty;
+
         private readonly IVariableStore? _variableStore;
         public new ISetVariableCommandSettings Settings => (ISetVariableCommandSettings)base.Settings!;
 
@@ -1588,11 +1792,10 @@ namespace AutoTool.Command.Class
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            var settings = Settings;
-            if (settings == null) return false;
+            if (string.IsNullOrEmpty(Name)) return false;
 
-            _variableStore?.Set(settings.Name, settings.Value);
-            LogMessage($"変数を設定しました。{settings.Name} = \"{settings.Value}\"");
+            _variableStore?.Set(Name, Value);
+            LogMessage($"変数を設定しました。{Name} = \"{Value}\"");
             return true;
         }
     }
@@ -1660,8 +1863,27 @@ namespace AutoTool.Command.Class
         }
     }
 
+    /// <summary>
+    /// スクリーンショットコマンド（DI対応）
+    /// </summary>
+    [DirectCommand("Screenshot", "スクリーンショット", "System", "スクリーンショットを撮影して保存します")]
     public class ScreenshotCommand : BaseCommand, IScreenshotCommand
     {
+        [SettingProperty("保存ディレクトリ", SettingControlType.FolderPicker,
+            description: "スクリーンショットの保存先ディレクトリ",
+            category: "基本設定")]
+        public string SaveDirectory { get; set; } = string.Empty;
+
+        [SettingProperty("ウィンドウタイトル", SettingControlType.WindowPicker,
+            description: "キャプチャ対象のウィンドウタイトル（空の場合は全画面）",
+            category: "ウィンドウ")]
+        public string WindowTitle { get; set; } = string.Empty;
+
+        [SettingProperty("ウィンドウクラス名", SettingControlType.TextBox,
+            description: "キャプチャ対象のウィンドウクラス名",
+            category: "ウィンドウ")]
+        public string WindowClassName { get; set; } = string.Empty;
+
         public new IScreenshotCommandSettings Settings => (IScreenshotCommandSettings)base.Settings!;
 
         public ScreenshotCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
