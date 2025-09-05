@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -31,83 +30,12 @@ namespace AutoTool.Command.Class
     }
 
     /// <summary>
-    /// 自動コマンド登録用のアトリビュート
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public class AutoCommandAttribute : Attribute
-    {
-        public string TypeName { get; }
-        public string DisplayName { get; }
-        public string Description { get; }
-        public string Category { get; }
-        public int DisplayOrder { get; }
-
-        public AutoCommandAttribute(string typeName, string displayName, string description = "", string category = "その他", int displayOrder = 999)
-        {
-            TypeName = typeName;
-            DisplayName = displayName;
-            Description = description;
-            Category = category;
-            DisplayOrder = displayOrder;
-        }
-    }
-
-    /// <summary>
-    /// 設定プロパティの自動生成アトリビュート
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public class AutoSettingAttribute : Attribute
-    {
-        public string DisplayName { get; }
-        public string Description { get; }
-        public object? DefaultValue { get; }
-        public bool IsRequired { get; }
-        public string Category { get; }
-
-        public AutoSettingAttribute(string displayName, string description = "", object? defaultValue = null, 
-            bool isRequired = false, string category = "基本設定")
-        {
-            DisplayName = displayName;
-            Description = description;
-            DefaultValue = defaultValue;
-            IsRequired = isRequired;
-            Category = category;
-        }
-    }
-
-    /// <summary>
-    /// コマンドファクトリー（改良版 - 自動登録対応 + UI自動生成）
+    /// コマンドファクトリー（DI対応）
     /// </summary>
     public static class CommandFactory
     {
         private static IServiceProvider? _serviceProvider;
         private static ILogger? _logger;
-        private static readonly Dictionary<string, Type> _autoCommands = new();
-        private static readonly Dictionary<string, CommandMetadata> _commandMetadata = new();
-        private static bool _initialized = false;
-
-        public class CommandMetadata
-        {
-            public string TypeName { get; set; } = string.Empty;
-            public string DisplayName { get; set; } = string.Empty;
-            public string Description { get; set; } = string.Empty;
-            public string Category { get; set; } = string.Empty;
-            public int DisplayOrder { get; set; }
-            public Type CommandType { get; set; } = null!;
-            public Type? SettingsType { get; set; }
-            public List<SettingPropertyInfo> SettingProperties { get; set; } = new();
-        }
-
-        public class SettingPropertyInfo
-        {
-            public string PropertyName { get; set; } = string.Empty;
-            public string DisplayName { get; set; } = string.Empty;
-            public string Description { get; set; } = string.Empty;
-            public Type PropertyType { get; set; } = null!;
-            public object? DefaultValue { get; set; }
-            public bool IsRequired { get; set; }
-            public string Category { get; set; } = string.Empty;
-        }
 
         /// <summary>
         /// サービスプロバイダーを設定
@@ -116,201 +44,66 @@ namespace AutoTool.Command.Class
         {
             _serviceProvider = serviceProvider;
             _logger = serviceProvider.GetService<ILoggerFactory>()?.CreateLogger("CommandFactory");
-            InitializeAutoCommands();
         }
 
         /// <summary>
-        /// 自動コマンドを初期化
+        /// 設定からコマンドを作成
         /// </summary>
-        private static void InitializeAutoCommands()
+        public static T? CreateCommand<T>(object? settings = null, ICommand? parent = null) where T : BaseCommand
         {
-            if (_initialized) return;
-
             try
             {
-                var assembly = Assembly.GetExecutingAssembly();
-                var commandTypes = assembly.GetTypes()
-                    .Where(t => t.IsSubclassOf(typeof(BaseCommand)) && !t.IsAbstract)
-                    .Where(t => t.GetCustomAttribute<AutoCommandAttribute>() != null);
-
-                _logger?.LogDebug("自動コマンド検索開始...");
-
-                foreach (var type in commandTypes)
+                var commandType = typeof(T);
+                var command = Activator.CreateInstance(commandType, parent, settings, _serviceProvider) as T;
+                
+                if (command != null)
                 {
-                    var attr = type.GetCustomAttribute<AutoCommandAttribute>()!;
-                    var settingsType = GetSettingsType(type);
-                    var settingProperties = GetSettingProperties(settingsType);
-
-                    _autoCommands[attr.TypeName] = type;
-                    _commandMetadata[attr.TypeName] = new CommandMetadata
-                    {
-                        TypeName = attr.TypeName,
-                        DisplayName = attr.DisplayName,
-                        Description = attr.Description,
-                        Category = attr.Category,
-                        DisplayOrder = attr.DisplayOrder,
-                        CommandType = type,
-                        SettingsType = settingsType,
-                        SettingProperties = settingProperties
-                    };
-
-                    _logger?.LogDebug("自動コマンド登録: {TypeName} -> {CommandType}", attr.TypeName, type.Name);
+                    _logger?.LogDebug("コマンドを作成しました: {CommandType}", commandType.Name);
                 }
-
-                _initialized = true;
-                _logger?.LogInformation("自動コマンド初期化完了: {Count}個のコマンドを登録", _autoCommands.Count);
+                
+                return command;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "自動コマンド初期化でエラーが発生");
+                _logger?.LogError(ex, "コマンド作成に失敗しました: {CommandType}", typeof(T).Name);
+                return null;
             }
         }
 
         /// <summary>
-        /// Settings プロパティの型を自動取得
+        /// 型名からコマンドを作成
         /// </summary>
-        private static Type? GetSettingsType(Type commandType)
+        public static ICommand? CreateCommandByTypeName(string typeName, object? settings = null, ICommand? parent = null)
         {
-            var settingsProperty = commandType.GetProperty("Settings");
-            if (settingsProperty != null && settingsProperty.PropertyType != typeof(object))
+            try
             {
-                return settingsProperty.PropertyType;
-            }
-
-            // 内部クラスのSettingsを探す
-            var nestedTypes = commandType.GetNestedTypes();
-            var settingsClass = nestedTypes.FirstOrDefault(t => t.Name.Contains("Settings"));
-            return settingsClass;
-        }
-
-        /// <summary>
-        /// 設定プロパティ情報を自動取得
-        /// </summary>
-        private static List<SettingPropertyInfo> GetSettingProperties(Type? settingsType)
-        {
-            var properties = new List<SettingPropertyInfo>();
-            
-            if (settingsType == null) return properties;
-
-            foreach (var prop in settingsType.GetProperties())
-            {
-                var autoSettingAttr = prop.GetCustomAttribute<AutoSettingAttribute>();
-                if (autoSettingAttr != null)
+                return typeName switch
                 {
-                    properties.Add(new SettingPropertyInfo
-                    {
-                        PropertyName = prop.Name,
-                        DisplayName = autoSettingAttr.DisplayName,
-                        Description = autoSettingAttr.Description,
-                        PropertyType = prop.PropertyType,
-                        DefaultValue = autoSettingAttr.DefaultValue,
-                        IsRequired = autoSettingAttr.IsRequired,
-                        Category = autoSettingAttr.Category
-                    });
-                }
-            }
-
-            return properties.OrderBy(p => p.Category).ThenBy(p => p.DisplayName).ToList();
-        }
-
-        /// <summary>
-        /// CommandListItem を自動生成
-        /// </summary>
-        public static List<object> GenerateCommandListItems()
-        {
-            InitializeAutoCommands();
-            var items = new List<object>();
-
-            foreach (var metadata in _commandMetadata.Values.OrderBy(m => m.DisplayOrder))
-            {
-                var item = new
-                {
-                    TypeName = metadata.TypeName,
-                    DisplayName = metadata.DisplayName,
-                    Description = metadata.Description,
-                    Category = metadata.Category,
-                    Icon = GetCommandIcon(metadata.TypeName),
-                    DisplayOrder = metadata.DisplayOrder
+                    "WaitImage" => CreateCommand<WaitImageCommand>(settings, parent),
+                    "ClickImage" => CreateCommand<ClickImageCommand>(settings, parent),
+                    "ClickImageAI" => CreateCommand<ClickImageAICommand>(settings, parent),
+                    "Hotkey" => CreateCommand<HotkeyCommand>(settings, parent),
+                    "Click" => CreateCommand<ClickCommand>(settings, parent),
+                    "Wait" => CreateCommand<WaitCommand>(settings, parent),
+                    "Loop" => CreateCommand<LoopCommand>(settings, parent),
+                    "LoopBreak" => CreateCommand<LoopBreakCommand>(settings, parent),
+                    "IfImageExist" => CreateCommand<IfImageExistCommand>(settings, parent),
+                    "IfImageNotExist" => CreateCommand<IfImageNotExistCommand>(settings, parent),
+                    "IfImageExistAI" => CreateCommand<IfImageExistAICommand>(settings, parent),
+                    "IfImageNotExistAI" => CreateCommand<IfImageNotExistAICommand>(settings, parent),
+                    "IfVariable" => CreateCommand<IfVariableCommand>(settings, parent),
+                    "Execute" => CreateCommand<ExecuteCommand>(settings, parent),
+                    "SetVariable" => CreateCommand<SetVariableCommand>(settings, parent),
+                    "SetVariableAI" => CreateCommand<SetVariableAICommand>(settings, parent),
+                    "Screenshot" => CreateCommand<ScreenshotCommand>(settings, parent),
+                    _ => null
                 };
-                items.Add(item);
             }
-
-            return items;
-        }
-
-        /// <summary>
-        /// カテゴリ別 CommandListItem を生成
-        /// </summary>
-        public static Dictionary<string, List<object>> GenerateCommandListItemsByCategory()
-        {
-            InitializeAutoCommands();
-            var categorizedItems = new Dictionary<string, List<object>>();
-
-            foreach (var group in _commandMetadata.Values.GroupBy(m => m.Category))
+            catch (Exception ex)
             {
-                var items = group.OrderBy(m => m.DisplayOrder).Select(metadata => new
-                {
-                    TypeName = metadata.TypeName,
-                    DisplayName = metadata.DisplayName,
-                    Description = metadata.Description,
-                    Category = metadata.Category,
-                    Icon = GetCommandIcon(metadata.TypeName),
-                    DisplayOrder = metadata.DisplayOrder
-                }).ToList<object>();
-
-                categorizedItems[group.Key] = items;
+                _logger?.LogError(ex, "型名からのコマンド作成に失敗しました: {TypeName}", typeName);
+                return null;
             }
-
-            return categorizedItems;
-        }
-
-        /// <summary>
-        /// 設定パネル用のプロパティ情報を生成
-        /// </summary>
-        public static List<SettingPropertyInfo> GenerateSettingProperties(string typeName)
-        {
-            InitializeAutoCommands();
-            
-            if (_commandMetadata.TryGetValue(typeName, out var metadata))
-            {
-                return metadata.SettingProperties;
-            }
-
-            return new List<SettingPropertyInfo>();
-        }
-
-        /// <summary>
-        /// コマンド用アイコンを取得（従来のConverterロジックを統合）
-        /// </summary>
-        private static string GetCommandIcon(string typeName)
-        {
-            return typeName switch
-            {
-                "TextInput" => "📝",
-                "PasteClipboard" => "📋",
-                "FileDragDrop" => "📂",
-                "ActivateWindow" => "🪟",
-                "WaitImage" => "⏱️",
-                "ClickImage" => "🖱️",
-                "ClickImageAI" => "🤖",
-                "Hotkey" => "⌨️",
-                "Click" => "👆",
-                "Wait" => "⏸️",
-                "Loop" => "🔄",
-                "LoopEnd" => "🔚",
-                "LoopBreak" => "⚡",
-                "IfImageExist" => "❓",
-                "IfImageNotExist" => "❗",
-                "IfImageExistAI" => "🔍",
-                "IfImageNotExistAI" => "🔍",
-                "IfEnd" => "✅",
-                "IfVariable" => "📊",
-                "Execute" => "🚀",
-                "SetVariable" => "📝",
-                "SetVariableAI" => "🧠",
-                "Screenshot" => "📸",
-                _ => "📄"
-            };
         }
     }
 
@@ -883,7 +676,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// 画像待機コマンド（DI対応）
     /// </summary>
-    [AutoCommand("WaitImage", "画像待機", "指定された画像が見つかるまで待機します", "画像認識", 10)]
     public class WaitImageCommand : BaseCommand, IWaitImageCommand
     {
         public new IWaitImageCommandSettings Settings => (IWaitImageCommandSettings)base.Settings!;
@@ -947,7 +739,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// 画像クリックコマンド（DI対応）
     /// </summary>
-    [AutoCommand("ClickImage", "画像クリック", "指定された画像を見つけてクリックします", "画像認識", 20)]
     public class ClickImageCommand : BaseCommand, IClickImageCommand
     {
         public new IClickImageCommandSettings Settings => (IClickImageCommandSettings)base.Settings!;
@@ -1068,7 +859,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// ホットキーコマンド（DI対応）
     /// </summary>
-    [AutoCommand("Hotkey", "ホットキー", "指定されたキーの組み合わせを送信します", "キーボード", 30)]
     public class HotkeyCommand : BaseCommand, IHotkeyCommand
     {
         public new IHotkeyCommandSettings Settings => (IHotkeyCommandSettings)base.Settings!;
@@ -1096,13 +886,12 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// クリックコマンド（DI対応）
     /// </summary>
-    [AutoCommand("Click", "クリック", "指定された座標をクリックします", "マウス", 40)]
     public class ClickCommand : BaseCommand, IClickCommand
     {
         public new IClickCommandSettings Settings => (IClickCommandSettings)base.Settings!;
 
-        public ClickCommand(ICommand? parent = null, object? settings = null, IServiceProvider? service_PROVIDER = null)
-            : base(parent, settings, service_PROVIDER)
+        public ClickCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
+            : base(parent, settings, serviceProvider)
         {
             Description = "クリック";
         }
@@ -1179,7 +968,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// 待機コマンド（DI対応）
     /// </summary>
-    [AutoCommand("Wait", "待機", "指定された時間だけ待機します", "基本操作", 50)]
     public class WaitCommand : BaseCommand, IWaitCommand
     {
         public new IWaitCommandSettings Settings => (IWaitCommandSettings)base.Settings!;
@@ -1234,7 +1022,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// ループコマンド（DI対応）
     /// </summary>
-    [AutoCommand("Loop", "ループ", "指定された回数だけ子コマンドを繰り返し実行します", "制御構造", 60)]
     public class LoopCommand : BaseCommand, ILoopCommand
     {
         public new ILoopCommandSettings Settings => (ILoopCommandSettings)base.Settings!;
@@ -1382,7 +1169,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// 画像存在確認If文（DI対応）
     /// </summary>
-    [AutoCommand("IfImageExist", "画像存在確認", "指定された画像が存在する場合に子コマンドを実行します", "制御構造", 70)]
     public class IfImageExistCommand : IfCommand, IIfImageExistCommand
     {
         public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings!;
@@ -1442,7 +1228,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// 画像非存在確認If文（DI対応）
     /// </summary>
-    [AutoCommand("IfImageNotExist", "画像非存在確認", "指定された画像が存在しない場合に子コマンドを実行します", "制御構造", 75)]
     public class IfImageNotExistCommand : IfCommand, IIfImageNotExistCommand
     {
         public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings!;
@@ -1502,7 +1287,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// AI画像存在確認If文（DI対応）
     /// </summary>
-    [AutoCommand("IfImageExistAI", "AI画像存在確認", "AIモデルで指定されたクラスが検出される場合に子コマンドを実行します", "AI認識", 80)]
     public class IfImageExistAICommand : IfCommand, IIfImageExistAICommand
     {
         public new IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings!;
@@ -1557,7 +1341,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// AI画像非存在確認If文（DI対応）
     /// </summary>
-    [AutoCommand("IfImageNotExistAI", "AI画像非存在確認", "AIモデルで指定されたクラスが検出されない場合に子コマンドを実行します", "AI認識", 85)]
     public class IfImageNotExistAICommand : IfCommand, IIfImageNotExistAICommand
     {
         public new IIfImageNotExistAISettings Settings => (IIfImageNotExistAISettings)base.Settings!;
@@ -1614,7 +1397,6 @@ namespace AutoTool.Command.Class
     /// <summary>
     /// 変数条件確認If文（DI対応）
     /// </summary>
-    [AutoCommand("IfVariable", "変数条件確認", "変数の値が条件を満たす場合に子コマンドを実行します", "制御構造", 90)]
     public class IfVariableCommand : IfCommand, IIfVariableCommand
     {
         private readonly IVariableStore? _variableStore;
@@ -1682,7 +1464,6 @@ namespace AutoTool.Command.Class
     }
 
     // 終了コマンド類（DI対応）
-    [AutoCommand("IfEnd", "If終了", "If文の終了を示します", "制御構造", 95)]
     public class IfEndCommand : BaseCommand
     {
         public IfEndCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -1698,7 +1479,6 @@ namespace AutoTool.Command.Class
         }
     }
 
-    [AutoCommand("LoopEnd", "ループ終了", "ループの終了を示します", "制御構造", 96)]
     public class LoopEndCommand : BaseCommand
     {
         public LoopEndCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -1714,7 +1494,6 @@ namespace AutoTool.Command.Class
         }
     }
 
-    [AutoCommand("LoopBreak", "ループ中断", "ループを中断します", "制御構造", 97)]
     public class LoopBreakCommand : BaseCommand, ILoopBreakCommand
     {
         public LoopBreakCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
@@ -1733,7 +1512,6 @@ namespace AutoTool.Command.Class
     }
 
     // その他のコマンド（DI対応）
-    [AutoCommand("Execute", "プログラム実行", "外部プログラムを実行します", "システム操作", 100)]
     public class ExecuteCommand : BaseCommand, IExecuteCommand
     {
         public new IExecuteCommandSettings Settings => (IExecuteCommandSettings)base.Settings!;
@@ -1796,7 +1574,6 @@ namespace AutoTool.Command.Class
         }
     }
 
-    [AutoCommand("SetVariable", "変数設定", "変数に値を設定します", "変数操作", 110)]
     public class SetVariableCommand : BaseCommand, ISetVariableCommand
     {
         private readonly IVariableStore? _variableStore;
@@ -1820,7 +1597,6 @@ namespace AutoTool.Command.Class
         }
     }
 
-    [AutoCommand("SetVariableAI", "AI変数設定", "AI検出結果を変数に設定します", "AI認識", 120)]
     public class SetVariableAICommand : BaseCommand, ISetVariableAICommand
     {
         private readonly IVariableStore? _variableStore;
@@ -1884,7 +1660,6 @@ namespace AutoTool.Command.Class
         }
     }
 
-    [AutoCommand("Screenshot", "スクリーンショット", "画面のスクリーンショットを撮影します", "画像操作", 130)]
     public class ScreenshotCommand : BaseCommand, IScreenshotCommand
     {
         public new IScreenshotCommandSettings Settings => (IScreenshotCommandSettings)base.Settings!;
@@ -1941,7 +1716,6 @@ namespace AutoTool.Command.Class
         }
     }
 
-    [AutoCommand("ClickImageAI", "AI画像クリック", "AIモデルで検出された画像をクリックします", "AI認識", 140)]
     public class ClickImageAICommand : BaseCommand, IClickImageAICommand
     {
         public new IClickImageAICommandSettings Settings => (IClickImageAICommandSettings)base.Settings!;
@@ -2051,277 +1825,67 @@ namespace AutoTool.Command.Class
     }
 
     /// <summary>
-    /// テキスト入力コマンド（新コマンドの例1）
-    /// この1つのクラス定義だけで完全に動作します
+    /// 変数ストアのインターフェース（DI対応・拡張版）
     /// </summary>
-    [AutoCommand("TextInput", "テキスト入力", "指定されたテキストを自動入力します", "基本操作", 25)]
-    public class TextInputCommand : BaseCommand
+    namespace AutoTool.Command.Interface
     {
-        // 設定クラスを内部クラスとして定義（より簡潔）
-        public class TextInputSettings : ICommandSettings
+        /// <summary>
+        /// 変数ストアのインターフェース
+        /// </summary>
+        public interface IVariableStore
         {
-            [AutoSetting("入力テキスト", "送信するテキスト", "", true)]
-            public string Text { get; set; } = string.Empty;
-
-            [AutoSetting("入力間隔", "文字間の間隔（ミリ秒）", 50)]
-            public int Interval { get; set; } = 50;
-
-            [AutoSetting("対象ウィンドウ", "ウィンドウタイトル", "", false, "ターゲット")]
-            public string WindowTitle { get; set; } = string.Empty;
-
-            [AutoSetting("ウィンドウクラス", "ウィンドウクラス名", "", false, "ターゲット")]
-            public string WindowClassName { get; set; } = string.Empty;
-        }
-
-        public new TextInputSettings Settings => (TextInputSettings)base.Settings!;
-
-        public TextInputCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
-            : base(parent, settings, serviceProvider)
-        {
-            Description = "テキスト入力";
-        }
-
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(Settings.Text))
-            {
-                LogMessage("テキストが設定されていません");
-                return false;
-            }
-
-            LogMessage($"テキスト入力開始: {Settings.Text}");
-
-            // シンプルな実装
-            foreach (char c in Settings.Text)
-            {
-                if (cancellationToken.IsCancellationRequested) return false;
-                
-                // 文字を1つずつ送信
-                await Task.Run(() => KeyHelper.Input.KeyPress(
-                    System.Windows.Input.Key.None, false, false, false, 
-                    Settings.WindowTitle, Settings.WindowClassName));
-                
-                if (Settings.Interval > 0)
-                    await Task.Delay(Settings.Interval, cancellationToken);
-            }
-
-            LogMessage("テキスト入力完了");
-            return true;
+            void Set(string name, string value);
+            string? Get(string name);
+            void Clear();
+            Dictionary<string, string> GetAll();
         }
     }
 
     /// <summary>
-    /// クリップボード貼り付けコマンド（新コマンドの例2)
+    /// 変数ストアの実装（DI対応・拡張版）
     /// </summary>
-    [AutoCommand("PasteClipboard", "クリップボード貼り付け", "クリップボードの内容を貼り付け", "基本操作", 15)]
-    public class PasteClipboardCommand : BaseCommand
+    public class VariableStore : IVariableStore
     {
-        public class PasteSettings : ICommandSettings
+        private readonly ConcurrentDictionary<string, string> _vars = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ILogger<VariableStore>? _logger;
+
+        public VariableStore(ILogger<VariableStore>? logger = null)
         {
-            [AutoSetting("貼り付け前の待機", "貼り付ける前に待機する時間（ミリ秒）", 100)]
-            public int WaitTime { get; set; } = 100;
-
-            [AutoSetting("対象ウィンドウ", "", "", false, "ターゲット")]
-            public string WindowTitle { get; set; } = string.Empty;
-
-            [AutoSetting("ウィンドウクラス", "", "", false, "ターゲット")]
-            public string WindowClassName { get; set; } = string.Empty;
+            _logger = logger;
         }
 
-        public new PasteSettings Settings => (PasteSettings)base.Settings!;
-
-        public PasteClipboardCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
-            : base(parent, settings, serviceProvider)
+        public void Set(string name, string value)
         {
-            Description = "クリップボード貼り付け";
-        }
+            if (string.IsNullOrWhiteSpace(name)) return;
 
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            var settings = Settings;
-            if (settings == null) return false;
-
-            try
-            {
-                if (settings.WaitTime > 0)
-                    await Task.Delay(settings.WaitTime, cancellationToken);
-
-                LogMessage("クリップボードの内容を貼り付け中...");
-                
-                // Ctrl+V で貼り付け
-                await Task.Run(() => KeyHelper.Input.KeyPress(
-                    System.Windows.Input.Key.V, true, false, false, 
-                    settings.WindowTitle, settings.WindowClassName));
-
-                LogMessage("貼り付け完了");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogMessage($"貼り付けエラー: {ex.Message}");
-                return false;
-            }
-        }
-    }
-
-    /// <summary>
-    /// ファイルドラッグ&ドロップコマンド（新コマンドの例3)
-    /// </summary>
-    [AutoCommand("FileDragDrop", "ファイルドラッグ", "ファイルをドラッグ&ドロップ", "ファイル操作", 70)]
-    public class FileDragDropCommand : BaseCommand
-    {
-        public class DragDropSettings : ICommandSettings
-        {
-            [AutoSetting("ドラッグ元ファイル", "ドラッグするファイルのパス", "", true, "ファイル")]
-            public string SourceFile { get; set; } = string.Empty;
-
-            [AutoSetting("ドロップ先X座標", "ドロップする位置のX座標", 100, true, "座標")]
-            public int DropX { get; set; } = 100;
-
-            [AutoSetting("ドロップ先Y座標", "ドロップする位置のY座標", 100, true, "座標")]
-            public int DropY { get; set; } = 100;
-
-            [AutoSetting("対象ウィンドウ", "", "", false, "ターゲット")]
-            public string WindowTitle { get; set; } = string.Empty;
-
-            [AutoSetting("ウィンドウクラス", "", "", false, "ターゲット")]
-            public string WindowClassName { get; set; } = string.Empty;
-        }
-
-        public new DragDropSettings Settings => (DragDropSettings)base.Settings!;
-
-        public FileDragDropCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
-            : base(parent, settings, serviceProvider)
-        {
-            Description = "ファイルドラッグ&ドロップ";
-        }
-
-        protected override void ValidateFiles()
-        {
-            // 相対パス対応のファイル検証
-            ValidateFileExists(Settings.SourceFile, "ドラッグ元ファイル");
-        }
-
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-        {
-            var resolvedFile = ResolvePath(Settings.SourceFile);
+            _vars[name] = value ?? string.Empty;
+            _logger?.LogDebug("変数設定: {Name} = {Value}", name, value);
             
-            LogMessage($"ファイルドラッグ開始: {Path.GetFileName(resolvedFile)}");
-
-            try
-            {
-                // 実際のドラッグ&ドロップ実装
-                // （ここでは簡略化）
-                await Task.Run(() => {
-                    // Win32 APIやSendInputを使用した実装
-                    LogMessage($"ファイルを ({Settings.DropX}, {Settings.DropY}) にドロップしました");
-                });
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogMessage($"ドラッグ&ドロップエラー: {ex.Message}");
-                return false;
-            }
+            // 変数変更をメッセージで通知
+            WeakReferenceMessenger.Default.Send(new VariableChangedMessage(name, value));
         }
-    }
 
-    /// <summary>
-    /// ウィンドウアクティブ化コマンド（新コマンドの例4）
-    /// </summary>
-    [AutoCommand("ActivateWindow", "ウィンドウアクティブ", "指定されたウィンドウをアクティブ化します", "システム操作", 60)]
-    public class ActivateWindowCommand : BaseCommand
-    {
-        public class ActivateSettings : ICommandSettings
+        public string? Get(string name)
         {
-            [AutoSetting("ウィンドウタイトル", "アクティブ化するウィンドウのタイトル", "", true)]
-            public string WindowTitle { get; set; } = string.Empty;
+            if (string.IsNullOrWhiteSpace(name)) return null;
 
-            [AutoSetting("ウィンドウクラス", "ウィンドウクラス名", "", false)]
-            public string WindowClassName { get; set; } = string.Empty;
-
-            [AutoSetting("最前面に表示", "ウィンドウを最前面に表示するか", true)]
-            public bool BringToFront { get; set; } = true;
+            var result = _vars.TryGetValue(name, out var v) ? v : null;
+            _logger?.LogDebug("変数取得: {Name} = {Value}", name, result ?? "null");
+            return result;
         }
 
-        public new ActivateSettings Settings => (ActivateSettings)base.Settings!;
-
-        public ActivateWindowCommand(ICommand? parent = null, object? settings = null, IServiceProvider? serviceProvider = null)
-            : base(parent, settings, serviceProvider)
+        public void Clear()
         {
-            Description = "ウィンドウアクティブ化";
+            _vars.Clear();
+            _logger?.LogDebug("変数ストアをクリアしました");
+            
+            // 変数クリアをメッセージで通知
+            WeakReferenceMessenger.Default.Send(new VariablesClearedMessage());
         }
 
-        protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        public Dictionary<string, string> GetAll()
         {
-            try
-            {
-                LogMessage($"ウィンドウをアクティブ化中: {Settings.WindowTitle}");
-                
-                // ウィンドウをアクティブ化（実装は簡略化）
-                await Task.Run(() => {
-                    // 実際の実装ではWin32 APIを使用
-                    // User32.SetForegroundWindow()などを使用
-                    LogMessage($"ウィンドウ '{Settings.WindowTitle}' をアクティブ化しました");
-                });
-
-                LogMessage("ウィンドウのアクティブ化が完了しました");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogMessage($"ウィンドウのアクティブ化に失敗: {ex.Message}");
-                return false;
-            }
+            return new Dictionary<string, string>(_vars);
         }
-    }
-}
-
-/// <summary>
-/// 変数ストアの実装（DI対応・拡張版）
-/// </summary>
-public class VariableStore : IVariableStore
-{
-    private readonly ConcurrentDictionary<string, string> _vars = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ILogger<VariableStore>? _logger;
-
-    public VariableStore(ILogger<VariableStore>? logger = null)
-    {
-        _logger = logger;
-    }
-
-    public void Set(string name, string value)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return;
-
-        _vars[name] = value ?? string.Empty;
-        _logger?.LogDebug("変数設定: {Name} = {Value}", name, value);
-        
-        // 変数変更をメッセージで通知
-        WeakReferenceMessenger.Default.Send(new VariableChangedMessage(name, value));
-    }
-
-    public string? Get(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return null;
-
-        var result = _vars.TryGetValue(name, out var v) ? v : null;
-        _logger?.LogDebug("変数取得: {Name} = {Value}", name, result ?? "null");
-        return result;
-    }
-
-    public void Clear()
-    {
-        _vars.Clear();
-        _logger?.LogDebug("変数ストアをクリアしました");
-        
-        // 変数クリアをメッセージで通知
-        WeakReferenceMessenger.Default.Send(new VariablesClearedMessage());
-    }
-
-    public Dictionary<string, string> GetAll()
-    {
-        return new Dictionary<string, string>(_vars);
     }
 }
