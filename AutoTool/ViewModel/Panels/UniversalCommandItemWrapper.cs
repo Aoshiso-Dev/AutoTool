@@ -4,15 +4,15 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using AutoTool.Model.List.Interface;
 using AutoTool.Model.CommandDefinition;
 
 namespace AutoTool.ViewModel.Panels
 {
     /// <summary>
     /// UniversalCommandItem用のWrapper（DirectCommandRegistry対応）
+    /// 基本的なプロパティインターフェースを提供
     /// </summary>
-    public class UniversalCommandItemWrapper : ICommandListItem, INotifyPropertyChanged
+    public class UniversalCommandItemWrapper : INotifyPropertyChanged
     {
         private readonly UniversalCommandItem _innerItem;
 
@@ -24,7 +24,7 @@ namespace AutoTool.ViewModel.Panels
             _innerItem.PropertyChanged += (s, e) => PropertyChanged?.Invoke(this, e);
         }
 
-        // ICommandListItemの実装（内部アイテムへの委譲）
+        // 基本プロパティの実装（内部アイテムへの委譲）
         public bool IsEnable
         {
             get => _innerItem.IsEnable;
@@ -151,7 +151,7 @@ namespace AutoTool.ViewModel.Panels
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public ICommandListItem Clone()
+        public UniversalCommandItemWrapper Clone()
         {
             var clonedInner = _innerItem.Clone() as UniversalCommandItem;
             return clonedInner != null ? new UniversalCommandItemWrapper(clonedInner) : this;

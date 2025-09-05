@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using AutoTool.Model.CommandDefinition;
-using AutoTool.Model.List.Interface;
 
 namespace AutoTool.Services.UI
 {
@@ -48,16 +47,21 @@ namespace AutoTool.Services.UI
         /// <summary>
         /// コマンドアイテムの設定値を適用
         /// </summary>
-        void ApplySettings(ICommandListItem item, Dictionary<string, object?> settings);
+        void ApplySettings(UniversalCommandItem item, Dictionary<string, object?> settings);
 
         /// <summary>
         /// コマンドアイテムから設定値を取得
         /// </summary>
-        Dictionary<string, object?> GetSettings(ICommandListItem item);
+        Dictionary<string, object?> GetSettings(UniversalCommandItem item);
 
         /// <summary>
         /// 設定定義のソースコレクションを取得
         /// </summary>
         object[]? GetSourceCollection(string collectionName);
+
+        /// <summary>
+        /// アイテムタイプの変更処理
+        /// </summary>
+        void ChangeItemType(UniversalCommandItem item, string newItemType);
     }
 }

@@ -1,7 +1,6 @@
-using AutoTool.Message;
+ï»¿using AutoTool.Message;
 using AutoTool.Model.CommandDefinition;
 using AutoTool.Model.List.Class;
-using AutoTool.Model.List.Interface;
 using AutoTool.Model.MacroFactory;
 using AutoTool.ViewModel.Shared;
 using AutoTool.Services.Capture;
@@ -27,7 +26,7 @@ using static MouseHelper.Input;
 namespace AutoTool.ViewModel.Panels
 {
     /// <summary>
-    /// “®“IUI¶¬‘Î‰EditPanelViewModel
+    /// å‹•çš„UIç”Ÿæˆå¯¾å¿œEditPanelViewModel
     /// </summary>
     public partial class EditPanelViewModel : ObservableObject
     {
@@ -38,11 +37,11 @@ namespace AutoTool.ViewModel.Panels
         private readonly IServiceProvider _serviceProvider;
         private bool _isUpdating = false;
 
-        // ƒ}ƒNƒƒtƒ@ƒCƒ‹‚Ìƒx[ƒXƒpƒXi‘Š‘ÎƒpƒX‰ğŒˆ—pj
+        // ãƒã‚¯ãƒ­ãƒ•ã‚¡ã‚¤ãƒ«ã®ãƒ™ãƒ¼ã‚¹ãƒ‘ã‚¹ï¼ˆç›¸å¯¾ãƒ‘ã‚¹è§£æ±ºç”¨ï¼‰
         private string _macroFileBasePath = string.Empty;
 
         [ObservableProperty]
-        private ICommandListItem? _selectedItem;
+        private UniversalCommandItem? _selectedItem;
 
         [ObservableProperty]
         private bool _isRunning = false;
@@ -53,7 +52,7 @@ namespace AutoTool.ViewModel.Panels
         [ObservableProperty]
         private string _mouseWaitMessage = string.Empty;
 
-        // “®“Iİ’èUI—p‚ÌV‚µ‚¢ƒvƒƒpƒeƒB
+        // å‹•çš„è¨­å®šUIç”¨ã®æ–°ã—ã„ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
         [ObservableProperty]
         private ObservableCollection<SettingCategoryGroup> _settingGroups = new();
 
@@ -66,7 +65,7 @@ namespace AutoTool.ViewModel.Panels
         [ObservableProperty]
         private bool _isLegacyItem = false;
 
-        // Collections for binding (Šù‘¶)
+        // Collections for binding (æ—¢å­˜)
         [ObservableProperty]
         private ObservableCollection<CommandDisplayItem> _itemTypes = new();
 
@@ -85,7 +84,7 @@ namespace AutoTool.ViewModel.Panels
         [ObservableProperty]
         private ObservableCollection<Key> _keyList = new();
 
-        // ‰æ‘œƒvƒŒƒrƒ…[ŠÖ˜AƒvƒƒpƒeƒB
+        // ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼é–¢é€£ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
         [ObservableProperty]
         private System.Windows.Media.ImageSource? _imagePreview;
 
@@ -116,7 +115,7 @@ namespace AutoTool.ViewModel.Panels
         [ObservableProperty]
         private bool _hasSaveDirectoryInfo = false;
 
-        // “®“Iİ’è’l‚ÌƒfƒBƒNƒVƒ‡ƒiƒŠ
+        // å‹•çš„è¨­å®šå€¤ã®ãƒ‡ã‚£ã‚¯ã‚·ãƒ§ãƒŠãƒª
         [ObservableProperty]
         private Dictionary<string, object?> _dynamicValues = new();
 
@@ -134,7 +133,7 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        // ƒAƒCƒeƒ€ƒ^ƒCƒv”»’èƒvƒƒpƒeƒBiŠù‘¶ƒVƒXƒeƒ€—pj
+        // ã‚¢ã‚¤ãƒ†ãƒ ã‚¿ã‚¤ãƒ—åˆ¤å®šãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ï¼ˆæ—¢å­˜ã‚·ã‚¹ãƒ†ãƒ ç”¨ï¼‰
         public bool IsWaitImageItem => SelectedItem?.ItemType == "Wait_Image";
         public bool IsClickImageItem => SelectedItem?.ItemType == "Click_Image";
         public bool IsClickImageAIItem => SelectedItem?.ItemType == "Click_Image_AI";
@@ -155,22 +154,22 @@ namespace AutoTool.ViewModel.Panels
         public bool IsSetVariableAIItem => SelectedItem?.ItemType == "SetVariable_AI";
         public bool IsScreenshotItem => SelectedItem?.ItemType == "Screenshot";
 
-        // •¡‡ğŒ”»’è
+        // è¤‡åˆæ¡ä»¶åˆ¤å®š
         public bool IsImageBasedItem => IsWaitImageItem || IsClickImageItem || IsIfImageExistItem || IsIfImageNotExistItem || IsScreenshotItem;
         public bool IsAIBasedItem => IsClickImageAIItem || IsIfImageExistAIItem || IsIfImageNotExistAIItem || IsSetVariableAIItem;
         public bool IsVariableItem => IsIfVariableItem || IsSetVariableItem || IsSetVariableAIItem;
         public bool IsLoopRelatedItem => IsLoopItem || IsLoopEndItem || IsLoopBreakItem;
         public bool IsIfRelatedItem => IsIfImageExistItem || IsIfImageNotExistItem || IsIfImageExistAIItem || IsIfImageNotExistAIItem || IsIfVariableItem || IsIfEndItem;
 
-        // •\¦§ŒäƒvƒƒpƒeƒB
+        // è¡¨ç¤ºåˆ¶å¾¡ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
         public bool ShowWindowInfo => IsWaitImageItem || IsClickImageItem || IsHotkeyItem || IsClickItem || IsScreenshotItem || IsAIBasedItem;
         public bool ShowAdvancedSettings => IsClickImageItem || IsClickItem || (IsAIBasedItem && !IsIfRelatedItem);
         public bool IsNotNullItem => SelectedItem != null;
         public bool IsListEmpty => SelectedItem == null;
         public bool IsListNotEmpty => SelectedItem != null;
-        public bool IsListNotEmptyButNoSelection => false; // EditPanel‚Å‚Íí‚Éfalse
+        public bool IsListNotEmptyButNoSelection => false; // EditPanelã§ã¯å¸¸ã«false
 
-        // “®“IUI§ŒäƒvƒƒpƒeƒB
+        // å‹•çš„UIåˆ¶å¾¡ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
         public bool ShowDynamicSettings => IsDynamicItem && SettingGroups.Count > 0;
         public bool ShowLegacySettings => IsLegacyItem;
 
@@ -189,7 +188,7 @@ namespace AutoTool.ViewModel.Panels
             InitializeCollections();
             SetupMessaging();
 
-            _logger.LogInformation("EditPanelViewModel (“®“IUI‘Î‰”Å) ‚ğ‰Šú‰»‚µ‚Ü‚µ‚½");
+            _logger.LogInformation("EditPanelViewModel (å‹•çš„UIå¯¾å¿œç‰ˆ) ã‚’åˆæœŸåŒ–ã—ã¾ã—ãŸ");
         }
 
         private void SetupMessaging()
@@ -200,21 +199,21 @@ namespace AutoTool.ViewModel.Panels
                 {
                     try
                     {
-                        _logger.LogDebug("=== ChangeSelectedMessageóM: {ItemType} ===", m.SelectedItem?.ItemType ?? "null");
+                        _logger.LogDebug("=== ChangeSelectedMessageå—ä¿¡: {ItemType} ===", m.SelectedItem?.ItemType ?? "null");
                         
                         if (m.SelectedItem != null)
                         {
-                            _logger.LogInformation("?? EditPanel‘I‘ğóM: {ItemType} (ActualType: {ActualType})", 
+                            _logger.LogInformation("ğŸ“‹ EditPanelé¸æŠå—ä¿¡: {ItemType} (ActualType: {ActualType})", 
                                 m.SelectedItem.ItemType, m.SelectedItem.GetType().Name);
                         }
                         
                         SelectedItem = m.SelectedItem;
                         
-                        _logger.LogDebug("=== ChangeSelectedMessageˆ—Š®—¹ ===");
+                        _logger.LogDebug("=== ChangeSelectedMessageå‡¦ç†å®Œäº† ===");
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "ChangeSelectedMessageˆ—’†‚ÉƒGƒ‰[");
+                        _logger.LogError(ex, "ChangeSelectedMessageå‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼");
                     }
                 });
 
@@ -222,19 +221,19 @@ namespace AutoTool.ViewModel.Panels
                 {
                     try
                     {
-                        _logger.LogDebug("ChangeItemTypeMessageóM: {OldType} -> {NewType}",
+                        _logger.LogDebug("ChangeItemTypeMessageå—ä¿¡: {OldType} -> {NewType}",
                             m.OldItem?.ItemType, m.NewItem?.ItemType);
                         
-                        // ƒAƒCƒeƒ€ƒ^ƒCƒv•ÏXŒã‚Ì‘I‘ğXV
+                        // ã‚¢ã‚¤ãƒ†ãƒ ã‚¿ã‚¤ãƒ—å¤‰æ›´å¾Œã®é¸æŠæ›´æ–°
                         if (SelectedItem == m.OldItem)
                         {
                             SelectedItem = m.NewItem;
-                            _logger.LogInformation("? ƒAƒCƒeƒ€ƒ^ƒCƒv•ÏXŒã‚Ì‘I‘ğXVŠ®—¹");
+                            _logger.LogInformation("âœ… ã‚¢ã‚¤ãƒ†ãƒ ã‚¿ã‚¤ãƒ—å¤‰æ›´å¾Œã®é¸æŠæ›´æ–°å®Œäº†");
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "ChangeItemTypeMessageˆ—’†‚ÉƒGƒ‰[");
+                        _logger.LogError(ex, "ChangeItemTypeMessageå‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼");
                     }
                 });
 
@@ -242,22 +241,22 @@ namespace AutoTool.ViewModel.Panels
                 {
                     try
                     {
-                        _logger.LogDebug("MacroExecutionStateMessageóM: {IsRunning}", m.IsRunning);
+                        _logger.LogDebug("MacroExecutionStateMessageå—ä¿¡: {IsRunning}", m.IsRunning);
                         IsRunning = m.IsRunning;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "MacroExecutionStateMessageˆ—’†‚ÉƒGƒ‰[");
+                        _logger.LogError(ex, "MacroExecutionStateMessageå‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼");
                     }
                 });
 
-                // ƒtƒ@ƒCƒ‹“Ç‚İ‚İ‚Ìƒx[ƒXƒpƒXXVi’x‰„XV•t‚«j‚ª”­¶‚µ‚½ê‡
+                // ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿è¾¼ã¿æ™‚ã®ãƒ™ãƒ¼ã‚¹ãƒ‘ã‚¹æ›´æ–°ï¼ˆé…å»¶æ›´æ–°ä»˜ãï¼‰ãŒç™ºç”Ÿã—ãŸå ´åˆ
                 _messenger.Register<LoadMessage>(this, async (r, m) =>
                 {
                     try
                     {
                         UpdateMacroFileBasePath(m.FilePath);
-                        // ƒtƒ@ƒCƒ‹“Ç‚İ‚İŠ®—¹Œã‚É­‚µ‘Ò‚Á‚Ä‚©‚çƒvƒŒƒrƒ…[XV
+                        // ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿è¾¼ã¿å®Œäº†å¾Œã«å°‘ã—å¾…ã£ã¦ã‹ã‚‰ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼æ›´æ–°
                         await Task.Delay(100);
                         if (SelectedItem != null)
                         {
@@ -269,11 +268,11 @@ namespace AutoTool.ViewModel.Panels
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "LoadMessageˆ—’†‚ÉƒGƒ‰[");
+                        _logger.LogError(ex, "LoadMessageå‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼");
                     }
                 });
 
-                // LoadFileMessage ‚É‘Î‚·‚éˆ—
+                // LoadFileMessage ã«å¯¾ã™ã‚‹å‡¦ç†
                 _messenger.Register<LoadFileMessage>(this, async (r, m) =>
                 {
                     try
@@ -290,11 +289,11 @@ namespace AutoTool.ViewModel.Panels
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "LoadFileMessageˆ—’†‚ÉƒGƒ‰[");
+                        _logger.LogError(ex, "LoadFileMessageå‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼");
                     }
                 });
 
-                // SaveMessage ‚Æ SaveFileMessage ‚É‘Î‚·‚éˆ—
+                // SaveMessage ã¨ SaveFileMessage ã«å¯¾ã™ã‚‹å‡¦ç†
                 _messenger.Register<SaveMessage>(this, (r, m) => 
                 {
                     try
@@ -303,7 +302,7 @@ namespace AutoTool.ViewModel.Panels
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "SaveMessageˆ—’†‚ÉƒGƒ‰[");
+                        _logger.LogError(ex, "SaveMessageå‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼");
                     }
                 });
                 
@@ -315,15 +314,15 @@ namespace AutoTool.ViewModel.Panels
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "SaveFileMessageˆ—’†‚ÉƒGƒ‰[");
+                        _logger.LogError(ex, "SaveFileMessageå‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼");
                     }
                 });
 
-                _logger.LogDebug("ƒƒbƒZ[ƒWƒ“ƒOİ’èŠ®—¹");
+                _logger.LogDebug("ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ³ã‚°è¨­å®šå®Œäº†");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒƒbƒZ[ƒWƒ“ƒOİ’è’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ³ã‚°è¨­å®šä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -331,7 +330,7 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogDebug("ƒRƒŒƒNƒVƒ‡ƒ“‰Šú‰»ŠJn");
+                _logger.LogDebug("ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³åˆæœŸåŒ–é–‹å§‹");
 
                 // CommandTypes
                 DirectCommandRegistry.Initialize(_serviceProvider);
@@ -344,13 +343,13 @@ namespace AutoTool.ViewModel.Panels
                     })
                     .ToList();
                 ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
-                _logger.LogDebug("ItemTypes‰Šú‰»Š®—¹: {Count}ŒÂ", ItemTypes.Count);
+                _logger.LogDebug("ItemTypesåˆæœŸåŒ–å®Œäº†: {Count}å€‹", ItemTypes.Count);
 
                 // MouseButtons
                 MouseButtons.Clear();
                 foreach (var button in Enum.GetValues(typeof(MouseButton)).Cast<MouseButton>())
                     MouseButtons.Add(button);
-                _logger.LogDebug("MouseButtons‰Šú‰»Š®—¹: {Count}ŒÂ", MouseButtons.Count);
+                _logger.LogDebug("MouseButtonsåˆæœŸåŒ–å®Œäº†: {Count}å€‹", MouseButtons.Count);
 
                 // Keys
                 KeyList.Clear();
@@ -365,28 +364,28 @@ namespace AutoTool.ViewModel.Panels
                 };
                 foreach (var key in commonKeys)
                     KeyList.Add(key);
-                _logger.LogDebug("KeyList‰Šú‰»Š®—¹: {Count}ŒÂ", KeyList.Count);
+                _logger.LogDebug("KeyListåˆæœŸåŒ–å®Œäº†: {Count}å€‹", KeyList.Count);
 
                 // Operators
                 Operators.Clear();
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "==", DisplayName = "“™‚µ‚¢ (==)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "!=", DisplayName = "“™‚µ‚­‚È‚¢ (!=)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = ">", DisplayName = "‚æ‚è‘å‚«‚¢ (>)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "<", DisplayName = "‚æ‚è¬‚³‚¢ (<)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = ">=", DisplayName = "ˆÈã (>=)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "<=", DisplayName = "ˆÈ‰º (<=)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "Contains", DisplayName = "ŠÜ‚Ş (Contains)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "StartsWith", DisplayName = "n‚Ü‚é (StartsWith)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "EndsWith", DisplayName = "I‚í‚é (EndsWith)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsEmpty", DisplayName = "‹ó‚Å‚ ‚é (IsEmpty)" });
-                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsNotEmpty", DisplayName = "‹ó‚Å‚È‚¢ (IsNotEmpty)" });
-                _logger.LogDebug("Operators‰Šú‰»Š®—¹: {Count}ŒÂ", Operators.Count);
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "==", DisplayName = "ç­‰ã—ã„ (==)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "!=", DisplayName = "ç­‰ã—ããªã„ (!=)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = ">", DisplayName = "ã‚ˆã‚Šå¤§ãã„ (>)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "<", DisplayName = "ã‚ˆã‚Šå°ã•ã„ (<)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = ">=", DisplayName = "ä»¥ä¸Š (>=)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "<=", DisplayName = "ä»¥ä¸‹ (<=)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "Contains", DisplayName = "å«ã‚€ (Contains)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "StartsWith", DisplayName = "å§‹ã¾ã‚‹ (StartsWith)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "EndsWith", DisplayName = "çµ‚ã‚ã‚‹ (EndsWith)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsEmpty", DisplayName = "ç©ºã§ã‚ã‚‹ (IsEmpty)" });
+                Operators.Add(new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsNotEmpty", DisplayName = "ç©ºã§ãªã„ (IsNotEmpty)" });
+                _logger.LogDebug("OperatorsåˆæœŸåŒ–å®Œäº†: {Count}å€‹", Operators.Count);
 
                 // AI Detect Modes
                 AiDetectModes.Clear();
-                AiDetectModes.Add(new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Class", DisplayName = "ƒNƒ‰ƒXŒŸo" });
-                AiDetectModes.Add(new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Count", DisplayName = "”—ÊŒŸo" });
-                _logger.LogDebug("AiDetectModes‰Šú‰»Š®—¹: {Count}ŒÂ", AiDetectModes.Count);
+                AiDetectModes.Add(new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Class", DisplayName = "ã‚¯ãƒ©ã‚¹æ¤œå‡º" });
+                AiDetectModes.Add(new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Count", DisplayName = "æ•°é‡æ¤œå‡º" });
+                _logger.LogDebug("AiDetectModesåˆæœŸåŒ–å®Œäº†: {Count}å€‹", AiDetectModes.Count);
 
                 // Background Click Methods
                 BackgroundClickMethods.Clear();
@@ -398,100 +397,61 @@ namespace AutoTool.ViewModel.Panels
                 BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 5, DisplayName = "GameFullscreen" });
                 BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 6, DisplayName = "GameLowLevel" });
                 BackgroundClickMethods.Add(new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 7, DisplayName = "GameVirtualMouse" });
-                _logger.LogDebug("BackgroundClickMethods‰Šú‰»Š®—¹: {Count}ŒÂ", BackgroundClickMethods.Count);
+                _logger.LogDebug("BackgroundClickMethodsåˆæœŸåŒ–å®Œäº†: {Count}å€‹", BackgroundClickMethods.Count);
 
-                _logger.LogInformation("EditPanelViewModel ƒRƒŒƒNƒVƒ‡ƒ“‰Šú‰»Š®—¹");
+                _logger.LogInformation("EditPanelViewModel ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³åˆæœŸåŒ–å®Œäº†");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "EditPanelViewModel ƒRƒŒƒNƒVƒ‡ƒ“‰Šú‰»’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "EditPanelViewModel ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³åˆæœŸåŒ–ä¸­ã«ã‚¨ãƒ©ãƒ¼");
                 throw;
             }
         }
 
-        // OnSelectedItemChanged‚ÍObservableProperty‚Å©“®¶¬‚³‚ê‚é partial void
-        partial void OnSelectedItemChanged(ICommandListItem? value)
+        // OnSelectedItemChangedã¯ObservablePropertyã§è‡ªå‹•ç”Ÿæˆã•ã‚Œã‚‹ partial void
+        partial void OnSelectedItemChanged(UniversalCommandItem? value)
         {
             try
             {
                 _isUpdating = true;
 
-                _logger.LogDebug("=== SelectedItem•ÏXŠJn ===");
-                _logger.LogDebug("V‚µ‚¢ƒAƒCƒeƒ€: {ItemType} (ActualType: {ActualType})", 
+                _logger.LogDebug("=== SelectedItemå¤‰æ›´é–‹å§‹ ===");
+                _logger.LogDebug("æ–°ã—ã„ã‚¢ã‚¤ãƒ†ãƒ : {ItemType} (ActualType: {ActualType})", 
                     value?.ItemType ?? "null", value?.GetType().Name ?? "null");
 
-                // “®“IƒVƒXƒeƒ€‚Æ]—ˆƒVƒXƒeƒ€‚Ì”»’è
-                bool isUniversalItem = value is UniversalCommandItem;
-                bool isUniversalWrapper = value is UniversalCommandItemWrapper;
-                
-                _logger.LogDebug("ƒAƒCƒeƒ€í•Ê”»’è: IsUniversalItem={IsUniversal}, IsUniversalWrapper={IsWrapper}", 
-                    isUniversalItem, isUniversalWrapper);
-                
-                if (isUniversalItem || isUniversalWrapper)
+                if (value != null)
                 {
-                    UniversalCommandItem? universalItem = null;
+                    // UniversalCommandItem ãŒé¸æŠã•ã‚ŒãŸå ´åˆ
+                    _logger.LogDebug("UniversalCommandItemã¨ã—ã¦ç›´æ¥ä½¿ç”¨: {ItemType}", value.ItemType);
                     
-                    if (isUniversalItem)
-                    {
-                        universalItem = value as UniversalCommandItem;
-                        _logger.LogDebug("UniversalCommandItem‚Æ‚µ‚Ä’¼Úg—p: {ItemType}", value.ItemType);
-                    }
-                    else if (isUniversalWrapper && value is UniversalCommandItemWrapper wrapper)
-                    {
-                        universalItem = wrapper.InnerItem;
-                        _logger.LogDebug("UniversalCommandItemWrapper‚©‚çUniversalItem‚ğæ“¾: {ItemType}", value.ItemType);
-                    }
-
-                    if (universalItem != null)
-                    {
-                        // “®“IƒVƒXƒeƒ€‚Ìˆ—
-                        _logger.LogDebug("“®“Iİ’è‰Šú‰»ŠJn: {ItemType}", universalItem.ItemType);
-                        InitializeDynamicSettings(universalItem);
-                        IsDynamicItem = true;
-                        IsLegacyItem = false;
-                        
-                        _logger.LogInformation("? “®“IƒVƒXƒeƒ€ƒAƒCƒeƒ€‘I‘ğ: {ItemType} (İ’è€–Ú: {SettingCount}ŒÂ, ƒOƒ‹[ƒv: {GroupCount}ŒÂ)", 
-                            value.ItemType, SettingDefinitions.Count, SettingGroups.Count);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("? UniversalCommandItem‚ªæ“¾‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½");
-                        IsDynamicItem = false;
-                        IsLegacyItem = true;
-                        SettingGroups.Clear();
-                        SettingDefinitions.Clear();
-                    }
-                }
-                else if (value != null)
-                {
-                    // ]—ˆƒVƒXƒeƒ€‚Ìˆ—
-                    IsDynamicItem = false;
-                    IsLegacyItem = true;
-                    SettingGroups.Clear();
-                    SettingDefinitions.Clear();
+                    // å‹•çš„ã‚·ã‚¹ãƒ†ãƒ ã®å‡¦ç†
+                    _logger.LogDebug("å‹•çš„è¨­å®šåˆæœŸåŒ–é–‹å§‹: {ItemType}", value.ItemType);
+                    InitializeDynamicSettings(value);
+                    IsDynamicItem = true;
+                    IsLegacyItem = false;
                     
-                    _logger.LogInformation("?? ]—ˆƒVƒXƒeƒ€ƒAƒCƒeƒ€‘I‘ğ: {ItemType} -> {ActualType}", 
-                        value.ItemType, value.GetType().Name);
+                    _logger.LogInformation("âœ… å‹•çš„ã‚·ã‚¹ãƒ†ãƒ ã‚¢ã‚¤ãƒ†ãƒ é¸æŠ: {ItemType} (è¨­å®šé …ç›®: {SettingCount}å€‹, ã‚°ãƒ«ãƒ¼ãƒ—: {GroupCount}å€‹)", 
+                        value.ItemType, SettingDefinitions.Count, SettingGroups.Count);
                 }
                 else
                 {
-                    // ‘I‘ğ‚È‚µ
+                    // é¸æŠãªã—
                     IsDynamicItem = false;
                     IsLegacyItem = false;
                     SettingGroups.Clear();
                     SettingDefinitions.Clear();
                     
-                    _logger.LogDebug("ƒAƒCƒeƒ€‘I‘ğ‚È‚µ");
+                    _logger.LogDebug("ã‚¢ã‚¤ãƒ†ãƒ é¸æŠãªã—");
                 }
 
-                // ShowDynamicSettings ‚Æ ShowLegacySettings ‚ÌXV‚ğ‹­§
+                // ShowDynamicSettings ã¨ ShowLegacySettings ã®æ›´æ–°ã‚’å¼·åˆ¶
                 OnPropertyChanged(nameof(ShowDynamicSettings));
                 OnPropertyChanged(nameof(ShowLegacySettings));
 
-                _logger.LogDebug("ÅI“I‚È“®“Iİ’è•\¦ó‘Ô: IsDynamicItem={IsDynamic}, IsLegacyItem={IsLegacy}, ShowDynamicSettings={ShowDynamic}, ShowLegacySettings={ShowLegacy}",
+                _logger.LogDebug("æœ€çµ‚çš„ãªå‹•çš„è¨­å®šè¡¨ç¤ºçŠ¶æ…‹: IsDynamicItem={IsDynamic}, IsLegacyItem={IsLegacy}, ShowDynamicSettings={ShowDynamic}, ShowLegacySettings={ShowLegacy}",
                     IsDynamicItem, IsLegacyItem, ShowDynamicSettings, ShowLegacySettings);
 
-                // ƒAƒCƒeƒ€ƒ^ƒCƒv‚Ì‘I‘ğ‚ğXV
+                // ã‚¢ã‚¤ãƒ†ãƒ ã‚¿ã‚¤ãƒ—ã®é¸æŠã‚’æ›´æ–°
                 if (value != null)
                 {
                     var displayItem = ItemTypes.FirstOrDefault(x => x.TypeName == value.ItemType);
@@ -502,20 +462,20 @@ namespace AutoTool.ViewModel.Panels
                     SelectedItemTypeObj = null;
                 }
 
-                // ‰æ‘œƒvƒŒƒrƒ…[‚ÆŠÖ˜Aî•ñ‚ğXV
+                // ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã¨é–¢é€£æƒ…å ±ã‚’æ›´æ–°
                 UpdateImagePreview();
                 UpdateModelInfo();
                 UpdateProgramInfo();
                 UpdateSaveDirectoryInfo();
 
-                // ‘S‚Ä‚Ì”»’èƒvƒƒpƒeƒB‚ğXV
+                // å…¨ã¦ã®åˆ¤å®šãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’æ›´æ–°
                 NotifyAllPropertiesChanged();
 
-                _logger.LogDebug("=== SelectedItem•ÏXŠ®—¹ ===");
+                _logger.LogDebug("=== SelectedItemå¤‰æ›´å®Œäº† ===");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "SelectedItem•ÏXˆ—’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "SelectedItemå¤‰æ›´å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
             finally
             {
@@ -529,17 +489,17 @@ namespace AutoTool.ViewModel.Panels
 
             try
             {
-                _logger.LogDebug("ItemType•ÏX—v‹: {OldType} -> {NewType}", SelectedItem.ItemType, value.TypeName);
+                _logger.LogDebug("ItemTypeå¤‰æ›´è¦æ±‚: {OldType} -> {NewType}", SelectedItem.ItemType, value.TypeName);
 
-                // V‚µ‚¢ƒ^ƒCƒv‚ÌƒAƒCƒeƒ€‚ğì¬
+                // æ–°ã—ã„ã‚¿ã‚¤ãƒ—ã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’ä½œæˆ
                 var newItem = DirectCommandRegistry.CreateCommandItem(value.TypeName);
                 if (newItem == null)
                 {
-                    _logger.LogWarning("V‚µ‚¢ƒAƒCƒeƒ€‚Ìì¬‚É¸”s: {TypeName}", value.TypeName);
+                    _logger.LogWarning("æ–°ã—ã„ã‚¢ã‚¤ãƒ†ãƒ ã®ä½œæˆã«å¤±æ•—: {TypeName}", value.TypeName);
                     return;
                 }
 
-                // Šî–{ƒvƒƒpƒeƒB‚ğˆø‚«Œp‚¬
+                // åŸºæœ¬ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’å¼•ãç¶™ã
                 newItem.LineNumber = SelectedItem.LineNumber;
                 newItem.IsEnable = SelectedItem.IsEnable;
                 newItem.Comment = SelectedItem.Comment;
@@ -547,16 +507,16 @@ namespace AutoTool.ViewModel.Panels
                 newItem.IsRunning = SelectedItem.IsRunning;
                 newItem.NestLevel = SelectedItem.NestLevel;
 
-                // ƒŠƒXƒg‚ÌŠY“–ƒAƒCƒeƒ€‚ğ’uŠ·
+                // ãƒªã‚¹ãƒˆã®è©²å½“ã‚¢ã‚¤ãƒ†ãƒ ã‚’ç½®æ›
                 _messenger.Send(new ChangeItemTypeMessage(SelectedItem, newItem));
 
-                _logger.LogInformation("ItemType•ÏXŠ®—¹: {OldType} -> {NewType}", SelectedItem.ItemType, value.TypeName);
+                _logger.LogInformation("ItemTypeå¤‰æ›´å®Œäº†: {OldType} -> {NewType}", SelectedItem.ItemType, value.TypeName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ItemType•ÏX’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ItemTypeå¤‰æ›´ä¸­ã«ã‚¨ãƒ©ãƒ¼");
 
-                // ¸”s‚µ‚½ê‡‚ÍŒ³‚Ì‘I‘ğó‘Ô‚É–ß‚·
+                // å¤±æ•—ã—ãŸå ´åˆã¯å…ƒã®é¸æŠçŠ¶æ…‹ã«æˆ»ã™
                 _isUpdating = true;
                 try
                 {
@@ -572,7 +532,7 @@ namespace AutoTool.ViewModel.Panels
 
         private void NotifyAllPropertiesChanged()
         {
-            // Šî–{”»’èƒvƒƒpƒeƒB
+            // åŸºæœ¬åˆ¤å®šãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
             var properties = new[]
             {
                 nameof(IsWaitImageItem), nameof(IsClickImageItem), nameof(IsClickImageAIItem),
@@ -588,14 +548,14 @@ namespace AutoTool.ViewModel.Panels
                 nameof(IsListNotEmptyButNoSelection)
             };
 
-            // “®“Iİ’èUI§ŒäƒvƒƒpƒeƒB‚ğ’Ç‰Á
+            // å‹•çš„è¨­å®šUIåˆ¶å¾¡ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’è¿½åŠ 
             var dynamicProperties = new[]
             {
                 nameof(IsDynamicItem), nameof(IsLegacyItem),
                 nameof(ShowDynamicSettings), nameof(ShowLegacySettings)
             };
 
-            // ’lƒvƒƒpƒeƒB
+            // å€¤ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
             var valueProperties = new[]
             {
                 nameof(Comment), nameof(WindowTitle), nameof(WindowClassName),
@@ -610,29 +570,29 @@ namespace AutoTool.ViewModel.Panels
                 nameof(WaitForExit), nameof(SaveDirectory)
             };
 
-            // Šî–{”»’èƒvƒƒpƒeƒB‚Ì’Ê’m
+            // åŸºæœ¬åˆ¤å®šãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã®é€šçŸ¥
             foreach (var property in properties)
             {
                 OnPropertyChanged(property);
             }
 
-            // “®“Iİ’èƒvƒƒpƒeƒB‚Ì’Ê’m
+            // å‹•çš„è¨­å®šãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã®é€šçŸ¥
             foreach (var property in dynamicProperties)
             {
                 OnPropertyChanged(property);
             }
 
-            // ’lƒvƒƒpƒeƒB‚Ì’Ê’m
+            // å€¤ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã®é€šçŸ¥
             foreach (var property in valueProperties)
             {
                 OnPropertyChanged(property);
             }
 
-            _logger.LogDebug("‘SƒvƒƒpƒeƒB•ÏX’Ê’mŠ®—¹: {Count}ŒÂ", properties.Length + dynamicProperties.Length + valueProperties.Length);
+            _logger.LogDebug("å…¨ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å¤‰æ›´é€šçŸ¥å®Œäº†: {Count}å€‹", properties.Length + dynamicProperties.Length + valueProperties.Length);
         }
 
         /// <summary>
-        /// ƒ}ƒNƒƒtƒ@ƒCƒ‹‚Ìƒx[ƒXƒpƒX‚ğXV
+        /// ãƒã‚¯ãƒ­ãƒ•ã‚¡ã‚¤ãƒ«ã®ãƒ™ãƒ¼ã‚¹ãƒ‘ã‚¹ã‚’æ›´æ–°
         /// </summary>
         private void UpdateMacroFileBasePath(string? filePath)
         {
@@ -641,25 +601,25 @@ namespace AutoTool.ViewModel.Panels
                 if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
                 {
                     _macroFileBasePath = Path.GetDirectoryName(filePath) ?? string.Empty;
-                    _logger.LogDebug("ƒ}ƒNƒƒtƒ@ƒCƒ‹ƒx[ƒXƒpƒXXV: {BasePath}", _macroFileBasePath);
+                    _logger.LogDebug("ãƒã‚¯ãƒ­ãƒ•ã‚¡ã‚¤ãƒ«ãƒ™ãƒ¼ã‚¹ãƒ‘ã‚¹æ›´æ–°: {BasePath}", _macroFileBasePath);
 
-                    // ƒx[ƒXƒpƒX‚ªXV‚³‚ê‚½‚ÉAŠù‚É‘I‘ğ‚³‚ê‚Ä‚¢‚éƒAƒCƒeƒ€‚ª‚ ‚éê‡‚ÍƒvƒŒƒrƒ…[‚ğXV
+                    // ãƒ™ãƒ¼ã‚¹ãƒ‘ã‚¹ãŒæ›´æ–°ã•ã‚ŒãŸæ™‚ã«ã€æ—¢ã«é¸æŠã•ã‚Œã¦ã„ã‚‹ã‚¢ã‚¤ãƒ†ãƒ ãŒã‚ã‚‹å ´åˆã¯ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’æ›´æ–°
                     if (SelectedItem != null)
                     {
-                        _logger.LogDebug("ƒx[ƒXƒpƒXXV‚É”º‚¢A‘I‘ğ’†ƒAƒCƒeƒ€‚ÌƒvƒŒƒrƒ…[‚ğXV: {ItemType}", SelectedItem.ItemType);
+                        _logger.LogDebug("ãƒ™ãƒ¼ã‚¹ãƒ‘ã‚¹æ›´æ–°ã«ä¼´ã„ã€é¸æŠä¸­ã‚¢ã‚¤ãƒ†ãƒ ã®ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’æ›´æ–°: {ItemType}", SelectedItem.ItemType);
                         UpdateImagePreview();
                         UpdateModelInfo();
                         UpdateProgramInfo();
                         UpdateSaveDirectoryInfo();
 
-                        // ƒvƒƒpƒeƒB•ÏX’Ê’m‚à‘—M‚µ‚ÄAUI‚Ì•\¦‚ğXV
+                        // ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å¤‰æ›´é€šçŸ¥ã‚‚é€ä¿¡ã—ã¦ã€UIã®è¡¨ç¤ºã‚’æ›´æ–°
                         NotifyAllPropertiesChanged();
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒ}ƒNƒƒtƒ@ƒCƒ‹ƒx[ƒXƒpƒXXVƒGƒ‰[: {FilePath}", filePath);
+                _logger.LogError(ex, "ãƒã‚¯ãƒ­ãƒ•ã‚¡ã‚¤ãƒ«ãƒ™ãƒ¼ã‚¹ãƒ‘ã‚¹æ›´æ–°ã‚¨ãƒ©ãƒ¼: {FilePath}", filePath);
             }
         }
 
@@ -683,7 +643,7 @@ namespace AutoTool.ViewModel.Panels
             }
             catch (Exception ex)
             {
-                _logger.LogDebug("ƒvƒƒpƒeƒBæ“¾ƒGƒ‰[: {Property} - {Error}", propertyName, ex.Message);
+                _logger.LogDebug("ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å–å¾—ã‚¨ãƒ©ãƒ¼: {Property} - {Error}", propertyName, ex.Message);
             }
 
             return default(T)!;
@@ -708,13 +668,13 @@ namespace AutoTool.ViewModel.Panels
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒvƒƒpƒeƒBİ’èƒGƒ‰[: {Property} = {Value}", propertyName, value);
+                _logger.LogError(ex, "ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£è¨­å®šã‚¨ãƒ©ãƒ¼: {Property} = {Value}", propertyName, value);
             }
         }
 
         #endregion
 
-        #region Properties for data binding (Š®‘S”Å)
+        #region Properties for data binding (å®Œå…¨ç‰ˆ)
 
         public string Comment
         {
@@ -746,12 +706,12 @@ namespace AutoTool.ViewModel.Panels
             get => GetItemProperty<string>("ImagePath") ?? string.Empty;
             set
             {
-                // ‘I‘ğ‚³‚ê‚½ƒpƒX‚ğ‘Š‘ÎƒpƒX‚É•ÏŠ·‚µ‚Ä‚©‚ç•Û‘¶
+                // é¸æŠã•ã‚ŒãŸãƒ‘ã‚¹ã‚’ç›¸å¯¾ãƒ‘ã‚¹ã«å¤‰æ›ã—ã¦ã‹ã‚‰ä¿å­˜
                 var pathToSave = ConvertToRelativePath(value);
                 SetItemProperty("ImagePath", pathToSave);
-                // ‰æ‘œƒpƒX‚ª•ÏX‚³‚ê‚½‚É‰æ‘œƒvƒŒƒrƒ…[‚ğXV
+                // ç”»åƒãƒ‘ã‚¹ãŒå¤‰æ›´ã•ã‚ŒãŸæ™‚ã«ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’æ›´æ–°
                 UpdateImagePreview();
-                _logger.LogDebug("ImagePathXV: {Original} -> {Relative}", value, pathToSave);
+                _logger.LogDebug("ImagePathæ›´æ–°: {Original} -> {Relative}", value, pathToSave);
             }
         }
 
@@ -833,7 +793,7 @@ namespace AutoTool.ViewModel.Panels
             set => SetItemProperty("Key", value);
         }
 
-        // Wait time properties - WaitItem‚ÌWaitƒvƒƒpƒeƒBiƒ~ƒŠ•bj‚É‘Î‰
+        // Wait time properties - WaitItemã®Waitãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ï¼ˆãƒŸãƒªç§’ï¼‰ã«å¯¾å¿œ
         public int WaitHours
         {
             get
@@ -880,7 +840,7 @@ namespace AutoTool.ViewModel.Panels
 
             try
             {
-                // Œ»İ‚Ì’l‚ğæ“¾
+                // ç¾åœ¨ã®å€¤ã‚’å–å¾—
                 var currentWaitMs = GetItemProperty<int>("Wait");
                 var currentTime = TimeSpan.FromMilliseconds(currentWaitMs);
 
@@ -892,22 +852,22 @@ namespace AutoTool.ViewModel.Panels
                     milliseconds ?? currentTime.Milliseconds
                 );
 
-                // WaitItem‚ÌWaitƒvƒƒpƒeƒBiƒ~ƒŠ•bj‚Éİ’è
+                // WaitItemã®Waitãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ï¼ˆãƒŸãƒªç§’ï¼‰ã«è¨­å®š
                 var totalMs = (int)newTime.TotalMilliseconds;
                 SetItemProperty("Wait", totalMs);
 
-                // ‘¼‚ÌŠÔƒvƒƒpƒeƒB‚ÌXV’Ê’m
+                // ä»–ã®æ™‚é–“ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã®æ›´æ–°é€šçŸ¥
                 OnPropertyChanged(nameof(WaitHours));
                 OnPropertyChanged(nameof(WaitMinutes));
                 OnPropertyChanged(nameof(WaitSeconds));
                 OnPropertyChanged(nameof(WaitMilliseconds));
 
-                _logger.LogDebug("WaitŠÔİ’è: {Hours}h {Minutes}m {Seconds}s {Milliseconds}ms (‘Œv: {TotalMs}ms)",
+                _logger.LogDebug("Waitæ™‚é–“è¨­å®š: {Hours}h {Minutes}m {Seconds}s {Milliseconds}ms (ç·è¨ˆ: {TotalMs}ms)",
                     newTime.Hours, newTime.Minutes, newTime.Seconds, newTime.Milliseconds, totalMs);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "WaitŠÔİ’èƒGƒ‰[");
+                _logger.LogError(ex, "Waitæ™‚é–“è¨­å®šã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -1023,8 +983,8 @@ namespace AutoTool.ViewModel.Panels
             {
                 var dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Title = "‰æ‘œƒtƒ@ƒCƒ‹‚ğ‘I‘ğ",
-                    Filter = "‰æ‘œƒtƒ@ƒCƒ‹ (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp|‚·‚×‚Ä‚Ìƒtƒ@ƒCƒ‹ (*.*)|*.*"
+                    Title = "ç”»åƒãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠ",
+                    Filter = "ç”»åƒãƒ•ã‚¡ã‚¤ãƒ« (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp|ã™ã¹ã¦ã®ãƒ•ã‚¡ã‚¤ãƒ« (*.*)|*.*"
                 };
                 var currentImagePath = GetItemProperty<string>("ImagePath") ?? string.Empty;
                 var currentPath = ResolvePath(currentImagePath);
@@ -1043,13 +1003,13 @@ namespace AutoTool.ViewModel.Panels
                     var pathToSave = ConvertToRelativePath(selectedPath);
                     SetItemProperty("ImagePath", pathToSave);
                     UpdateImagePreview();
-                    _logger.LogInformation("‰æ‘œƒtƒ@ƒCƒ‹‚ğ‘I‘ğ: {ImagePath} (‘Š‘ÎƒpƒX: {RelativePath})",
+                    _logger.LogInformation("ç”»åƒãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠ: {ImagePath} (ç›¸å¯¾ãƒ‘ã‚¹: {RelativePath})",
                         selectedPath, pathToSave);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‰æ‘œƒtƒ@ƒCƒ‹‘I‘ğ’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ç”»åƒãƒ•ã‚¡ã‚¤ãƒ«é¸æŠä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -1060,11 +1020,11 @@ namespace AutoTool.ViewModel.Panels
             {
                 SetItemProperty("ImagePath", string.Empty);
                 ImagePreview = null;
-                _logger.LogInformation("‰æ‘œƒvƒŒƒrƒ…[‚ğƒNƒŠƒA");
+                _logger.LogInformation("ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’ã‚¯ãƒªã‚¢");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‰æ‘œƒvƒŒƒrƒ…[ƒNƒŠƒA’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚¯ãƒªã‚¢ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -1075,8 +1035,8 @@ namespace AutoTool.ViewModel.Panels
             {
                 var dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Title = "AIƒ‚ƒfƒ‹ƒtƒ@ƒCƒ‹‚ğ‘I‘ğ",
-                    Filter = "ONNXƒtƒ@ƒCƒ‹ (*.onnx)|*.onnx|‚·‚×‚Ä‚Ìƒtƒ@ƒCƒ‹ (*.*)|*.*"
+                    Title = "AIãƒ¢ãƒ‡ãƒ«ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠ",
+                    Filter = "ONNXãƒ•ã‚¡ã‚¤ãƒ« (*.onnx)|*.onnx|ã™ã¹ã¦ã®ãƒ•ã‚¡ã‚¤ãƒ« (*.*)|*.*"
                 };
                 var currentModelPath = GetItemProperty<string>("ModelPath") ?? string.Empty;
                 var currentPath = ResolvePath(currentModelPath);
@@ -1095,13 +1055,13 @@ namespace AutoTool.ViewModel.Panels
                     var pathToSave = ConvertToRelativePath(selectedPath);
                     SetItemProperty("ModelPath", pathToSave);
                     UpdateModelInfo();
-                    _logger.LogInformation("AIƒ‚ƒfƒ‹ƒtƒ@ƒCƒ‹‚ğ‘I‘ğ: {ModelPath} (‘Š‘ÎƒpƒX: {RelativePath})",
+                    _logger.LogInformation("AIãƒ¢ãƒ‡ãƒ«ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠ: {ModelPath} (ç›¸å¯¾ãƒ‘ã‚¹: {RelativePath})",
                         selectedPath, pathToSave);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "AIƒ‚ƒfƒ‹ƒtƒ@ƒCƒ‹‘I‘ğ’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "AIãƒ¢ãƒ‡ãƒ«ãƒ•ã‚¡ã‚¤ãƒ«é¸æŠä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -1112,8 +1072,8 @@ namespace AutoTool.ViewModel.Panels
             {
                 var dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Title = "Àsƒtƒ@ƒCƒ‹‚ğ‘I‘ğ",
-                    Filter = "Àsƒtƒ@ƒCƒ‹ (*.exe;*.bat;*.cmd)|*.exe;*.bat;*.cmd|‚·‚×‚Ä‚Ìƒtƒ@ƒCƒ‹ (*.*)|*.*"
+                    Title = "å®Ÿè¡Œãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠ",
+                    Filter = "å®Ÿè¡Œãƒ•ã‚¡ã‚¤ãƒ« (*.exe;*.bat;*.cmd)|*.exe;*.bat;*.cmd|ã™ã¹ã¦ã®ãƒ•ã‚¡ã‚¤ãƒ« (*.*)|*.*"
                 };
                 var currentProgramPath = GetItemProperty<string>("ProgramPath") ?? string.Empty;
                 var currentPath = ResolvePath(currentProgramPath);
@@ -1132,13 +1092,13 @@ namespace AutoTool.ViewModel.Panels
                     var pathToSave = ConvertToRelativePath(selectedPath);
                     SetItemProperty("ProgramPath", pathToSave);
                     UpdateProgramInfo();
-                    _logger.LogInformation("Àsƒtƒ@ƒCƒ‹‚ğ‘I‘ğ: {ProgramPath} (‘Š‘ÎƒpƒX: {RelativePath})",
+                    _logger.LogInformation("å®Ÿè¡Œãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠ: {ProgramPath} (ç›¸å¯¾ãƒ‘ã‚¹: {RelativePath})",
                         selectedPath, pathToSave);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Àsƒtƒ@ƒCƒ‹‘I‘ğ’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "å®Ÿè¡Œãƒ•ã‚¡ã‚¤ãƒ«é¸æŠä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -1147,13 +1107,13 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                // ŠÈˆÕ“I‚ÈƒtƒHƒ‹ƒ_‘I‘ğiOpenFileDialog‚ğg‚Á‚½‘ã‘ÖÀ‘•j
+                // ç°¡æ˜“çš„ãªãƒ•ã‚©ãƒ«ãƒ€é¸æŠï¼ˆOpenFileDialogã‚’ä½¿ã£ãŸä»£æ›¿å®Ÿè£…ï¼‰
                 var dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Title = "ì‹ÆƒfƒBƒŒƒNƒgƒŠ‚ğ‘I‘ğ (”CˆÓ‚Ìƒtƒ@ƒCƒ‹‚ğ‘I‘ğ‚µ‚ÄƒfƒBƒŒƒNƒgƒŠ‚ğw’è)",
+                    Title = "ä½œæ¥­ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’é¸æŠ (ä»»æ„ã®ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠã—ã¦ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’æŒ‡å®š)",
                     CheckFileExists = false,
                     CheckPathExists = true,
-                    FileName = "ƒtƒHƒ‹ƒ_‚ğ‘I‘ğ"
+                    FileName = "ãƒ•ã‚©ãƒ«ãƒ€ã‚’é¸æŠ"
                 };
                 var currentWorkingDir = GetItemProperty<string>("WorkingDirectory") ?? string.Empty;
                 var currentPath = ResolvePath(currentWorkingDir);
@@ -1172,14 +1132,14 @@ namespace AutoTool.ViewModel.Panels
                     {
                         var pathToSave = ConvertToRelativePath(selectedPath);
                         SetItemProperty("WorkingDirectory", pathToSave);
-                        _logger.LogInformation("ì‹ÆƒfƒBƒŒƒNƒgƒŠ‚ğ‘I‘ğ: {WorkingDirectory} (‘Š‘ÎƒpƒX: {RelativePath})",
+                        _logger.LogInformation("ä½œæ¥­ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’é¸æŠ: {WorkingDirectory} (ç›¸å¯¾ãƒ‘ã‚¹: {RelativePath})",
                             selectedPath, pathToSave);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ì‹ÆƒfƒBƒŒƒNƒgƒŠ‘I‘ğ’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ä½œæ¥­ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªé¸æŠä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -1188,13 +1148,13 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                // ŠÈˆÕ“I‚ÈƒtƒHƒ‹ƒ_‘I‘ğiOpenFileDialog‚ğg‚Á‚½‘ã‘ÖÀ‘•j
+                // ç°¡æ˜“çš„ãªãƒ•ã‚©ãƒ«ãƒ€é¸æŠï¼ˆOpenFileDialogã‚’ä½¿ã£ãŸä»£æ›¿å®Ÿè£…ï¼‰
                 var dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Title = "•Û‘¶ƒfƒBƒŒƒNƒgƒŠ‚ğ‘I‘ğ (”CˆÓ‚Ìƒtƒ@ƒCƒ‹‚ğ‘I‘ğ‚µ‚ÄƒfƒBƒŒƒNƒgƒŠ‚ğw’è)",
+                    Title = "ä¿å­˜ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’é¸æŠ (ä»»æ„ã®ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠã—ã¦ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’æŒ‡å®š)",
                     CheckFileExists = false,
                     CheckPathExists = true,
-                    FileName = "ƒtƒHƒ‹ƒ_‚ğ‘I‘ğ"
+                    FileName = "ãƒ•ã‚©ãƒ«ãƒ€ã‚’é¸æŠ"
                 };
 
                 var currentSaveDir = GetItemProperty<string>("SaveDirectory") ?? string.Empty;
@@ -1215,14 +1175,14 @@ namespace AutoTool.ViewModel.Panels
                     {
                         var pathToSave = ConvertToRelativePath(selectedPath);
                         SetItemProperty("SaveDirectory", pathToSave);
-                        _logger.LogInformation("•Û‘¶ƒfƒBƒŒƒNƒgƒŠ‚ğ‘I‘ğ: {SaveDirectory} (‘Š‘ÎƒpƒX: {RelativePath})",
+                        _logger.LogInformation("ä¿å­˜ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’é¸æŠ: {SaveDirectory} (ç›¸å¯¾ãƒ‘ã‚¹: {RelativePath})",
                             selectedPath, pathToSave);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "•Û‘¶ƒfƒBƒŒƒNƒgƒŠ‘I‘ğ’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ä¿å­˜ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªé¸æŠä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -1234,11 +1194,11 @@ namespace AutoTool.ViewModel.Panels
             {
                 SetItemProperty("WindowTitle", string.Empty);
                 SetItemProperty("WindowClassName", string.Empty);
-                _logger.LogInformation("ƒEƒBƒ“ƒhƒEî•ñ‚ğƒNƒŠƒA");
+                _logger.LogInformation("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±ã‚’ã‚¯ãƒªã‚¢");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒEƒBƒ“ƒhƒEî•ñƒNƒŠƒA’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±ã‚¯ãƒªã‚¢ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -1252,14 +1212,14 @@ namespace AutoTool.ViewModel.Panels
         #region Diagnostics
 
         /// <summary>
-        /// ƒoƒCƒ“ƒfƒBƒ“ƒOf’fƒƒ\ƒbƒh - ƒfƒoƒbƒO—p
+        /// ãƒã‚¤ãƒ³ãƒ‡ã‚£ãƒ³ã‚°è¨ºæ–­ãƒ¡ã‚½ãƒƒãƒ‰ - ãƒ‡ãƒãƒƒã‚°ç”¨
         /// </summary>
         public void DiagnosticProperties()
         {
             try
             {
-                _logger.LogInformation("=== EditPanelViewModel ƒvƒƒpƒeƒBf’f ===");
-                _logger.LogInformation("ƒ}ƒNƒƒtƒ@ƒCƒ‹ƒx[ƒXƒpƒX: {BasePath}", _macroFileBasePath);
+                _logger.LogInformation("=== EditPanelViewModel ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£è¨ºæ–­ ===");
+                _logger.LogInformation("ãƒã‚¯ãƒ­ãƒ•ã‚¡ã‚¤ãƒ«ãƒ™ãƒ¼ã‚¹ãƒ‘ã‚¹: {BasePath}", _macroFileBasePath);
                 _logger.LogInformation("SelectedItem: {SelectedItem}", SelectedItem?.ItemType ?? "null");
                 _logger.LogInformation("IsNotNullItem: {IsNotNullItem}", IsNotNullItem);
                 _logger.LogInformation("IsListEmpty: {IsListEmpty}", IsListEmpty);
@@ -1274,30 +1234,30 @@ namespace AutoTool.ViewModel.Panels
 
                 if (SelectedItem != null)
                 {
-                    _logger.LogInformation("SelectedItemÚ×:");
+                    _logger.LogInformation("SelectedItemè©³ç´°:");
                     _logger.LogInformation("  ItemType: {ItemType}", SelectedItem.ItemType);
                     _logger.LogInformation("  Comment: {Comment}", SelectedItem.Comment);
                     _logger.LogInformation("  LineNumber: {LineNumber}", SelectedItem.LineNumber);
                     _logger.LogInformation("  IsEnable: {IsEnable}", SelectedItem.IsEnable);
                     _logger.LogInformation("  ActualType: {ActualType}", SelectedItem.GetType().Name);
 
-                    // ƒpƒXŠÖ˜AƒvƒƒpƒeƒB‚Ìf’f
+                    // ãƒ‘ã‚¹é–¢é€£ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã®è¨ºæ–­
                     if (IsImageBasedItem || IsAIBasedItem)
                     {
-                        _logger.LogInformation("  ƒpƒXŠÖ˜AƒvƒƒpƒeƒBf’f:");
+                        _logger.LogInformation("  ãƒ‘ã‚¹é–¢é€£ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£è¨ºæ–­:");
                         var imagePath = ImagePath;
                         var resolvedImagePath = ResolvePath(imagePath);
                         _logger.LogInformation("    ImagePath: {ImagePath}", imagePath);
-                        _logger.LogInformation("    ‰ğŒˆ‚³‚ê‚½ImagePath: {ResolvedPath}", resolvedImagePath);
-                        _logger.LogInformation("    ƒtƒ@ƒCƒ‹‘¶İ: {Exists}", FileExistsResolved(imagePath));
+                        _logger.LogInformation("    è§£æ±ºã•ã‚ŒãŸImagePath: {ResolvedPath}", resolvedImagePath);
+                        _logger.LogInformation("    ãƒ•ã‚¡ã‚¤ãƒ«å­˜åœ¨: {Exists}", FileExistsResolved(imagePath));
 
                         if (IsAIBasedItem)
                         {
                             var modelPath = ModelPath;
                             var resolvedModelPath = ResolvePath(modelPath);
                             _logger.LogInformation("    ModelPath: {ModelPath}", modelPath);
-                            _logger.LogInformation("    ‰ğŒˆ‚³‚ê‚½ModelPath: {ResolvedPath}", resolvedModelPath);
-                            _logger.LogInformation("    ƒ‚ƒfƒ‹ƒtƒ@ƒCƒ‹‘¶İ: {Exists}", FileExistsResolved(modelPath));
+                            _logger.LogInformation("    è§£æ±ºã•ã‚ŒãŸModelPath: {ResolvedPath}", resolvedModelPath);
+                            _logger.LogInformation("    ãƒ¢ãƒ‡ãƒ«ãƒ•ã‚¡ã‚¤ãƒ«å­˜åœ¨: {Exists}", FileExistsResolved(modelPath));
                         }
                     }
 
@@ -1306,35 +1266,35 @@ namespace AutoTool.ViewModel.Panels
                         var programPath = ProgramPath;
                         var workingDir = WorkingDirectory;
                         _logger.LogInformation("    ProgramPath: {ProgramPath}", programPath);
-                        _logger.LogInformation("    ‰ğŒˆ‚³‚ê‚½ProgramPath: {ResolvedPath}", ResolvePath(programPath));
+                        _logger.LogInformation("    è§£æ±ºã•ã‚ŒãŸProgramPath: {ResolvedPath}", ResolvePath(programPath));
                         _logger.LogInformation("    WorkingDirectory: {WorkingDirectory}", workingDir);
-                        _logger.LogInformation("    ‰ğŒˆ‚³‚ê‚½WorkingDirectory: {ResolvedPath}", ResolvePath(workingDir));
+                        _logger.LogInformation("    è§£æ±ºã•ã‚ŒãŸWorkingDirectory: {ResolvedPath}", ResolvePath(workingDir));
                     }
 
                     if (IsScreenshotItem)
                     {
                         var saveDir = SaveDirectory;
                         _logger.LogInformation("    SaveDirectory: {SaveDirectory}", saveDir);
-                        _logger.LogInformation("    ‰ğŒˆ‚³‚ê‚½SaveDirectory: {ResolvedPath}", ResolvePath(saveDir));
-                        _logger.LogInformation("    ƒfƒBƒŒƒNƒgƒŠ‘¶İ: {Exists}", DirectoryExistsResolved(saveDir));
+                        _logger.LogInformation("    è§£æ±ºã•ã‚ŒãŸSaveDirectory: {ResolvedPath}", ResolvePath(saveDir));
+                        _logger.LogInformation("    ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªå­˜åœ¨: {Exists}", DirectoryExistsResolved(saveDir));
                     }
 
-                    // WaitItem‚Ìê‡‚Í‘Ò‹@ŠÔƒvƒƒpƒeƒB‚ğÚ×ƒ`ƒFƒbƒN
+                    // WaitItemã®å ´åˆã¯å¾…æ©Ÿæ™‚é–“ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’è©³ç´°ãƒã‚§ãƒƒã‚¯
                     if (IsWaitItem)
                     {
-                        _logger.LogInformation("  WaitŠÖ˜AƒvƒƒpƒeƒBf’f:");
+                        _logger.LogInformation("  Waité–¢é€£ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£è¨ºæ–­:");
                         var waitMs = GetItemProperty<int>("Wait");
-                        _logger.LogInformation("    Wait (ƒ~ƒŠ•b): {WaitMs}", waitMs);
+                        _logger.LogInformation("    Wait (ãƒŸãƒªç§’): {WaitMs}", waitMs);
                         _logger.LogInformation("    WaitHours: {WaitHours}", WaitHours);
                         _logger.LogInformation("    WaitMinutes: {WaitMinutes}", WaitMinutes);
                         _logger.LogInformation("    WaitSeconds: {WaitSeconds}", WaitSeconds);
                         _logger.LogInformation("    WaitMilliseconds: {WaitMilliseconds}", WaitMilliseconds);
                     }
 
-                    // ƒŠƒtƒŒƒNƒVƒ‡ƒ“‚Å—˜—p‰Â”\‚ÈƒvƒƒpƒeƒB‚ğˆê——•\¦
-                    _logger.LogInformation("  —˜—p‰Â”\‚ÈƒvƒƒpƒeƒB:");
+                    // ãƒªãƒ•ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ã§åˆ©ç”¨å¯èƒ½ãªãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’ä¸€è¦§è¡¨ç¤º
+                    _logger.LogInformation("  åˆ©ç”¨å¯èƒ½ãªãƒ—ãƒ­ãƒ‘ãƒ†ã‚£:");
                     var props = SelectedItem.GetType().GetProperties();
-                    foreach (var prop in props.Take(10)) // Å‰‚Ì10ŒÂ‚¾‚¯
+                    foreach (var prop in props.Take(10)) // æœ€åˆã®10å€‹ã ã‘
                     {
                         try
                         {
@@ -1344,48 +1304,48 @@ namespace AutoTool.ViewModel.Panels
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogInformation("    {PropertyName}: ƒGƒ‰[ ({Error})", prop.Name, ex.Message);
+                            _logger.LogInformation("    {PropertyName}: ã‚¨ãƒ©ãƒ¼ ({Error})", prop.Name, ex.Message);
                         }
                     }
                 }
 
-                _logger.LogInformation("=== f’fŠ®—¹ ===");
+                _logger.LogInformation("=== è¨ºæ–­å®Œäº† ===");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒvƒƒpƒeƒBf’f’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£è¨ºæ–­ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
         /// <summary>
-        /// ƒoƒCƒ“ƒfƒBƒ“ƒOƒeƒXƒg—pƒƒ\ƒbƒh
+        /// ãƒã‚¤ãƒ³ãƒ‡ã‚£ãƒ³ã‚°ãƒ†ã‚¹ãƒˆç”¨ãƒ¡ã‚½ãƒƒãƒ‰
         /// </summary>
         public void TestPropertyNotification()
         {
             try
             {
-                _logger.LogInformation("ƒvƒƒpƒeƒB•ÏX’Ê’mƒeƒXƒgŠJn");
+                _logger.LogInformation("ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å¤‰æ›´é€šçŸ¥ãƒ†ã‚¹ãƒˆé–‹å§‹");
 
-                // ‘S‚Ä‚Ì”»’èƒvƒƒpƒeƒB‚ğ–¾¦“I‚ÉXV
+                // å…¨ã¦ã®åˆ¤å®šãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’æ˜ç¤ºçš„ã«æ›´æ–°
                 NotifyAllPropertiesChanged();
 
-                _logger.LogInformation("ƒvƒƒpƒeƒB•ÏX’Ê’mƒeƒXƒgŠ®—¹");
+                _logger.LogInformation("ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å¤‰æ›´é€šçŸ¥ãƒ†ã‚¹ãƒˆå®Œäº†");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒvƒƒpƒeƒB•ÏX’Ê’mƒeƒXƒg’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å¤‰æ›´é€šçŸ¥ãƒ†ã‚¹ãƒˆä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
         #endregion
 
-        #region ƒtƒ@ƒCƒ‹ƒpƒX‰ğŒˆƒwƒ‹ƒp[
+        #region ãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹è§£æ±ºãƒ˜ãƒ«ãƒ‘ãƒ¼
 
         /// <summary>
-        /// ‘Š‘ÎƒpƒX‚Ü‚½‚Íâ‘ÎƒpƒX‚ğ‰ğŒˆ‚µ‚ÄAÀÛ‚Ìƒtƒ@ƒCƒ‹ƒpƒX‚ğ•Ô‚·
+        /// ç›¸å¯¾ãƒ‘ã‚¹ã¾ãŸã¯çµ¶å¯¾ãƒ‘ã‚¹ã‚’è§£æ±ºã—ã¦ã€å®Ÿéš›ã®ãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹ã‚’è¿”ã™
         /// </summary>
-        /// <param name="path">‰ğŒˆ‚·‚éƒpƒX</param>
-        /// <returns>‰ğŒˆ‚³‚ê‚½ƒpƒXAƒtƒ@ƒCƒ‹‚ª‘¶İ‚µ‚È‚¢ê‡‚ÍŒ³‚ÌƒpƒX</returns>
+        /// <param name="path">è§£æ±ºã™ã‚‹ãƒ‘ã‚¹</param>
+        /// <returns>è§£æ±ºã•ã‚ŒãŸãƒ‘ã‚¹ã€ãƒ•ã‚¡ã‚¤ãƒ«ãŒå­˜åœ¨ã—ãªã„å ´åˆã¯å…ƒã®ãƒ‘ã‚¹</returns>
         private string ResolvePath(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -1393,49 +1353,49 @@ namespace AutoTool.ViewModel.Panels
 
             try
             {
-                // Šù‚Éâ‘ÎƒpƒX‚Ìê‡
+                // æ—¢ã«çµ¶å¯¾ãƒ‘ã‚¹ã®å ´åˆ
                 if (Path.IsPathRooted(path))
                 {
                     return path;
                 }
 
-                // ‘Š‘ÎƒpƒX‚Ìê‡Aƒ}ƒNƒƒtƒ@ƒCƒ‹‚Ìƒx[ƒXƒpƒX‚©‚ç‰ğŒˆ
+                // ç›¸å¯¾ãƒ‘ã‚¹ã®å ´åˆã€ãƒã‚¯ãƒ­ãƒ•ã‚¡ã‚¤ãƒ«ã®ãƒ™ãƒ¼ã‚¹ãƒ‘ã‚¹ã‹ã‚‰è§£æ±º
                 if (!string.IsNullOrEmpty(_macroFileBasePath))
                 {
                     var resolvedPath = Path.Combine(_macroFileBasePath, path);
-                    resolvedPath = Path.GetFullPath(resolvedPath); // ³‹K‰»
+                    resolvedPath = Path.GetFullPath(resolvedPath); // æ­£è¦åŒ–
 
-                    // ‰ğŒˆ‚³‚ê‚½ƒpƒX‚Éƒtƒ@ƒCƒ‹‚ª‘¶İ‚·‚é‚©Šm”F
+                    // è§£æ±ºã•ã‚ŒãŸãƒ‘ã‚¹ã«ãƒ•ã‚¡ã‚¤ãƒ«ãŒå­˜åœ¨ã™ã‚‹ã‹ç¢ºèª
                     if (File.Exists(resolvedPath) || Directory.Exists(resolvedPath))
                     {
-                        _logger.LogTrace("‘Š‘ÎƒpƒX‰ğŒˆ¬Œ÷: {RelativePath} -> {AbsolutePath}", path, resolvedPath);
+                        _logger.LogTrace("ç›¸å¯¾ãƒ‘ã‚¹è§£æ±ºæˆåŠŸ: {RelativePath} -> {AbsolutePath}", path, resolvedPath);
                         return resolvedPath;
                     }
                 }
 
-                // ƒJƒŒƒ“ƒgƒfƒBƒŒƒNƒgƒŠ‚©‚ç‚Ì‘Š‘ÎƒpƒX‚Æ‚µ‚Äs
+                // ã‚«ãƒ¬ãƒ³ãƒˆãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‹ã‚‰ã®ç›¸å¯¾ãƒ‘ã‚¹ã¨ã—ã¦è©¦è¡Œ
                 var currentDirPath = Path.GetFullPath(path);
                 if (File.Exists(currentDirPath) || Directory.Exists(currentDirPath))
                 {
-                    _logger.LogTrace("ƒJƒŒƒ“ƒgƒfƒBƒŒƒNƒgƒŠ‚©‚ç‰ğŒˆ: {RelativePath} -> {AbsolutePath}", path, currentDirPath);
+                    _logger.LogTrace("ã‚«ãƒ¬ãƒ³ãƒˆãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‹ã‚‰è§£æ±º: {RelativePath} -> {AbsolutePath}", path, currentDirPath);
                     return currentDirPath;
                 }
 
-                _logger.LogTrace("ƒpƒX‰ğŒˆ¸”sAŒ³‚ÌƒpƒX‚ğ•Ô‚·: {Path}", path);
+                _logger.LogTrace("ãƒ‘ã‚¹è§£æ±ºå¤±æ•—ã€å…ƒã®ãƒ‘ã‚¹ã‚’è¿”ã™: {Path}", path);
                 return path;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "ƒpƒX‰ğŒˆ’†‚ÉƒGƒ‰[: {Path}", path);
+                _logger.LogWarning(ex, "ãƒ‘ã‚¹è§£æ±ºä¸­ã«ã‚¨ãƒ©ãƒ¼: {Path}", path);
                 return path;
             }
         }
 
         /// <summary>
-        /// â‘ÎƒpƒX‚ğ‘Š‘ÎƒpƒX‚É•ÏŠ·i‰Â”\‚Èê‡j
+        /// çµ¶å¯¾ãƒ‘ã‚¹ã‚’ç›¸å¯¾ãƒ‘ã‚¹ã«å¤‰æ›ï¼ˆå¯èƒ½ãªå ´åˆï¼‰
         /// </summary>
-        /// <param name="absolutePath">â‘ÎƒpƒX</param>
-        /// <returns>‘Š‘ÎƒpƒXA•ÏŠ·‚Å‚«‚È‚¢ê‡‚Íâ‘ÎƒpƒX</returns>
+        /// <param name="absolutePath">çµ¶å¯¾ãƒ‘ã‚¹</param>
+        /// <returns>ç›¸å¯¾ãƒ‘ã‚¹ã€å¤‰æ›ã§ããªã„å ´åˆã¯çµ¶å¯¾ãƒ‘ã‚¹</returns>
         private string ConvertToRelativePath(string absolutePath)
         {
             if (string.IsNullOrEmpty(absolutePath) || string.IsNullOrEmpty(_macroFileBasePath))
@@ -1447,10 +1407,10 @@ namespace AutoTool.ViewModel.Panels
                 {
                     var relativePath = Path.GetRelativePath(_macroFileBasePath, absolutePath);
 
-                    // ‘Š‘ÎƒpƒX‚ªeƒfƒBƒŒƒNƒgƒŠ‚ğ‘½—p‚µ‚Ä‚¢‚È‚¢ê‡‚Ì‚İg—p
+                    // ç›¸å¯¾ãƒ‘ã‚¹ãŒè¦ªãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’å¤šç”¨ã—ã¦ã„ãªã„å ´åˆã®ã¿ä½¿ç”¨
                     if (!relativePath.StartsWith("..\\..."))
                     {
-                        _logger.LogTrace("â‘ÎƒpƒX‚ğ‘Š‘ÎƒpƒX‚É•ÏŠ·: {AbsolutePath} -> {RelativePath}", absolutePath, relativePath);
+                        _logger.LogTrace("çµ¶å¯¾ãƒ‘ã‚¹ã‚’ç›¸å¯¾ãƒ‘ã‚¹ã«å¤‰æ›: {AbsolutePath} -> {RelativePath}", absolutePath, relativePath);
                         return relativePath;
                     }
                 }
@@ -1459,16 +1419,16 @@ namespace AutoTool.ViewModel.Panels
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "‘Š‘ÎƒpƒX•ÏŠ·’†‚ÉƒGƒ‰[: {Path}", absolutePath);
+                _logger.LogWarning(ex, "ç›¸å¯¾ãƒ‘ã‚¹å¤‰æ›ä¸­ã«ã‚¨ãƒ©ãƒ¼: {Path}", absolutePath);
                 return absolutePath;
             }
         }
 
         /// <summary>
-        /// ƒtƒ@ƒCƒ‹‚ª‘¶İ‚·‚é‚©ƒ`ƒFƒbƒNi‘Š‘ÎƒpƒX/â‘ÎƒpƒX—¼•û‘Î‰j
+        /// ãƒ•ã‚¡ã‚¤ãƒ«ãŒå­˜åœ¨ã™ã‚‹ã‹ãƒã‚§ãƒƒã‚¯ï¼ˆç›¸å¯¾ãƒ‘ã‚¹/çµ¶å¯¾ãƒ‘ã‚¹ä¸¡æ–¹å¯¾å¿œï¼‰
         /// </summary>
-        /// <param name="path">ƒ`ƒFƒbƒN‚·‚éƒpƒX</param>
-        /// <returns>ƒtƒ@ƒCƒ‹‚ª‘¶İ‚·‚éê‡true</returns>
+        /// <param name="path">ãƒã‚§ãƒƒã‚¯ã™ã‚‹ãƒ‘ã‚¹</param>
+        /// <returns>ãƒ•ã‚¡ã‚¤ãƒ«ãŒå­˜åœ¨ã™ã‚‹å ´åˆtrue</returns>
         private bool FileExistsResolved(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -1479,10 +1439,10 @@ namespace AutoTool.ViewModel.Panels
         }
 
         /// <summary>
-        /// ƒfƒBƒŒƒNƒgƒŠ‚ª‘¶İ‚·‚é‚©ƒ`ƒFƒbƒNi‘Š‘ÎƒpƒX/â‘ÎƒpƒX—¼•û‘Î‰j
+        /// ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªãŒå­˜åœ¨ã™ã‚‹ã‹ãƒã‚§ãƒƒã‚¯ï¼ˆç›¸å¯¾ãƒ‘ã‚¹/çµ¶å¯¾ãƒ‘ã‚¹ä¸¡æ–¹å¯¾å¿œï¼‰
         /// </summary>
-        /// <param name="path">ƒ`ƒFƒbƒN‚·‚éƒpƒX</param>
-        /// <returns>ƒfƒBƒŒƒNƒgƒŠ‚ª‘¶İ‚·‚éê‡true</returns>
+        /// <param name="path">ãƒã‚§ãƒƒã‚¯ã™ã‚‹ãƒ‘ã‚¹</param>
+        /// <returns>ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªãŒå­˜åœ¨ã™ã‚‹å ´åˆtrue</returns>
         private bool DirectoryExistsResolved(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -1497,7 +1457,7 @@ namespace AutoTool.ViewModel.Panels
         #region Update Info Methods
 
         /// <summary>
-        /// ‰æ‘œƒvƒŒƒrƒ…[‚ğXV
+        /// ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’æ›´æ–°
         /// </summary>
         private void UpdateImagePreview()
         {
@@ -1506,54 +1466,54 @@ namespace AutoTool.ViewModel.Panels
                 var imagePath = GetItemProperty<string>("ImagePath") ?? string.Empty;
                 var resolvedPath = ResolvePath(imagePath);
 
-                _logger.LogTrace("‰æ‘œƒvƒŒƒrƒ…[XVŠJn: {ImagePath} -> {ResolvedPath}", imagePath, resolvedPath);
+                _logger.LogTrace("ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼æ›´æ–°é–‹å§‹: {ImagePath} -> {ResolvedPath}", imagePath, resolvedPath);
 
                 if (string.IsNullOrEmpty(imagePath) || !FileExistsResolved(imagePath))
                 {
                     ImagePreview = null;
                     HasImagePreview = false;
-                    ImageInfo = string.IsNullOrEmpty(imagePath) ? string.Empty : $"ƒtƒ@ƒCƒ‹‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ: {imagePath}";
+                    ImageInfo = string.IsNullOrEmpty(imagePath) ? string.Empty : $"ãƒ•ã‚¡ã‚¤ãƒ«ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“: {imagePath}";
                     HasImageInfo = !string.IsNullOrEmpty(ImageInfo);
-                    _logger.LogDebug("‰æ‘œƒvƒŒƒrƒ…[‚ğƒNƒŠƒA: {ImagePath} (‰ğŒˆƒpƒX: {ResolvedPath})", imagePath, resolvedPath);
+                    _logger.LogDebug("ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’ã‚¯ãƒªã‚¢: {ImagePath} (è§£æ±ºãƒ‘ã‚¹: {ResolvedPath})", imagePath, resolvedPath);
                     return;
                 }
 
-                // ƒtƒ@ƒCƒ‹î•ñ‚ğæ“¾
+                // ãƒ•ã‚¡ã‚¤ãƒ«æƒ…å ±ã‚’å–å¾—
                 var fileInfo = new FileInfo(resolvedPath);
 
-                // ‰æ‘œ‚ğBitmapImage‚Æ‚µ‚Ä“Ç‚İ‚İ
+                // ç”»åƒã‚’BitmapImageã¨ã—ã¦èª­ã¿è¾¼ã¿
                 var bitmap = new System.Windows.Media.Imaging.BitmapImage();
                 bitmap.BeginInit();
                 bitmap.UriSource = new Uri(resolvedPath);
-                bitmap.DecodePixelWidth = 300; // ƒvƒŒƒrƒ…[—p‚ÉƒŠƒTƒCƒY
+                bitmap.DecodePixelWidth = 300; // ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ç”¨ã«ãƒªã‚µã‚¤ã‚º
                 bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
                 bitmap.EndInit();
-                bitmap.Freeze(); // UI ƒXƒŒƒbƒhŠO‚©‚ç‚Ìg—p‚Ì‚½‚ßFreeze
+                bitmap.Freeze(); // UI ã‚¹ãƒ¬ãƒƒãƒ‰å¤–ã‹ã‚‰ã®ä½¿ç”¨ã®ãŸã‚Freeze
 
                 ImagePreview = bitmap;
                 HasImagePreview = true;
 
-                // ‰æ‘œî•ñ‚ğİ’èi‘Š‘ÎƒpƒX•\¦ + ƒtƒ@ƒCƒ‹î•ñj
+                // ç”»åƒæƒ…å ±ã‚’è¨­å®šï¼ˆç›¸å¯¾ãƒ‘ã‚¹è¡¨ç¤º + ãƒ•ã‚¡ã‚¤ãƒ«æƒ…å ±ï¼‰
                 var fileSizeKB = fileInfo.Length / 1024.0;
                 var pathDisplay = imagePath != resolvedPath ? $"{imagePath} ({Path.GetFileName(resolvedPath)})" : imagePath;
                 ImageInfo = $"{pathDisplay}\n{bitmap.PixelWidth} x {bitmap.PixelHeight} px, {fileSizeKB:F1} KB";
                 HasImageInfo = true;
 
-                _logger.LogInformation("‰æ‘œƒvƒŒƒrƒ…[‚ğXV: {ImagePath} -> {ResolvedPath} ({Width}x{Height}, {Size:F1}KB)",
+                _logger.LogInformation("ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’æ›´æ–°: {ImagePath} -> {ResolvedPath} ({Width}x{Height}, {Size:F1}KB)",
                     imagePath, resolvedPath, bitmap.PixelWidth, bitmap.PixelHeight, fileSizeKB);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‰æ‘œƒvƒŒƒrƒ…[XVƒGƒ‰[: {ImagePath}", GetItemProperty<string>("ImagePath"));
+                _logger.LogError(ex, "ç”»åƒãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼æ›´æ–°ã‚¨ãƒ©ãƒ¼: {ImagePath}", GetItemProperty<string>("ImagePath"));
                 ImagePreview = null;
                 HasImagePreview = false;
-                ImageInfo = $"‰æ‘œ“Ç‚İ‚İƒGƒ‰[: {ex.Message}";
+                ImageInfo = $"ç”»åƒèª­ã¿è¾¼ã¿ã‚¨ãƒ©ãƒ¼: {ex.Message}";
                 HasImageInfo = true;
             }
         }
 
         /// <summary>
-        /// ƒ‚ƒfƒ‹ƒtƒ@ƒCƒ‹î•ñ‚ğXV
+        /// ãƒ¢ãƒ‡ãƒ«ãƒ•ã‚¡ã‚¤ãƒ«æƒ…å ±ã‚’æ›´æ–°
         /// </summary>
         private void UpdateModelInfo()
         {
@@ -1564,7 +1524,7 @@ namespace AutoTool.ViewModel.Panels
 
                 if (string.IsNullOrEmpty(modelPath) || !FileExistsResolved(modelPath))
                 {
-                    ModelInfo = string.IsNullOrEmpty(modelPath) ? string.Empty : $"ƒtƒ@ƒCƒ‹‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ: {modelPath}";
+                    ModelInfo = string.IsNullOrEmpty(modelPath) ? string.Empty : $"ãƒ•ã‚¡ã‚¤ãƒ«ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“: {modelPath}";
                     HasModelInfo = !string.IsNullOrEmpty(ModelInfo);
                     return;
                 }
@@ -1575,18 +1535,18 @@ namespace AutoTool.ViewModel.Panels
                 ModelInfo = $"{pathDisplay}\n{fileSizeMB:F1} MB, {fileInfo.LastWriteTime:yyyy/MM/dd HH:mm}";
                 HasModelInfo = true;
 
-                _logger.LogDebug("ƒ‚ƒfƒ‹î•ñ‚ğXV: {ModelPath} -> {ResolvedPath} ({Size:F1}MB)", modelPath, resolvedPath, fileSizeMB);
+                _logger.LogDebug("ãƒ¢ãƒ‡ãƒ«æƒ…å ±ã‚’æ›´æ–°: {ModelPath} -> {ResolvedPath} ({Size:F1}MB)", modelPath, resolvedPath, fileSizeMB);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒ‚ƒfƒ‹î•ñXVƒGƒ‰[: {ModelPath}", GetItemProperty<string>("ModelPath"));
-                ModelInfo = $"ƒtƒ@ƒCƒ‹î•ñæ“¾ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ãƒ¢ãƒ‡ãƒ«æƒ…å ±æ›´æ–°ã‚¨ãƒ©ãƒ¼: {ModelPath}", GetItemProperty<string>("ModelPath"));
+                ModelInfo = $"ãƒ•ã‚¡ã‚¤ãƒ«æƒ…å ±å–å¾—ã‚¨ãƒ©ãƒ¼: {ex.Message}";
                 HasModelInfo = true;
             }
         }
 
         /// <summary>
-        /// ƒvƒƒOƒ‰ƒ€ƒtƒ@ƒCƒ‹î•ñ‚ğXV
+        /// ãƒ—ãƒ­ã‚°ãƒ©ãƒ ãƒ•ã‚¡ã‚¤ãƒ«æƒ…å ±ã‚’æ›´æ–°
         /// </summary>
         private void UpdateProgramInfo()
         {
@@ -1597,7 +1557,7 @@ namespace AutoTool.ViewModel.Panels
 
                 if (string.IsNullOrEmpty(programPath) || !FileExistsResolved(programPath))
                 {
-                    ProgramInfo = string.IsNullOrEmpty(programPath) ? string.Empty : $"ƒtƒ@ƒCƒ‹‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ: {programPath}";
+                    ProgramInfo = string.IsNullOrEmpty(programPath) ? string.Empty : $"ãƒ•ã‚¡ã‚¤ãƒ«ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“: {programPath}";
                     HasProgramInfo = !string.IsNullOrEmpty(ProgramInfo);
                     return;
                 }
@@ -1608,18 +1568,18 @@ namespace AutoTool.ViewModel.Panels
                 ProgramInfo = $"{pathDisplay}\n{fileSizeMB:F1} MB, {fileInfo.LastWriteTime:yyyy/MM/dd HH:mm}";
                 HasProgramInfo = true;
 
-                _logger.LogDebug("ƒvƒƒOƒ‰ƒ€î•ñ‚ğXV: {ProgramPath} -> {ResolvedPath} ({Size:F1}MB)", programPath, resolvedPath, fileSizeMB);
+                _logger.LogDebug("ãƒ—ãƒ­ã‚°ãƒ©ãƒ æƒ…å ±ã‚’æ›´æ–°: {ProgramPath} -> {ResolvedPath} ({Size:F1}MB)", programPath, resolvedPath, fileSizeMB);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒvƒƒOƒ‰ƒ€î•ñXVƒGƒ‰[: {ProgramPath}", GetItemProperty<string>("ProgramPath"));
-                ProgramInfo = $"ƒtƒ@ƒCƒ‹î•ñæ“¾ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ãƒ—ãƒ­ã‚°ãƒ©ãƒ æƒ…å ±æ›´æ–°ã‚¨ãƒ©ãƒ¼: {ProgramPath}", GetItemProperty<string>("ProgramPath"));
+                ProgramInfo = $"ãƒ•ã‚¡ã‚¤ãƒ«æƒ…å ±å–å¾—ã‚¨ãƒ©ãƒ¼: {ex.Message}";
                 HasProgramInfo = true;
             }
         }
 
         /// <summary>
-        /// •Û‘¶ƒfƒBƒŒƒNƒgƒŠî•ñ‚ğXV
+        /// ä¿å­˜ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªæƒ…å ±ã‚’æ›´æ–°
         /// </summary>
         private void UpdateSaveDirectoryInfo()
         {
@@ -1640,21 +1600,21 @@ namespace AutoTool.ViewModel.Panels
                     var dirInfo = new DirectoryInfo(resolvedPath);
                     var fileCount = dirInfo.GetFiles().Length;
                     var pathDisplay = saveDir != resolvedPath ? $"{saveDir} ({Path.GetFileName(resolvedPath)})" : saveDir;
-                    SaveDirectoryInfo = $"{pathDisplay}\nŠù‘¶ƒfƒBƒŒƒNƒgƒŠ: {fileCount} ƒtƒ@ƒCƒ‹";
+                    SaveDirectoryInfo = $"{pathDisplay}\næ—¢å­˜ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª: {fileCount} ãƒ•ã‚¡ã‚¤ãƒ«";
                     HasSaveDirectoryInfo = true;
                 }
                 else
                 {
-                    SaveDirectoryInfo = $"{saveDir}\nV‹KƒfƒBƒŒƒNƒgƒŠ (ì¬—\’è)";
+                    SaveDirectoryInfo = $"{saveDir}\næ–°è¦ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª (ä½œæˆäºˆå®š)";
                     HasSaveDirectoryInfo = true;
                 }
 
-                _logger.LogDebug("•Û‘¶ƒfƒBƒŒƒNƒgƒŠî•ñ‚ğXV: {SaveDir} -> {ResolvedPath}", saveDir, resolvedPath);
+                _logger.LogDebug("ä¿å­˜ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªæƒ…å ±ã‚’æ›´æ–°: {SaveDir} -> {ResolvedPath}", saveDir, resolvedPath);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "•Û‘¶ƒfƒBƒŒƒNƒgƒŠî•ñXVƒGƒ‰[: {SaveDir}", GetItemProperty<string>("SaveDirectory"));
-                SaveDirectoryInfo = $"ƒfƒBƒŒƒNƒgƒŠî•ñæ“¾ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ä¿å­˜ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªæƒ…å ±æ›´æ–°ã‚¨ãƒ©ãƒ¼: {SaveDir}", GetItemProperty<string>("SaveDirectory"));
+                SaveDirectoryInfo = $"ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªæƒ…å ±å–å¾—ã‚¨ãƒ©ãƒ¼: {ex.Message}";
                 HasSaveDirectoryInfo = true;
             }
         }
@@ -1668,36 +1628,36 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                // Às’†‚Ìê‡‚Í‰½‚à‚µ‚È‚¢
+                // å®Ÿè¡Œä¸­ã®å ´åˆã¯ä½•ã‚‚ã—ãªã„
                 if (IsRunning) return;
 
-                // Œ»İ‘I‘ğ‚³‚ê‚Ä‚¢‚éƒAƒCƒeƒ€‚ğæ“¾
+                // ç¾åœ¨é¸æŠã•ã‚Œã¦ã„ã‚‹ã‚¢ã‚¤ãƒ†ãƒ ã‚’å–å¾—
                 var item = SelectedItem;
                 if (item == null)
                 {
-                    _logger.LogWarning("ÀsƒAƒCƒeƒ€‚ª‘I‘ğ‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ");
+                    _logger.LogWarning("å®Ÿè¡Œã‚¢ã‚¤ãƒ†ãƒ ãŒé¸æŠã•ã‚Œã¦ã„ã¾ã›ã‚“");
                     return;
                 }
 
-                _logger.LogInformation("ÀsŠJn: {ItemType} - {Comment}", item.ItemType, item.Comment);
+                _logger.LogInformation("å®Ÿè¡Œé–‹å§‹: {ItemType} - {Comment}", item.ItemType, item.Comment);
 
-                // Àsó‘Ô‚É‘JˆÚ
+                // å®Ÿè¡ŒçŠ¶æ…‹ã«é·ç§»
                 IsRunning = true;
                 item.IsRunning = true;
                 OnPropertyChanged(nameof(IsRunning));
 
-                // ƒ}ƒNƒ‚ÌÀs‚È‚Ç
-                // TODO: ƒ}ƒNƒÀsƒƒWƒbƒN‚ÌÀ‘•
+                // ãƒã‚¯ãƒ­ã®å®Ÿè¡Œãªã©
+                // TODO: ãƒã‚¯ãƒ­å®Ÿè¡Œãƒ­ã‚¸ãƒƒã‚¯ã®å®Ÿè£…
 
-                _logger.LogInformation("ÀsŠ®—¹: {ItemType} - {Comment}", item.ItemType, item.Comment);
+                _logger.LogInformation("å®Ÿè¡Œå®Œäº†: {ItemType} - {Comment}", item.ItemType, item.Comment);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒRƒ}ƒ“ƒhÀs’†‚ÉƒGƒ‰[: {ItemType}", SelectedItem?.ItemType);
+                _logger.LogError(ex, "ã‚³ãƒãƒ³ãƒ‰å®Ÿè¡Œä¸­ã«ã‚¨ãƒ©ãƒ¼: {ItemType}", SelectedItem?.ItemType);
             }
             finally
             {
-                // Œãn––
+                // å¾Œå§‹æœ«
                 IsRunning = false;
                 if (SelectedItem != null)
                 {
@@ -1714,32 +1674,32 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("ƒ}ƒEƒXˆÊ’uæ“¾ŠJni‰EƒNƒŠƒbƒN‘Ò‹@j");
+                _logger.LogInformation("ãƒã‚¦ã‚¹ä½ç½®å–å¾—é–‹å§‹ï¼ˆå³ã‚¯ãƒªãƒƒã‚¯å¾…æ©Ÿï¼‰");
 
                 IsWaitingForRightClick = true;
-                MouseWaitMessage = "‘ÎÛˆÊ’u‚Å‰EƒNƒŠƒbƒN‚µ‚Ä‚­‚¾‚³‚¢";
+                MouseWaitMessage = "å¯¾è±¡ä½ç½®ã§å³ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„";
 
-                // ƒLƒƒƒvƒ`ƒƒƒT[ƒrƒX‚ğg—p
+                // ã‚­ãƒ£ãƒ—ãƒãƒ£ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä½¿ç”¨
                 var position = await _captureService.CaptureCoordinateAtRightClickAsync();
                 
                 if (position.HasValue)
                 {
-                    // æ“¾‚µ‚½À•W‚ğİ’è
+                    // å–å¾—ã—ãŸåº§æ¨™ã‚’è¨­å®š
                     ClickX = position.Value.X;
                     ClickY = position.Value.Y;
 
                     NotifyAllPropertiesChanged();
 
-                    _logger.LogInformation("ƒ}ƒEƒXˆÊ’uİ’èŠ®—¹: ({X}, {Y})", position.Value.X, position.Value.Y);
+                    _logger.LogInformation("ãƒã‚¦ã‚¹ä½ç½®è¨­å®šå®Œäº†: ({X}, {Y})", position.Value.X, position.Value.Y);
                 }
                 else
                 {
-                    _logger.LogInformation("ƒ}ƒEƒXˆÊ’uæ“¾‚ªƒLƒƒƒ“ƒZƒ‹‚³‚ê‚Ü‚µ‚½");
+                    _logger.LogInformation("ãƒã‚¦ã‚¹ä½ç½®å–å¾—ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒ}ƒEƒXˆÊ’uæ“¾’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ãƒã‚¦ã‚¹ä½ç½®å–å¾—ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
             finally
             {
@@ -1753,20 +1713,20 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("Œ»İ‚Ìƒ}ƒEƒXˆÊ’uæ“¾");
+                _logger.LogInformation("ç¾åœ¨ã®ãƒã‚¦ã‚¹ä½ç½®å–å¾—");
 
-                // ƒLƒƒƒvƒ`ƒƒƒT[ƒrƒX‚ğg—p
+                // ã‚­ãƒ£ãƒ—ãƒãƒ£ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä½¿ç”¨
                 var position = _captureService.GetCurrentMousePosition();
 
-                // æ“¾‚µ‚½À•W‚ğİ’è
+                // å–å¾—ã—ãŸåº§æ¨™ã‚’è¨­å®š
                 ClickX = position.X;
                 ClickY = position.Y;
                 
-                _logger.LogInformation("Œ»İ‚Ìƒ}ƒEƒXˆÊ’uİ’èŠ®—¹: ({X}, {Y})", position.X, position.Y);
+                _logger.LogInformation("ç¾åœ¨ã®ãƒã‚¦ã‚¹ä½ç½®è¨­å®šå®Œäº†: ({X}, {Y})", position.X, position.Y);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Œ»İ‚Ìƒ}ƒEƒXˆÊ’uæ“¾’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ç¾åœ¨ã®ãƒã‚¦ã‚¹ä½ç½®å–å¾—ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -1775,12 +1735,12 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("ƒEƒBƒ“ƒhƒEî•ñæ“¾ŠJni‰EƒNƒŠƒbƒN‘Ò‹@j");
+                _logger.LogInformation("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±å–å¾—é–‹å§‹ï¼ˆå³ã‚¯ãƒªãƒƒã‚¯å¾…æ©Ÿï¼‰");
                 
                 IsWaitingForRightClick = true;
-                MouseWaitMessage = "‘ÎÛƒEƒBƒ“ƒhƒE‚Å‰EƒNƒŠƒbƒN‚µ‚Ä‚­‚¾‚³‚¢";
+                MouseWaitMessage = "å¯¾è±¡ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã§å³ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„";
 
-                // ƒLƒƒƒvƒ`ƒƒƒT[ƒrƒX‚ğg—p
+                // ã‚­ãƒ£ãƒ—ãƒãƒ£ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä½¿ç”¨
                 var windowInfo = await _captureService.CaptureWindowInfoAtRightClickAsync();
                 
                 if (windowInfo != null)
@@ -1790,17 +1750,17 @@ namespace AutoTool.ViewModel.Panels
                     OnPropertyChanged(nameof(WindowTitle));
                     OnPropertyChanged(nameof(WindowClassName));
                     
-                    _logger.LogInformation("ƒEƒBƒ“ƒhƒEî•ñæ“¾¬Œ÷: Title={Title}, ClassName={ClassName}", 
+                    _logger.LogInformation("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±å–å¾—æˆåŠŸ: Title={Title}, ClassName={ClassName}", 
                         windowInfo.Title, windowInfo.ClassName);
                 }
                 else
                 {
-                    _logger.LogInformation("ƒEƒBƒ“ƒhƒEî•ñæ“¾‚ªƒLƒƒƒ“ƒZƒ‹‚³‚ê‚Ü‚µ‚½");
+                    _logger.LogInformation("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±å–å¾—ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒEƒBƒ“ƒhƒEî•ñæ“¾’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±å–å¾—ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
             finally
             {
@@ -1810,60 +1770,60 @@ namespace AutoTool.ViewModel.Panels
         }
 
         /// <summary>
-        /// “®“Iİ’è‚Ì‰Šú‰»
+        /// å‹•çš„è¨­å®šã®åˆæœŸåŒ–
         /// </summary>
         private void InitializeDynamicSettings(UniversalCommandItem universalItem)
         {
             try
             {
-                _logger.LogDebug("=== “®“Iİ’è‰Šú‰»ŠJn: {ItemType} ===", universalItem.ItemType);
+                _logger.LogDebug("=== å‹•çš„è¨­å®šåˆæœŸåŒ–é–‹å§‹: {ItemType} ===", universalItem.ItemType);
                 
-                // İ’è’è‹`‚ğ‰Šú‰»
-                _logger.LogDebug("UniversalCommandItem.InitializeSettingDefinitions()ŒÄ‚Ño‚µ");
+                // è¨­å®šå®šç¾©ã‚’åˆæœŸåŒ–
+                _logger.LogDebug("UniversalCommandItem.InitializeSettingDefinitions()å‘¼ã³å‡ºã—");
                 universalItem.InitializeSettingDefinitions();
                 
-                // İ’è’è‹`‚ğƒJƒeƒSƒŠ•Ê‚ÉƒOƒ‹[ƒv‰»
+                // è¨­å®šå®šç¾©ã‚’ã‚«ãƒ†ã‚´ãƒªåˆ¥ã«ã‚°ãƒ«ãƒ¼ãƒ—åŒ–
                 var definitions = universalItem.SettingDefinitions ?? new List<SettingDefinition>();
                 SettingDefinitions = new ObservableCollection<SettingDefinition>(definitions);
                 
-                _logger.LogDebug("İ’è’è‹`æ“¾Š®—¹: {ItemType}, €–Ú”: {Count}", universalItem.ItemType, definitions.Count);
+                _logger.LogDebug("è¨­å®šå®šç¾©å–å¾—å®Œäº†: {ItemType}, é …ç›®æ•°: {Count}", universalItem.ItemType, definitions.Count);
                 
                 if (definitions.Count == 0)
                 {
-                    _logger.LogWarning("?? İ’è’è‹`‚ª‹ó‚Å‚·: {ItemType}", universalItem.ItemType);
+                    _logger.LogWarning("âŒ è¨­å®šå®šç¾©ãŒç©ºã§ã™: {ItemType}", universalItem.ItemType);
                     
-                    // DirectCommandRegistry‚©‚ç’¼Úæ“¾‚ğs
-                    _logger.LogDebug("DirectCommandRegistry‚©‚çİ’è’è‹`‚ğ’¼Úæ“¾‚ğs");
+                    // DirectCommandRegistryã‹ã‚‰ç›´æ¥å–å¾—ã‚’è©¦è¡Œ
+                    _logger.LogDebug("DirectCommandRegistryã‹ã‚‰è¨­å®šå®šç¾©ã‚’ç›´æ¥å–å¾—ã‚’è©¦è¡Œ");
                     var directDefinitions = DirectCommandRegistry.GetSettingDefinitions(universalItem.ItemType);
                     if (directDefinitions.Count > 0)
                     {
-                        _logger.LogInformation("? DirectCommandRegistry‚©‚çİ’è’è‹`‚ğæ“¾: {Count}€–Ú", directDefinitions.Count);
+                        _logger.LogInformation("âœ… DirectCommandRegistryã‹ã‚‰è¨­å®šå®šç¾©ã‚’å–å¾—: {Count}é …ç›®", directDefinitions.Count);
                         definitions = directDefinitions;
                         SettingDefinitions = new ObservableCollection<SettingDefinition>(definitions);
                         
-                        // UniversalCommandItem‚Éİ’è’è‹`‚ğİ’è
+                        // UniversalCommandItemã«è¨­å®šå®šç¾©ã‚’è¨­å®š
                         universalItem.SettingDefinitions = definitions;
                     }
                     else
                     {
-                        _logger.LogError("? DirectCommandRegistry‚©‚ç‚àİ’è’è‹`‚ğæ“¾‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½: {ItemType}", universalItem.ItemType);
+                        _logger.LogError("âŒ DirectCommandRegistryã‹ã‚‰ã‚‚è¨­å®šå®šç¾©ã‚’å–å¾—ã§ãã¾ã›ã‚“ã§ã—ãŸ: {ItemType}", universalItem.ItemType);
                         SettingGroups.Clear();
                         DynamicValues.Clear();
                         return;
                     }
                 }
                 
-                // “®“Iİ’è’l‚ğ‰Šú‰»
-                _logger.LogDebug("“®“Iİ’è’l‰Šú‰»ŠJn");
+                // å‹•çš„è¨­å®šå€¤ã‚’åˆæœŸåŒ–
+                _logger.LogDebug("å‹•çš„è¨­å®šå€¤åˆæœŸåŒ–é–‹å§‹");
                 InitializeDynamicValues(universalItem, definitions);
                 
-                // Œ»İ’l‚ğİ’è’è‹`‚É“¯Šú
-                _logger.LogDebug("Œ»İ’l‚ğİ’è’è‹`‚É“¯ŠúŠJn");
+                // ç¾åœ¨å€¤ã‚’è¨­å®šå®šç¾©ã«åŒæœŸ
+                _logger.LogDebug("ç¾åœ¨å€¤ã‚’è¨­å®šå®šç¾©ã«åŒæœŸé–‹å§‹");
                 SyncCurrentValuesToDefinitions(universalItem, definitions);
                 
-                // ƒJƒeƒSƒŠ‚²‚Æ‚ÉƒOƒ‹[ƒv‰»
+                // ã‚«ãƒ†ã‚´ãƒªã”ã¨ã«ã‚°ãƒ«ãƒ¼ãƒ—åŒ–
                 var groups = definitions
-                    .GroupBy(d => d.Category ?? "Šî–{İ’è")
+                    .GroupBy(d => d.Category ?? "åŸºæœ¬è¨­å®š")
                     .Select(g => new SettingCategoryGroup
                     {
                         Category = g.Key,
@@ -1871,32 +1831,32 @@ namespace AutoTool.ViewModel.Panels
                     })
                     .ToList();
 
-                _logger.LogDebug("İ’èƒOƒ‹[ƒvì¬Š®—¹: {ItemType}, ƒOƒ‹[ƒv”: {GroupCount}", universalItem.ItemType, groups.Count);
+                _logger.LogDebug("è¨­å®šã‚°ãƒ«ãƒ¼ãƒ—ä½œæˆå®Œäº†: {ItemType}, ã‚°ãƒ«ãƒ¼ãƒ—æ•°: {GroupCount}", universalItem.ItemType, groups.Count);
                 
-                // ŠeƒOƒ‹[ƒv‚ÌÚ×‚ğƒƒOo—Í
+                // å„ã‚°ãƒ«ãƒ¼ãƒ—ã®è©³ç´°ã‚’ãƒ­ã‚°å‡ºåŠ›
                 foreach (var group in groups)
                 {
-                    _logger.LogDebug("?? ƒOƒ‹[ƒv: {Category}, İ’è€–Ú”: {SettingCount}", group.Category, group.Settings.Count);
-                    foreach (var setting in group.Settings.Take(3)) // Å‰‚Ì3‚Â‚Ì‚İ
+                    _logger.LogDebug("ğŸ“ ã‚°ãƒ«ãƒ¼ãƒ—: {Category}, è¨­å®šé …ç›®æ•°: {SettingCount}", group.Category, group.Settings.Count);
+                    foreach (var setting in group.Settings.Take(3)) // æœ€åˆã®3ã¤ã®ã¿
                     {
-                        _logger.LogDebug("  ?? {DisplayName} ({PropertyName}): {ControlType} = {CurrentValue}", 
+                        _logger.LogDebug("  âš™ï¸ {DisplayName} ({PropertyName}): {ControlType} = {CurrentValue}", 
                             setting.DisplayName, setting.PropertyName, setting.ControlType, setting.CurrentValue);
                     }
                 }
 
-                // ƒOƒ[ƒoƒ‹İ’è‚ğ“K—p
-                _logger.LogDebug("ƒOƒ[ƒoƒ‹İ’è“K—pŠJn");
+                // ã‚°ãƒ­ãƒ¼ãƒãƒ«è¨­å®šã‚’é©ç”¨
+                _logger.LogDebug("ã‚°ãƒ­ãƒ¼ãƒãƒ«è¨­å®šé©ç”¨é–‹å§‹");
                 ApplyGlobalSettings(groups);
                     
                 SettingGroups = new ObservableCollection<SettingCategoryGroup>(groups);
                 
-                _logger.LogInformation("? “®“Iİ’è‰Šú‰»Š®—¹: {ItemType}, ƒJƒeƒSƒŠ”: {CategoryCount}, İ’è€–Ú”: {SettingCount}",
+                _logger.LogInformation("âœ… å‹•çš„è¨­å®šåˆæœŸåŒ–å®Œäº†: {ItemType}, ã‚«ãƒ†ã‚´ãƒªæ•°: {CategoryCount}, è¨­å®šé …ç›®æ•°: {SettingCount}",
                     universalItem.ItemType, groups.Count, definitions.Count);
-                _logger.LogDebug("=== “®“Iİ’è‰Šú‰»I—¹ ===");
+                _logger.LogDebug("=== å‹•çš„è¨­å®šåˆæœŸåŒ–çµ‚äº† ===");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "? “®“Iİ’è‰Šú‰»ƒGƒ‰[: {ItemType}", universalItem.ItemType);
+                _logger.LogError(ex, "âŒ å‹•çš„è¨­å®šåˆæœŸåŒ–ã‚¨ãƒ©ãƒ¼: {ItemType}", universalItem.ItemType);
                 SettingGroups.Clear();
                 SettingDefinitions.Clear();
                 DynamicValues.Clear();
@@ -1904,7 +1864,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         /// <summary>
-        /// “®“Iİ’è’l‚Ì‰Šú‰»
+        /// å‹•çš„è¨­å®šå€¤ã®åˆæœŸåŒ–
         /// </summary>
         private void InitializeDynamicValues(UniversalCommandItem universalItem, List<SettingDefinition> definitions)
         {
@@ -1923,7 +1883,7 @@ namespace AutoTool.ViewModel.Panels
                     universalItem.SetSetting(definition.PropertyName, definition.DefaultValue);
                 }
                 
-                _logger.LogTrace("“®“I’l‰Šú‰»: {PropertyName} = {Value}", 
+                _logger.LogTrace("å‹•çš„å€¤åˆæœŸåŒ–: {PropertyName} = {Value}", 
                     definition.PropertyName, DynamicValues.GetValueOrDefault(definition.PropertyName));
             }
             
@@ -1931,7 +1891,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         /// <summary>
-        /// Œ»İ’l‚ğİ’è’è‹`‚É“¯Šú
+        /// ç¾åœ¨å€¤ã‚’è¨­å®šå®šç¾©ã«åŒæœŸ
         /// </summary>
         private void SyncCurrentValuesToDefinitions(UniversalCommandItem universalItem, List<SettingDefinition> definitions)
         {
@@ -1943,13 +1903,13 @@ namespace AutoTool.ViewModel.Panels
                 
                 definition.CurrentValue = currentValue;
                 
-                _logger.LogTrace("Œ»İ’l“¯Šú: {PropertyName} = {CurrentValue}", 
+                _logger.LogTrace("ç¾åœ¨å€¤åŒæœŸ: {PropertyName} = {CurrentValue}", 
                     definition.PropertyName, currentValue);
             }
         }
 
         /// <summary>
-        /// ƒOƒ[ƒoƒ‹İ’è‚Ì“K—piƒ\[ƒXƒRƒŒƒNƒVƒ‡ƒ“‚Ìİ’è‚È‚Çj
+        /// ã‚°ãƒ­ãƒ¼ãƒãƒ«è¨­å®šã®é©ç”¨ï¼ˆã‚½ãƒ¼ã‚¹ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ã®è¨­å®šãªã©ï¼‰
         /// </summary>
         private void ApplyGlobalSettings(List<SettingCategoryGroup> categoryGroups)
         {
@@ -1957,15 +1917,15 @@ namespace AutoTool.ViewModel.Panels
             {
                 foreach (var setting in group.Settings)
                 {
-                    // ƒ\[ƒXƒRƒŒƒNƒVƒ‡ƒ“‚ªw’è‚³‚ê‚Ä‚¢‚éê‡‚ÍÀÛ‚ÌƒRƒŒƒNƒVƒ‡ƒ“‚ğİ’è
+                    // ã‚½ãƒ¼ã‚¹ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ãŒæŒ‡å®šã•ã‚Œã¦ã„ã‚‹å ´åˆã¯å®Ÿéš›ã®ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ã‚’è¨­å®š
                     if (!string.IsNullOrEmpty(setting.SourceCollection))
                     {
                         var sourceData = DirectCommandRegistry.GetSourceCollection(setting.SourceCollection);
                         if (sourceData != null)
                         {
-                            // ƒ\[ƒXƒf[ƒ^‚ğSettingDefinition‚ÉŠi”[
+                            // ã‚½ãƒ¼ã‚¹ãƒ‡ãƒ¼ã‚¿ã‚’SettingDefinitionã«æ ¼ç´
                             setting.SourceItems = sourceData.ToList();
-                            _logger.LogTrace("ƒ\[ƒXƒRƒŒƒNƒVƒ‡ƒ“İ’è: {PropertyName} -> {SourceCollection} ({ItemCount}ŒÂ)",
+                            _logger.LogTrace("ã‚½ãƒ¼ã‚¹ã‚³ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³è¨­å®š: {PropertyName} -> {SourceCollection} ({ItemCount}å€‹)",
                                 setting.PropertyName, setting.SourceCollection, sourceData.Length);
                         }
                     }
@@ -1974,7 +1934,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         /// <summary>
-        /// “®“IƒvƒƒpƒeƒBæ“¾
+        /// å‹•çš„ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å–å¾—
         /// </summary>
         public object? GetDynamicProperty(string propertyName)
         {
@@ -1990,7 +1950,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         /// <summary>
-        /// “®“IƒvƒƒpƒeƒBİ’è
+        /// å‹•çš„ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£è¨­å®š
         /// </summary>
         public void SetDynamicProperty(string propertyName, object? value)
         {
@@ -1999,21 +1959,21 @@ namespace AutoTool.ViewModel.Panels
                 universalItem.SetSetting(propertyName, value);
                 DynamicValues[propertyName] = value;
                 
-                // İ’è’è‹`‚ÌŒ»İ’l‚àXV
+                // è¨­å®šå®šç¾©ã®ç¾åœ¨å€¤ã‚‚æ›´æ–°
                 var settingDefinition = SettingDefinitions.FirstOrDefault(s => s.PropertyName == propertyName);
                 if (settingDefinition != null)
                 {
                     settingDefinition.CurrentValue = value;
-                    _logger.LogTrace("İ’è’è‹`‚ÌŒ»İ’lXV: {PropertyName} = {Value}", propertyName, value);
+                    _logger.LogTrace("è¨­å®šå®šç¾©ã®ç¾åœ¨å€¤æ›´æ–°: {PropertyName} = {Value}", propertyName, value);
                 }
                 
                 OnPropertyChanged(nameof(DynamicValues));
-                _logger.LogTrace("“®“IƒvƒƒpƒeƒBİ’è: {PropertyName} = {Value}", propertyName, value);
+                _logger.LogTrace("å‹•çš„ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£è¨­å®š: {PropertyName} = {Value}", propertyName, value);
             }
         }
 
         /// <summary>
-        /// “®“Iİ’è‚Ì•Û‘¶
+        /// å‹•çš„è¨­å®šã®ä¿å­˜
         /// </summary>
         public bool SaveDynamicSettings()
         {
@@ -2022,7 +1982,7 @@ namespace AutoTool.ViewModel.Panels
                 if (SelectedItem is not UniversalCommandItem universalItem)
                     return false;
 
-                // İ’èŒŸØ
+                // è¨­å®šæ¤œè¨¼
                 var validationErrors = new List<string>();
                 foreach (var definition in SettingDefinitions)
                 {
@@ -2031,30 +1991,30 @@ namespace AutoTool.ViewModel.Panels
                         var value = universalItem.GetSetting<object>(definition.PropertyName);
                         if (value == null || (value is string str && string.IsNullOrWhiteSpace(str)))
                         {
-                            validationErrors.Add($"{definition.DisplayName}‚Í•K{€–Ú‚Å‚·");
+                            validationErrors.Add($"{definition.DisplayName}ã¯å¿…é ˆé …ç›®ã§ã™");
                         }
                     }
                 }
 
                 if (validationErrors.Count > 0)
                 {
-                    _logger.LogWarning("“®“Iİ’èŒŸØƒGƒ‰[: {Errors}", string.Join(", ", validationErrors));
+                    _logger.LogWarning("å‹•çš„è¨­å®šæ¤œè¨¼ã‚¨ãƒ©ãƒ¼: {Errors}", string.Join(", ", validationErrors));
                     return false;
                 }
 
-                _logger.LogInformation("“®“Iİ’è•Û‘¶Š®—¹: {ItemType}", universalItem.ItemType);
+                _logger.LogInformation("å‹•çš„è¨­å®šä¿å­˜å®Œäº†: {ItemType}", universalItem.ItemType);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "“®“Iİ’è•Û‘¶ƒGƒ‰[");
+                _logger.LogError(ex, "å‹•çš„è¨­å®šä¿å­˜ã‚¨ãƒ©ãƒ¼");
                 return false;
             }
         }
 
         #region Dynamic Action Handlers
         /// <summary>
-       /// “®“IƒAƒNƒVƒ‡ƒ“Às
+       /// å‹•çš„ã‚¢ã‚¯ã‚·ãƒ§ãƒ³å®Ÿè¡Œ
         /// </summary>
         [RelayCommand]
         public async Task ExecuteActionAsync(ActionExecutionContext context)
@@ -2063,7 +2023,7 @@ namespace AutoTool.ViewModel.Panels
 
             try
             {
-                _logger.LogDebug("“®“IƒAƒNƒVƒ‡ƒ“Às: {ActionType} for {PropertyName}", 
+                _logger.LogDebug("å‹•çš„ã‚¢ã‚¯ã‚·ãƒ§ãƒ³å®Ÿè¡Œ: {ActionType} for {PropertyName}", 
                     context.ActionType, context.SettingDefinition.PropertyName);
 
                 switch (context.ActionType)
@@ -2090,13 +2050,13 @@ namespace AutoTool.ViewModel.Panels
                         ExecuteClearAction(context);
                         break;
                     default:
-                        _logger.LogWarning("–¢’m‚ÌƒAƒNƒVƒ‡ƒ“: {ActionType}", context.ActionType);
+                        _logger.LogWarning("æœªçŸ¥ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³: {ActionType}", context.ActionType);
                         break;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒAƒNƒVƒ‡ƒ“ÀsƒGƒ‰[: {ActionType}", context.ActionType);
+                _logger.LogError(ex, "ã‚¢ã‚¯ã‚·ãƒ§ãƒ³å®Ÿè¡Œã‚¨ãƒ©ãƒ¼: {ActionType}", context.ActionType);
             }
         }
 
@@ -2108,8 +2068,8 @@ namespace AutoTool.ViewModel.Panels
             {
                 var dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Title = $"{setting.DisplayName}‚ğ‘I‘ğ",
-                    Filter = setting.FileFilter ?? "‚·‚×‚Ä‚Ìƒtƒ@ƒCƒ‹ (*.*)|*.*"
+                    Title = $"{setting.DisplayName}ã‚’é¸æŠ",
+                    Filter = setting.FileFilter ?? "ã™ã¹ã¦ã®ãƒ•ã‚¡ã‚¤ãƒ« (*.*)|*.*"
                 };
                 var currentValue = GetDynamicProperty(setting.PropertyName)?.ToString() ?? string.Empty;
                 var currentPath = ResolvePath(currentValue);
@@ -2129,10 +2089,10 @@ namespace AutoTool.ViewModel.Panels
                     var pathToSave = ConvertToRelativePath(selectedPath);
                     SetDynamicProperty(setting.PropertyName, pathToSave);
                     
-                    _logger.LogInformation("ƒtƒ@ƒCƒ‹‘I‘ğ: {PropertyName} = {FileName} (‘Š‘ÎƒpƒX: {RelativePath})", 
+                    _logger.LogInformation("ãƒ•ã‚¡ã‚¤ãƒ«é¸æŠ: {PropertyName} = {FileName} (ç›¸å¯¾ãƒ‘ã‚¹: {RelativePath})", 
                         setting.PropertyName, selectedPath, pathToSave);
 
-                    // ƒvƒŒƒrƒ…[XV
+                    // ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼æ›´æ–°
                     if (setting.PropertyName == "ImagePath")
                     {
                         UpdateImagePreview();
@@ -2153,7 +2113,7 @@ namespace AutoTool.ViewModel.Panels
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒtƒ@ƒCƒ‹‘I‘ğƒAƒNƒVƒ‡ƒ“ƒGƒ‰[: {PropertyName}", setting.PropertyName);
+                _logger.LogError(ex, "ãƒ•ã‚¡ã‚¤ãƒ«é¸æŠã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã‚¨ãƒ©ãƒ¼: {PropertyName}", setting.PropertyName);
             }
         }
 
@@ -2161,33 +2121,33 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("“®“Iƒ}ƒEƒXˆÊ’uæ“¾ŠJni‰EƒNƒŠƒbƒN‘Ò‹@j");
+                _logger.LogInformation("å‹•çš„ãƒã‚¦ã‚¹ä½ç½®å–å¾—é–‹å§‹ï¼ˆå³ã‚¯ãƒªãƒƒã‚¯å¾…æ©Ÿï¼‰");
 
                 IsWaitingForRightClick = true;
-                MouseWaitMessage = "‘ÎÛˆÊ’u‚Å‰EƒNƒŠƒbƒN‚µ‚Ä‚­‚¾‚³‚¢";
+                MouseWaitMessage = "å¯¾è±¡ä½ç½®ã§å³ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„";
 
-                // ƒLƒƒƒvƒ`ƒƒƒT[ƒrƒX‚ğg—p
+                // ã‚­ãƒ£ãƒ—ãƒãƒ£ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä½¿ç”¨
                 var position = await _captureService.CaptureCoordinateAtRightClickAsync();
                 
                 if (position.HasValue)
                 {
-                    // “®“IƒvƒƒpƒeƒB‚Éİ’è
+                    // å‹•çš„ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«è¨­å®š
                     SetDynamicProperty("X", position.Value.X);
                     SetDynamicProperty("Y", position.Value.Y);
                     
-                    // CoordinatePicker‚Ìê‡‚Í“‡ƒvƒƒpƒeƒB‚É‚àİ’è
+                    // CoordinatePickerã®å ´åˆã¯çµ±åˆãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«ã‚‚è¨­å®š
                     SetDynamicProperty("MousePosition", position.Value);
                     
-                    _logger.LogInformation("“®“Iƒ}ƒEƒXˆÊ’uİ’èŠ®—¹: ({X}, {Y})", position.Value.X, position.Value.Y);
+                    _logger.LogInformation("å‹•çš„ãƒã‚¦ã‚¹ä½ç½®è¨­å®šå®Œäº†: ({X}, {Y})", position.Value.X, position.Value.Y);
                 }
                 else
                 {
-                    _logger.LogInformation("“®“Iƒ}ƒEƒXˆÊ’uæ“¾‚ªƒLƒƒƒ“ƒZƒ‹‚³‚ê‚Ü‚µ‚½");
+                    _logger.LogInformation("å‹•çš„ãƒã‚¦ã‚¹ä½ç½®å–å¾—ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "“®“Iƒ}ƒEƒXˆÊ’uæ“¾’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "å‹•çš„ãƒã‚¦ã‚¹ä½ç½®å–å¾—ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
             finally
             {
@@ -2200,23 +2160,23 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("“®“IŒ»İƒ}ƒEƒXˆÊ’uæ“¾");
+                _logger.LogInformation("å‹•çš„ç¾åœ¨ãƒã‚¦ã‚¹ä½ç½®å–å¾—");
 
-                // ƒLƒƒƒvƒ`ƒƒƒT[ƒrƒX‚ğg—p
+                // ã‚­ãƒ£ãƒ—ãƒãƒ£ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä½¿ç”¨
                 var position = _captureService.GetCurrentMousePosition();
 
-                // “®“IƒvƒƒpƒeƒB‚Éİ’è
+                // å‹•çš„ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«è¨­å®š
                 SetDynamicProperty("X", position.X);
                 SetDynamicProperty("Y", position.Y);
                 
-                // CoordinatePicker‚Ìê‡‚Í“‡ƒvƒƒpƒeƒB‚É‚àİ’è
+                // CoordinatePickerã®å ´åˆã¯çµ±åˆãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«ã‚‚è¨­å®š
                 SetDynamicProperty("MousePosition", position);
 
-                _logger.LogInformation("“®“IŒ»İƒ}ƒEƒXˆÊ’uİ’èŠ®—¹: ({X}, {Y})", position.X, position.Y);
+                _logger.LogInformation("å‹•çš„ç¾åœ¨ãƒã‚¦ã‚¹ä½ç½®è¨­å®šå®Œäº†: ({X}, {Y})", position.X, position.Y);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "“®“IŒ»İƒ}ƒEƒXˆÊ’uæ“¾’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "å‹•çš„ç¾åœ¨ãƒã‚¦ã‚¹ä½ç½®å–å¾—ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -2224,12 +2184,12 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("“®“IƒEƒBƒ“ƒhƒEî•ñæ“¾ŠJni‰EƒNƒŠƒbƒN‘Ò‹@j");
+                _logger.LogInformation("å‹•çš„ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±å–å¾—é–‹å§‹ï¼ˆå³ã‚¯ãƒªãƒƒã‚¯å¾…æ©Ÿï¼‰");
                 
                 IsWaitingForRightClick = true;
-                MouseWaitMessage = "‘ÎÛƒEƒBƒ“ƒhƒE‚Å‰EƒNƒŠƒbƒN‚µ‚Ä‚­‚¾‚³‚¢";
+                MouseWaitMessage = "å¯¾è±¡ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã§å³ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„";
 
-                // ƒLƒƒƒvƒ`ƒƒƒT[ƒrƒX‚ğg—p
+                // ã‚­ãƒ£ãƒ—ãƒãƒ£ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä½¿ç”¨
                 var windowInfo = await _captureService.CaptureWindowInfoAtRightClickAsync();
                 
                 if (windowInfo != null)
@@ -2237,17 +2197,17 @@ namespace AutoTool.ViewModel.Panels
                     SetDynamicProperty("WindowTitle", windowInfo.Title);
                     SetDynamicProperty("WindowClassName", windowInfo.ClassName);
                     
-                    _logger.LogInformation("“®“IƒEƒBƒ“ƒhƒEî•ñæ“¾¬Œ÷: Title={Title}, ClassName={ClassName}", 
+                    _logger.LogInformation("å‹•çš„ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±å–å¾—æˆåŠŸ: Title={Title}, ClassName={ClassName}", 
                         windowInfo.Title, windowInfo.ClassName);
                 }
                 else
                 {
-                    _logger.LogInformation("“®“IƒEƒBƒ“ƒhƒEî•ñæ“¾‚ªƒLƒƒƒ“ƒZƒ‹‚³‚ê‚Ü‚µ‚½");
+                    _logger.LogInformation("å‹•çš„ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±å–å¾—ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "“®“IƒEƒBƒ“ƒhƒEî•ñæ“¾’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "å‹•çš„ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æƒ…å ±å–å¾—ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
             finally
             {
@@ -2260,38 +2220,38 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("“®“IFƒLƒƒƒvƒ`ƒƒŠJni‰EƒNƒŠƒbƒN‘Ò‹@j");
+                _logger.LogInformation("å‹•çš„è‰²ã‚­ãƒ£ãƒ—ãƒãƒ£é–‹å§‹ï¼ˆå³ã‚¯ãƒªãƒƒã‚¯å¾…æ©Ÿï¼‰");
                 
                 IsWaitingForRightClick = true;
-                MouseWaitMessage = "‘ÎÛ‚ÌF‚Å‰EƒNƒŠƒbƒN‚µ‚Ä‚­‚¾‚³‚¢";
+                MouseWaitMessage = "å¯¾è±¡ã®è‰²ã§å³ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„";
 
-                // ƒLƒƒƒvƒ`ƒƒƒT[ƒrƒX‚ğg—p
+                // ã‚­ãƒ£ãƒ—ãƒãƒ£ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä½¿ç”¨
                 var color = await _captureService.CaptureColorAtRightClickAsync();
                 
                 if (color.HasValue)
                 {
-                    // System.Drawing.Color‚©‚çSystem.Windows.Media.Color‚É•ÏŠ·
+                    // System.Drawing.Colorã‹ã‚‰System.Windows.Media.Colorã«å¤‰æ›
                     var mediaColor = System.Windows.Media.Color.FromArgb(
                         color.Value.A, color.Value.R, color.Value.G, color.Value.B);
                     
                     SetDynamicProperty(context.SettingDefinition.PropertyName, color.Value);
                     
-                    // HotKeyCommand‚Ìê‡‚Í“KØ‚ÈƒvƒƒpƒeƒB‚Éİ’è
+                    // HotKeyCommandã®å ´åˆã¯é©åˆ‡ãªãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«è¨­å®š
                     if (SelectedItem?.ItemType == "Hotkey")
                     {
                         SetDynamicProperty("Key", color.Value);
                     }
                     
-                    _logger.LogInformation("“®“IFƒLƒƒƒvƒ`ƒƒŠ®—¹: {Color}", color.Value);
+                    _logger.LogInformation("å‹•çš„è‰²ã‚­ãƒ£ãƒ—ãƒãƒ£å®Œäº†: {Color}", color.Value);
                 }
                 else
                 {
-                    _logger.LogInformation("“®“IFƒLƒƒƒvƒ`ƒƒ‚ªƒLƒƒƒ“ƒZƒ‹‚³‚ê‚Ü‚µ‚½");
+                    _logger.LogInformation("å‹•çš„è‰²ã‚­ãƒ£ãƒ—ãƒãƒ£ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "“®“IFƒLƒƒƒvƒ`ƒƒ’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "å‹•çš„è‰²ã‚­ãƒ£ãƒ—ãƒãƒ£ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
             finally
             {
@@ -2304,31 +2264,31 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("“®“IƒL[ƒLƒƒƒvƒ`ƒƒŠJn");
+                _logger.LogInformation("å‹•çš„ã‚­ãƒ¼ã‚­ãƒ£ãƒ—ãƒãƒ£é–‹å§‹");
 
-                // ƒLƒƒƒvƒ`ƒƒƒT[ƒrƒX‚ğg—p
+                // ã‚­ãƒ£ãƒ—ãƒãƒ£ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä½¿ç”¨
                 var key = await _captureService.CaptureKeyAsync(context.SettingDefinition.DisplayName);
                 
                 if (key != null)
                 {
                     SetDynamicProperty(context.SettingDefinition.PropertyName, key);
                     
-                    // HotKeyCommand‚Ìê‡‚Í“KØ‚ÈƒvƒƒpƒeƒB‚Éİ’è
+                    // HotKeyCommandã®å ´åˆã¯é©åˆ‡ãªãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«è¨­å®š
                     if (SelectedItem?.ItemType == "Hotkey")
                     {
                         SetDynamicProperty("Key", key.Key);
                     }
                     
-                    _logger.LogInformation("“®“IƒL[ƒLƒƒƒvƒ`ƒƒŠ®—¹: {Key}", key.DisplayText);
+                    _logger.LogInformation("å‹•çš„ã‚­ãƒ¼ã‚­ãƒ£ãƒ—ãƒãƒ£å®Œäº†: {Key}", key.DisplayText);
                 }
                 else
                 {
-                    _logger.LogInformation("“®“IƒL[ƒLƒƒƒvƒ`ƒƒ‚ªƒLƒƒƒ“ƒZƒ‹‚³‚ê‚Ü‚µ‚½");
+                    _logger.LogInformation("å‹•çš„ã‚­ãƒ¼ã‚­ãƒ£ãƒ—ãƒãƒ£ãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "“®“IƒL[ƒLƒƒƒvƒ`ƒƒ’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "å‹•çš„ã‚­ãƒ¼ã‚­ãƒ£ãƒ—ãƒãƒ£ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -2338,7 +2298,7 @@ namespace AutoTool.ViewModel.Panels
 
             try
             {
-                // w’è‚³‚ê‚½ƒvƒƒpƒeƒB‚É‘Î‚µ‚ÄƒNƒŠƒAˆ—
+                // æŒ‡å®šã•ã‚ŒãŸãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«å¯¾ã—ã¦ã‚¯ãƒªã‚¢å‡¦ç†
                 if (SelectedItem != null)
                 {
                     if (setting.PropertyName == "ImagePath")
@@ -2369,23 +2329,23 @@ namespace AutoTool.ViewModel.Panels
                     }
                     else
                     {
-                        // ˆê”Ê“I‚ÈƒNƒŠƒAˆ—
+                        // ä¸€èˆ¬çš„ãªã‚¯ãƒªã‚¢å‡¦ç†
                         var defaultValue = setting.DefaultValue ?? GetDefaultValueForType(setting.PropertyName);
                         SetDynamicProperty(setting.PropertyName, defaultValue);
                     }
                     
-                    _logger.LogInformation("ƒNƒŠƒAƒAƒNƒVƒ‡ƒ“Às: {PropertyName}", setting.PropertyName);
+                    _logger.LogInformation("ã‚¯ãƒªã‚¢ã‚¢ã‚¯ã‚·ãƒ§ãƒ³å®Ÿè¡Œ: {PropertyName}", setting.PropertyName);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒNƒŠƒAƒAƒNƒVƒ‡ƒ“ƒGƒ‰[: {PropertyName}", setting.PropertyName);
+                _logger.LogError(ex, "ã‚¯ãƒªã‚¢ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã‚¨ãƒ©ãƒ¼: {PropertyName}", setting.PropertyName);
             }
         }
 
         private object? GetDefaultValueForType(string propertyName)
         {
-            // ƒvƒƒpƒeƒB–¼‚ÉŠî‚Ã‚¢‚ÄƒfƒtƒHƒ‹ƒg’l‚ğ•Ô‚·
+            // ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£åã«åŸºã¥ã„ã¦ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå€¤ã‚’è¿”ã™
             return propertyName.ToLower() switch
             {
                 var p when p.Contains("timeout") => 5000,
@@ -2403,7 +2363,7 @@ namespace AutoTool.ViewModel.Panels
     }
 
     /// <summary>
-    /// İ’èƒJƒeƒSƒŠƒOƒ‹[ƒv
+    /// è¨­å®šã‚«ãƒ†ã‚´ãƒªã‚°ãƒ«ãƒ¼ãƒ—
     /// </summary>
     public class SettingCategoryGroup
     {
@@ -2412,7 +2372,7 @@ namespace AutoTool.ViewModel.Panels
     }
 
     /// <summary>
-    /// ƒAƒNƒVƒ‡ƒ“ÀsƒRƒ“ƒeƒLƒXƒg
+    /// ã‚¢ã‚¯ã‚·ãƒ§ãƒ³å®Ÿè¡Œã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆ
     /// </summary>
     public class ActionExecutionContext
     {

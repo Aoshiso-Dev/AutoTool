@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using AutoTool.Model.List.Interface;
 using AutoTool.Model.CommandDefinition;
 using Microsoft.Extensions.Logging;
 using System;
@@ -11,23 +10,23 @@ using System.Threading.Tasks;
 namespace AutoTool.Model.List.Class
 {
     /// <summary>
-    /// コマンドリストの管理サービス（DirectCommandRegistry対応）
+    /// コマンドリストの管理サービス（UniversalCommandItem専用）
     /// UI バインディングは不要なため、ObservableObject は継承しない
     /// </summary>
     public class CommandListService
     {
         private readonly ILogger<CommandListService> _logger;
-        private readonly ObservableCollection<ICommandListItem> _items = new();
+        private readonly ObservableCollection<UniversalCommandItem> _items = new();
 
         /// <summary>
         /// アイテムコレクション（読み取り専用プロパティ）
         /// </summary>
-        public ObservableCollection<ICommandListItem> Items => _items;
+        public ObservableCollection<UniversalCommandItem> Items => _items;
 
         /// <summary>
         /// インデクサ
         /// </summary>
-        public ICommandListItem this[int index]
+        public UniversalCommandItem this[int index]
         {
             get => _items[index];
             set => _items[index] = value;
@@ -65,7 +64,7 @@ namespace AutoTool.Model.List.Class
 
         #region コレクション操作メソッド
 
-        public void Add(ICommandListItem item)
+        public void Add(UniversalCommandItem item)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
 
@@ -74,7 +73,7 @@ namespace AutoTool.Model.List.Class
             _logger.LogDebug("アイテム追加: {ItemType} (行 {LineNumber})", item.ItemType, item.LineNumber);
         }
 
-        public void Insert(int index, ICommandListItem item)
+        public void Insert(int index, UniversalCommandItem item)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
 
@@ -83,7 +82,7 @@ namespace AutoTool.Model.List.Class
             _logger.LogDebug("アイテム挿入: {ItemType} (インデックス {Index})", item.ItemType, index);
         }
 
-        public bool Remove(ICommandListItem item)
+        public bool Remove(UniversalCommandItem item)
         {
             if (item == null) return false;
 
@@ -112,12 +111,12 @@ namespace AutoTool.Model.List.Class
             _logger.LogDebug("全アイテムクリア");
         }
 
-        public int IndexOf(ICommandListItem item)
+        public int IndexOf(UniversalCommandItem item)
         {
             return _items.IndexOf(item);
         }
 
-        public bool Contains(ICommandListItem item)
+        public bool Contains(UniversalCommandItem item)
         {
             return _items.Contains(item);
         }
@@ -207,11 +206,11 @@ namespace AutoTool.Model.List.Class
         }
 
         /// <summary>
-        /// 指定条件でアイテムをペアリング
+        /// 指定条件でアイテムをペアリング（UniversalCommandItem専用）
         /// </summary>
-        private void PairItemsByType(Func<ICommandListItem, bool> startCondition, Func<ICommandListItem, bool> endCondition)
+        private void PairItemsByType(Func<UniversalCommandItem, bool> startCondition, Func<UniversalCommandItem, bool> endCondition)
         {
-            var stack = new Stack<ICommandListItem>();
+            var stack = new Stack<UniversalCommandItem>();
 
             foreach (var item in _items)
             {
@@ -225,30 +224,11 @@ namespace AutoTool.Model.List.Class
                     {
                         var startItem = stack.Pop();
                         
-                        // Pairプロパティの設定（リフレクションを使用）
-                        SetPairProperty(startItem, item);
-                        SetPairProperty(item, startItem);
+                        // Pairプロパティの設定（UniversalCommandItemなので直接アクセス可能）
+                        startItem.Pair = item;
+                        item.Pair = startItem;
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Pairプロパティを設定（リフレクション使用）
-        /// </summary>
-        private void SetPairProperty(ICommandListItem item, ICommandListItem pairItem)
-        {
-            try
-            {
-                var pairProperty = item.GetType().GetProperty("Pair");
-                if (pairProperty != null && pairProperty.CanWrite)
-                {
-                    pairProperty.SetValue(item, pairItem);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Pairプロパティの設定に失敗: {ItemType}", item.ItemType);
             }
         }
 
@@ -295,22 +275,23 @@ namespace AutoTool.Model.List.Class
         }
 
         /// <summary>
-        /// データからアイテムを作成
+        /// データからUniversalCommandItemを作成
         /// </summary>
-        private ICommandListItem? CreateItemFromData(Dictionary<string, object> itemData)
+        private UniversalCommandItem? CreateItemFromData(Dictionary<string, object> itemData)
         {
             try
             {
-                if (!itemData.TryGetValue("ItemType", out var itemTypeObj) || itemTypeObj is not string itemType)
-                {
-                    return null;
-                }
+                var itemType = itemData.TryGetValue("ItemType", out var typeValue) 
+                    ? typeValue?.ToString() ?? "" 
+                    : "";
 
-                // UniversalCommandItemとして作成を試行
-                if (itemData.TryGetValue("Settings", out var settingsObj) && settingsObj is System.Text.Json.JsonElement settingsElement)
+                _logger.LogDebug("アイテム作成開始: {ItemType}", itemType);
+
+                // 1. DirectCommandRegistryを使用してUniversalCommandItem作成を試行
+                try
                 {
                     var universalItem = DirectCommandRegistry.CreateUniversalItem(itemType);
-                    if (universalItem != null)
+                    if (universalItem != null && itemData.TryGetValue("Settings", out var settingsObj) && settingsObj is System.Text.Json.JsonElement settingsElement)
                     {
                         // 設定値を復元
                         RestoreSettings(universalItem, settingsElement);
@@ -318,16 +299,20 @@ namespace AutoTool.Model.List.Class
                         return universalItem;
                     }
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "UniversalCommandItem作成失敗、フォールバックへ: {ItemType}", itemType);
+                }
 
-                // フォールバック: BasicCommandItem
-                var basicItem = new AutoTool.Model.List.Type.BasicCommandItem();
+                // フォールバック: UniversalCommandItem
+                var basicItem = new UniversalCommandItem();
                 basicItem.ItemType = itemType;
                 RestoreBasicProperties(basicItem, itemData);
                 return basicItem;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "アイテム作成中にエラー");
+                _logger.LogError(ex, "アイテム作成時にエラー");
                 return null;
             }
         }
@@ -347,11 +332,11 @@ namespace AutoTool.Model.List.Class
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "設定値復元中にエラー");
+                _logger.LogWarning(ex, "設定値復元時にエラー");
             }
         }
 
-        private void RestoreBasicProperties(ICommandListItem item, Dictionary<string, object> itemData)
+        private void RestoreBasicProperties(UniversalCommandItem item, Dictionary<string, object> itemData)
         {
             try
             {
@@ -404,7 +389,7 @@ namespace AutoTool.Model.List.Class
         /// <summary>
         /// 指定行番号のアイテムを取得
         /// </summary>
-        public ICommandListItem? GetItemByLineNumber(int lineNumber)
+        public UniversalCommandItem? GetItemByLineNumber(int lineNumber)
         {
             return _items.FirstOrDefault(x => x.LineNumber == lineNumber);
         }
@@ -420,7 +405,7 @@ namespace AutoTool.Model.List.Class
         /// <summary>
         /// アイテムを上に移動
         /// </summary>
-        public bool MoveUp(ICommandListItem item)
+        public bool MoveUp(UniversalCommandItem item)
         {
             var index = _items.IndexOf(item);
             if (index > 0)
@@ -436,7 +421,7 @@ namespace AutoTool.Model.List.Class
         /// <summary>
         /// アイテムを下に移動
         /// </summary>
-        public bool MoveDown(ICommandListItem item)
+        public bool MoveDown(UniversalCommandItem item)
         {
             var index = _items.IndexOf(item);
             if (index >= 0 && index < _items.Count - 1)

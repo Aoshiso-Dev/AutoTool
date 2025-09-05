@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using AutoTool.Model.List.Interface;
+using AutoTool.Model.CommandDefinition;
 
 using AutoTool.Command.Interface;
 
@@ -18,7 +18,7 @@ namespace AutoTool.Services.Execution
     {
         bool IsRunning { get; }
         string StatusMessage { get; }
-        Task<bool> StartAsync(ObservableCollection<ICommandListItem> items);
+        Task<bool> StartAsync(ObservableCollection<UniversalCommandItem> items);
         Task StopAsync();
         
         event EventHandler<string> StatusChanged;
@@ -48,7 +48,7 @@ namespace AutoTool.Services.Execution
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
-        public async Task<bool> StartAsync(ObservableCollection<ICommandListItem> items)
+        public async Task<bool> StartAsync(ObservableCollection<UniversalCommandItem> items)
         {
             if (_isRunning)
             {
@@ -132,11 +132,11 @@ namespace AutoTool.Services.Execution
             }
         }
 
-        private bool ExecuteMacro(ObservableCollection<ICommandListItem> items, CancellationToken cancellationToken)
+        private bool ExecuteMacro(ObservableCollection<UniversalCommandItem> items, CancellationToken cancellationToken)
         {
             try
             {
-                var itemsSnapshot = new List<ICommandListItem>(items);
+                var itemsSnapshot = new List<UniversalCommandItem>(items);
                 var root = AutoTool.Model.MacroFactory.MacroFactory.CreateMacro(itemsSnapshot);
                 
                 var task = root.Execute(cancellationToken);
@@ -155,6 +155,22 @@ namespace AutoTool.Services.Execution
                 if (ex.InnerException is OperationCanceledException)
                     throw ex.InnerException;
                 throw;
+            }
+        }
+
+        private async Task<bool> ExecuteCommand(UniversalCommandItem item)
+        {
+            try
+            {
+                // コマンドの実行ロジック
+                await Task.Run(() => { /* コマンド実行処理 */ });
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "コマンド実行中にエラーが発生しました");
+                return false;
             }
         }
 

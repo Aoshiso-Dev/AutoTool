@@ -1,5 +1,4 @@
 using AutoTool.Command.Class;
-using AutoTool.Model.List.Interface;
 using AutoTool.Services.Plugin;
 using AutoTool.Command.Interface;
 using AutoTool.Model.List.Class;
@@ -46,7 +45,7 @@ namespace AutoTool.Model.MacroFactory
         /// <summary>
         /// コマンドリストからマクロを作成
         /// </summary>
-        public static AutoTool.Command.Interface.ICommand CreateMacro(IEnumerable<ICommandListItem> items)
+        public static AutoTool.Command.Interface.ICommand CreateMacro(IEnumerable<UniversalCommandItem> items)
         {
             var sessionId = Interlocked.Increment(ref _buildSessionId);
             var swTotal = Stopwatch.StartNew();
@@ -105,7 +104,7 @@ namespace AutoTool.Model.MacroFactory
         /// </summary>
         private static IEnumerable<AutoTool.Command.Interface.ICommand> CreateChildCommands(
             AutoTool.Command.Interface.ICommand parent, 
-            IList<ICommandListItem> listItems, 
+            IList<UniversalCommandItem> listItems, 
             int depth, 
             int sessionId)
         {
@@ -153,9 +152,9 @@ namespace AutoTool.Model.MacroFactory
         /// アイテムからコマンドを作成（DirectCommandRegistry統合版）
         /// </summary>
         private static AutoTool.Command.Interface.ICommand? CreateCommandFromItem(
-            AutoTool.Command.Interface.ICommand parent, 
-            ICommandListItem listItem, 
-            IList<ICommandListItem> listItems, 
+            AutoTool.Command.Interface.ICommand parent,
+            UniversalCommandItem listItem, 
+            IList<UniversalCommandItem> listItems, 
             ref int index, 
             int depth, 
             int sessionId)
@@ -181,20 +180,9 @@ namespace AutoTool.Model.MacroFactory
                     }
                 }
 
-                // 2. UniversalCommandItemの処理
-                UniversalCommandItem universalItem;
-                if (listItem is UniversalCommandItem existing)
-                {
-                    universalItem = existing;
-                }
-                else
-                {
-                    // 古いアイテムをUniversalCommandItemに変換
-                    universalItem = ConvertToUniversalItem(listItem);
-                }
 
                 // 3. DirectCommandRegistryでコマンド作成
-                var command = DirectCommandRegistry.CreateCommand(universalItem.ItemType, parent, universalItem, _serviceProvider!);
+                var command = DirectCommandRegistry.CreateCommand(listItem.ItemType, parent, listItem, _serviceProvider!);
                 if (command != null)
                 {
                     command.LineNumber = listItem.LineNumber;
@@ -205,9 +193,9 @@ namespace AutoTool.Model.MacroFactory
                         sessionId, listItem.ItemType, command.GetType().Name, listItem.LineNumber);
 
                     // 複雑なコマンド（Loop、If）の子要素処理
-                    if (IsComplexCommand(universalItem.ItemType))
+                    if (IsComplexCommand(listItem.ItemType))
                     {
-                        ProcessComplexCommand(command, universalItem, listItems, ref index, depth, sessionId);
+                        ProcessComplexCommand(command, listItem, listItems, ref index, depth, sessionId);
                     }
 
                     return command;
@@ -248,7 +236,7 @@ namespace AutoTool.Model.MacroFactory
         private static void ProcessComplexCommand(
             AutoTool.Command.Interface.ICommand command, 
             UniversalCommandItem item, 
-            IList<ICommandListItem> listItems, 
+            IList<UniversalCommandItem> listItems, 
             ref int index, 
             int depth, 
             int sessionId)
@@ -304,9 +292,9 @@ namespace AutoTool.Model.MacroFactory
         }
 
         /// <summary>
-        /// ICommandListItemをUniversalCommandItemに変換
+        /// UniversalCommandItemをUniversalCommandItemに変換
         /// </summary>
-        private static UniversalCommandItem ConvertToUniversalItem(ICommandListItem item)
+        private static UniversalCommandItem ConvertToUniversalItem(UniversalCommandItem item)
         {
             if (item is UniversalCommandItem universalItem)
             {
@@ -333,7 +321,7 @@ namespace AutoTool.Model.MacroFactory
             var pairProperty = item.GetType().GetProperty("Pair");
             if (pairProperty != null)
             {
-                var pairValue = pairProperty.GetValue(item) as ICommandListItem;
+                var pairValue = pairProperty.GetValue(item) as UniversalCommandItem;
                 newItem.Pair = pairValue;
             }
 
@@ -349,7 +337,7 @@ namespace AutoTool.Model.MacroFactory
         /// <summary>
         /// Clone後に失われた Pair 関係を LineNumber ベースで再構築
         /// </summary>
-        private static void RebuildPairRelationships(IList<ICommandListItem> cloned, IList<ICommandListItem> original, int sessionId)
+        private static void RebuildPairRelationships(IList<UniversalCommandItem> cloned, IList<UniversalCommandItem> original, int sessionId)
         {
             try
             {
@@ -369,7 +357,7 @@ namespace AutoTool.Model.MacroFactory
                         continue;
                     }
 
-                    var origPair = pairProp.GetValue(origItem) as ICommandListItem;
+                    var origPair = pairProp.GetValue(origItem) as UniversalCommandItem;
                     if (origPair == null)
                     {
                         missingPair++;
@@ -383,7 +371,7 @@ namespace AutoTool.Model.MacroFactory
                     }
 
                     // 既に正しいならスキップ
-                    var currentPair = pairProp.GetValue(clone) as ICommandListItem;
+                    var currentPair = pairProp.GetValue(clone) as UniversalCommandItem;
                     if (currentPair != clonePair)
                     {
                         pairProp.SetValue(clone, clonePair);

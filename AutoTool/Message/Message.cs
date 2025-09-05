@@ -1,5 +1,5 @@
 using AutoTool.Command.Interface;
-using AutoTool.Model.List.Interface;
+using AutoTool.Model.CommandDefinition;
 using System;
 
 namespace AutoTool.Message
@@ -115,16 +115,11 @@ namespace AutoTool.Message
     }
 
     // 状態変更メッセージ
-    public class ChangeSelectedMessage
-    {
-        public ICommandListItem? SelectedItem { get; }
-        public DateTime Timestamp { get; } = DateTime.Now;
-
-        public ChangeSelectedMessage(ICommandListItem? selectedItem)
-        {
-            SelectedItem = selectedItem;
-        }
-    }
+    /// <summary>
+    /// 選択されたアイテムを変更
+    /// </summary>
+    /// <param name="SelectedItem">選択されたアイテム</param>
+    public record ChangeSelectedMessage(UniversalCommandItem? SelectedItem);
 
     // アイテム数変更メッセージ
     public class ItemCountChangedMessage
@@ -200,7 +195,7 @@ namespace AutoTool.Message
     {
         public ICommand Command { get; }
         public int LineNumber { get; }
-        public string ItemType { get; }
+        public string ItemType { get; } = string.Empty;
         public DateTime Timestamp { get; } = DateTime.Now;
 
         public FinishCommandMessage(ICommand command)
@@ -439,18 +434,7 @@ namespace AutoTool.Message
     }
 
     // アイテムタイプ変更メッセージ
-    public class ChangeItemTypeMessage
-    {
-        public ICommandListItem OldItem { get; }
-        public ICommandListItem NewItem { get; }
-        public DateTime Timestamp { get; } = DateTime.Now;
-
-        public ChangeItemTypeMessage(ICommandListItem oldItem, ICommandListItem newItem)
-        {
-            OldItem = oldItem ?? throw new ArgumentNullException(nameof(oldItem));
-            NewItem = newItem ?? throw new ArgumentNullException(nameof(newItem));
-        }
-    }
+    public record ChangeItemTypeMessage(UniversalCommandItem OldItem, UniversalCommandItem NewItem);
 
     // リストビュー更新メッセージ
     public class RefreshListViewMessage

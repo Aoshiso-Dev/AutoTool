@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
-using AutoTool.Model.List.Interface;
 using AutoTool.ViewModel.Panels;
 using AutoTool.Model.CommandDefinition;
 
@@ -16,7 +15,7 @@ namespace AutoTool.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is ICommandListItem item)
+            if (value is UniversalCommandItem item)
             {
                 // ネストレベルに応じたインデント
                 // レベル0: インデントなし
@@ -45,7 +44,7 @@ namespace AutoTool.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is ICommandListItem item)
+            if (value is UniversalCommandItem item)
             {
                 var prefix = "";
                 
@@ -99,9 +98,9 @@ namespace AutoTool.Converters
         {
             try
             {
-                if (values.Length >= 2 && values[0] is ICommandListItem item)
+                if (values.Length >= 2 && values[0] is UniversalCommandItem item)
                 {
-                    var currentExecutingItem = values[1] as ICommandListItem;
+                    var currentExecutingItem = values[1] as UniversalCommandItem;
                     
                     // デバッグログ出力
                     System.Diagnostics.Debug.WriteLine($"ExecutionStateToBackgroundConverter: Item={item.ItemType}(行{item.LineNumber}), IsRunning={item.IsRunning}, CurrentExecuting={currentExecutingItem?.ItemType ?? "null"}");
@@ -148,7 +147,7 @@ namespace AutoTool.Converters
             }
         }
 
-        private bool IsCurrentExecutingItem(ICommandListItem item, ICommandListItem? currentExecutingItem)
+        private bool IsCurrentExecutingItem(UniversalCommandItem item, UniversalCommandItem? currentExecutingItem)
         {
             if (currentExecutingItem == null) return false;
             
@@ -172,7 +171,7 @@ namespace AutoTool.Converters
         {
             try
             {
-                if (value is ICommandListItem item)
+                if (value is UniversalCommandItem item)
                 {
                     if (item.IsRunning)
                     {
@@ -239,7 +238,7 @@ namespace AutoTool.Converters
         {
             try
             {
-                if (value is ICommandListItem item)
+                if (value is UniversalCommandItem item)
                 {
                     var isVisible = item.IsRunning && item.Progress > 0;
                     System.Diagnostics.Debug.WriteLine($"ProgressVisibilityConverter: {item.ItemType} IsRunning={item.IsRunning}, Progress={item.Progress} -> {(isVisible ? "Visible" : "Collapsed")}");
@@ -291,13 +290,13 @@ namespace AutoTool.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is ICommandListItem item)
+            if (value is UniversalCommandItem item)
             {
                 // Pairプロパティを動的に取得
                 var pairProperty = item.GetType().GetProperty("Pair");
                 if (pairProperty != null)
                 {
-                    var pairValue = pairProperty.GetValue(item) as ICommandListItem;
+                    var pairValue = pairProperty.GetValue(item) as UniversalCommandItem;
                     if (pairValue != null)
                     {
                         // 開始コマンドと終了コマンドで表示を変える
@@ -348,7 +347,7 @@ namespace AutoTool.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is ICommandListItem item)
+            if (value is UniversalCommandItem item)
             {
                 if (!string.IsNullOrEmpty(item.Comment))
                 {

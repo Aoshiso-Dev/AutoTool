@@ -1,5 +1,4 @@
 using AutoTool.Command.Interface;
-using AutoTool.Model.List.Interface;
 using AutoTool.Model.CommandDefinition;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -25,7 +24,7 @@ namespace AutoTool.Services.UI
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<EditPanelPropertyService> _logger;
         private readonly IMessenger _messenger;
-        private ICommandListItem? _currentItem;
+        private UniversalCommandItem? _currentItem;
 
         public EditPanelPropertyService(IServiceProvider serviceProvider, ILogger<EditPanelPropertyService> logger, IMessenger messenger)
         {
@@ -157,7 +156,7 @@ namespace AutoTool.Services.UI
         /// <summary>
         /// コマンドアイテムの設定値を適用
         /// </summary>
-        public void ApplySettings(ICommandListItem item, Dictionary<string, object?> settings)
+        public void ApplySettings(UniversalCommandItem item, Dictionary<string, object?> settings)
         {
             try
             {
@@ -192,7 +191,7 @@ namespace AutoTool.Services.UI
         /// <summary>
         /// コマンドアイテムから設定値を取得
         /// </summary>
-        public Dictionary<string, object?> GetSettings(ICommandListItem item)
+        public Dictionary<string, object?> GetSettings(UniversalCommandItem item)
         {
             var settings = new Dictionary<string, object?>();
             
@@ -311,5 +310,15 @@ namespace AutoTool.Services.UI
         }
 
         #endregion
+
+        public void ChangeItemType(UniversalCommandItem item, string newItemType)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UpdateProperties(UniversalCommandItem item)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

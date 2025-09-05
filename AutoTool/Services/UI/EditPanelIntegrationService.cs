@@ -3,9 +3,10 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
-using AutoTool.Model.List.Interface;
 using AutoTool.Message;
 using AutoTool.Services.UI;
+using AutoTool.Model.CommandDefinition;
+using System.Collections.Generic;
 
 namespace AutoTool.Services.UI
 {
@@ -14,7 +15,7 @@ namespace AutoTool.Services.UI
     /// </summary>
     public interface IEditPanelIntegrationService
     {
-        ICommandListItem? SelectedItem { get; set; }
+        UniversalCommandItem? SelectedItem { get; set; }
         
         // 状態プロパティ
         bool IsWaitImageItem { get; }
@@ -47,7 +48,7 @@ namespace AutoTool.Services.UI
         int Interval { get; set; }
         
         // イベント
-        event EventHandler<ICommandListItem?> SelectedItemChanged;
+        event EventHandler<UniversalCommandItem?> SelectedItemChanged;
         
         // メソッド
         void UpdateFromEditPanel();
@@ -63,9 +64,9 @@ namespace AutoTool.Services.UI
         private readonly IEditPanelPropertyService _editPanelPropertyService;
         private readonly IMessenger _messenger;
 
-        private ICommandListItem? _selectedItem;
+        private UniversalCommandItem? _selectedItem;
 
-        public ICommandListItem? SelectedItem 
+        public UniversalCommandItem? SelectedItem 
         { 
             get => _selectedItem; 
             set
@@ -77,7 +78,7 @@ namespace AutoTool.Services.UI
             }
         }
 
-        public event EventHandler<ICommandListItem?>? SelectedItemChanged;
+        public event EventHandler<UniversalCommandItem?>? SelectedItemChanged;
 
         public EditPanelIntegrationService(
             ILogger<EditPanelIntegrationService> logger,
@@ -99,7 +100,7 @@ namespace AutoTool.Services.UI
             });
         }
 
-        private void NotifySelectedItemChanged(ICommandListItem? value)
+        private void NotifySelectedItemChanged(UniversalCommandItem? value)
         {
             // EditPanelPropertyServiceにアイテム変更を通知
             _messenger.Send(new UpdateEditPanelItemMessage(value));
@@ -218,6 +219,33 @@ namespace AutoTool.Services.UI
                 _messenger.Send(new SetEditPanelPropertyMessage("Interval", value));
                 OnPropertyChanged();
             }
+        }
+
+        private readonly Dictionary<string, List<UniversalCommandItem>> _pairedItems = new();
+
+        public void RegisterPairedItem(string itemType, List<UniversalCommandItem> items)
+        {
+            if (_pairedItems.ContainsKey(itemType))
+            {
+                _pairedItems[itemType] = items;
+            }
+            else
+            {
+                _pairedItems.Add(itemType, items);
+            }
+
+            // アイテムリストが変更されたことを通知
+            OnPropertyChanged(nameof(_pairedItems));
+        }
+
+        public void RegisterCurrentItem(UniversalCommandItem? item)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void UpdateCurrentItemProperties(UniversalCommandItem item)
+        {
+            throw new NotImplementedException();
         }
     }
 }

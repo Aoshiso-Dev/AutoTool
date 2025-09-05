@@ -161,8 +161,8 @@ namespace AutoTool.Model.CommandDefinition
 
                     // 基本操作グループでの順序
                     CommandTypes.Hotkey => 1,         // ホットキー
-                    CommandTypes.Wait => 2,           // 待機
-                    CommandTypes.WaitImage => 3,      // 画像待機
+                    CommandTypes.Wait => 2,           // 断機
+                    CommandTypes.WaitImage => 3,      // 画像断機
 
                     // ループ制御グループでの順序
                     CommandTypes.Loop => 1,           // ループ開始
@@ -1008,7 +1008,7 @@ namespace AutoTool.Model.CommandDefinition
         /// <summary>
         /// コマンドアイテムを作成（後方互換性用）
         /// </summary>
-        public static AutoTool.Model.List.Interface.ICommandListItem? CreateCommandItem(string typeName)
+        public static UniversalCommandItem? CreateCommandItem(string typeName)
         {
             try
             {
@@ -1017,8 +1017,8 @@ namespace AutoTool.Model.CommandDefinition
             }
             catch
             {
-                // フォールバック：BasicCommandItem
-                return new AutoTool.Model.List.Type.BasicCommandItem
+                // フォールバック：UniversalCommandItem
+                return new UniversalCommandItem
                 {
                     ItemType = typeName,
                     IsEnable = true

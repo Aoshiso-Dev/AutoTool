@@ -1,4 +1,3 @@
-using AutoTool.Model.List.Interface;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 using System.Runtime.CompilerServices;
@@ -9,7 +8,7 @@ namespace AutoTool.Model.CommandDefinition
     /// <summary>
     /// 汎用CommandListItem（すべてのCommandに対応）
     /// </summary>
-    public class UniversalCommandItem : ICommandListItem, INotifyPropertyChanged, IIfItem, IUniversalLoopItem
+    public class UniversalCommandItem : INotifyPropertyChanged, IUniversalLoopItem
     {
         private bool _isEnable = true;
         private int _lineNumber;
@@ -92,7 +91,7 @@ namespace AutoTool.Model.CommandDefinition
         /// <summary>
         /// Loop/If用のPairプロパティ
         /// </summary>
-        public ICommandListItem? Pair { get; set; }
+        public UniversalCommandItem? Pair { get; set; }
 
         /// <summary>
         /// 動的設定値
@@ -116,7 +115,7 @@ namespace AutoTool.Model.CommandDefinition
             return true;
         }
 
-        public ICommandListItem Clone()
+        public UniversalCommandItem Clone()
         {
             return new UniversalCommandItem
             {
@@ -194,8 +193,8 @@ namespace AutoTool.Model.CommandDefinition
     /// <summary>
     /// Loop用インターフェース実装
     /// </summary>
-    public interface IUniversalLoopItem : ICommandListItem
+    public interface IUniversalLoopItem
     {
-        ICommandListItem? Pair { get; set; }
+        UniversalCommandItem? Pair { get; set; }
     }
 }

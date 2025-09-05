@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using AutoTool.Model.List.Interface;
 using AutoTool.Services.Plugin;
+using AutoTool.Model.CommandDefinition;
 
 namespace AutoTool.Services.Plugin
 {
@@ -10,9 +10,9 @@ namespace AutoTool.Services.Plugin
     /// Phase 5完全統合版：プラグインコマンドベースクラス
     /// MacroPanels依存を削除し、AutoTool統合版のみ使用
     /// </summary>
-    public abstract class PluginCommandBase : ICommandListItem
+    public abstract class PluginCommandBase : UniversalCommandItem
     {
-        // ICommandListItemの実装
+        // UniversalCommandItemの実装
         public string ItemType { get; set; } = string.Empty;
         public string Comment { get; set; } = string.Empty;
         public bool IsEnable { get; set; } = true;
@@ -20,7 +20,7 @@ namespace AutoTool.Services.Plugin
         public int NestLevel { get; set; }
         public virtual string Description { get; set; } = string.Empty;
         
-        // Phase 5: ICommandListItemの不足プロパティを追加
+        // Phase 5: UniversalCommandItemの不足プロパティを追加
         public bool IsRunning { get; set; } = false;
         public bool IsSelected { get; set; } = false;
         public bool IsInLoop { get; set; } = false;
@@ -43,7 +43,7 @@ namespace AutoTool.Services.Plugin
             return $"[{PluginInfo.Name}] {CommandInfo.Name}";
         }
 
-        public virtual ICommandListItem Clone()
+        public virtual UniversalCommandItem Clone()
         {
             // Phase 5: 基本的なクローン実装
             var clone = (PluginCommandBase)Activator.CreateInstance(GetType(), PluginInfo, CommandInfo)!;
@@ -88,6 +88,11 @@ namespace AutoTool.Services.Plugin
         {
             return $"[{LineNumber}] {Description}: {Comment}";
         }
+
+        protected virtual UniversalCommandItem CreateCommandItem()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     /// <summary>
@@ -113,7 +118,7 @@ namespace AutoTool.Services.Plugin
         /// <summary>
         /// コマンドを作成（派生クラスで実装）
         /// </summary>
-        public abstract object CreateCommand(string commandId, object? parent, object? settings);
+        public abstract object CreateCommand(String commandId, object? parent, object? settings);
 
         /// <summary>
         /// コマンド設定の型を取得

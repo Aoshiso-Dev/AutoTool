@@ -5,8 +5,6 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
-using AutoTool.Model.List.Interface;
-using AutoTool.Model.List.Type;
 using AutoTool.Model.List.Class;
 using AutoTool.Model.CommandDefinition; // UniversalCommandItem用
 using System.Windows.Input;
@@ -45,9 +43,9 @@ namespace AutoTool.Helpers
             Converters =
             {
                 new MouseButtonEnumConverter(), // 追加: マウスボタン用カスタムコンバーター
-                new CommandListItemConverter(),
-                new CommandListItemListConverter(),
-                new CommandListItemObservableCollectionConverter(),
+                new UniversalCommandItemConverter(),
+                new UniversalCommandItemListConverter(),
+                new UniversalCommandItemObservableCollectionConverter(),
                 new JsonStringEnumConverter()
             }
         };
@@ -66,9 +64,9 @@ namespace AutoTool.Helpers
             Converters =
             {
                 new MouseButtonEnumConverter(), // 追加: マウスボタン用カスタムコンバーター
-                new CommandListItemConverter(),
-                new CommandListItemListConverter(),
-                new CommandListItemObservableCollectionConverter(),
+                new UniversalCommandItemConverter(),
+                new UniversalCommandItemListConverter(),
+                new UniversalCommandItemObservableCollectionConverter(),
                 new JsonStringEnumConverter()
             }
         };
@@ -326,11 +324,11 @@ namespace AutoTool.Helpers
     }
 
     /// <summary>
-    /// ICommandListItem用のカスタムコンバーター
+    /// UniversalCommandItem用のカスタムコンバーター
     /// </summary>
-    public class CommandListItemConverter : JsonConverter<ICommandListItem>
+    public class UniversalCommandItemConverter : JsonConverter<UniversalCommandItem>
     {
-        public override ICommandListItem? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override UniversalCommandItem? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.StartObject)
             {
@@ -345,33 +343,45 @@ namespace AutoTool.Helpers
                 ? itemTypeProp.GetString() ?? ""
                 : "";
 
-            // 対応するTypeを取得
-            var targetType = JsonSerializerHelper.GetTypeFromItemType(itemType);
+            // UniversalCommandItemを作成
+            var item = DirectCommandRegistry.CreateUniversalItem(itemType);
+            if (item == null)
+            {
+                item = new UniversalCommandItem { ItemType = itemType };
+            }
 
-            // 該当するTypeでデシリアライズ
-            return (ICommandListItem?)JsonSerializer.Deserialize(root.GetRawText(), targetType, options);
+            // プロパティを復元
+            if (root.TryGetProperty("IsEnable", out var isEnableProp))
+                item.IsEnable = isEnableProp.GetBoolean();
+            if (root.TryGetProperty("LineNumber", out var lineNumberProp))
+                item.LineNumber = lineNumberProp.GetInt32();
+            if (root.TryGetProperty("Comment", out var commentProp))
+                item.Comment = commentProp.GetString() ?? "";
+            // 他のプロパティも同様に復元...
+
+            return item;
         }
 
-        public override void Write(Utf8JsonWriter writer, ICommandListItem value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, UniversalCommandItem value, JsonSerializerOptions options)
         {
             JsonSerializer.Serialize(writer, value, value.GetType(), options);
         }
     }
 
     /// <summary>
-    /// ICommandListItemのList用コンバーター
+    /// UniversalCommandItemのList用コンバーター
     /// </summary>
-    public class CommandListItemListConverter : JsonConverter<List<ICommandListItem>>
+    public class UniversalCommandItemListConverter : JsonConverter<List<UniversalCommandItem>>
     {
-        public override List<ICommandListItem>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override List<UniversalCommandItem>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.StartArray)
             {
                 throw new JsonException();
             }
 
-            var list = new List<ICommandListItem>();
-            var itemConverter = new CommandListItemConverter();
+            var list = new List<UniversalCommandItem>();
+            var itemConverter = new UniversalCommandItemConverter();
 
             while (reader.Read())
             {
@@ -380,7 +390,7 @@ namespace AutoTool.Helpers
                     return list;
                 }
 
-                var item = itemConverter.Read(ref reader, typeof(ICommandListItem), options);
+                var item = itemConverter.Read(ref reader, typeof(UniversalCommandItem), options);
                 if (item != null)
                 {
                     list.Add(item);
@@ -390,10 +400,10 @@ namespace AutoTool.Helpers
             throw new JsonException();
         }
 
-        public override void Write(Utf8JsonWriter writer, List<ICommandListItem> value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, List<UniversalCommandItem> value, JsonSerializerOptions options)
         {
             writer.WriteStartArray();
-            var itemConverter = new CommandListItemConverter();
+            var itemConverter = new UniversalCommandItemConverter();
             foreach (var item in value)
             {
                 itemConverter.Write(writer, item, options);
@@ -403,20 +413,20 @@ namespace AutoTool.Helpers
     }
 
     /// <summary>
-    /// ICommandListItemのObservableCollection用コンバーター
+    /// UniversalCommandItemのObservableCollection用コンバーター
     /// </summary>
-    public class CommandListItemObservableCollectionConverter : JsonConverter<ObservableCollection<ICommandListItem>>
+    public class UniversalCommandItemObservableCollectionConverter : JsonConverter<ObservableCollection<UniversalCommandItem>>
     {
-        public override ObservableCollection<ICommandListItem>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override ObservableCollection<UniversalCommandItem>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var listConverter = new CommandListItemListConverter();
-            var list = listConverter.Read(ref reader, typeof(List<ICommandListItem>), options);
-            return list != null ? new ObservableCollection<ICommandListItem>(list) : null;
+            var listConverter = new UniversalCommandItemListConverter();
+            var list = listConverter.Read(ref reader, typeof(List<UniversalCommandItem>), options);
+            return list != null ? new ObservableCollection<UniversalCommandItem>(list) : null;
         }
 
-        public override void Write(Utf8JsonWriter writer, ObservableCollection<ICommandListItem> value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, ObservableCollection<UniversalCommandItem> value, JsonSerializerOptions options)
         {
-            var listConverter = new CommandListItemListConverter();
+            var listConverter = new UniversalCommandItemListConverter();
             listConverter.Write(writer, value.ToList(), options);
         }
     }

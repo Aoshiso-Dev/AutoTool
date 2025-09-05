@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -8,7 +8,6 @@ using System.Windows.Media;
 using AutoTool.Command.Interface;
 using AutoTool.Services;
 using AutoTool.Message;
-using AutoTool.Model.List.Interface;
 using AutoTool.ViewModel.Shared;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,29 +19,29 @@ using AutoTool.Model.CommandDefinition;
 namespace AutoTool.ViewModel.Panels
 {
     /// <summary>
-    /// ListPanelViewModel (Phase 5“‡”Å) - CommandRegistry -> DirectCommandRegistry‘Î‰
+    /// ListPanelViewModel (Phase 5çµ±åˆç‰ˆ) - CommandRegistry -> DirectCommandRegistryå¯¾å¿œ
     /// </summary>
     public partial class ListPanelViewModel : ObservableObject, IRecipient<RunMessage>, IRecipient<StopMessage>, IRecipient<AddMessage>, IRecipient<ClearMessage>, IRecipient<UpMessage>, IRecipient<DownMessage>, IRecipient<DeleteMessage>, IRecipient<UndoMessage>, IRecipient<RedoMessage>, IRecipient<LoadMessage>, IRecipient<SaveMessage>
     {
         private readonly ILogger<ListPanelViewModel> _logger;
         private readonly IServiceProvider _serviceProvider;
-        private readonly ICommandListItemFactory _commandListItemFactory;
+        private readonly IUniversalCommandItemFactory _commandListItemFactory;
         private readonly IRecentFileService _recentFileService;
 
         private ICommand? _currentExecutingCommand;
         private CancellationTokenSource? _cancellationTokenSource;
 
         [ObservableProperty]
-        private ObservableCollection<ICommandListItem> _items = new();
+        private ObservableCollection<UniversalCommandItem> _items = new();
 
         [ObservableProperty]
-        private ICommandListItem? _selectedItem;
+        private UniversalCommandItem? _selectedItem;
 
         [ObservableProperty]
         private int _selectedIndex = -1;
 
         [ObservableProperty]
-        private ICommandListItem? _currentExecutingItem;
+        private UniversalCommandItem? _currentExecutingItem;
 
         [ObservableProperty]
         private bool _isRunning = false;
@@ -60,7 +59,7 @@ namespace AutoTool.ViewModel.Panels
         private int _currentLineNumber;
 
         [ObservableProperty]
-        private string _statusMessage = "€”õŠ®—¹";
+        private string _statusMessage = "æº–å‚™å®Œäº†";
 
         [ObservableProperty]
         private double _progress;
@@ -72,7 +71,7 @@ namespace AutoTool.ViewModel.Panels
         private bool _isLogVisible = false;
 
         [ObservableProperty]
-        private string _currentFileName = "V‹Kƒtƒ@ƒCƒ‹";
+        private string _currentFileName = "æ–°è¦ãƒ•ã‚¡ã‚¤ãƒ«";
 
         [ObservableProperty]
         private bool _hasUnsavedChanges = false;
@@ -90,24 +89,24 @@ namespace AutoTool.ViewModel.Panels
         private string _currentCommandDescription = string.Empty;
 
         /// <summary>
-        /// ƒAƒCƒeƒ€‚ª‘¶İ‚·‚é‚©‚Ç‚¤‚©
+        /// ã‚¢ã‚¤ãƒ†ãƒ ãŒå­˜åœ¨ã™ã‚‹ã‹ã©ã†ã‹
         /// </summary>
         public bool HasItems => Items.Count > 0;
 
         /// <summary>
-        /// Undo‚ª‰Â”\‚©‚Ç‚¤‚©
+        /// UndoãŒå¯èƒ½ã‹ã©ã†ã‹
         /// </summary>
         public bool CanUndo => UndoStack.Count > 0;
 
         /// <summary>
-        /// Redo‚ª‰Â”\‚©‚Ç‚¤‚©
+        /// RedoãŒå¯èƒ½ã‹ã©ã†ã‹
         /// </summary>
         public bool CanRedo => RedoStack.Count > 0;
 
         public ListPanelViewModel(
             ILogger<ListPanelViewModel> logger,
             IServiceProvider serviceProvider,
-            ICommandListItemFactory commandListItemFactory,
+            IUniversalCommandItemFactory commandListItemFactory,
             IRecentFileService recentFileService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -117,7 +116,7 @@ namespace AutoTool.ViewModel.Panels
 
             TotalItems = Items.Count;
 
-            // ƒƒbƒZ[ƒWƒ“ƒOƒVƒXƒeƒ€‚É“o˜^
+            // ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ³ã‚°ã‚·ã‚¹ãƒ†ãƒ ã«ç™»éŒ²
             WeakReferenceMessenger.Default.Register<RunMessage>(this);
             WeakReferenceMessenger.Default.Register<StopMessage>(this);
             WeakReferenceMessenger.Default.Register<AddMessage>(this);
@@ -130,9 +129,9 @@ namespace AutoTool.ViewModel.Panels
             WeakReferenceMessenger.Default.Register<LoadMessage>(this);
             WeakReferenceMessenger.Default.Register<SaveMessage>(this);
 
-            _logger.LogInformation("ListPanelViewModel (Phase 5) ‚ª‰Šú‰»‚³‚ê‚Ü‚µ‚½");
+            _logger.LogInformation("ListPanelViewModel (Phase 5) ãŒåˆæœŸåŒ–ã•ã‚Œã¾ã—ãŸ");
 
-            // ƒvƒƒpƒeƒB•ÏX‚ÌŠÄ‹
+            // ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å¤‰æ›´ã®ç›£è¦–
             Items.CollectionChanged += (s, e) =>
             {
                 TotalItems = Items.Count;
@@ -143,77 +142,77 @@ namespace AutoTool.ViewModel.Panels
 
         public void Receive(RunMessage message)
         {
-            _logger.LogInformation("ƒ}ƒNƒÀsŠJn");
+            _logger.LogInformation("ãƒã‚¯ãƒ­å®Ÿè¡Œé–‹å§‹");
             _ = Task.Run(async () => await ExecuteMacroAsync());
         }
 
         public void Receive(StopMessage message)
         {
-            _logger.LogInformation("ƒ}ƒNƒÀs’â~—v‹");
+            _logger.LogInformation("ãƒã‚¯ãƒ­å®Ÿè¡Œåœæ­¢è¦æ±‚");
             StopMacro();
         }
 
         public void Receive(AddMessage message)
         {
-            _logger.LogDebug("ƒRƒ}ƒ“ƒh’Ç‰Á—v‹: {ItemType}", message.ItemType);
+            _logger.LogDebug("ã‚³ãƒãƒ³ãƒ‰è¿½åŠ è¦æ±‚: {ItemType}", message.ItemType);
             AddItem(message.ItemType);
         }
 
         public void Receive(ClearMessage message)
         {
-            _logger.LogDebug("ƒŠƒXƒgƒNƒŠƒA—v‹");
+            _logger.LogDebug("ãƒªã‚¹ãƒˆã‚¯ãƒªã‚¢è¦æ±‚");
             ClearAll();
         }
 
         public void Receive(UpMessage message)
         {
-            _logger.LogDebug("ƒAƒCƒeƒ€ãˆÚ“®—v‹");
+            _logger.LogDebug("ã‚¢ã‚¤ãƒ†ãƒ ä¸Šç§»å‹•è¦æ±‚");
             MoveUp();
         }
 
         public void Receive(DownMessage message)
         {
-            _logger.LogDebug("ƒAƒCƒeƒ€‰ºˆÚ“®—v‹");
+            _logger.LogDebug("ã‚¢ã‚¤ãƒ†ãƒ ä¸‹ç§»å‹•è¦æ±‚");
             MoveDown();
         }
 
         public void Receive(DeleteMessage message)
         {
-            _logger.LogDebug("ƒAƒCƒeƒ€íœ—v‹");
+            _logger.LogDebug("ã‚¢ã‚¤ãƒ†ãƒ å‰Šé™¤è¦æ±‚");
             DeleteSelected();
         }
 
         public void Receive(UndoMessage message)
         {
-            _logger.LogDebug("Undo—v‹");
+            _logger.LogDebug("Undoè¦æ±‚");
             Undo();
         }
 
         public void Receive(RedoMessage message)
         {
-            _logger.LogDebug("Redo—v‹");
+            _logger.LogDebug("Redoè¦æ±‚");
             Redo();
         }
 
         public void Receive(LoadMessage message)
         {
-            _logger.LogDebug("ƒtƒ@ƒCƒ‹“Ç‚İ‚İ—v‹");
+            _logger.LogDebug("ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿è¾¼ã¿è¦æ±‚");
             _ = LoadFileAsync();
         }
 
         public void Receive(SaveMessage message)
         {
-            _logger.LogDebug("ƒtƒ@ƒCƒ‹•Û‘¶—v‹");
+            _logger.LogDebug("ãƒ•ã‚¡ã‚¤ãƒ«ä¿å­˜è¦æ±‚");
             _ = SaveFileAsync();
         }
 
-        // Às’†ƒRƒ}ƒ“ƒh‚Ì•\¦–¼‚ğXV‚·‚éˆ—
-        partial void OnCurrentExecutingItemChanged(ICommandListItem? value)
+        // å®Ÿè¡Œä¸­ã‚³ãƒãƒ³ãƒ‰ã®è¡¨ç¤ºåã‚’æ›´æ–°ã™ã‚‹å‡¦ç†
+        partial void OnCurrentExecutingItemChanged(UniversalCommandItem? value)
         {
             if (value != null)
             {
                 var displayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(CurrentExecutingItem.ItemType) ?? CurrentExecutingItem.ItemType;
-                CurrentCommandDescription = $"Às’†: {displayName} (s {value.LineNumber})";
+                CurrentCommandDescription = $"å®Ÿè¡Œä¸­: {displayName} (è¡Œ {value.LineNumber})";
             }
             else
             {
@@ -221,51 +220,51 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        // ‘I‘ğƒAƒCƒeƒ€•ÏX‚Ìˆ—‚ğ’Ç‰Á
-        partial void OnSelectedItemChanged(ICommandListItem? value)
+        // é¸æŠã‚¢ã‚¤ãƒ†ãƒ å¤‰æ›´æ™‚ã®å‡¦ç†ã‚’è¿½åŠ 
+        partial void OnSelectedItemChanged(UniversalCommandItem? value)
         {
             try
             {
-                _logger.LogDebug("=== ListPanel‘I‘ğ•ÏX: {OldItem} -> {NewItem} ===", 
+                _logger.LogDebug("=== ListPanelé¸æŠå¤‰æ›´: {OldItem} -> {NewItem} ===", 
                     _selectedItem?.ItemType ?? "null", value?.ItemType ?? "null");
 
                 if (value != null)
                 {
-                    _logger.LogInformation("?? ƒRƒ}ƒ“ƒh‘I‘ğ: {ItemType} (s”Ô†: {LineNumber}, ƒ^ƒCƒv: {ActualType})", 
+                    _logger.LogInformation("ğŸ“‹ ã‚³ãƒãƒ³ãƒ‰é¸æŠ: {ItemType} (è¡Œç•ªå·: {LineNumber}, ã‚¿ã‚¤ãƒ—: {ActualType})", 
                         value.ItemType, value.LineNumber, value.GetType().Name);
 
-                    // EditPanel‚É‘I‘ğ•ÏX‚ğ’Ê’m
+                    // EditPanelã«é¸æŠå¤‰æ›´ã‚’é€šçŸ¥
                     WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(value));
                     
-                    // ‘I‘ğƒAƒCƒeƒ€‚ğ‹­’²•\¦‚·‚é‚½‚ßIsSelected‚ğXV
+                    // é¸æŠã‚¢ã‚¤ãƒ†ãƒ ã‚’å¼·èª¿è¡¨ç¤ºã™ã‚‹ãŸã‚IsSelectedã‚’æ›´æ–°
                     foreach (var item in Items)
                     {
                         item.IsSelected = (item == value);
                     }
 
-                    StatusMessage = $"‘I‘ğ: {DirectCommandRegistry.DisplayOrder.GetDisplayName(value.ItemType)} (s {value.LineNumber})";
+                    StatusMessage = $"é¸æŠ: {DirectCommandRegistry.DisplayOrder.GetDisplayName(value.ItemType)} (è¡Œ {value.LineNumber})";
                 }
                 else
                 {
-                    _logger.LogDebug("ƒRƒ}ƒ“ƒh‘I‘ğ‰ğœ");
+                    _logger.LogDebug("ã‚³ãƒãƒ³ãƒ‰é¸æŠè§£é™¤");
                     
-                    // EditPanel‚É‘I‘ğ‰ğœ‚ğ’Ê’m
+                    // EditPanelã«é¸æŠè§£é™¤ã‚’é€šçŸ¥
                     WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(null));
                     
-                    // ‘S‚Ä‚Ì‘I‘ğó‘Ô‚ğƒNƒŠƒA
+                    // å…¨ã¦ã®é¸æŠçŠ¶æ…‹ã‚’ã‚¯ãƒªã‚¢
                     foreach (var item in Items)
                     {
                         item.IsSelected = false;
                     }
 
-                    StatusMessage = "ƒRƒ}ƒ“ƒh‚ª‘I‘ğ‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ";
+                    StatusMessage = "ã‚³ãƒãƒ³ãƒ‰ãŒé¸æŠã•ã‚Œã¦ã„ã¾ã›ã‚“";
                 }
 
-                _logger.LogDebug("=== ListPanel‘I‘ğ•ÏXŠ®—¹ ===");
+                _logger.LogDebug("=== ListPanelé¸æŠå¤‰æ›´å®Œäº† ===");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "SelectedItem•ÏXˆ—’†‚ÉƒGƒ‰[");
+                _logger.LogError(ex, "SelectedItemå¤‰æ›´å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼");
             }
         }
 
@@ -273,16 +272,16 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogInformation("=== ƒRƒ}ƒ“ƒh’Ç‰Áˆ—ŠJn: {ItemType} ===", itemType);
+                _logger.LogInformation("=== ã‚³ãƒãƒ³ãƒ‰è¿½åŠ å‡¦ç†é–‹å§‹: {ItemType} ===", itemType);
 
-                // 1. UniversalCommandItem‚Æ‚µ‚Ä’Ç‰Á‚ğsiDirectCommandRegistryg—pj
+                // 1. UniversalCommandItemã¨ã—ã¦è¿½åŠ ã‚’è©¦è¡Œï¼ˆDirectCommandRegistryä½¿ç”¨ï¼‰
                 try
                 {
                     var universalItem = DirectCommandRegistry.CreateUniversalItem(itemType);
                     if (universalItem != null)
                     {
                         universalItem.LineNumber = GetNextLineNumber();
-                        universalItem.Comment = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}‚Ìà–¾";
+                        universalItem.Comment = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}ã®èª¬æ˜";
                         
                         var insertIndex = SelectedIndex >= 0 && SelectedIndex < Items.Count ? SelectedIndex + 1 : Items.Count;
                         Items.Insert(insertIndex, universalItem);
@@ -290,26 +289,26 @@ namespace AutoTool.ViewModel.Panels
                         SelectedItem = universalItem;
                         SelectedIndex = Items.IndexOf(universalItem);
                         
-                        // EditPanel‚É‘I‘ğ•ÏX‚ğ’Ê’m
+                        // EditPanelã«é¸æŠå¤‰æ›´ã‚’é€šçŸ¥
                         WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(universalItem));
                         
-                        _logger.LogInformation("? UniversalCommandItem‚Æ‚µ‚Ä’Ç‰Á¬Œ÷: {ItemType} (s”Ô†: {LineNumber}, ‘}“üˆÊ’u: {Index})", 
+                        _logger.LogInformation("âœ… UniversalCommandItemã¨ã—ã¦è¿½åŠ æˆåŠŸ: {ItemType} (è¡Œç•ªå·: {LineNumber}, æŒ¿å…¥ä½ç½®: {Index})", 
                             itemType, universalItem.LineNumber, insertIndex);
-                        StatusMessage = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType)}‚ğ’Ç‰Á‚µ‚Ü‚µ‚½";
+                        StatusMessage = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType)}ã‚’è¿½åŠ ã—ã¾ã—ãŸ";
                         return;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug(ex, "UniversalCommandItemì¬¸”sA]—ˆ‚ÌFactory‚ğg—p: {ItemType}", itemType);
+                    _logger.LogDebug(ex, "UniversalCommandItemä½œæˆå¤±æ•—ã€å¾“æ¥ã®Factoryã‚’ä½¿ç”¨: {ItemType}", itemType);
                 }
 
-                // 2. ]—ˆ‚ÌCommandListItemFactory‚ÅƒtƒH[ƒ‹ƒoƒbƒN
+                // 2. å¾“æ¥ã®CommandListItemFactoryã§ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯
                 var newItem = _commandListItemFactory.CreateItem(itemType);
                 if (newItem != null)
                 {
                     newItem.LineNumber = GetNextLineNumber();
-                    newItem.Comment = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}‚Ìà–¾";
+                    newItem.Comment = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}ã®èª¬æ˜";
                     
                     var insertIndex = SelectedIndex >= 0 && SelectedIndex < Items.Count ? SelectedIndex + 1 : Items.Count;
                     Items.Insert(insertIndex, newItem);
@@ -317,24 +316,24 @@ namespace AutoTool.ViewModel.Panels
                     SelectedItem = newItem;
                     SelectedIndex = Items.IndexOf(newItem);
                     
-                    // EditPanel‚É‘I‘ğ•ÏX‚ğ’Ê’m
+                    // EditPanelã«é¸æŠå¤‰æ›´ã‚’é€šçŸ¥
                     WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(newItem));
                     
-                    _logger.LogInformation("? CommandListItemFactory‚Å’Ç‰Á¬Œ÷: {ItemType} (s”Ô†: {LineNumber}, ‘}“üˆÊ’u: {Index})", 
+                    _logger.LogInformation("âœ… CommandListItemFactoryã§è¿½åŠ æˆåŠŸ: {ItemType} (è¡Œç•ªå·: {LineNumber}, æŒ¿å…¥ä½ç½®: {Index})", 
                         itemType, newItem.LineNumber, insertIndex);
-                    StatusMessage = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType)}‚ğ’Ç‰Á‚µ‚Ü‚µ‚½";
+                    StatusMessage = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType)}ã‚’è¿½åŠ ã—ã¾ã—ãŸ";
                 }
                 else
                 {
-                    // 3. ÅIƒtƒH[ƒ‹ƒoƒbƒN: BasicCommandItem
+                    // 3. æœ€çµ‚ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯: UniversalCommandItem
                     try
                     {
-                        var fallbackItem = new AutoTool.Model.List.Type.BasicCommandItem
+                        var fallbackItem = new UniversalCommandItem
                         {
                             ItemType = itemType,
                             LineNumber = GetNextLineNumber(),
                             IsEnable = true,
-                            Comment = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}‚Ìà–¾"
+                            Comment = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}ã®èª¬æ˜"
                         };
                         
                         var insertIndex = SelectedIndex >= 0 && SelectedIndex < Items.Count ? SelectedIndex + 1 : Items.Count;
@@ -343,28 +342,28 @@ namespace AutoTool.ViewModel.Panels
                         SelectedItem = fallbackItem;
                         SelectedIndex = Items.IndexOf(fallbackItem);
                         
-                        // EditPanel‚É‘I‘ğ•ÏX‚ğ’Ê’m
+                        // EditPanelã«é¸æŠå¤‰æ›´ã‚’é€šçŸ¥
                         WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(fallbackItem));
                         
-                        _logger.LogWarning("?? BasicCommandItem‚Æ‚µ‚ÄƒtƒH[ƒ‹ƒoƒbƒN’Ç‰Á: {ItemType} (s”Ô†: {LineNumber}, ‘}“üˆÊ’u: {Index})", 
+                        _logger.LogWarning("âš ï¸ UniversalCommandItemã¨ã—ã¦ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯è¿½åŠ : {ItemType} (è¡Œç•ªå·: {LineNumber}, æŒ¿å…¥ä½ç½®: {Index})", 
                             itemType, fallbackItem.LineNumber, insertIndex);
-                        StatusMessage = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType)}‚ğ’Ç‰Á‚µ‚Ü‚µ‚½iŠî–{ƒ‚[ƒhj";
+                        StatusMessage = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType)}ã‚’è¿½åŠ ã—ã¾ã—ãŸï¼ˆæ±ç”¨ãƒ¢ãƒ¼ãƒ‰ï¼‰";
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "? BasicCommandItemì¬‚à¸”s: {ItemType}", itemType);
-                        StatusMessage = $"ƒRƒ}ƒ“ƒh’Ç‰Á‚É¸”s‚µ‚Ü‚µ‚½: {itemType}";
+                        _logger.LogError(ex, "âŒ UniversalCommandItemä½œæˆã‚‚å¤±æ•—: {ItemType}", itemType);
+                        StatusMessage = $"ã‚³ãƒãƒ³ãƒ‰è¿½åŠ ã«å¤±æ•—ã—ã¾ã—ãŸ: {itemType}";
                         return;
                     }
                 }
 
-                _logger.LogInformation("=== ƒRƒ}ƒ“ƒh’Ç‰Áˆ—Š®—¹: {ItemType} (‘ƒAƒCƒeƒ€”: {TotalCount}) ===", 
+                _logger.LogInformation("=== ã‚³ãƒãƒ³ãƒ‰è¿½åŠ å‡¦ç†å®Œäº†: {ItemType} (ç·ã‚¢ã‚¤ãƒ†ãƒ æ•°: {TotalCount}) ===", 
                     itemType, Items.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "? AddItem’†‚ÉƒGƒ‰[: {ItemType}", itemType);
-                StatusMessage = $"’Ç‰ÁƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "âŒ AddItemä¸­ã«ã‚¨ãƒ©ãƒ¼: {ItemType}", itemType);
+                StatusMessage = $"è¿½åŠ ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -375,13 +374,13 @@ namespace AutoTool.ViewModel.Panels
                 Items.Clear();
                 SelectedItem = null;
                 SelectedIndex = -1;
-                StatusMessage = "‚·‚×‚Ä‚ÌƒAƒCƒeƒ€‚ğƒNƒŠƒA‚µ‚Ü‚µ‚½";
-                _logger.LogDebug("‘SƒAƒCƒeƒ€ƒNƒŠƒAŠ®—¹");
+                StatusMessage = "ã™ã¹ã¦ã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’ã‚¯ãƒªã‚¢ã—ã¾ã—ãŸ";
+                _logger.LogDebug("å…¨ã‚¢ã‚¤ãƒ†ãƒ ã‚¯ãƒªã‚¢å®Œäº†");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒNƒŠƒA’†‚ÉƒGƒ‰[");
-                StatusMessage = $"ƒNƒŠƒAƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ã‚¯ãƒªã‚¢ä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"ã‚¯ãƒªã‚¢ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -395,13 +394,13 @@ namespace AutoTool.ViewModel.Panels
                     Items.RemoveAt(index);
                     Items.Insert(index - 1, SelectedItem);
                     SelectedIndex = index - 1;
-                    StatusMessage = "ƒAƒCƒeƒ€‚ğã‚ÉˆÚ“®‚µ‚Ü‚µ‚½";
+                    StatusMessage = "ã‚¢ã‚¤ãƒ†ãƒ ã‚’ä¸Šã«ç§»å‹•ã—ã¾ã—ãŸ";
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ãˆÚ“®’†‚ÉƒGƒ‰[");
-                StatusMessage = $"ˆÚ“®ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ä¸Šç§»å‹•ä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"ç§»å‹•ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -415,13 +414,13 @@ namespace AutoTool.ViewModel.Panels
                     Items.RemoveAt(index);
                     Items.Insert(index + 1, SelectedItem);
                     SelectedIndex = index + 1;
-                    StatusMessage = "ƒAƒCƒeƒ€‚ğ‰º‚ÉˆÚ“®‚µ‚Ü‚µ‚½";
+                    StatusMessage = "ã‚¢ã‚¤ãƒ†ãƒ ã‚’ä¸‹ã«ç§»å‹•ã—ã¾ã—ãŸ";
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‰ºˆÚ“®’†‚ÉƒGƒ‰[");
-                StatusMessage = $"ˆÚ“®ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ä¸‹ç§»å‹•ä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"ç§»å‹•ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -434,7 +433,7 @@ namespace AutoTool.ViewModel.Panels
                     var index = Items.IndexOf(SelectedItem);
                     Items.Remove(SelectedItem);
                     
-                    // ‘I‘ğˆÊ’u‚ğ’²®
+                    // é¸æŠä½ç½®ã‚’èª¿æ•´
                     if (Items.Count > 0)
                     {
                         if (index >= Items.Count) index = Items.Count - 1;
@@ -447,13 +446,13 @@ namespace AutoTool.ViewModel.Panels
                         SelectedIndex = -1;
                     }
                     
-                    StatusMessage = "‘I‘ğƒAƒCƒeƒ€‚ğíœ‚µ‚Ü‚µ‚½";
+                    StatusMessage = "é¸æŠã‚¢ã‚¤ãƒ†ãƒ ã‚’å‰Šé™¤ã—ã¾ã—ãŸ";
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "íœ’†‚ÉƒGƒ‰[");
-                StatusMessage = $"íœƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "å‰Šé™¤ä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"å‰Šé™¤ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -467,13 +466,13 @@ namespace AutoTool.ViewModel.Panels
                     var action = UndoStack.Last();
                     UndoStack.Remove(action);
                     RedoStack.Add(action);
-                    StatusMessage = "‘€ì‚ğŒ³‚É–ß‚µ‚Ü‚µ‚½";
+                    StatusMessage = "æ“ä½œã‚’å…ƒã«æˆ»ã—ã¾ã—ãŸ";
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Undo’†‚ÉƒGƒ‰[");
-                StatusMessage = $"UndoƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "Undoä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"Undoã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -487,13 +486,13 @@ namespace AutoTool.ViewModel.Panels
                     var action = RedoStack.Last();
                     RedoStack.Remove(action);
                     UndoStack.Add(action);
-                    StatusMessage = "‘€ì‚ğ‚â‚è’¼‚µ‚Ü‚µ‚½";
+                    StatusMessage = "æ“ä½œã‚’ã‚„ã‚Šç›´ã—ã¾ã—ãŸ";
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Redo’†‚ÉƒGƒ‰[");
-                StatusMessage = $"RedoƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "Redoä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"Redoã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -501,15 +500,15 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                StatusMessage = "ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚İ’†...";
-                // TODO: ƒtƒ@ƒCƒ‹“Ç‚İ‚İˆ—‚ÌÀ‘•
+                StatusMessage = "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã¿ä¸­...";
+                // TODO: ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿è¾¼ã¿å‡¦ç†ã®å®Ÿè£…
                 await Task.Delay(100);
-                StatusMessage = "ƒtƒ@ƒCƒ‹“Ç‚İ‚İŠ®—¹";
+                StatusMessage = "ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿è¾¼ã¿å®Œäº†";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒtƒ@ƒCƒ‹“Ç‚İ‚İ’†‚ÉƒGƒ‰[");
-                StatusMessage = $"“Ç‚İ‚İƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿è¾¼ã¿ä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"èª­ã¿è¾¼ã¿ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -517,15 +516,15 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                StatusMessage = "ƒtƒ@ƒCƒ‹‚ğ•Û‘¶’†...";
-                // TODO: ƒtƒ@ƒCƒ‹•Û‘¶ˆ—‚ÌÀ‘•
+                StatusMessage = "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ä¿å­˜ä¸­...";
+                // TODO: ãƒ•ã‚¡ã‚¤ãƒ«ä¿å­˜å‡¦ç†ã®å®Ÿè£…
                 await Task.Delay(100);
-                StatusMessage = "ƒtƒ@ƒCƒ‹•Û‘¶Š®—¹";
+                StatusMessage = "ãƒ•ã‚¡ã‚¤ãƒ«ä¿å­˜å®Œäº†";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒtƒ@ƒCƒ‹•Û‘¶’†‚ÉƒGƒ‰[");
-                StatusMessage = $"•Û‘¶ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ãƒ•ã‚¡ã‚¤ãƒ«ä¿å­˜ä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"ä¿å­˜ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -534,17 +533,17 @@ namespace AutoTool.ViewModel.Panels
             try
             {
                 IsRunning = true;
-                StatusMessage = "ƒ}ƒNƒÀs’†...";
+                StatusMessage = "ãƒã‚¯ãƒ­å®Ÿè¡Œä¸­...";
                 
-                // TODO: ƒ}ƒNƒÀsˆ—‚ÌÀ‘•
+                // TODO: ãƒã‚¯ãƒ­å®Ÿè¡Œå‡¦ç†ã®å®Ÿè£…
                 await Task.Delay(1000);
                 
-                StatusMessage = "ƒ}ƒNƒÀsŠ®—¹";
+                StatusMessage = "ãƒã‚¯ãƒ­å®Ÿè¡Œå®Œäº†";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒ}ƒNƒÀs’†‚ÉƒGƒ‰[");
-                StatusMessage = $"ÀsƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ãƒã‚¯ãƒ­å®Ÿè¡Œä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"å®Ÿè¡Œã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
             finally
             {
@@ -558,36 +557,36 @@ namespace AutoTool.ViewModel.Panels
             {
                 _cancellationTokenSource?.Cancel();
                 IsRunning = false;
-                StatusMessage = "ƒ}ƒNƒÀs‚ğ’â~‚µ‚Ü‚µ‚½";
+                StatusMessage = "ãƒã‚¯ãƒ­å®Ÿè¡Œã‚’åœæ­¢ã—ã¾ã—ãŸ";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒ}ƒNƒ’â~’†‚ÉƒGƒ‰[");
-                StatusMessage = $"’â~ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ãƒã‚¯ãƒ­åœæ­¢ä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"åœæ­¢ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
         /// <summary>
-        /// Àsó‘Ô‚ğİ’è
+        /// å®Ÿè¡ŒçŠ¶æ…‹ã‚’è¨­å®š
         /// </summary>
         public void SetRunningState(bool isRunning)
         {
             IsRunning = isRunning;
             if (isRunning)
             {
-                StatusMessage = "Às’†...";
-                _logger.LogDebug("Àsó‘Ô‚Éİ’è‚³‚ê‚Ü‚µ‚½");
+                StatusMessage = "å®Ÿè¡Œä¸­...";
+                _logger.LogDebug("å®Ÿè¡ŒçŠ¶æ…‹ã«è¨­å®šã•ã‚Œã¾ã—ãŸ");
             }
             else
             {
-                StatusMessage = "€”õŠ®—¹";
+                StatusMessage = "æº–å‚™å®Œäº†";
                 CurrentExecutingItem = null;
-                _logger.LogDebug("’â~ó‘Ô‚Éİ’è‚³‚ê‚Ü‚µ‚½");
+                _logger.LogDebug("åœæ­¢çŠ¶æ…‹ã«è¨­å®šã•ã‚Œã¾ã—ãŸ");
             }
         }
 
         /// <summary>
-        /// ƒvƒƒOƒŒƒX‚ğ‰Šú‰»
+        /// ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹ã‚’åˆæœŸåŒ–
         /// </summary>
         public void InitializeProgress()
         {
@@ -595,7 +594,7 @@ namespace AutoTool.ViewModel.Panels
             ExecutedItems = 0;
             ElapsedTime = TimeSpan.Zero;
             ExecutionLog.Clear();
-            _logger.LogDebug("ƒvƒƒOƒŒƒX‚ª‰Šú‰»‚³‚ê‚Ü‚µ‚½");
+            _logger.LogDebug("ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹ãŒåˆæœŸåŒ–ã•ã‚Œã¾ã—ãŸ");
         }
 
         private int GetNextLineNumber()

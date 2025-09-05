@@ -1,68 +1,50 @@
 using System;
-using AutoTool.Model.List.Interface;
+using AutoTool.Model.CommandDefinition;
 
 namespace AutoTool.ViewModel.Helpers
 {
     /// <summary>
     /// EditPanelプロパティ管理クラス
-    /// MacroPanels依存を削除し、基本機能のみ実装
+    /// UniversalCommandItem 専用版
     /// </summary>
     public class EditPanelPropertyManager
     {
         // 基本プロパティアクセサー
-        public PropertyAccessor<ICommandListItem, string> WindowTitle { get; }
-        public PropertyAccessor<ICommandListItem, string> WindowClassName { get; }
+        public PropertyAccessor<UniversalCommandItem, string> WindowTitle { get; }
+        public PropertyAccessor<UniversalCommandItem, string> WindowClassName { get; }
 
         public EditPanelPropertyManager()
         {
             // 基本的なプロパティアクセサーのみ実装
-            WindowTitle = new PropertyAccessor<ICommandListItem, string>(
+            WindowTitle = new PropertyAccessor<UniversalCommandItem, string>(
                 GetWindowTitle, 
                 SetWindowTitle, 
                 string.Empty);
 
-            WindowClassName = new PropertyAccessor<ICommandListItem, string>(
+            WindowClassName = new PropertyAccessor<UniversalCommandItem, string>(
                 GetWindowClassName, 
                 SetWindowClassName, 
                 string.Empty);
         }
 
-        private string GetWindowTitle(ICommandListItem? item)
+        private string GetWindowTitle(UniversalCommandItem? item)
         {
-            // BasicCommandItemからWindowTitleを取得
-            if (item is AutoTool.Model.List.Type.BasicCommandItem basicItem)
-            {
-                return basicItem.WindowTitle;
-            }
-            return string.Empty;
+            return item?.GetSetting<string>("WindowTitle") ?? string.Empty;
         }
 
-        private void SetWindowTitle(ICommandListItem? item, string value)
+        private void SetWindowTitle(UniversalCommandItem? item, string value)
         {
-            // BasicCommandItemにWindowTitleを設定
-            if (item is AutoTool.Model.List.Type.BasicCommandItem basicItem)
-            {
-                basicItem.WindowTitle = value ?? string.Empty;
-            }
+            item?.SetSetting("WindowTitle", value ?? string.Empty);
         }
 
-        private string GetWindowClassName(ICommandListItem? item)
+        private string GetWindowClassName(UniversalCommandItem? item)
         {
-            // BasicCommandItemからWindowClassNameを取得
-            if (item is AutoTool.Model.List.Type.BasicCommandItem basicItem)
-            {
-                return basicItem.WindowClassName;
-            }
-            return string.Empty;
+            return item?.GetSetting<string>("WindowClassName") ?? string.Empty;
         }
 
-        private void SetWindowClassName(ICommandListItem? item, string value)
+        private void SetWindowClassName(UniversalCommandItem? item, string value)
         {
-            // BasicCommandItemにWindowClassNameを設定
-            if (item is AutoTool.Model.List.Type.BasicCommandItem basicItem)
-            {
-                basicItem.WindowClassName = value ?? string.Empty;
-            }
+            item?.SetSetting("WindowClassName", value ?? string.Empty);
         }
     }
 }

@@ -1,4 +1,4 @@
-using AutoTool.Model.List.Interface;
+using AutoTool.Model.CommandDefinition;
 using System;
 
 namespace AutoTool.Message
@@ -9,9 +9,9 @@ namespace AutoTool.Message
     [Obsolete("標準MVVM方式に移行。ChangeSelectedMessageを使用してください。", false)]
     public class UpdateEditPanelItemMessage
     {
-        public ICommandListItem? Item { get; }
+        public UniversalCommandItem? Item { get; }
 
-        public UpdateEditPanelItemMessage(ICommandListItem? item)
+        public UpdateEditPanelItemMessage(UniversalCommandItem? item)
         {
             Item = item;
         }
