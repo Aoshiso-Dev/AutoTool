@@ -5,6 +5,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using AutoTool.Model.List.Interface;
 using AutoTool.ViewModel.Panels;
+using AutoTool.Model.CommandDefinition;
 
 namespace AutoTool.Converters
 {
@@ -57,7 +58,7 @@ namespace AutoTool.Converters
                         prefix += "│   "; // その後のレベルは│とスペース
                 }
                 
-                var displayName = AutoTool.Model.CommandDefinition.CommandRegistry.DisplayOrder.GetDisplayName(item.ItemType) ?? item.ItemType;
+                var displayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(item.ItemType) ?? item.ItemType;
                 
                 // 終了コマンドは特別な表記
                 if (item.ItemType == "Loop_End" || item.ItemType == "IF_End")

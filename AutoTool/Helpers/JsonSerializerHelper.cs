@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using AutoTool.Model.List.Interface;
 using AutoTool.Model.List.Type;
 using AutoTool.Model.List.Class;
+using AutoTool.Model.CommandDefinition; // UniversalCommandItem用
 using System.Windows.Input;
 using System.Linq; // 追加
 
@@ -238,11 +239,11 @@ namespace AutoTool.Helpers
         /// </summary>
         public static T? Deserialize<T>(string json)
         {
-            LogDebug("Deserialize開始: 型={Type}, JSON長={Length}", typeof(T).Name, json.Length);
+            LogDebug("Deserialize開始: 型={Type}", typeof(T).Name);
             try
             {
                 var result = JsonSerializer.Deserialize<T>(json, OptionsWithoutReferences);
-                LogDebug("Deserialize完了: 型={Type}", typeof(T).Name);
+                LogDebug("Deserialize完了");
                 return result;
             }
             catch (Exception ex)
@@ -251,473 +252,71 @@ namespace AutoTool.Helpers
                 throw;
             }
         }
-    }
 
-    /// <summary>
-    /// CommandListItem用カスタムJSON コンバーター
-    /// </summary>
-    public class CommandListItemConverter : JsonConverter<ICommandListItem>
-    {
-        public override ICommandListItem? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        /// <summary>
+        /// ItemTypeから対応するTypeを取得する辞書
+        /// </summary>
+        private static readonly Dictionary<string, Type> ItemTypeToTypeMap = new()
         {
-            using var doc = JsonDocument.ParseValue(ref reader);
-            var root = doc.RootElement;
+            { "Click", typeof(UniversalCommandItem) },
+            { "Wait_Image", typeof(UniversalCommandItem) },
+            { "Click_Image", typeof(UniversalCommandItem) },
+            { "Click_Image_AI", typeof(UniversalCommandItem) },
+            { "Hotkey", typeof(UniversalCommandItem) },
+            { "Wait", typeof(UniversalCommandItem) },
+            { "Loop", typeof(UniversalCommandItem) },
+            { "Loop_End", typeof(UniversalCommandItem) },
+            { "Loop_Break", typeof(UniversalCommandItem) },
+            { "IF_ImageExist", typeof(UniversalCommandItem) },
+            { "IF_ImageNotExist", typeof(UniversalCommandItem) },
+            { "IF_End", typeof(UniversalCommandItem) },
+            { "IF_ImageExist_AI", typeof(UniversalCommandItem) },
+            { "IF_ImageNotExist_AI", typeof(UniversalCommandItem) },
+            { "Execute", typeof(UniversalCommandItem) },
+            { "SetVariable", typeof(UniversalCommandItem) },
+            { "SetVariable_AI", typeof(UniversalCommandItem) },
+            { "IF_Variable", typeof(UniversalCommandItem) },
+            { "Screenshot", typeof(UniversalCommandItem) },
+            // フォールバック用
+            { "", typeof(UniversalCommandItem) }
+        };
 
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] Read開始: ValueKind={root.ValueKind}");
-
-            // 要素の詳細情報をログ出力
-            if (root.ValueKind == JsonValueKind.Object)
-            {
-                System.Diagnostics.Debug.WriteLine("[CommandListItemConverter] 全プロパティ一覧:");
-                foreach (var property in root.EnumerateObject())
-                {
-                    var valuePreview = property.Value.ValueKind == JsonValueKind.String 
-                        ? $"\"{property.Value.GetString()}\"" 
-                        : property.Value.ToString();
-                    System.Diagnostics.Debug.WriteLine($"  {property.Name}: {valuePreview} ({property.Value.ValueKind})");
-                }
-            }
-
-            // ItemTypeを複数の方法で取得を試行
-            string? itemType = null;
-            JsonElement itemTypeElement = default;
-            
-            // 1. camelCase
-            if (root.TryGetProperty("itemType", out itemTypeElement))
-            {
-                itemType = itemTypeElement.GetString();
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] itemType (camelCase) 取得: {itemType}");
-            }
-            // 2. PascalCase
-            else if (root.TryGetProperty("ItemType", out itemTypeElement))
-            {
-                itemType = itemTypeElement.GetString();
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] ItemType (PascalCase) 取得: {itemType}");
-            }
-            // 3. 全小文字
-            else if (root.TryGetProperty("itemtype", out itemTypeElement))
-            {
-                itemType = itemTypeElement.GetString();
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] itemtype (lowercase) 取得: {itemType}");
-            }
-
-            if (string.IsNullOrEmpty(itemType))
-            {
-                System.Diagnostics.Debug.WriteLine("[CommandListItemConverter] itemTypeプロパティが見つからないまたは空です。型推定を試行");
-                
-                // プロパティから型を推定
-                if (root.TryGetProperty("loopCount", out _) || root.TryGetProperty("LoopCount", out _))
-                {
-                    itemType = "Loop";
-                    System.Diagnostics.Debug.WriteLine("[CommandListItemConverter] LoopCountから Loop と推定");
-                }
-                else if (root.TryGetProperty("imagePath", out _) || root.TryGetProperty("ImagePath", out _))
-                {
-                    itemType = "Click_Image";
-                    System.Diagnostics.Debug.WriteLine("[CommandListItemConverter] ImagePathから Click_Image と推定");
-                }
-                else if (root.TryGetProperty("wait", out _) || root.TryGetProperty("Wait", out _))
-                {
-                    itemType = "Wait";
-                    System.Diagnostics.Debug.WriteLine("[CommandListItemConverter] Waitから Wait と推定");
-                }
-                else if (root.TryGetProperty("x", out _) && root.TryGetProperty("y", out _))
-                {
-                    itemType = "Click";
-                    System.Diagnostics.Debug.WriteLine("[CommandListItemConverter] X,Yから Click と推定");
-                }
-                else if (root.TryGetProperty("key", out _) || root.TryGetProperty("Key", out _))
-                {
-                    itemType = "Hotkey";
-                    System.Diagnostics.Debug.WriteLine("[CommandListItemConverter] Keyから Hotkey と推定");
-                }
-                else if (root.TryGetProperty("pair", out _) || root.TryGetProperty("Pair", out _))
-                {
-                    // PairがあるがLoopCountがない場合はIF系かLoop_End系
-                    if (root.TryGetProperty("description", out var desc) && 
-                        desc.ValueKind == JsonValueKind.String)
-                    {
-                        var descText = desc.GetString() ?? "";
-                        if (descText.Contains("->"))
-                        {
-                            itemType = "IF_End"; // もしくは Loop_End
-                            System.Diagnostics.Debug.WriteLine("[CommandListItemConverter] Pairと->から IF_End と推定");
-                        }
-                    }
-                }
-                
-                if (string.IsNullOrEmpty(itemType))
-                {
-                    itemType = "Unknown";
-                    System.Diagnostics.Debug.WriteLine("[CommandListItemConverter] 型推定失敗、Unknown に設定");
-                }
-            }
-
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] 最終的なitemType: {itemType}");
-
-            // ItemTypeに基づいて適切な型を決定
-            var targetType = GetItemTypeFromString(itemType);
-            if (targetType == null)
-            {
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] 未知のitemType、BasicCommandItemにフォールバック: {itemType}");
-                targetType = typeof(BasicCommandItem);
-            }
-
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] 対象型: {targetType.Name}");
-
-            try
-            {
-                var jsonString = root.GetRawText();
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] JSON要素: {jsonString.Substring(0, Math.Min(300, jsonString.Length))}...");
-                
-                var result = (ICommandListItem?)JsonSerializer.Deserialize(jsonString, targetType, options);
-                
-                // ItemTypeが正しく設定されていることを確認
-                if (result != null)
-                {
-                    if (string.IsNullOrEmpty(result.ItemType))
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] ItemTypeを設定: {itemType}");
-                        result.ItemType = itemType;
-                    }
-                    
-                    System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] 変換成功: {targetType.Name} (ItemType={result.ItemType})");
-                }
-                
-                return result;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] CommandListItem変換エラー: {ex.GetType().Name} - {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] スタックトレース: {ex.StackTrace}");
-                
-                // デシリアライズに失敗した場合、BasicCommandItemとしてフォールバック
-                var basicItem = new BasicCommandItem
-                {
-                    ItemType = itemType ?? "Unknown",
-                    Comment = "デシリアライズエラーからの復旧",
-                    Description = $"元の型: {itemType}"
-                };
-                
-                // 可能であれば基本プロパティを復元
-                try
-                {
-                    if (root.TryGetProperty("comment", out var commentElement) || 
-                        root.TryGetProperty("Comment", out commentElement))
-                        basicItem.Comment = commentElement.GetString() ?? basicItem.Comment;
-                    
-                    if (root.TryGetProperty("isEnable", out var isEnableElement) || 
-                        root.TryGetProperty("IsEnable", out isEnableElement))
-                        basicItem.IsEnable = isEnableElement.GetBoolean();
-                    
-                    if (root.TryGetProperty("lineNumber", out var lineNumberElement) || 
-                        root.TryGetProperty("LineNumber", out lineNumberElement))
-                        basicItem.LineNumber = lineNumberElement.GetInt32();
-
-                    if (root.TryGetProperty("description", out var descElement) || 
-                        root.TryGetProperty("Description", out descElement))
-                        basicItem.Description = descElement.GetString() ?? "";
-
-                    System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] BasicCommandItemフォールバック成功: {itemType}");
-                }
-                catch (Exception ex2)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] BasicCommandItemプロパティ復元エラー: {ex2.Message}");
-                }
-                
-                return basicItem;
-            }
-        }
-
-        public override void Write(Utf8JsonWriter writer, ICommandListItem value, JsonSerializerOptions options)
+        /// <summary>
+        /// ItemTypeから実際のTypeを取得
+        /// </summary>
+        public static Type GetTypeFromItemType(string itemType)
         {
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] Write: {value.ItemType} ({value.GetType().Name})");
-            
-            // 循環参照対策：シンプルなプロパティのみシリアライズする一時オブジェクトを作成
-            try
-            {
-                // 循環参照の原因となりやすいPairプロパティなどを除外したシリアライズ
-                var safeOptions = new JsonSerializerOptions
-                {
-                    WriteIndented = options.WriteIndented,
-                    Encoder = options.Encoder,
-                    PropertyNamingPolicy = options.PropertyNamingPolicy,
-                    PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                    MaxDepth = 32, // 深度制限を追加
-                    // ReferenceHandlerは使わず、循環参照を避ける
-                    NumberHandling = options.NumberHandling,
-                    AllowTrailingCommas = options.AllowTrailingCommas,
-                    ReadCommentHandling = options.ReadCommentHandling,
-                    Converters = 
-                    {
-                        new MouseButtonEnumConverter(),
-                        new JsonStringEnumConverter()
-                        // CommandListItemConverterは除外して循環を避ける
-                    }
-                };
-
-                JsonSerializer.Serialize(writer, value, value.GetType(), safeOptions);
-            }
-            catch (JsonException ex) when (ex.Message.Contains("cycle"))
-            {
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] 循環参照検出、フォールバック実行: {ex.Message}");
-                
-                // フォールバック：基本プロパティのみの辞書を作成してシリアライズ
-                var safeData = new Dictionary<string, object?>
-                {
-                    ["ItemType"] = value.ItemType,
-                    ["IsEnable"] = value.IsEnable,
-                    ["LineNumber"] = value.LineNumber,
-                    ["Comment"] = value.Comment,
-                    ["Description"] = value.Description,
-                    ["IsRunning"] = value.IsRunning,
-                    ["IsSelected"] = value.IsSelected,
-                    ["NestLevel"] = value.NestLevel,
-                    ["IsInLoop"] = value.IsInLoop,
-                    ["IsInIf"] = value.IsInIf,
-                    ["Progress"] = value.Progress
-                };
-
-                // 型固有プロパティを安全に追加
-                var properties = value.GetType().GetProperties();
-                foreach (var prop in properties)
-                {
-                    if (prop.Name == "Pair") continue; // 循環参照の原因となるPairは除外
-                    if (safeData.ContainsKey(prop.Name)) continue; // 既に追加済み
-                    
-                    try
-                    {
-                        var propValue = prop.GetValue(value);
-                        // 複雑なオブジェクトは文字列化
-                        if (propValue != null && !IsSimpleType(prop.PropertyType))
-                        {
-                            safeData[prop.Name] = propValue.ToString();
-                        }
-                        else
-                        {
-                            safeData[prop.Name] = propValue;
-                        }
-                    }
-                    catch
-                    {
-                        // プロパティ取得に失敗した場合はスキップ
-                    }
-                }
-
-                JsonSerializer.Serialize(writer, safeData);
-            }
-        }
-
-        private static bool IsSimpleType(Type type)
-        {
-            return type.IsPrimitive || 
-                   type == typeof(string) || 
-                   type == typeof(DateTime) || 
-                   type == typeof(decimal) || 
-                   type == typeof(Guid) ||
-                   type.IsEnum ||
-                   (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) && IsSimpleType(type.GetGenericArguments()[0]));
-        }
-
-        private static Type? GetItemTypeFromString(string itemType)
-        {
-            var result = itemType switch
-            {
-                // AutoTool.Model.List.Class の具体的なクラスを使用
-                "Wait_Image" => typeof(AutoTool.Model.List.Class.WaitImageItem),
-                "Click_Image" => typeof(AutoTool.Model.List.Class.ClickImageItem),
-                "Click_Image_AI" => typeof(AutoTool.Model.List.Class.ClickImageAIItem),
-                "Hotkey" => typeof(AutoTool.Model.List.Class.HotkeyItem),
-                "Click" => typeof(AutoTool.Model.List.Class.ClickItem),
-                "Wait" => typeof(AutoTool.Model.List.Class.WaitItem),
-                "Loop" => typeof(AutoTool.Model.List.Class.LoopItem),
-                "Loop_End" => typeof(AutoTool.Model.List.Class.LoopEndItem),
-                "Loop_Break" => typeof(AutoTool.Model.List.Class.LoopBreakItem),
-                "IF_ImageExist" => typeof(AutoTool.Model.List.Class.IfImageExistItem),
-                "IF_ImageNotExist" => typeof(AutoTool.Model.List.Class.IfImageNotExistItem),
-                "IF_End" => typeof(AutoTool.Model.List.Class.IfEndItem),
-                "IF_ImageExist_AI" => typeof(AutoTool.Model.List.Class.IfImageExistAIItem),
-                "IF_ImageNotExist_AI" => typeof(AutoTool.Model.List.Class.IfImageNotExistAIItem),
-                "Execute" => typeof(AutoTool.Model.List.Class.ExecuteItem),
-                "SetVariable" => typeof(AutoTool.Model.List.Class.SetVariableItem),
-                "SetVariable_AI" => typeof(AutoTool.Model.List.Class.SetVariableAIItem),
-                "IF_Variable" => typeof(AutoTool.Model.List.Class.IfVariableItem),
-                "Screenshot" => typeof(AutoTool.Model.List.Class.ScreenshotItem),
-                
-                // テスト用
-                "Test" => typeof(BasicCommandItem),
-                "Unknown" => typeof(BasicCommandItem),
-                
-                // フォールバック
-                _ => typeof(BasicCommandItem)
-            };
-
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemConverter] 型マッピング: {itemType} -> {result?.Name ?? "null"}");
-            return result;
+            return ItemTypeToTypeMap.TryGetValue(itemType, out var type) ? type : typeof(UniversalCommandItem);
         }
     }
 
-    /// <summary>
-    /// List<ICommandListItem>用コンバーター
-    /// </summary>
-    public class CommandListItemListConverter : JsonConverter<List<ICommandListItem>>
-    {
-        public override List<ICommandListItem>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            using var doc = JsonDocument.ParseValue(ref reader);
-            var root = doc.RootElement;
-
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemListConverter] Read開始: ValueKind={root.ValueKind}");
-
-            // 参照保持形式の場合
-            if (root.ValueKind == JsonValueKind.Object && 
-                root.TryGetProperty("$values", out var valuesElement))
-            {
-                System.Diagnostics.Debug.WriteLine("[CommandListItemListConverter] 参照保持形式のList<ICommandListItem>を処理");
-                return ProcessArrayElement(valuesElement, options);
-            }
-
-            // 通常の配列形式の場合
-            if (root.ValueKind == JsonValueKind.Array)
-            {
-                System.Diagnostics.Debug.WriteLine("[CommandListItemListConverter] 通常の配列形式のList<ICommandListItem>を処理");
-                return ProcessArrayElement(root, options);
-            }
-
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemListConverter] 未対応の形式: {root.ValueKind}");
-            return null;
-        }
-
-        private static List<ICommandListItem>? ProcessArrayElement(JsonElement arrayElement, JsonSerializerOptions options)
-        {
-            if (arrayElement.ValueKind != JsonValueKind.Array)
-            {
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemListConverter] 配列でない要素: {arrayElement.ValueKind}");
-                return null;
-            }
-
-            var list = new List<ICommandListItem>();
-            var converter = new CommandListItemConverter();
-            var arrayLength = arrayElement.GetArrayLength();
-
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemListConverter] 配列処理開始: 要素数={arrayLength}");
-
-            int processed = 0;
-            int success = 0;
-            int errors = 0;
-
-            foreach (var element in arrayElement.EnumerateArray())
-            {
-                processed++;
-                try
-                {
-                    var elementJson = element.GetRawText();
-                    using var elementDoc = JsonDocument.Parse(elementJson);
-                    var reader = new Utf8JsonReader(System.Text.Encoding.UTF8.GetBytes(elementJson));
-                    reader.Read();
-
-                    var item = converter.Read(ref reader, typeof(ICommandListItem), options);
-                    if (item != null)
-                    {
-                        list.Add(item);
-                        success++;
-                        System.Diagnostics.Debug.WriteLine($"[CommandListItemListConverter] 要素処理成功 [{processed}/{arrayLength}]: {item.ItemType}");
-                    }
-                    else
-                    {
-                        errors++;
-                        System.Diagnostics.Debug.WriteLine($"[CommandListItemListConverter] 要素処理結果がnull [{processed}/{arrayLength}]");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    errors++;
-                    System.Diagnostics.Debug.WriteLine($"[CommandListItemListConverter] 配列要素の処理でエラー [{processed}/{arrayLength}]: {ex.Message}");
-                    // エラーが発生した要素はスキップして続行
-                }
-            }
-
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemListConverter] 配列処理完了: 処理={processed}, 成功={success}, エラー={errors}");
-            return list;
-        }
-
-        public override void Write(Utf8JsonWriter writer, List<ICommandListItem> value, JsonSerializerOptions options)
-        {
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemListConverter] Write開始: 要素数={value.Count}");
-            writer.WriteStartArray();
-            var converter = new CommandListItemConverter();
-            
-            foreach (var item in value)
-            {
-                converter.Write(writer, item, options);
-            }
-            
-            writer.WriteEndArray();
-            System.Diagnostics.Debug.WriteLine("[CommandListItemListConverter] Write完了");
-        }
-    }
+    #region カスタムコンバーター
 
     /// <summary>
-    /// ObservableCollection<ICommandListItem>用コンバーター
-    /// </summary>
-    public class CommandListItemObservableCollectionConverter : JsonConverter<ObservableCollection<ICommandListItem>>
-    {
-        public override ObservableCollection<ICommandListItem>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            System.Diagnostics.Debug.WriteLine("[CommandListItemObservableCollectionConverter] Read開始");
-            var listConverter = new CommandListItemListConverter();
-            var list = listConverter.Read(ref reader, typeof(List<ICommandListItem>), options);
-            
-            if (list != null)
-            {
-                var result = new ObservableCollection<ICommandListItem>(list);
-                System.Diagnostics.Debug.WriteLine($"[CommandListItemObservableCollectionConverter] ObservableCollection作成完了: 要素数={result.Count}");
-                return result;
-            }
-            
-            System.Diagnostics.Debug.WriteLine("[CommandListItemObservableCollectionConverter] Read失敗");
-            return null;
-        }
-
-        public override void Write(Utf8JsonWriter writer, ObservableCollection<ICommandListItem> value, JsonSerializerOptions options)
-        {
-            System.Diagnostics.Debug.WriteLine($"[CommandListItemObservableCollectionConverter] Write開始: 要素数={value.Count}");
-            var listConverter = new CommandListItemListConverter();
-            listConverter.Write(writer, value.ToList(), options);
-            System.Diagnostics.Debug.WriteLine("[CommandListItemObservableCollectionConverter] Write完了");
-        }
-    }
-
-    /// <summary>
-    /// MouseButton を数値/文字列両対応で復元し、保存時は文字列で出力するコンバーター
+    /// マウスボタン用のカスタムコンバーター
     /// </summary>
     public class MouseButtonEnumConverter : JsonConverter<MouseButton>
     {
         public override MouseButton Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            try
+            if (reader.TokenType == JsonTokenType.String)
             {
-                switch (reader.TokenType)
+                var stringValue = reader.GetString();
+                if (Enum.TryParse<MouseButton>(stringValue, true, out var result))
                 {
-                    case JsonTokenType.String:
-                        var s = reader.GetString();
-                        if (string.IsNullOrWhiteSpace(s)) return MouseButton.Left;
-                        if (Enum.TryParse<MouseButton>(s, true, out var mbFromString)) return mbFromString;
-                        if (int.TryParse(s, out var intFromString) && Enum.IsDefined(typeof(MouseButton), intFromString))
-                            return (MouseButton)intFromString;
-                        break;
-                    case JsonTokenType.Number:
-                        if (reader.TryGetInt32(out var num) && Enum.IsDefined(typeof(MouseButton), num))
-                            return (MouseButton)num;
-                        break;
+                    return result;
                 }
             }
-            catch
+            else if (reader.TokenType == JsonTokenType.Number)
             {
-                // 無視して既定へ
+                var intValue = reader.GetInt32();
+                if (Enum.IsDefined(typeof(MouseButton), intValue))
+                {
+                    return (MouseButton)intValue;
+                }
             }
-            return MouseButton.Left; // フォールバック
+
+            return MouseButton.Left; // デフォルト値
         }
 
         public override void Write(Utf8JsonWriter writer, MouseButton value, JsonSerializerOptions options)
@@ -725,4 +324,102 @@ namespace AutoTool.Helpers
             writer.WriteStringValue(value.ToString());
         }
     }
+
+    /// <summary>
+    /// ICommandListItem用のカスタムコンバーター
+    /// </summary>
+    public class CommandListItemConverter : JsonConverter<ICommandListItem>
+    {
+        public override ICommandListItem? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.StartObject)
+            {
+                throw new JsonException();
+            }
+
+            using var doc = JsonDocument.ParseValue(ref reader);
+            var root = doc.RootElement;
+
+            // ItemTypeプロパティを取得
+            var itemType = root.TryGetProperty("ItemType", out var itemTypeProp) 
+                ? itemTypeProp.GetString() ?? ""
+                : "";
+
+            // 対応するTypeを取得
+            var targetType = JsonSerializerHelper.GetTypeFromItemType(itemType);
+
+            // 該当するTypeでデシリアライズ
+            return (ICommandListItem?)JsonSerializer.Deserialize(root.GetRawText(), targetType, options);
+        }
+
+        public override void Write(Utf8JsonWriter writer, ICommandListItem value, JsonSerializerOptions options)
+        {
+            JsonSerializer.Serialize(writer, value, value.GetType(), options);
+        }
+    }
+
+    /// <summary>
+    /// ICommandListItemのList用コンバーター
+    /// </summary>
+    public class CommandListItemListConverter : JsonConverter<List<ICommandListItem>>
+    {
+        public override List<ICommandListItem>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.StartArray)
+            {
+                throw new JsonException();
+            }
+
+            var list = new List<ICommandListItem>();
+            var itemConverter = new CommandListItemConverter();
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndArray)
+                {
+                    return list;
+                }
+
+                var item = itemConverter.Read(ref reader, typeof(ICommandListItem), options);
+                if (item != null)
+                {
+                    list.Add(item);
+                }
+            }
+
+            throw new JsonException();
+        }
+
+        public override void Write(Utf8JsonWriter writer, List<ICommandListItem> value, JsonSerializerOptions options)
+        {
+            writer.WriteStartArray();
+            var itemConverter = new CommandListItemConverter();
+            foreach (var item in value)
+            {
+                itemConverter.Write(writer, item, options);
+            }
+            writer.WriteEndArray();
+        }
+    }
+
+    /// <summary>
+    /// ICommandListItemのObservableCollection用コンバーター
+    /// </summary>
+    public class CommandListItemObservableCollectionConverter : JsonConverter<ObservableCollection<ICommandListItem>>
+    {
+        public override ObservableCollection<ICommandListItem>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            var listConverter = new CommandListItemListConverter();
+            var list = listConverter.Read(ref reader, typeof(List<ICommandListItem>), options);
+            return list != null ? new ObservableCollection<ICommandListItem>(list) : null;
+        }
+
+        public override void Write(Utf8JsonWriter writer, ObservableCollection<ICommandListItem> value, JsonSerializerOptions options)
+        {
+            var listConverter = new CommandListItemListConverter();
+            listConverter.Write(writer, value.ToList(), options);
+        }
+    }
+
+    #endregion
 }

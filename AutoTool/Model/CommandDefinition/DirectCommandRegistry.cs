@@ -3,11 +3,54 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
 using AutoTool.Command.Interface;
+using AutoTool.Model.List.Class;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AutoTool.Model.CommandDefinition
 {
+    /// <summary>
+    /// 設定コントロールのタイプ
+    /// </summary>
+    public enum SettingControlType
+    {
+        TextBox,
+        PasswordBox,
+        NumberBox,
+        CheckBox,
+        ComboBox,
+        Slider,
+        FilePicker,
+        FolderPicker,
+        OnnxPicker,
+        ColorPicker,
+        DatePicker,
+        TimePicker,
+        KeyPicker,
+        CoordinatePicker,
+        WindowPicker
+    }
+
+    /// <summary>
+    /// 動的コマンドのカテゴリ
+    /// </summary>
+    public enum DynamicCommandCategory
+    {
+        Basic,
+        Mouse,
+        Keyboard,
+        Image,
+        AI,
+        Window,
+        File,
+        Control,
+        Advanced
+    }
+
     /// <summary>
     /// Command直接登録レジストリ
     /// </summary>
@@ -31,9 +74,309 @@ namespace AutoTool.Model.CommandDefinition
         );
 
         /// <summary>
+        /// よく使用するコマンドタイプ名の定数
+        /// </summary>
+        public static class CommandTypes
+        {
+            public const string Click = "Click";
+            public const string ClickImage = "Click_Image";
+            public const string ClickImageAI = "Click_Image_AI";
+            public const string Hotkey = "Hotkey";
+            public const string Wait = "Wait";
+            public const string WaitImage = "Wait_Image";
+            public const string Execute = "Execute";
+            public const string Screenshot = "Screenshot";
+            public const string Loop = "Loop";
+            public const string LoopEnd = "Loop_End";
+            public const string LoopBreak = "Loop_Break";
+            public const string IfImageExist = "IF_ImageExist";
+            public const string IfImageNotExist = "IF_ImageNotExist";
+            public const string IfImageExistAI = "IF_ImageExist_AI";
+            public const string IfImageNotExistAI = "IF_ImageNotExist_AI";
+            public const string IfVariable = "IF_Variable";
+            public const string IfEnd = "IF_End";
+            public const string SetVariable = "SetVariable";
+            public const string SetVariableAI = "SetVariable_AI";
+        }
+
+        /// <summary>
+        /// UI表示用のコマンド順序定義
+        /// </summary>
+        public static class DisplayOrder
+        {
+            /// <summary>
+            /// コマンドの表示優先度を取得（数値が小さいほど上位に表示）
+            /// </summary>
+            public static int GetPriority(string commandType)
+            {
+                return commandType switch
+                {
+                    // 1. 基本クリック操作
+                    CommandTypes.Click => 1,
+                    CommandTypes.ClickImage => 1,
+                    CommandTypes.ClickImageAI => 1,
+
+                    // 2. その他の基本操作
+                    CommandTypes.Hotkey => 2,
+                    CommandTypes.Wait => 2,
+                    CommandTypes.WaitImage => 2,
+
+                    // 3. ループ制御
+                    CommandTypes.Loop => 3,
+                    CommandTypes.LoopEnd => 3,
+                    CommandTypes.LoopBreak => 3,
+
+                    // 4. IF制御
+                    CommandTypes.IfImageExist => 4,
+                    CommandTypes.IfImageNotExist => 4,
+                    CommandTypes.IfImageExistAI => 4,
+                    CommandTypes.IfImageNotExistAI => 4,
+                    CommandTypes.IfVariable => 4,
+                    CommandTypes.IfEnd => 4,
+
+                    // 5. 変数操作
+                    CommandTypes.SetVariable => 5,
+                    CommandTypes.SetVariableAI => 5,
+
+                    // 6. システム操作
+                    CommandTypes.Execute => 6,
+                    CommandTypes.Screenshot => 6,
+
+                    // 9. その他・拡張機能
+                    _ => 9
+                };
+            }
+
+            /// <summary>
+            /// 同一優先度グループでの詳細な順序を取得
+            /// </summary>
+            public static int GetSubPriority(string commandType)
+            {
+                return commandType switch
+                {
+                    // クリック操作グループでの順序
+                    CommandTypes.Click => 1,          // 通常クリック
+                    CommandTypes.ClickImage => 2,     // 画像クリック
+                    CommandTypes.ClickImageAI => 3,   // AIクリック
+
+                    // 基本操作グループでの順序
+                    CommandTypes.Hotkey => 1,         // ホットキー
+                    CommandTypes.Wait => 2,           // 待機
+                    CommandTypes.WaitImage => 3,      // 画像待機
+
+                    // ループ制御グループでの順序
+                    CommandTypes.Loop => 1,           // ループ開始
+                    CommandTypes.LoopBreak => 2,      // ループ中断
+                    CommandTypes.LoopEnd => 3,        // ループ終了
+
+                    // IF制御グループでの順序
+                    CommandTypes.IfImageExist => 1,      // 画像存在
+                    CommandTypes.IfImageNotExist => 2,   // 画像非存在
+                    CommandTypes.IfImageExistAI => 3,    // AI画像存在
+                    CommandTypes.IfImageNotExistAI => 4, // AI画像非存在
+                    CommandTypes.IfVariable => 5,        // 変数判定
+                    CommandTypes.IfEnd => 6,             // IF終了
+
+                    // 変数操作グループでの順序
+                    CommandTypes.SetVariable => 1,    // 変数設定
+                    CommandTypes.SetVariableAI => 2,  // AI変数設定
+
+                    // システム操作グループでの順序
+                    CommandTypes.Execute => 1,        // プログラム実行
+                    CommandTypes.Screenshot => 2,     // スクリーンショット
+
+                    // デフォルト
+                    _ => 0
+                };
+            }
+
+            /// <summary>
+            /// コマンドの表示名を取得（多言語対応）
+            /// </summary>
+            public static string GetDisplayName(string commandType, string language = "ja")
+            {
+                return language switch
+                {
+                    "en" => GetEnglishDisplayName(commandType),
+                    "ja" => GetJapaneseDisplayName(commandType),
+                    _ => GetJapaneseDisplayName(commandType) // デフォルトは日本語
+                };
+            }
+
+            /// <summary>
+            /// 日本語表示名を取得
+            /// </summary>
+            public static string GetJapaneseDisplayName(string commandType)
+            {
+                return commandType switch
+                {
+                    CommandTypes.Click => "クリック",
+                    CommandTypes.ClickImage => "画像クリック",
+                    CommandTypes.ClickImageAI => "画像クリック(AI検出)",
+                    CommandTypes.Hotkey => "ホットキー",
+                    CommandTypes.Wait => "待機",
+                    CommandTypes.WaitImage => "画像待機",
+                    CommandTypes.Loop => "ループ - 開始",
+                    CommandTypes.LoopEnd => "ループ - 終了",
+                    CommandTypes.LoopBreak => "ループ - 中断",
+                    CommandTypes.IfImageExist => "条件 - 画像存在判定",
+                    CommandTypes.IfImageNotExist => "条件 - 画像非存在判定",
+                    CommandTypes.IfImageExistAI => "条件 - 画像存在判定(AI検出)",
+                    CommandTypes.IfImageNotExistAI => "条件 - 画像非存在判定(AI検出)",
+                    CommandTypes.IfVariable => "条件 - 変数判定",
+                    CommandTypes.IfEnd => "条件 - 終了",
+                    CommandTypes.SetVariable => "変数設定",
+                    CommandTypes.SetVariableAI => "変数設定(AI検出)",
+                    CommandTypes.Execute => "プログラム実行",
+                    CommandTypes.Screenshot => "スクリーンショット",
+                    _ => commandType
+                };
+            }
+
+            /// <summary>
+            /// 英語表示名を取得
+            /// </summary>
+            public static string GetEnglishDisplayName(string commandType)
+            {
+                return commandType switch
+                {
+                    CommandTypes.Click => "Click",
+                    CommandTypes.ClickImage => "Image Click",
+                    CommandTypes.ClickImageAI => "AI Click",
+                    CommandTypes.Hotkey => "Hotkey",
+                    CommandTypes.Wait => "Wait",
+                    CommandTypes.WaitImage => "Wait for Image",
+                    CommandTypes.Loop => "Loop Start",
+                    CommandTypes.LoopEnd => "Loop End",
+                    CommandTypes.LoopBreak => "Loop Break",
+                    CommandTypes.IfImageExist => "If Image Exists",
+                    CommandTypes.IfImageNotExist => "If Image Not Exists",
+                    CommandTypes.IfImageExistAI => "If AI Image Exists",
+                    CommandTypes.IfImageNotExistAI => "If AI Image Not Exists",
+                    CommandTypes.IfVariable => "If Variable",
+                    CommandTypes.IfEnd => "If End",
+                    CommandTypes.SetVariable => "Set Variable",
+                    CommandTypes.SetVariableAI => "Set AI Variable",
+                    CommandTypes.Execute => "Execute Program",
+                    CommandTypes.Screenshot => "Screenshot",
+                    _ => commandType
+                };
+            }
+
+            /// <summary>
+            /// カテゴリ名を取得（多言語対応）
+            /// </summary>
+            public static string GetCategoryName(string commandType, string language = "ja")
+            {
+                var priority = GetPriority(commandType);
+                return language switch
+                {
+                    "en" => GetEnglishCategoryName(priority),
+                    "ja" => GetJapaneseCategoryName(priority),
+                    _ => GetJapaneseCategoryName(priority)
+                };
+            }
+
+            private static string GetJapaneseCategoryName(int priority)
+            {
+                return priority switch
+                {
+                    1 => "クリック操作",
+                    2 => "基本操作",
+                    3 => "ループ制御",
+                    4 => "条件制御",
+                    5 => "変数操作",
+                    6 => "システム操作",
+                    _ => "その他"
+                };
+            }
+
+            private static string GetEnglishCategoryName(int priority)
+            {
+                return priority switch
+                {
+                    1 => "Click Operations",
+                    2 => "Basic Operations",
+                    3 => "Loop Control",
+                    4 => "Conditional",
+                    5 => "Variable Operations",
+                    6 => "System Operations",
+                    _ => "Others"
+                };
+            }
+
+            /// <summary>
+            /// コマンドの説明を取得
+            /// </summary>
+            public static string GetDescription(string commandType, string language = "ja")
+            {
+                return language switch
+                {
+                    "en" => GetEnglishDescription(commandType),
+                    "ja" => GetJapaneseDescription(commandType),
+                    _ => GetJapaneseDescription(commandType)
+                };
+            }
+
+            private static string GetJapaneseDescription(string commandType)
+            {
+                return commandType switch
+                {
+                    CommandTypes.Click => "指定した座標をクリックします",
+                    CommandTypes.ClickImage => "画像を検索してクリックします",
+                    CommandTypes.ClickImageAI => "AIで画像を検索してクリックします",
+                    CommandTypes.Hotkey => "ホットキーを送信します",
+                    CommandTypes.Wait => "指定した時間待機します",
+                    CommandTypes.WaitImage => "画像が表示されるまで待機します",
+                    CommandTypes.Loop => "指定回数ループ処理を実行します",
+                    CommandTypes.LoopEnd => "ループを終了します",
+                    CommandTypes.LoopBreak => "ループを中断します",
+                    CommandTypes.IfImageExist => "画像が存在する場合に実行します",
+                    CommandTypes.IfImageNotExist => "画像が存在しない場合に実行します",
+                    CommandTypes.IfImageExistAI => "AIで画像が存在する場合に実行します",
+                    CommandTypes.IfImageNotExistAI => "AIで画像が存在しない場合に実行します",
+                    CommandTypes.IfVariable => "変数の条件が真の場合に実行します",
+                    CommandTypes.IfEnd => "条件分岐を終了します",
+                    CommandTypes.SetVariable => "変数に値を設定します",
+                    CommandTypes.SetVariableAI => "AIの結果を変数に設定します",
+                    CommandTypes.Execute => "外部プログラムを実行します",
+                    CommandTypes.Screenshot => "スクリーンショットを撮影します",
+                    _ => $"{commandType}コマンド"
+                };
+            }
+
+            private static string GetEnglishDescription(string commandType)
+            {
+                return commandType switch
+                {
+                    CommandTypes.Click => "Click at specified coordinates",
+                    CommandTypes.ClickImage => "Search for image and click",
+                    CommandTypes.ClickImageAI => "Search for image using AI and click",
+                    CommandTypes.Hotkey => "Send hotkey combination",
+                    CommandTypes.Wait => "Wait for specified duration",
+                    CommandTypes.WaitImage => "Wait until image appears",
+                    CommandTypes.Loop => "Execute loop for specified count",
+                    CommandTypes.LoopEnd => "End loop",
+                    CommandTypes.LoopBreak => "Break from loop",
+                    CommandTypes.IfImageExist => "Execute if image exists",
+                    CommandTypes.IfImageNotExist => "Execute if image does not exist",
+                    CommandTypes.IfImageExistAI => "Execute if AI detects image",
+                    CommandTypes.IfImageNotExistAI => "Execute if AI does not detect image",
+                    CommandTypes.IfVariable => "Execute if variable condition is true",
+                    CommandTypes.IfEnd => "End conditional statement",
+                    CommandTypes.SetVariable => "Set variable value",
+                    CommandTypes.SetVariableAI => "Set variable from AI result",
+                    CommandTypes.Execute => "Execute external program",
+                    CommandTypes.Screenshot => "Take screenshot",
+                    _ => $"{commandType} command"
+                };
+            }
+        }
+
+        /// <summary>
         /// 初期化
         /// </summary>
-        public static void Initialize(IServiceProvider serviceProvider)
+        public static void Initialize(IServiceProvider? serviceProvider)
         {
             if (_initialized) return;
 
@@ -41,26 +384,203 @@ namespace AutoTool.Model.CommandDefinition
             {
                 if (_initialized) return;
 
-                _logger = serviceProvider.GetService<ILoggerFactory>()?.CreateLogger(nameof(DirectCommandRegistry));
+                _logger = serviceProvider?.GetService<ILoggerFactory>()?.CreateLogger(nameof(DirectCommandRegistry));
 
-                // 属性が付与されたCommandクラスを自動検出
-                var assembly = Assembly.GetExecutingAssembly();
-                var commandTypes = assembly.GetTypes()
-                    .Where(t => typeof(ICommand).IsAssignableFrom(t) && 
-                               !t.IsInterface && !t.IsAbstract &&
-                               t.GetCustomAttribute<DirectCommandAttribute>() != null)
-                    .ToArray();
+                // まずビルトインコマンドを登録
+                RegisterBuiltinCommands();
 
-                _logger?.LogInformation("DirectCommandRegistry初期化開始: {Count}個のCommandを検出", commandTypes.Length);
-
-                foreach (var commandType in commandTypes)
+                // DirectCommand属性が付けられたCommandクラスを検索して登録
+                if (serviceProvider != null)
                 {
-                    RegisterCommand(commandType);
+                    RegisterDynamicCommands();
                 }
 
                 RegisterSourceCollections();
                 _initialized = true;
-                _logger?.LogInformation("DirectCommandRegistry初期化完了: {Count}個のCommandを登録", _commands.Count);
+                _logger?.LogInformation("DirectCommandRegistry初期化完了: {Count}個Command登録", _commands.Count);
+                
+                // 登録されたコマンドの詳細をログ出力
+                foreach (var kvp in _commands)
+                {
+                    var reg = kvp.Value;
+                    _logger?.LogDebug("登録済みコマンド: {CommandId} -> {CommandType}, 設定項目: {SettingCount}個", 
+                        kvp.Key, reg.CommandType?.Name ?? "Built-in", reg.Settings.Count);
+                }
+            }
+        }
+
+        /// <summary>
+        /// ビルトインコマンドを登録
+        /// </summary>
+        private static void RegisterBuiltinCommands()
+        {
+            var builtinCommands = new[]
+            {
+                (CommandTypes.Click, "クリック", DynamicCommandCategory.Mouse, "指定した座標をクリックします"),
+                (CommandTypes.ClickImage, "画像クリック", DynamicCommandCategory.Image, "画像を検索してクリックします"),
+                (CommandTypes.ClickImageAI, "画像クリック(AI検出)", DynamicCommandCategory.AI, "AIで画像を検索してクリックします"),
+                (CommandTypes.Hotkey, "ホットキー", DynamicCommandCategory.Keyboard, "ホットキーを送信します"),
+                (CommandTypes.Wait, "待機", DynamicCommandCategory.Basic, "指定した時間待機します"),
+                (CommandTypes.WaitImage, "画像待機", DynamicCommandCategory.Image, "画像が表示されるまで待機します"),
+                (CommandTypes.Loop, "ループ - 開始", DynamicCommandCategory.Control, "指定回数ループ処理を実行します"),
+                (CommandTypes.LoopEnd, "ループ - 終了", DynamicCommandCategory.Control, "ループを終了します"),
+                (CommandTypes.LoopBreak, "ループ - 中断", DynamicCommandCategory.Control, "ループを中断します"),
+                (CommandTypes.IfImageExist, "条件 - 画像存在判定", DynamicCommandCategory.Control, "画像が存在する場合に実行します"),
+                (CommandTypes.IfImageNotExist, "条件 - 画像非存在判定", DynamicCommandCategory.Control, "画像が存在しない場合に実行します"),
+                (CommandTypes.IfImageExistAI, "条件 - 画像存在判定(AI検出)", DynamicCommandCategory.AI, "AIで画像が存在する場合に実行します"),
+                (CommandTypes.IfImageNotExistAI, "条件 - 画像非存在判定(AI検出)", DynamicCommandCategory.AI, "AIで画像が存在しない場合に実行します"),
+                (CommandTypes.IfVariable, "条件 - 変数判定", DynamicCommandCategory.Control, "変数の条件が真の場合に実行します"),
+                (CommandTypes.IfEnd, "条件 - 終了", DynamicCommandCategory.Control, "条件分岐を終了します"),
+                (CommandTypes.SetVariable, "変数設定", DynamicCommandCategory.Basic, "変数に値を設定します"),
+                (CommandTypes.SetVariableAI, "変数設定(AI検出)", DynamicCommandCategory.AI, "AIの結果を変数に設定します"),
+                (CommandTypes.Execute, "プログラム実行", DynamicCommandCategory.Basic, "外部プログラムを実行します"),
+                (CommandTypes.Screenshot, "スクリーンショット", DynamicCommandCategory.Basic, "スクリーンショットを撮影します")
+            };
+
+            foreach (var (commandId, displayName, category, description) in builtinCommands)
+            {
+                var settings = CreateBuiltinSettings(commandId);
+                var factory = CreateBuiltinFactory(commandId);
+
+                var registration = new CommandRegistration(
+                    commandId,
+                    null, // ビルトインは型なし
+                    displayName,
+                    category,
+                    description,
+                    settings,
+                    factory
+                );
+
+                _commands[commandId] = registration;
+                _settingDefinitions[commandId] = settings;
+
+                _logger?.LogDebug("ビルトインCommand登録: {CommandId} -> {DisplayName}, 設定項目: {SettingCount}個",
+                    commandId, displayName, settings.Count);
+            }
+        }
+
+        /// <summary>
+        /// ビルトイン設定を作成
+        /// </summary>
+        private static List<SettingDefinition> CreateBuiltinSettings(string commandId)
+        {
+            var settings = new List<SettingDefinition>();
+
+            switch (commandId)
+            {
+                case CommandTypes.Click:
+                    settings.AddRange(new[]
+                    {
+                        new SettingDefinition { PropertyName = "X", DisplayName = "X座標", ControlType = SettingControlType.NumberBox, DefaultValue = 0, IsRequired = true },
+                        new SettingDefinition { PropertyName = "Y", DisplayName = "Y座標", ControlType = SettingControlType.NumberBox, DefaultValue = 0, IsRequired = true },
+                        new SettingDefinition { PropertyName = "Button", DisplayName = "マウスボタン", ControlType = SettingControlType.ComboBox, DefaultValue = "Left", SourceCollection = "MouseButtons" },
+                        new SettingDefinition { PropertyName = "UseBackgroundClick", DisplayName = "バックグラウンドクリック", ControlType = SettingControlType.CheckBox, DefaultValue = false }
+                    });
+                    break;
+
+                case CommandTypes.ClickImage:
+                case CommandTypes.WaitImage:
+                    settings.AddRange(new[]
+                    {
+                        new SettingDefinition { PropertyName = "ImagePath", DisplayName = "画像ファイル", ControlType = SettingControlType.FilePicker, IsRequired = true, FileFilter = "画像ファイル|*.png;*.jpg;*.jpeg;*.bmp" },
+                        new SettingDefinition { PropertyName = "Threshold", DisplayName = "閾値", ControlType = SettingControlType.Slider, DefaultValue = 0.8, MinValue = 0.0, MaxValue = 1.0 },
+                        new SettingDefinition { PropertyName = "Timeout", DisplayName = "タイムアウト(ms)", ControlType = SettingControlType.NumberBox, DefaultValue = 5000 },
+                        new SettingDefinition { PropertyName = "Interval", DisplayName = "間隔(ms)", ControlType = SettingControlType.NumberBox, DefaultValue = 500 }
+                    });
+                    break;
+
+                case CommandTypes.Hotkey:
+                    settings.AddRange(new[]
+                    {
+                        new SettingDefinition { PropertyName = "Key", DisplayName = "キー", ControlType = SettingControlType.KeyPicker, IsRequired = true },
+                        new SettingDefinition { PropertyName = "Ctrl", DisplayName = "Ctrlキー", ControlType = SettingControlType.CheckBox, DefaultValue = false },
+                        new SettingDefinition { PropertyName = "Alt", DisplayName = "Altキー", ControlType = SettingControlType.CheckBox, DefaultValue = false },
+                        new SettingDefinition { PropertyName = "Shift", DisplayName = "Shiftキー", ControlType = SettingControlType.CheckBox, DefaultValue = false }
+                    });
+                    break;
+
+                case CommandTypes.Wait:
+                    settings.Add(new SettingDefinition { PropertyName = "Wait", DisplayName = "待機時間(ms)", ControlType = SettingControlType.NumberBox, DefaultValue = 1000, IsRequired = true });
+                    break;
+
+                case CommandTypes.Loop:
+                    settings.Add(new SettingDefinition { PropertyName = "LoopCount", DisplayName = "ループ回数", ControlType = SettingControlType.NumberBox, DefaultValue = 1, IsRequired = true });
+                    break;
+
+                case CommandTypes.SetVariable:
+                    settings.AddRange(new[]
+                    {
+                        new SettingDefinition { PropertyName = "Name", DisplayName = "変数名", ControlType = SettingControlType.TextBox, IsRequired = true },
+                        new SettingDefinition { PropertyName = "Value", DisplayName = "値", ControlType = SettingControlType.TextBox, IsRequired = true }
+                    });
+                    break;
+
+                case CommandTypes.IfVariable:
+                    settings.AddRange(new[]
+                    {
+                        new SettingDefinition { PropertyName = "Name", DisplayName = "変数名", ControlType = SettingControlType.TextBox, IsRequired = true },
+                        new SettingDefinition { PropertyName = "Operator", DisplayName = "演算子", ControlType = SettingControlType.ComboBox, DefaultValue = "==", SourceCollection = "ComparisonOperators" },
+                        new SettingDefinition { PropertyName = "Value", DisplayName = "比較値", ControlType = SettingControlType.TextBox, IsRequired = true }
+                    });
+                    break;
+
+                case CommandTypes.Execute:
+                    settings.AddRange(new[]
+                    {
+                        new SettingDefinition { PropertyName = "ProgramPath", DisplayName = "プログラムパス", ControlType = SettingControlType.FilePicker, IsRequired = true },
+                        new SettingDefinition { PropertyName = "Arguments", DisplayName = "引数", ControlType = SettingControlType.TextBox },
+                        new SettingDefinition { PropertyName = "WorkingDirectory", DisplayName = "作業ディレクトリ", ControlType = SettingControlType.FolderPicker },
+                        new SettingDefinition { PropertyName = "WaitForExit", DisplayName = "終了を待機", ControlType = SettingControlType.CheckBox, DefaultValue = false }
+                    });
+                    break;
+
+                case CommandTypes.Screenshot:
+                    settings.Add(new SettingDefinition { PropertyName = "SaveDirectory", DisplayName = "保存ディレクトリ", ControlType = SettingControlType.FolderPicker, IsRequired = true });
+                    break;
+            }
+
+            return settings;
+        }
+
+        /// <summary>
+        /// ビルトインファクトリーを作成
+        /// </summary>
+        private static Func<ICommand?, UniversalCommandItem, IServiceProvider, ICommand> CreateBuiltinFactory(string commandId)
+        {
+            return (parent, item, serviceProvider) =>
+            {
+                // TODO: ここで実際のCommandクラスを作成する
+                // 現在は仮の実装を返す
+                return new DummyCommand(commandId, parent, item);
+            };
+        }
+
+        /// <summary>
+        /// 動的コマンドを登録
+        /// </summary>
+        private static void RegisterDynamicCommands()
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var commandTypes = assembly.GetTypes()
+                .Where(t => typeof(ICommand).IsAssignableFrom(t) && 
+                           !t.IsInterface && !t.IsAbstract &&
+                           t.GetCustomAttribute<DirectCommandAttribute>() != null)
+                .ToArray();
+
+            _logger?.LogInformation("DirectCommandRegistry動的初期化開始: {Count}個Command検出", commandTypes.Length);
+
+            // 検出されたコマンドタイプをログ出力
+            foreach (var commandType in commandTypes)
+            {
+                var attr = commandType.GetCustomAttribute<DirectCommandAttribute>();
+                _logger?.LogDebug("検出されたコマンド: {CommandType} -> {CommandId} ({DisplayName})", 
+                    commandType.Name, attr?.CommandId, attr?.DisplayName);
+            }
+
+            foreach (var commandType in commandTypes)
+            {
+                RegisterCommand(commandType);
             }
         }
 
@@ -74,6 +594,11 @@ namespace AutoTool.Model.CommandDefinition
 
             try
             {
+                // CategoryをDynamicCommandCategoryに変換
+                var category = Enum.TryParse<DynamicCommandCategory>(attr.Category, out var parsedCategory) 
+                    ? parsedCategory 
+                    : DynamicCommandCategory.Basic;
+
                 var settings = ExtractSettingDefinitions(commandType);
                 var factory = CreateCommandFactory(commandType);
 
@@ -81,7 +606,7 @@ namespace AutoTool.Model.CommandDefinition
                     attr.CommandId,
                     commandType,
                     attr.DisplayName,
-                    attr.Category,
+                    category,
                     attr.Description,
                     settings,
                     factory
@@ -378,7 +903,7 @@ namespace AutoTool.Model.CommandDefinition
         {
             if (!_initialized)
             {
-                throw new InvalidOperationException("DirectCommandRegistry is not initialized. Call Initialize() first.");
+                Initialize(serviceProvider);
             }
 
             if (_commands.TryGetValue(commandId, out var registration))
@@ -390,38 +915,58 @@ namespace AutoTool.Model.CommandDefinition
         }
 
         /// <summary>
-        /// UniversalCommandItemを作成
+        /// UniversalCommandItem作成
         /// </summary>
         public static UniversalCommandItem CreateUniversalItem(string commandId, Dictionary<string, object?>? initialSettings = null)
         {
+            if (!_initialized)
+            {
+                Initialize(null);
+            }
+            
+            _logger?.LogDebug("UniversalCommandItem作成開始: {CommandId}", commandId);
+            
             var item = new UniversalCommandItem
             {
                 ItemType = commandId,
                 IsEnable = true
             };
 
-            // デフォルト値を設定
+            // デフォルト値設定
             if (_settingDefinitions.TryGetValue(commandId, out var definitions))
             {
+                _logger?.LogDebug("設定定義取得成功: {CommandId}, 項目数: {Count}", commandId, definitions.Count);
+                
                 foreach (var definition in definitions)
                 {
                     if (definition.DefaultValue != null)
                     {
                         item.SetSetting(definition.PropertyName, definition.DefaultValue);
+                        _logger?.LogTrace("デフォルト値設定: {PropertyName} = {DefaultValue}", 
+                            definition.PropertyName, definition.DefaultValue);
                     }
                 }
             }
+            else
+            {
+                _logger?.LogWarning("設定定義が見つかりません: {CommandId}", commandId);
+                _logger?.LogDebug("利用可能なコマンドID: {AvailableCommands}", 
+                    string.Join(", ", _settingDefinitions.Keys));
+            }
 
-            // 初期設定値を上書き
+            // 初期設定値で上書き
             if (initialSettings != null)
             {
+                _logger?.LogDebug("初期設定値適用: {Count}項目", initialSettings.Count);
                 foreach (var kvp in initialSettings)
                 {
                     item.SetSetting(kvp.Key, kvp.Value);
+                    _logger?.LogTrace("初期設定値: {PropertyName} = {Value}", kvp.Key, kvp.Value);
                 }
             }
 
             item.InitializeSettingDefinitions();
+            _logger?.LogDebug("UniversalCommandItem作成完了: {CommandId}", commandId);
             return item;
         }
 
@@ -430,26 +975,104 @@ namespace AutoTool.Model.CommandDefinition
         /// </summary>
         public static IEnumerable<(string CommandId, string DisplayName, DynamicCommandCategory Category)> GetRegisteredCommands()
         {
+            if (!_initialized)
+            {
+                Initialize(null);
+            }
             return _commands.Values.Select(r => (r.CommandId, r.DisplayName, r.Category));
         }
 
         /// <summary>
-        /// 設定定義を取得
+        /// 全てのコマンドタイプ名を取得
+        /// </summary>
+        public static IEnumerable<string> GetAllTypeNames()
+        {
+            if (!_initialized)
+            {
+                Initialize(null);
+            }
+            return _commands.Keys.ToArray();
+        }
+
+        /// <summary>
+        /// UI表示用に順序付けられたコマンドタイプ名を取得
+        /// </summary>
+        public static IEnumerable<string> GetOrderedTypeNames()
+        {
+            return GetAllTypeNames()
+                .OrderBy(DisplayOrder.GetPriority)
+                .ThenBy(DisplayOrder.GetSubPriority)
+                .ThenBy(x => x);
+        }
+
+        /// <summary>
+        /// コマンドアイテムを作成（後方互換性用）
+        /// </summary>
+        public static AutoTool.Model.List.Interface.ICommandListItem? CreateCommandItem(string typeName)
+        {
+            try
+            {
+                var universalItem = CreateUniversalItem(typeName);
+                return universalItem;
+            }
+            catch
+            {
+                // フォールバック：BasicCommandItem
+                return new AutoTool.Model.List.Type.BasicCommandItem
+                {
+                    ItemType = typeName,
+                    IsEnable = true
+                };
+            }
+        }
+
+        /// <summary>
+        /// If系コマンドかどうかを判定
+        /// </summary>
+        public static bool IsIfCommand(string typeName)
+        {
+            return typeName switch
+            {
+                CommandTypes.IfImageExist or CommandTypes.IfImageNotExist or 
+                CommandTypes.IfImageExistAI or CommandTypes.IfImageNotExistAI or 
+                CommandTypes.IfVariable => true,
+                _ => false
+            };
+        }
+
+        /// <summary>
+        /// ループ系コマンドかどうかを判定
+        /// </summary>
+        public static bool IsLoopCommand(string typeName)
+        {
+            return typeName == CommandTypes.Loop;
+        }
+
+        /// <summary>
+        /// 終了系コマンド（ネストレベルを下げる）かどうかを判定
+        /// </summary>
+        public static bool IsEndCommand(string typeName)
+        {
+            return typeName is CommandTypes.LoopEnd or CommandTypes.IfEnd;
+        }
+
+        /// <summary>
+        /// コマンドの設定定義を取得
         /// </summary>
         public static List<SettingDefinition> GetSettingDefinitions(string commandId)
         {
-            var result = _settingDefinitions.TryGetValue(commandId, out var definitions) 
-                ? definitions.ToList() 
-                : new List<SettingDefinition>();
-                
-            System.Diagnostics.Debug.WriteLine($"[DirectCommandRegistry] GetSettingDefinitions: {commandId} -> {result.Count}個の設定定義");
-            
-            if (result.Count == 0)
+            if (!_initialized)
             {
-                System.Diagnostics.Debug.WriteLine($"[DirectCommandRegistry] 利用可能なコマンド: {string.Join(", ", _settingDefinitions.Keys)}");
+                Initialize(null);
             }
-            
-            return result;
+
+            if (_settingDefinitions.TryGetValue(commandId, out var definitions))
+            {
+                return definitions;
+            }
+
+            _logger?.LogWarning("設定定義が見つかりません: {CommandId}", commandId);
+            return new List<SettingDefinition>();
         }
 
         /// <summary>
@@ -457,54 +1080,133 @@ namespace AutoTool.Model.CommandDefinition
         /// </summary>
         public static object[]? GetSourceCollection(string collectionName)
         {
-            return _sourceCollections.TryGetValue(collectionName, out var collection) ? collection : null;
+            if (!_initialized)
+            {
+                Initialize(null);
+            }
+
+            if (_sourceCollections.TryGetValue(collectionName, out var collection))
+            {
+                return collection;
+            }
+
+            _logger?.LogWarning("ソースコレクションが見つかりません: {CollectionName}", collectionName);
+            return null;
+        }
+
+        /// <summary>
+        /// 指定されたコマンドタイプが開始コマンド（Loop、If系）かどうかを判定
+        /// </summary>
+        public static bool IsStartCommand(string commandType)
+        {
+            return commandType switch
+            {
+                "Loop" => true,
+                "IF_ImageExist" => true,
+                "IF_ImageNotExist" => true,
+                "IF_ImageExist_AI" => true,
+                "IF_ImageNotExist_AI" => true,
+                "IF_Variable" => true,
+                _ => false
+            };
         }
     }
+}
 
-    /// <summary>
-    /// 設定項目定義
-    /// </summary>
-    public class SettingDefinition : INotifyPropertyChanged
+/// <summary>
+/// ダミーCommand実装（ビルトインコマンド用の仮実装）
+/// </summary>
+internal class DummyCommand : ICommand
+{
+    public string CommandId { get; }
+    public int LineNumber { get; set; }
+    public bool IsEnabled { get; set; } = true;
+    public ICommand? Parent { get; }
+    public IEnumerable<ICommand> Children { get; private set; } = new List<ICommand>();
+    public int NestLevel { get; set; }
+    public object? Settings { get; set; }
+    public string Description { get; }
+    public event EventHandler? OnStartCommand;
+
+    public DummyCommand(string commandId, ICommand? parent, AutoTool.Model.CommandDefinition.UniversalCommandItem item)
     {
-        private object? _currentValue;
+        CommandId = commandId;
+        Parent = parent;
+        LineNumber = item.LineNumber;
+        IsEnabled = item.IsEnable;
+        Description = AutoTool.Model.CommandDefinition.DirectCommandRegistry.DisplayOrder.GetDescription(commandId);
+    }
 
-        public string PropertyName { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
-        public SettingControlType ControlType { get; set; }
-        public string Category { get; set; } = "基本設定";
-        public string? Description { get; set; }
-        public object? DefaultValue { get; set; }
-        public bool IsRequired { get; set; }
-        public string? FileFilter { get; set; }
-        public List<string> ActionButtons { get; set; } = new();
-        public string? SourceCollection { get; set; }
-        public Type PropertyType { get; set; } = typeof(object);
-        public bool ShowCurrentValue { get; set; } = true;
-        public double MinValue { get; set; } = 0.0;
-        public double MaxValue { get; set; } = 100.0;
-        public string? Unit { get; set; }
-        
-        /// <summary>
-        /// 現在値
-        /// </summary>
-        public object? CurrentValue
+    public Task<bool> Execute(CancellationToken cancellationToken)
+    {
+        OnStartCommand?.Invoke(this, EventArgs.Empty);
+        // ダミー実装：何もしない
+        return Task.FromResult(true);
+    }
+
+    public void AddChild(ICommand child)
+    {
+        var children = Children.ToList();
+        children.Add(child);
+        Children = children;
+    }
+
+    public void RemoveChild(ICommand child)
+    {
+        var children = Children.ToList();
+        children.Remove(child);
+        Children = children;
+    }
+
+    public IEnumerable<ICommand> GetChildren()
+    {
+        return Children;
+    }
+}
+
+/// <summary>
+/// 設定項目定義
+/// </summary>
+public class SettingDefinition : INotifyPropertyChanged
+{
+    private object? _currentValue;
+
+    public string PropertyName { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public AutoTool.Model.CommandDefinition.SettingControlType ControlType { get; set; }
+    public string Category { get; set; } = "基本設定";
+    public string? Description { get; set; }
+    public object? DefaultValue { get; set; }
+    public bool IsRequired { get; set; }
+    public string? FileFilter { get; set; }
+    public List<string> ActionButtons { get; set; } = new();
+    public string? SourceCollection { get; set; }
+    public Type PropertyType { get; set; } = typeof(object);
+    public bool ShowCurrentValue { get; set; } = true;
+    public double MinValue { get; set; } = 0.0;
+    public double MaxValue { get; set; } = 100.0;
+    public string? Unit { get; set; }
+    
+    /// <summary>
+    /// 現在値
+    /// </summary>
+    public object? CurrentValue
+    {
+        get => _currentValue;
+        set
         {
-            get => _currentValue;
-            set
+            if (!Equals(_currentValue, value))
             {
-                if (!Equals(_currentValue, value))
-                {
-                    _currentValue = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentValue)));
-                }
+                _currentValue = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentValue)));
             }
         }
-        
-        /// <summary>
-        /// ComboBox等で使用するソースアイテム
-        /// </summary>
-        public List<object> SourceItems { get; set; } = new();
-
-        public event PropertyChangedEventHandler? PropertyChanged;
     }
+    
+    /// <summary>
+    /// ComboBox等で使用するソースアイテム
+    /// </summary>
+    public List<object> SourceItems { get; set; } = new();
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }

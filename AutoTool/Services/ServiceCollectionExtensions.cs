@@ -4,7 +4,6 @@ using AutoTool.Services.Plugin;
 using AutoTool.Services.Mouse;
 using AutoTool.ViewModel;
 using AutoTool.ViewModel.Panels;
-using AutoTool.List.Class;
 using AutoTool.Model.List.Type;
 using AutoTool.Model.CommandDefinition;
 using AutoTool.Model.List.Interface;
@@ -45,7 +44,6 @@ namespace AutoTool.Services
             // Core Services
             services.AddSingleton<IRecentFileService, RecentFileService>();
             services.AddSingleton<AutoTool.Command.Interface.IVariableStore, AutoTool.Command.Class.VariableStore>();
-            services.AddSingleton<CommandListService>();
 
             // Plugin Services
             services.AddSingleton<IPluginService, PluginService>();
@@ -56,6 +54,8 @@ namespace AutoTool.Services
             // UI Services
             services.AddTransient<IMainWindowMenuService, MainWindowMenuService>();
             services.AddTransient<IMainWindowButtonService, MainWindowButtonService>();
+            services.AddTransient<IEditPanelPropertyService, EditPanelPropertyService>();
+            services.AddTransient<IEditPanelIntegrationService, EditPanelIntegrationService>();
 
             // Mouse Services
             services.AddSingleton<IMouseService, MouseService>();
@@ -63,10 +63,17 @@ namespace AutoTool.Services
             // Capture Services
             services.AddSingleton<ICaptureService, CaptureService>();
 
+            // Window Services
+            services.AddSingleton<AutoTool.Services.Window.IWindowInfoService, AutoTool.Services.Window.WindowInfoService>();
+
             // ViewModels
             services.AddTransient<MainWindowViewModel>();
             services.AddTransient<ListPanelViewModel>();
             services.AddTransient<EditPanelViewModel>();
+            services.AddTransient<ButtonPanelViewModel>();
+
+            // Command List Item Factory
+            services.AddSingleton<ICommandListItemFactory, CommandListItemFactory>();
 
             // Dummy services for missing dependencies
             services.AddSingleton<IDataContextLocator, DataContextLocator>();
@@ -84,7 +91,7 @@ namespace AutoTool.Services
     }
 
     /// <summary>
-    /// CommandListItemファクトリー実装
+    /// CommandListItemファクトリー実装（DirectCommandRegistry統一版）
     /// </summary>
     public class CommandListItemFactory : ICommandListItemFactory
     {
@@ -103,52 +110,22 @@ namespace AutoTool.Services
             {
                 _logger.LogDebug("CommandListItemFactory.CreateItem開始: {ItemType}", itemType);
 
-                // 1. 動的システムでUniversalCommandItemを作成
+                // DirectCommandRegistryを使用してUniversalCommandItemを作成
                 try
                 {
                     var universalItem = DirectCommandRegistry.CreateUniversalItem(itemType);
                     if (universalItem != null)
                     {
-                        _logger.LogDebug("動的システムでUniversalCommandItem作成成功: {ItemType}", itemType);
+                        _logger.LogDebug("DirectCommandRegistryでUniversalCommandItem作成成功: {ItemType}", itemType);
                         return universalItem;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug(ex, "動的システムでの作成失敗、従来システムにフォールバック: {ItemType}", itemType);
+                    _logger.LogDebug(ex, "DirectCommandRegistryでの作成失敗、BasicCommandItemにフォールバック: {ItemType}", itemType);
                 }
 
-                // 2. 従来のCommandRegistry（後方互換性）
-                var itemTypes = CommandRegistry.GetTypeMapping();
-                if (itemTypes.TryGetValue(itemType, out var type))
-                {
-                    _logger.LogDebug("CommandRegistry から型取得: {Type}", type.Name);
-
-                    // DI コンテナから インスタンス を取得を試行
-                    var serviceInstance = _serviceProvider.GetService(type);
-                    if (serviceInstance is ICommandListItem item)
-                    {
-                        item.ItemType = itemType;
-                        item.IsEnable = true;
-
-                        _logger.LogDebug("DI コンテナで作成成功: {ActualType}", item.GetType().Name);
-                        return item;
-                    }
-
-                    // DI で取得できない場合は Activator で作成
-                    if (Activator.CreateInstance(type) is ICommandListItem fallbackItem)
-                    {
-                        fallbackItem.ItemType = itemType;
-                        fallbackItem.IsEnable = true;
-
-                        _logger.LogDebug("Activator で作成成功: {ActualType}", fallbackItem.GetType().Name);
-                        return fallbackItem;
-                    }
-                }
-
-                _logger.LogWarning("CommandRegistry で作成失敗、BasicCommandItem で代用: {ItemType}", itemType);
-
-                // 3. 最終フォールバック：BasicCommandItem
+                // フォールバック：BasicCommandItem
                 var basicItem = _serviceProvider.GetService<BasicCommandItem>();
                 if (basicItem == null)
                 {
@@ -159,7 +136,7 @@ namespace AutoTool.Services
                 basicItem.ItemType = itemType;
                 basicItem.IsEnable = true;
 
-                _logger.LogDebug("BasicCommandItem で作成完了");
+                _logger.LogDebug("BasicCommandItem で作成完了: {ItemType}", itemType);
                 return basicItem;
             }
             catch (Exception ex)
@@ -173,6 +150,34 @@ namespace AutoTool.Services
                     IsEnable = true
                 };
             }
+        }
+    }
+
+    /// <summary>
+    /// DataContextLocatorインターフェース
+    /// </summary>
+    public interface IDataContextLocator
+    {
+        T? GetDataContext<T>() where T : class;
+        void SetDataContext<T>(T dataContext) where T : class;
+    }
+
+    /// <summary>
+    /// DataContextLocator実装
+    /// </summary>
+    public class DataContextLocator : IDataContextLocator
+    {
+        private readonly Dictionary<Type, object> _dataContexts = new();
+
+        public T? GetDataContext<T>() where T : class
+        {
+            _dataContexts.TryGetValue(typeof(T), out var dataContext);
+            return dataContext as T;
+        }
+
+        public void SetDataContext<T>(T dataContext) where T : class
+        {
+            _dataContexts[typeof(T)] = dataContext;
         }
     }
 }

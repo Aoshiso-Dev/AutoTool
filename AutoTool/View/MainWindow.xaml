@@ -34,13 +34,8 @@
     <!-- Keyboard shortcuts -->
     <Window.InputBindings>
         <!-- File operations -->
-        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveFileCommand}"/>
-        <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding SaveFileAsCommand}"/>
         <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenFileCommand}"/>
-        <!-- Undo/Redo operations -->
-        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}" />
-        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}" />
-        <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}" />
+        <!-- Other keyboard shortcuts will be handled by respective ViewModels through messaging -->
     </Window.InputBindings>
     
     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -55,7 +50,7 @@
         <Menu Grid.Row="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
             <MenuItem Header="ファイル(_F)">
                 <MenuItem Header="開く(_O)" Command="{Binding OpenFileCommand}" InputGestureText="Ctrl+O"/>
-                <MenuItem Header="{Binding MenuItemHeader_SaveFile}" Command="{Binding SaveFileCommand}" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="{Binding MenuItemHeader_SaveFile}" Command="{Binding SaveFileButtonCommand}" InputGestureText="Ctrl+S"/>
                 <MenuItem Header="{Binding MenuItemHeader_SaveFileAs}" Command="{Binding SaveFileAsCommand}" InputGestureText="Ctrl+Shift+S"/>
                 <Separator/>
                 <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}">
@@ -103,82 +98,7 @@
         </Menu>
 
         <!-- Toolbar with integrated button panel -->
-        <ToolBarTray Grid.Row="1">
-            <ToolBar>
-                <!-- File operations - disabled during execution -->
-                <Button Content="開く" Command="{Binding OpenFileCommand}" ToolTip="ファイルを開く (Ctrl+O)" 
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" />
-                <Button Content="保存" Command="{Binding SaveFileCommand}" ToolTip="ファイルを保存 (Ctrl+S)" 
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" />
-                <Separator />
-                
-                <!-- Undo/Redo - disabled during execution -->
-                <Button Content="元に戻す" Command="{Binding UndoCommand}" ToolTip="元に戻す (Ctrl+Z)"
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
-                <Button Content="やり直し" Command="{Binding RedoCommand}" ToolTip="やり直し (Ctrl+Y)"
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
-                <Separator />
-                
-                <!-- Execution control - always enabled -->
-                <Button Command="{Binding RunMacroCommand}" Width="100" Margin="2" Foreground="White">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Background" Value="Green"/>
-                            <Setter Property="Content" Value="実行"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                    <Setter Property="Background" Value="Red"/>
-                                    <Setter Property="Content" Value="停止"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-                <Separator />
-                
-                <!-- List operations - disabled during execution -->
-                <ComboBox ItemsSource="{Binding ItemTypes}" 
-                          SelectedItem="{Binding SelectedItemType}" 
-                          DisplayMemberPath="DisplayName"
-                          IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                          VerticalContentAlignment="Center" 
-                          Width="150" 
-                          Margin="2"/>
-                <Button Content="追加" Command="{Binding AddCommandCommand}" 
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                        Width="50" Height="Auto" Margin="2"/>
-                <Button Content="削除" Command="{Binding DeleteCommandCommand}" 
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                        Width="50" Height="Auto" Margin="2"/>
-                <Button Content="↑" Command="{Binding UpCommandCommand}" 
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                        Width="30" Margin="2" ToolTip="上に移動"/>
-                <Button Content="↓" Command="{Binding DownCommandCommand}" 
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                        Width="30" Margin="2" ToolTip="下に移動"/>
-                <Button Content="クリア" Command="{Binding ClearCommandCommand}" 
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                        Width="50" Height="Auto" Margin="2"/>
-                <Separator />
-                
-                <!-- Debug test buttons - disabled during execution -->
-                <Button Content="TEST" Command="{Binding AddTestCommandCommand}" 
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                        Width="50" Height="Auto" Margin="2" 
-                        Background="Orange" Foreground="White"
-                        ToolTip="テストコマンド追加（デバッグ用）"/>
-                <Button Content="実行テスト" Command="{Binding TestExecutionHighlightCommand}" 
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                        Width="70" Height="Auto" Margin="2" 
-                        Background="Purple" Foreground="White"
-                        ToolTip="実行ハイライトテスト（デバッグ用）"/>
-                <Button Content="状態確認" Click="DebugStateButton_Click"
-                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" 
-                        Width="70" Height="Auto" Margin="2" 
-                        Background="Navy" Foreground="White"
-                        ToolTip="実行状態確認（デバッグ用）"/>
-            </ToolBar>
-        </ToolBarTray>
+        <panels:ButtonPanelView Grid.Row="1" x:Name="ButtonPanelViewControl" />
 
         <!-- Main Content -->
         <Grid Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">

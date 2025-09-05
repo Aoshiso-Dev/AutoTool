@@ -1,337 +1,315 @@
+using AutoTool.Command.Interface;
 using AutoTool.Model.List.Interface;
-using AutoTool.ViewModel.Shared;
-using CommunityToolkit.Mvvm.Messaging;
+using AutoTool.Model.CommandDefinition;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using AutoTool.ViewModel.Shared;
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.Messaging;
 using System.Windows.Input;
 using System.Windows.Media;
 using AutoTool.Message;
+using AutoTool.Model.List.Class;
 
 namespace AutoTool.Services.UI
 {
     /// <summary>
-    /// EditPanelのプロパティを管理するサービス
+    /// EditPanel用プロパティサービス（DirectCommandRegistry統合版）
     /// </summary>
-    [Obsolete("標準MVVM方式に統一。AutoTool.ViewModel.Panels.EditPanelViewModelを使用してください", false)]
-    public interface IEditPanelPropertyService
-    {
-        // 現在選択されているアイテム
-        ICommandListItem? CurrentItem { get; }
-        
-        // プロパティ取得・設定メソッド
-        T GetProperty<T>(string propertyName, T defaultValue = default);
-        void SetProperty(string propertyName, object value);
-        
-        // 表示判定プロパティ
-        bool IsWaitImageItem { get; }
-        bool IsClickImageItem { get; }
-        bool IsClickImageAIItem { get; }
-        bool IsHotkeyItem { get; }
-        bool IsClickItem { get; }
-        bool IsWaitItem { get; }
-        bool IsLoopItem { get; }
-        bool IsLoopEndItem { get; }
-        bool IsLoopBreakItem { get; }
-        bool IsIfImageExistItem { get; }
-        bool IsIfImageNotExistItem { get; }
-        bool IsIfImageExistAIItem { get; }
-        bool IsIfImageNotExistAIItem { get; }
-        bool IsIfEndItem { get; }
-        bool IsIfVariableItem { get; }
-        bool IsExecuteItem { get; }
-        bool IsSetVariableItem { get; }
-        bool IsSetVariableAIItem { get; }
-        bool IsScreenshotItem { get; }
-        bool IsImageBasedItem { get; }
-        bool IsAIBasedItem { get; }
-        bool IsVariableItem { get; }
-        bool IsLoopRelatedItem { get; }
-        bool IsIfRelatedItem { get; }
-        bool ShowWindowInfo { get; }
-        bool ShowAdvancedSettings { get; }
-
-        // コレクション取得メソッド
-        ObservableCollection<MouseButton> MouseButtons { get; }
-        ObservableCollection<Key> KeyList { get; }
-        ObservableCollection<AutoTool.ViewModel.Shared.OperatorItem> Operators { get; }
-        ObservableCollection<AutoTool.ViewModel.Shared.AIDetectModeItem> AiDetectModes { get; }
-        ObservableCollection<AutoTool.ViewModel.Shared.BackgroundClickMethodItem> BackgroundClickMethods { get; }
-        ObservableCollection<CommandDisplayItem> ItemTypes { get; }
-        
-        // イベント
-        event EventHandler<ICommandListItem?> ItemChanged;
-        event EventHandler<string> PropertyChanged;
-    }
-
-    /// <summary>
-    /// EditPanelのプロパティ管理サービス実装（廃止予定）
-    /// </summary>
-    [Obsolete("標準MVVM方式に統一。AutoTool.ViewModel.Panels.EditPanelViewModelを使用してください", false)]
     public class EditPanelPropertyService : IEditPanelPropertyService
     {
+        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<EditPanelPropertyService> _logger;
         private readonly IMessenger _messenger;
-        
         private ICommandListItem? _currentItem;
-        private bool _isRunning = false;
-        
-        // コレクション
-        private readonly ObservableCollection<MouseButton> _mouseButtons;
-        private readonly ObservableCollection<Key> _keyList;
-        private readonly ObservableCollection<AutoTool.ViewModel.Shared.OperatorItem> _operators;
-        private readonly ObservableCollection<AutoTool.ViewModel.Shared.AIDetectModeItem> _aiDetectModes;
-        private readonly ObservableCollection<AutoTool.ViewModel.Shared.BackgroundClickMethodItem> _backgroundClickMethods;
-        private readonly ObservableCollection<CommandDisplayItem> _itemTypes;
 
-        public ICommandListItem? CurrentItem 
-        { 
-            get => _currentItem;
-            private set
-            {
-                if (_currentItem != value)
-                {
-                    _currentItem = value;
-                    ItemChanged?.Invoke(this, value);
-                    OnPropertyChanged(nameof(CurrentItem));
-                }
-            }
-        }
-
-        // 表示判定プロパティの実装
-        public bool IsWaitImageItem => CurrentItem?.ItemType == "WaitImage";
-        public bool IsClickImageItem => CurrentItem?.ItemType == "ClickImage";
-        public bool IsClickImageAIItem => CurrentItem?.ItemType == "ClickImageAI";
-        public bool IsHotkeyItem => CurrentItem?.ItemType == "Hotkey";
-        public bool IsClickItem => CurrentItem?.ItemType == "Click";
-        public bool IsWaitItem => CurrentItem?.ItemType == "Wait";
-        public bool IsLoopItem => CurrentItem?.ItemType == "Loop";
-        public bool IsLoopEndItem => CurrentItem?.ItemType == "LoopEnd";
-        public bool IsLoopBreakItem => CurrentItem?.ItemType == "LoopBreak";
-        public bool IsIfImageExistItem => CurrentItem?.ItemType == "IfImageExist";
-        public bool IsIfImageNotExistItem => CurrentItem?.ItemType == "IfImageNotExist";
-        public bool IsIfImageExistAIItem => CurrentItem?.ItemType == "IfImageExistAI";
-        public bool IsIfImageNotExistAIItem => CurrentItem?.ItemType == "IfImageNotExistAI";
-        public bool IsIfEndItem => CurrentItem?.ItemType == "IfEnd";
-        public bool IsIfVariableItem => CurrentItem?.ItemType == "IfVariable";
-        public bool IsExecuteItem => CurrentItem?.ItemType == "Execute";
-        public bool IsSetVariableItem => CurrentItem?.ItemType == "SetVariable";
-        public bool IsSetVariableAIItem => CurrentItem?.ItemType == "SetVariableAI";
-        public bool IsScreenshotItem => CurrentItem?.ItemType == "Screenshot";
-
-        // 複合条件判定
-        public bool IsImageBasedItem => IsWaitImageItem || IsClickImageItem || IsIfImageExistItem || IsIfImageNotExistItem || IsScreenshotItem;
-        public bool IsAIBasedItem => IsClickImageAIItem || IsIfImageExistAIItem || IsIfImageNotExistAIItem || IsSetVariableAIItem;
-        public bool IsVariableItem => IsIfVariableItem || IsSetVariableItem || IsSetVariableAIItem;
-        public bool IsLoopRelatedItem => IsLoopItem || IsLoopEndItem || IsLoopBreakItem;
-        public bool IsIfRelatedItem => IsIfImageExistItem || IsIfImageNotExistItem || IsIfImageExistAIItem || IsIfImageNotExistAIItem || IsIfVariableItem || IsIfEndItem;
-
-        // 表示制御プロパティ
-        public bool ShowWindowInfo => IsWaitImageItem || IsClickImageItem || IsHotkeyItem || IsClickItem || IsScreenshotItem || IsAIBasedItem;
-        public bool ShowAdvancedSettings => IsClickImageItem || IsClickItem || (IsAIBasedItem && !IsIfRelatedItem);
-
-        // コレクションプロパティ
-        public ObservableCollection<MouseButton> MouseButtons => _mouseButtons;
-        public ObservableCollection<Key> KeyList => _keyList;
-        public ObservableCollection<AutoTool.ViewModel.Shared.OperatorItem> Operators => _operators;
-        public ObservableCollection<AutoTool.ViewModel.Shared.AIDetectModeItem> AiDetectModes => _aiDetectModes;
-        public ObservableCollection<AutoTool.ViewModel.Shared.BackgroundClickMethodItem> BackgroundClickMethods => _backgroundClickMethods;
-        public ObservableCollection<CommandDisplayItem> ItemTypes => _itemTypes;
-
-        public event EventHandler<ICommandListItem?>? ItemChanged;
-        public event EventHandler<string>? PropertyChanged;
-
-        public EditPanelPropertyService(ILogger<EditPanelPropertyService> logger, IMessenger messenger)
+        public EditPanelPropertyService(IServiceProvider serviceProvider, ILogger<EditPanelPropertyService> logger, IMessenger messenger)
         {
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
 
-            _logger.LogWarning("EditPanelPropertyService は廃止予定です。AutoTool.ViewModel.Panels.EditPanelViewModel を使用してください。");
+            // メッセージ受信の設定
+            _messenger.Register<ChangeSelectedMessage>(this, (r, m) =>
+            {
+                _currentItem = m.SelectedItem;
+            });
 
-            // コレクションを初期化
-            _mouseButtons = new ObservableCollection<MouseButton>(Enum.GetValues<MouseButton>());
-            _keyList = new ObservableCollection<Key>(Enum.GetValues<Key>().OrderBy(k => k.ToString()));
-            _operators = InitializeOperators();
-            _aiDetectModes = InitializeAIDetectModes();
-            _backgroundClickMethods = InitializeBackgroundClickMethods();
-            _itemTypes = InitializeItemTypes();
-
-            SetupMessaging();
+            _logger.LogDebug("EditPanelPropertyService を初期化しました");
         }
 
-        public T GetProperty<T>(string propertyName, T defaultValue = default)
+        #region アイテムタイプ判定プロパティ
+
+        public bool IsWaitImageItem => _currentItem?.ItemType == "Wait_Image";
+        public bool IsClickImageItem => _currentItem?.ItemType == "Click_Image";
+        public bool IsClickImageAIItem => _currentItem?.ItemType == "Click_Image_AI";
+        public bool IsHotkeyItem => _currentItem?.ItemType == "Hotkey";
+        public bool IsClickItem => _currentItem?.ItemType == "Click";
+        public bool IsWaitItem => _currentItem?.ItemType == "Wait";
+        public bool IsLoopItem => _currentItem?.ItemType == "Loop";
+        public bool IsLoopEndItem => _currentItem?.ItemType == "Loop_End";
+        public bool IsLoopBreakItem => _currentItem?.ItemType == "Loop_Break";
+        public bool IsIfImageExistItem => _currentItem?.ItemType == "IF_ImageExist";
+        public bool IsIfImageNotExistItem => _currentItem?.ItemType == "IF_ImageNotExist";
+        public bool IsIfImageExistAIItem => _currentItem?.ItemType == "IF_ImageExist_AI";
+        public bool IsIfImageNotExistAIItem => _currentItem?.ItemType == "IF_ImageNotExist_AI";
+        public bool IsIfEndItem => _currentItem?.ItemType == "IF_End";
+        public bool IsIfVariableItem => _currentItem?.ItemType == "IF_Variable";
+        public bool IsExecuteItem => _currentItem?.ItemType == "Execute";
+        public bool IsSetVariableItem => _currentItem?.ItemType == "SetVariable";
+        public bool IsSetVariableAIItem => _currentItem?.ItemType == "SetVariable_AI";
+        public bool IsScreenshotItem => _currentItem?.ItemType == "Screenshot";
+
+        #endregion
+
+        #region プロパティ操作
+
+        public T? GetProperty<T>(string propertyName, T? defaultValue = default)
         {
+            if (_currentItem == null) return defaultValue;
+
             try
             {
-                if (CurrentItem == null)
-                    return defaultValue;
+                // UniversalCommandItemの場合は動的設定から取得
+                if (_currentItem is UniversalCommandItem universalItem)
+                {
+                    return universalItem.GetSetting<T>(propertyName, defaultValue);
+                }
 
-                // リフレクションでプロパティ値を取得
-                var property = CurrentItem.GetType().GetProperty(propertyName);
+                // 通常のプロパティから取得
+                var property = _currentItem.GetType().GetProperty(propertyName);
                 if (property != null)
                 {
-                    var value = property.GetValue(CurrentItem);
-                    if (value is T typedValue)
-                        return typedValue;
+                    var value = property.GetValue(_currentItem);
+                    if (value is T tValue)
+                        return tValue;
+                    if (value != null && typeof(T).IsAssignableFrom(value.GetType()))
+                        return (T)value;
                 }
-
-                return defaultValue;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "プロパティ取得エラー: {PropertyName}", propertyName);
-                return defaultValue;
+                _logger.LogDebug("プロパティ取得エラー: {Property} - {Error}", propertyName, ex.Message);
             }
+
+            return defaultValue;
         }
 
-        public void SetProperty(string propertyName, object value)
+        public void SetProperty<T>(string propertyName, T value)
         {
+            if (_currentItem == null) return;
+
             try
             {
-                if (CurrentItem == null)
+                // UniversalCommandItemの場合は動的設定に保存
+                if (_currentItem is UniversalCommandItem universalItem)
+                {
+                    universalItem.SetSetting(propertyName, value);
                     return;
+                }
 
-                // リフレクションでプロパティ値を設定
-                var property = CurrentItem.GetType().GetProperty(propertyName);
+                // 通常のプロパティに設定
+                var property = _currentItem.GetType().GetProperty(propertyName);
                 if (property != null && property.CanWrite)
                 {
-                    property.SetValue(CurrentItem, value);
-                    OnPropertyChanged(propertyName);
+                    var currentValue = property.GetValue(_currentItem);
+                    if (!Equals(currentValue, value))
+                    {
+                        property.SetValue(_currentItem, value);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "プロパティ設定エラー: {PropertyName} = {Value}", propertyName, value);
+                _logger.LogError(ex, "プロパティ設定エラー: {Property} = {Value}", propertyName, value);
             }
         }
 
-        private void SetupMessaging()
-        {
-            // アイテム変更メッセージを受信
-            _messenger.Register<UpdateEditPanelItemMessage>(this, (r, m) =>
-            {
-                CurrentItem = m.Item;
-                NotifyAllPropertiesChanged();
-            });
+        #endregion
 
-            // プロパティ設定メッセージを受信
-            _messenger.Register<SetEditPanelPropertyMessage>(this, (r, m) =>
-            {
-                SetProperty(m.PropertyName, m.Value);
-            });
+        #region 設定定義関連
 
-            // プロパティ要求メッセージを受信
-            _messenger.Register<RequestEditPanelPropertyMessage>(this, (r, m) =>
-            {
-                var value = GetProperty<object>(m.PropertyName);
-                _messenger.Send(new EditPanelPropertyResponseMessage(m.PropertyName, value));
-            });
-
-            // 実行状態変更メッセージを受信
-            _messenger.Register<UpdateEditPanelRunningStateMessage>(this, (r, m) =>
-            {
-                _isRunning = m.IsRunning;
-                OnPropertyChanged(nameof(_isRunning));
-            });
-        }
-
-        private void NotifyAllPropertiesChanged()
-        {
-            // すべての判定プロパティの変更を通知
-            var properties = new[]
-            {
-                nameof(IsWaitImageItem), nameof(IsClickImageItem), nameof(IsClickImageAIItem),
-                nameof(IsHotkeyItem), nameof(IsClickItem), nameof(IsWaitItem),
-                nameof(IsLoopItem), nameof(IsLoopEndItem), nameof(IsLoopBreakItem),
-                nameof(IsIfImageExistItem), nameof(IsIfImageNotExistItem), nameof(IsIfImageExistAIItem),
-                nameof(IsIfImageNotExistAIItem), nameof(IsIfEndItem), nameof(IsIfVariableItem),
-                nameof(IsExecuteItem), nameof(IsSetVariableItem), nameof(IsSetVariableAIItem),
-                nameof(IsScreenshotItem), nameof(IsImageBasedItem), nameof(IsAIBasedItem),
-                nameof(IsVariableItem), nameof(IsLoopRelatedItem), nameof(IsIfRelatedItem),
-                nameof(ShowWindowInfo), nameof(ShowAdvancedSettings)
-            };
-
-            foreach (var property in properties)
-            {
-                OnPropertyChanged(property);
-            }
-        }
-
-        private void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, propertyName);
-        }
-
-        private ObservableCollection<AutoTool.ViewModel.Shared.OperatorItem> InitializeOperators()
-        {
-            return new ObservableCollection<AutoTool.ViewModel.Shared.OperatorItem>
-            {
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = "==", DisplayName = "等しい" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = "!=", DisplayName = "等しくない" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = ">", DisplayName = "より大きい" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = "<", DisplayName = "より小さい" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = ">=", DisplayName = "以上" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = "<=", DisplayName = "以下" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = "Contains", DisplayName = "を含む" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = "StartsWith", DisplayName = "で始まる" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = "EndsWith", DisplayName = "で終わる" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsEmpty", DisplayName = "空である" },
-                new AutoTool.ViewModel.Shared.OperatorItem { Key = "IsNotEmpty", DisplayName = "空でない" }
-            };
-        }
-
-        private ObservableCollection<AutoTool.ViewModel.Shared.AIDetectModeItem> InitializeAIDetectModes()
-        {
-            return new ObservableCollection<AutoTool.ViewModel.Shared.AIDetectModeItem>
-            {
-                new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Class", DisplayName = "クラス検出" },
-                new AutoTool.ViewModel.Shared.AIDetectModeItem { Key = "Count", DisplayName = "個数カウント" }
-            };
-        }
-
-        private ObservableCollection<AutoTool.ViewModel.Shared.BackgroundClickMethodItem> InitializeBackgroundClickMethods()
-        {
-            return new ObservableCollection<AutoTool.ViewModel.Shared.BackgroundClickMethodItem>
-            {
-                new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 0, DisplayName = "SendMessage" },
-                new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 1, DisplayName = "PostMessage" },
-                new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 2, DisplayName = "子ウィンドウ検出" },
-                new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 3, DisplayName = "全方式試行" },
-                new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 4, DisplayName = "ゲーム(DirectInput)" },
-                new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 5, DisplayName = "ゲーム(フルスクリーン)" },
-                new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 6, DisplayName = "ゲーム(LowLevel)" },
-                new AutoTool.ViewModel.Shared.BackgroundClickMethodItem { Value = 7, DisplayName = "ゲーム(VirtualMouse)" }
-            };
-        }
-
-        private ObservableCollection<CommandDisplayItem> InitializeItemTypes()
+        /// <summary>
+        /// 指定されたコマンドの設定定義を取得
+        /// </summary>
+        public List<SettingDefinition> GetSettingDefinitions(string commandType)
         {
             try
             {
-                AutoTool.Model.CommandDefinition.CommandRegistry.Initialize();
+                _logger.LogDebug("設定定義取得開始: {CommandType}", commandType);
                 
-                var commandTypes = AutoTool.Model.CommandDefinition.CommandRegistry.GetOrderedTypeNames()
+                var definitions = DirectCommandRegistry.GetSettingDefinitions(commandType);
+                
+                _logger.LogDebug("設定定義取得完了: {CommandType} -> {Count}項目", commandType, definitions.Count);
+                return definitions;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "設定定義取得中にエラー: {CommandType}", commandType);
+                return new List<SettingDefinition>();
+            }
+        }
+
+        /// <summary>
+        /// コマンドアイテムの設定値を適用
+        /// </summary>
+        public void ApplySettings(ICommandListItem item, Dictionary<string, object?> settings)
+        {
+            try
+            {
+                if (item is UniversalCommandItem universalItem)
+                {
+                    foreach (var kvp in settings)
+                    {
+                        universalItem.SetSetting(kvp.Key, kvp.Value);
+                    }
+                }
+                else
+                {
+                    // 通常のアイテムの場合はリフレクションで設定
+                    foreach (var kvp in settings)
+                    {
+                        var property = item.GetType().GetProperty(kvp.Key);
+                        if (property != null && property.CanWrite)
+                        {
+                            property.SetValue(item, kvp.Value);
+                        }
+                    }
+                }
+                
+                _logger.LogDebug("設定値適用完了: {ItemType} - {SettingCount}項目", item.ItemType, settings.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "設定値適用中にエラー: {ItemType}", item.ItemType);
+            }
+        }
+
+        /// <summary>
+        /// コマンドアイテムから設定値を取得
+        /// </summary>
+        public Dictionary<string, object?> GetSettings(ICommandListItem item)
+        {
+            var settings = new Dictionary<string, object?>();
+            
+            try
+            {
+                if (item is UniversalCommandItem universalItem)
+                {
+                    // UniversalCommandItemの動的設定から取得
+                    foreach (var kvp in universalItem.Settings)
+                    {
+                        settings[kvp.Key] = kvp.Value;
+                    }
+                }
+                else
+                {
+                    // 通常のアイテムからリフレクションで取得
+                    var properties = item.GetType().GetProperties()
+                        .Where(p => p.CanRead && p.Name != "ItemType" && p.Name != "LineNumber");
+                    
+                    foreach (var property in properties)
+                    {
+                        var value = property.GetValue(item);
+                        settings[property.Name] = value;
+                    }
+                }
+                
+                _logger.LogDebug("設定値取得完了: {ItemType} - {SettingCount}項目", item.ItemType, settings.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "設定値取得中にエラー: {ItemType}", item.ItemType);
+            }
+            
+            return settings;
+        }
+
+        /// <summary>
+        /// ソースコレクションを取得
+        /// </summary>
+        public object[]? GetSourceCollection(string collectionName)
+        {
+            try
+            {
+                return DirectCommandRegistry.GetSourceCollection(collectionName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ソースコレクション取得中にエラー: {CollectionName}", collectionName);
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region 追加メソッド（互換性用）
+
+        /// <summary>
+        /// 利用可能なコマンドタイプの一覧を取得
+        /// </summary>
+        public ObservableCollection<CommandDisplayItem> GetAvailableCommandTypes()
+        {
+            try
+            {
+                _logger.LogDebug("利用可能なコマンドタイプの取得を開始");
+
+                // DirectCommandRegistryからコマンドタイプを取得
+                var commandTypes = DirectCommandRegistry.GetOrderedTypeNames()
                     .Select(typeName => new CommandDisplayItem
                     {
                         TypeName = typeName,
-                        DisplayName = AutoTool.Model.CommandDefinition.CommandRegistry.DisplayOrder.GetDisplayName(typeName),
-                        Category = AutoTool.Model.CommandDefinition.CommandRegistry.DisplayOrder.GetCategoryName(typeName)
+                        DisplayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(typeName),
+                        Category = DirectCommandRegistry.DisplayOrder.GetCategoryName(typeName)
                     })
                     .ToList();
 
+                _logger.LogDebug("コマンドタイプ取得完了: {Count}個", commandTypes.Count);
                 return new ObservableCollection<CommandDisplayItem>(commandTypes);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ItemTypes初期化中にエラー");
-                
-                // フォールバック
-                return new ObservableCollection<CommandDisplayItem>
-                {
-                    new CommandDisplayItem { TypeName = "Wait", DisplayName = "待機", Category = "基本" }
-                };
+                _logger.LogError(ex, "コマンドタイプ取得中にエラーが発生");
+                return new ObservableCollection<CommandDisplayItem>();
             }
         }
+
+        /// <summary>
+        /// コマンドの表示名を取得
+        /// </summary>
+        public string GetCommandDisplayName(string commandId)
+        {
+            try
+            {
+                return DirectCommandRegistry.DisplayOrder.GetDisplayName(commandId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "コマンド表示名取得中にエラー: {CommandId}", commandId);
+                return commandId;
+            }
+        }
+
+        /// <summary>
+        /// コマンドの説明を取得
+        /// </summary>
+        public string GetCommandDescription(string commandId)
+        {
+            try
+            {
+                return DirectCommandRegistry.DisplayOrder.GetDescription(commandId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "コマンド説明取得中にエラー: {CommandId}", commandId);
+                return $"{commandId}コマンド";
+            }
+        }
+
+        #endregion
     }
 }

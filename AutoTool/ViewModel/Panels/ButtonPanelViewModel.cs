@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+ï»¿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace AutoTool.ViewModel.Panels
 {
     /// <summary>
-    /// Phase 5Š®‘S“‡”ÅFButtonPanelViewModeli‚“x‚ÈƒRƒ}ƒ“ƒh‘€ìj
+    /// Phase 5å®Œå…¨çµ±åˆï¼šButtonPanelViewModelï¼ˆé«˜æ¬¡ãªã‚³ãƒãƒ³ãƒ‰æ“ä½œï¼‰
     /// </summary>
     public partial class ButtonPanelViewModel : ObservableObject
     {
@@ -42,7 +42,7 @@ namespace AutoTool.ViewModel.Panels
         private ObservableCollection<CommandDisplayItem> _filteredItemTypes = new();
 
         [ObservableProperty]
-        private string _selectedCategory = "‚·‚×‚Ä";
+        private string _selectedCategory = "ã™ã¹ã¦";
 
         [ObservableProperty]
         private ObservableCollection<string> _categories = new();
@@ -54,60 +54,123 @@ namespace AutoTool.ViewModel.Panels
         private int _batchAddCount = 1;
 
         [ObservableProperty]
-        private string _statusMessage = "€”õŠ®—¹";
+        private string _statusMessage = "æº–å‚™å®Œäº†";
+
+        /// <summary>
+        /// StatusTextãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ï¼ˆMainWindowViewModelã‹ã‚‰å‚ç…§ç”¨ï¼‰
+        /// </summary>
+        public string StatusText => StatusMessage;
 
         public ButtonPanelViewModel(ILogger<ButtonPanelViewModel> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _logger.LogInformation("Phase 5“‡”ÅButtonPanelViewModel ‚ğ‰Šú‰»‚µ‚Ä‚¢‚Ü‚·");
-            
+            _logger.LogInformation("Phase 5å®Œå…¨ç»Ÿåˆï¼šButtonPanelViewModel ãŒåˆæœŸåŒ–ã•ã‚Œã¦ã„ã¾ã™");
+
+            // ãƒ¡ãƒƒã‚»ãƒ³ã‚¸ãƒ£ãƒ¼ã®çŠ¶æ…‹ã‚’ç¢ºèª
+            var messengerInfo = WeakReferenceMessenger.Default.ToString();
+            _logger.LogDebug("ä½¿ç”¨ä¸­ã®Messenger: {MessengerInfo}", messengerInfo);
+
+            // ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ç™»éŒ²
+            SetupKeyboardShortcuts();
+
             InitializeItemTypes();
             LoadRecentCommands();
             LoadFavoriteCommands();
+        }
+
+        /// <summary>
+        /// ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å‡¦ç†ã‚’è¨­å®š
+        /// </summary>
+        private void SetupKeyboardShortcuts()
+        {
+            try
+            {
+                // ä¸€æ™‚çš„ã«ã‚³ãƒ¡ãƒ³ãƒˆã‚¢ã‚¦ãƒˆ - ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ³ã‚°å®Ÿè£…å¾Œã«å†æœ‰åŠ¹åŒ–
+                /*
+                // Ctrl+S: ä¿å­˜
+                WeakReferenceMessenger.Default.Register<KeyboardShortcutMessage>(this, (r, m) =>
+                {
+                    if (m.Key == "Ctrl+S")
+                    {
+                        SaveCommand.Execute(null);
+                    }
+                    else if (m.Key == "Ctrl+Z")
+                    {
+                        UndoCommand.Execute(null);
+                    }
+                    else if (m.Key == "Ctrl+Y")
+                    {
+                        RedoCommand.Execute(null);
+                    }
+                });
+                */
+
+                _logger.LogDebug("ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆè¨­å®šå®Œäº†ï¼ˆä¸€æ™‚çš„ã«ç„¡åŠ¹åŒ–ä¸­ï¼‰");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆè¨­å®šä¸­ã«ã‚¨ãƒ©ãƒ¼");
+            }
         }
 
         private void InitializeItemTypes()
         {
             try
             {
-                _logger.LogDebug("ƒAƒCƒeƒ€ƒ^ƒCƒv‚Ì‰Šú‰»‚ğŠJn‚µ‚Ü‚·");
+                _logger.LogDebug("ã‚¢ã‚¤ãƒ†ãƒ ã‚¿ã‚¤ãƒ—ã®åˆæœŸåŒ–ã‚’é–‹å§‹ã—ã¾ã™");
 
-                // CommandRegistry‚ğ‰Šú‰»
-                CommandRegistry.Initialize();
-                _logger.LogDebug("CommandRegistry.Initialize() Š®—¹");
+                // DirectCommandRegistryã®åˆæœŸåŒ– - serviceProviderãŒnullã§ã‚‚åŸºæœ¬ã‚³ãƒãƒ³ãƒ‰ã‚¿ã‚¤ãƒ—ã¯å–å¾—å¯èƒ½
+                DirectCommandRegistry.Initialize(null); // æ˜ç¤ºçš„ã«åˆæœŸåŒ–ã‚’å‘¼ã³å‡ºã™
 
-                var orderedTypeNames = CommandRegistry.GetOrderedTypeNames();
-                _logger.LogDebug("GetOrderedTypeNames()‚Åæ“¾‚µ‚½Œ^–¼”: {Count}", orderedTypeNames?.Count() ?? 0);
+                var orderedTypeNames = DirectCommandRegistry.GetOrderedTypeNames();
+                _logger.LogDebug("GetOrderedTypeNames()ã§å–å¾—ã—ãŸã‚¿ã‚¤ãƒ—æ•°: {Count}", orderedTypeNames?.Count() ?? 0);
+
+                if (orderedTypeNames != null)
+                {
+                    foreach (var typeName in orderedTypeNames)
+                    {
+                        _logger.LogTrace("å–å¾—ã•ã‚ŒãŸã‚³ãƒãƒ³ãƒ‰ã‚¿ã‚¤ãƒ—: {TypeName}", typeName);
+                    }
+                }
 
                 var displayItems = orderedTypeNames?
                     .Select(typeName => new CommandDisplayItem
                     {
                         TypeName = typeName,
-                        DisplayName = CommandRegistry.DisplayOrder.GetDisplayName(typeName),
-                        Category = CommandRegistry.DisplayOrder.GetCategoryName(typeName)
+                        DisplayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(typeName),
+                        Category = DirectCommandRegistry.DisplayOrder.GetCategoryName(typeName)
                     })
                     .ToList() ?? new List<CommandDisplayItem>();
-                
-                _logger.LogDebug("ì¬‚µ‚½displayItems”: {Count}", displayItems.Count);
-                
+
+                _logger.LogDebug("ä½œæˆã•ã‚ŒãŸdisplayItemsæ•°: {Count}", displayItems.Count);
+
+                // ä½œæˆã•ã‚ŒãŸã‚¢ã‚¤ãƒ†ãƒ ã®è©³ç´°ã‚’ãƒ­ã‚°å‡ºåŠ›
+                foreach (var item in displayItems.Take(5)) // æœ€åˆã®5å€‹ã®ã¿
+                {
+                    _logger.LogDebug("ä½œæˆã•ã‚ŒãŸCommandDisplayItem: TypeName={TypeName}, DisplayName={DisplayName}, Category={Category}",
+                        item.TypeName, item.DisplayName, item.Category);
+                }
+
                 ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
                 FilteredItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
                 SelectedItemType = ItemTypes.FirstOrDefault();
-                
-                // ƒJƒeƒSƒŠ[ƒŠƒXƒg‚ğì¬
+
+                _logger.LogDebug("SelectedItemTypeè¨­å®š: {SelectedItemType}", SelectedItemType?.TypeName ?? "null");
+
+                // ã‚«ãƒ†ã‚´ãƒªãƒ¼ãƒªã‚¹ãƒˆã‚’ä½œæˆ
                 var categories = displayItems.Select(item => item.Category).Distinct().OrderBy(c => c).ToList();
-                categories.Insert(0, "‚·‚×‚Ä");
+                categories.Insert(0, "ã™ã¹ã¦");
                 Categories = new ObservableCollection<string>(categories);
-                
-                _logger.LogDebug("ƒAƒCƒeƒ€ƒ^ƒCƒv‚Ì‰Šú‰»‚ªŠ®—¹‚µ‚Ü‚µ‚½: {Count}ŒÂ", ItemTypes.Count);
-                _logger.LogDebug("‘I‘ğ‚³‚ê‚½ƒAƒCƒeƒ€: {DisplayName}", SelectedItemType?.DisplayName ?? "‚È‚µ");
-                
-                StatusMessage = $"{ItemTypes.Count}ŒÂ‚ÌƒRƒ}ƒ“ƒh‚ª—˜—p‰Â”\‚Å‚·";
+
+                _logger.LogDebug("ã‚¢ã‚¤ãƒ†ãƒ ã‚¿ã‚¤ãƒ—ã®åˆæœŸåŒ–ãŒå®Œäº†ã—ã¾ã—ãŸ: {Count}å€‹", ItemTypes.Count);
+                _logger.LogDebug("é¸æŠã•ã‚ŒãŸã‚¢ã‚¤ãƒ†ãƒ : {DisplayName}", SelectedItemType?.DisplayName ?? "ãªã—");
+
+                StatusMessage = $"{ItemTypes.Count}ã®ã‚³ãƒãƒ³ãƒ‰ãŒåˆ©ç”¨å¯èƒ½ã§ã™";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒAƒCƒeƒ€ƒ^ƒCƒv‚Ì‰Šú‰»’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"‰Šú‰»ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ã‚¢ã‚¤ãƒ†ãƒ ã‚¿ã‚¤ãƒ—ã®åˆæœŸåŒ–ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"åˆæœŸåŒ–ã‚¨ãƒ©ãƒ¼: {ex.Message}";
                 throw;
             }
         }
@@ -128,74 +191,138 @@ namespace AutoTool.ViewModel.Panels
             {
                 var filtered = ItemTypes.AsEnumerable();
 
-                // ƒJƒeƒSƒŠ[ƒtƒBƒ‹ƒ^[
-                if (!string.IsNullOrEmpty(SelectedCategory) && SelectedCategory != "‚·‚×‚Ä")
+                // ã‚«ãƒ†ã‚´ãƒªãƒ¼ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼
+                if (!string.IsNullOrEmpty(SelectedCategory) && SelectedCategory != "ã™ã¹ã¦")
                 {
                     filtered = filtered.Where(item => item.Category == SelectedCategory);
                 }
 
-                // ƒeƒLƒXƒgŒŸõƒtƒBƒ‹ƒ^[
+                // ãƒ†ã‚­ã‚¹ãƒˆæ¤œç´¢ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼
                 if (!string.IsNullOrEmpty(SearchText))
                 {
                     var searchLower = SearchText.ToLower();
-                    filtered = filtered.Where(item => 
+                    filtered = filtered.Where(item =>
                         item.DisplayName.ToLower().Contains(searchLower) ||
                         item.TypeName.ToLower().Contains(searchLower) ||
                         item.Category.ToLower().Contains(searchLower));
                 }
 
                 FilteredItemTypes = new ObservableCollection<CommandDisplayItem>(filtered);
-                
-                // ŒŸõŒ‹‰Ê‚ª‚ ‚éê‡‚ÍÅ‰‚ÌƒAƒCƒeƒ€‚ğ‘I‘ğ
-                if (FilteredItemTypes.Count > 0 && !FilteredItemTypes.Contains(SelectedItemType))
+
+                // æ¤œç´¢çµæœãŒã‚ã‚‹å ´åˆã¯æœ€åˆã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’é¸æŠ
+                if (FilteredItemTypes.Count > 0)
                 {
-                    SelectedItemType = FilteredItemTypes.First();
-                }
-
-                StatusMessage = $"{FilteredItemTypes.Count}ŒÂ‚ÌƒRƒ}ƒ“ƒh‚ª•\¦‚³‚ê‚Ä‚¢‚Ü‚·";
-                _logger.LogDebug("ƒRƒ}ƒ“ƒhƒtƒBƒ‹ƒ^[“K—p: {Count}ŒÂ•\¦", FilteredItemTypes.Count);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ƒRƒ}ƒ“ƒhƒtƒBƒ‹ƒ^[’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"ƒtƒBƒ‹ƒ^[ƒGƒ‰[: {ex.Message}";
-            }
-        }
-
-        #region ƒRƒ}ƒ“ƒh‘€ì
-
-        [RelayCommand]
-        public void Add() 
-        {
-            try
-            {
-                if (SelectedItemType != null)
-                {
-                    _logger.LogDebug("’Ç‰ÁƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·: {ItemType}", SelectedItemType.TypeName);
-                    
-                    // ƒoƒbƒ`’Ç‰Á‘Î‰
-                    for (int i = 0; i < BatchAddCount; i++)
+                    if (!FilteredItemTypes.Contains(SelectedItemType))
                     {
-                        WeakReferenceMessenger.Default.Send(new AddMessage(SelectedItemType.TypeName));
+                        SelectedItemType = FilteredItemTypes.First();
+                        _logger.LogDebug("ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼å¾Œã®æœ€åˆã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’é¸æŠ: {TypeName}", SelectedItemType.TypeName);
                     }
-                    
-                    // Å‹ßg—p‚µ‚½ƒRƒ}ƒ“ƒh‚É’Ç‰Á
-                    AddToRecentCommands(SelectedItemType);
-                    
-                    StatusMessage = BatchAddCount > 1 
-                        ? $"{SelectedItemType.DisplayName}‚ğ{BatchAddCount}ŒÂ’Ç‰Á‚µ‚Ü‚µ‚½"
-                        : $"{SelectedItemType.DisplayName}‚ğ’Ç‰Á‚µ‚Ü‚µ‚½";
                 }
                 else
                 {
-                    _logger.LogWarning("ƒAƒCƒeƒ€ƒ^ƒCƒv‚ª‘I‘ğ‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ");
-                    StatusMessage = "ƒRƒ}ƒ“ƒh‚ª‘I‘ğ‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ";
+                    // ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼çµæœãŒãªã„å ´åˆã¯nullã«è¨­å®š
+                    SelectedItemType = null;
+                    _logger.LogDebug("ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼çµæœãªã—ã€SelectedItemTypeã‚’nullã«è¨­å®š");
+                }
+
+                StatusMessage = $"{FilteredItemTypes.Count}å€‹ã®ã‚³ãƒãƒ³ãƒ‰ãŒè¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™";
+                _logger.LogDebug("ã‚³ãƒãƒ³ãƒ‰ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼é©ç”¨: {Count}å€‹è¡¨ç¤º", FilteredItemTypes.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ã‚³ãƒãƒ³ãƒ‰ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼ã‚¨ãƒ©ãƒ¼: {ex.Message}";
+            }
+        }
+
+        partial void OnStatusMessageChanged(string value)
+        {
+            OnPropertyChanged(nameof(StatusText));
+        }
+
+        partial void OnSelectedItemTypeChanged(CommandDisplayItem? value)
+        {
+            _logger.LogDebug("SelectedItemTypeå¤‰æ›´: {OldValue} -> {NewValue}",
+                _selectedItemType?.TypeName ?? "null", value?.TypeName ?? "null");
+        }
+
+        #region ã‚³ãƒãƒ³ãƒ‰æ“ä½œ
+
+        [RelayCommand]
+        public void Add()
+        {
+            try
+            {
+                _logger.LogDebug("Add()ãƒ¡ã‚½ãƒƒãƒ‰é–‹å§‹ - SelectedItemType: {SelectedItemType}", SelectedItemType?.TypeName ?? "null");
+
+                if (SelectedItemType != null)
+                {
+                    _logger.LogInformation("è¿½åŠ ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™: {ItemType} (DisplayName: {DisplayName})",
+                        SelectedItemType.TypeName, SelectedItemType.DisplayName);
+
+                    // ãƒ¡ãƒƒã‚»ãƒ³ã‚¸ãƒ£ãƒ¼ã®å—ä¿¡è€…æ•°ã‚’ç¢ºèª
+                    try
+                    {
+                        // ãƒªãƒ•ãƒ¬ã‚¯ã‚·ãƒ§ãƒ³ã‚’ä½¿ã£ã¦Receiveræ•°ã‚’ç¢ºèª
+                        var messengerType = WeakReferenceMessenger.Default.GetType();
+                        var recipientsField = messengerType.GetField("recipients",
+                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+                        if (recipientsField?.GetValue(WeakReferenceMessenger.Default) is System.Collections.IDictionary recipients)
+                        {
+                            _logger.LogDebug("Messengerå—ä¿¡è€…æ•°: {Count}", recipients.Count);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Messengerã®å—ä¿¡è€…æ•°ç¢ºèªã«å¤±æ•—");
+                    }
+
+                    // ãƒãƒƒãƒè¿½åŠ å¯¾å¿œ
+                    for (int i = 0; i < BatchAddCount; i++)
+                    {
+                        var addMessage = new AddMessage(SelectedItemType.TypeName);
+                        _logger.LogDebug("AddMessageé€ä¿¡ä¸­: {ItemType} (#{Index})", SelectedItemType.TypeName, i + 1);
+                        WeakReferenceMessenger.Default.Send(addMessage);
+
+                        // é€ä¿¡å¾Œã®ç¢ºèª
+                        _logger.LogDebug("AddMessageé€ä¿¡å®Œäº†: {ItemType} (#{Index})", SelectedItemType.TypeName, i + 1);
+                    }
+
+                    // æœ€è¿‘ä½¿ç”¨ã—ãŸã‚³ãƒãƒ³ãƒ‰ã«è¿½åŠ 
+                    AddToRecentCommands(SelectedItemType);
+
+                    StatusMessage = BatchAddCount > 1
+                        ? $"{SelectedItemType.DisplayName}ã‚’{BatchAddCount}å€‹è¿½åŠ ã—ã¾ã—ãŸ"
+                        : $"{SelectedItemType.DisplayName}ã‚’è¿½åŠ ã—ã¾ã—ãŸ";
+
+                    _logger.LogInformation("ã‚³ãƒãƒ³ãƒ‰è¿½åŠ å®Œäº†: {ItemType} x {Count}", SelectedItemType.TypeName, BatchAddCount);
+                }
+                else
+                {
+                    _logger.LogWarning("ã‚¢ã‚¤ãƒ†ãƒ ã‚¿ã‚¤ãƒ—ãŒé¸æŠã•ã‚Œã¦ã„ã¾ã›ã‚“");
+                    StatusMessage = "ã‚³ãƒãƒ³ãƒ‰ãŒé¸æŠã•ã‚Œã¦ã„ã¾ã›ã‚“";
+
+                    // ãƒ‡ãƒãƒƒã‚°ç”¨ï¼šåˆ©ç”¨å¯èƒ½ãªã‚¢ã‚¤ãƒ†ãƒ ã®çŠ¶æ³ã‚’ç¢ºèª
+                    _logger.LogDebug("åˆ©ç”¨å¯èƒ½ãªã‚¢ã‚¤ãƒ†ãƒ æ•°: ItemTypes={ItemTypesCount}, FilteredItemTypes={FilteredCount}",
+                        ItemTypes.Count, FilteredItemTypes.Count);
+
+                    if (ItemTypes.Count > 0)
+                    {
+                        var firstItem = ItemTypes.First();
+                        _logger.LogDebug("æœ€åˆã®ã‚¢ã‚¤ãƒ†ãƒ : {TypeName} ({DisplayName})", firstItem.TypeName, firstItem.DisplayName);
+
+                        // å¼·åˆ¶çš„ã«æœ€åˆã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’é¸æŠã—ã¦ãƒ†ã‚¹ãƒˆ
+                        SelectedItemType = firstItem;
+                        _logger.LogDebug("æœ€åˆã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’å¼·åˆ¶é¸æŠã—ã¦ãƒªãƒˆãƒ©ã‚¤");
+                        StatusMessage = "æœ€åˆã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’é¸æŠã—ã¾ã—ãŸ";
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "’Ç‰ÁƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"’Ç‰ÁƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "è¿½åŠ ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"è¿½åŠ ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -207,14 +334,14 @@ namespace AutoTool.ViewModel.Panels
                 if (recentCommand != null)
                 {
                     WeakReferenceMessenger.Default.Send(new AddMessage(recentCommand.TypeName));
-                    StatusMessage = $"{recentCommand.DisplayName}‚ğ’Ç‰Á‚µ‚Ü‚µ‚½iÅ‹ßg—pj";
-                    _logger.LogDebug("Å‹ßg—p‚µ‚½ƒRƒ}ƒ“ƒh‚©‚ç’Ç‰Á: {ItemType}", recentCommand.TypeName);
+                    StatusMessage = $"{recentCommand.DisplayName}ã‚’è¿½åŠ ã—ã¾ã—ãŸï¼ˆæœ€è¿‘ä½¿ç”¨ï¼‰";
+                    _logger.LogDebug("æœ€è¿‘ä½¿ç”¨ã—ãŸã‚³ãƒãƒ³ãƒ‰ã‹ã‚‰è¿½åŠ : {ItemType}", recentCommand.TypeName);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Å‹ßg—pƒRƒ}ƒ“ƒh’Ç‰Á’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"’Ç‰ÁƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "æœ€è¿‘ä½¿ç”¨ã‚³ãƒãƒ³ãƒ‰è¿½åŠ ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"è¿½åŠ ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -226,14 +353,14 @@ namespace AutoTool.ViewModel.Panels
                 if (favoriteCommand != null)
                 {
                     WeakReferenceMessenger.Default.Send(new AddMessage(favoriteCommand.TypeName));
-                    StatusMessage = $"{favoriteCommand.DisplayName}‚ğ’Ç‰Á‚µ‚Ü‚µ‚½i‚¨‹C‚É“ü‚èj";
-                    _logger.LogDebug("‚¨‹C‚É“ü‚èƒRƒ}ƒ“ƒh‚©‚ç’Ç‰Á: {ItemType}", favoriteCommand.TypeName);
+                    StatusMessage = $"{favoriteCommand.DisplayName}ã‚’è¿½åŠ ã—ã¾ã—ãŸï¼ˆãŠæ°—ã«å…¥ã‚Šï¼‰";
+                    _logger.LogDebug("ãŠæ°—ã«å…¥ã‚Šã‚³ãƒãƒ³ãƒ‰ã‹ã‚‰è¿½åŠ : {ItemType}", favoriteCommand.TypeName);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‚¨‹C‚É“ü‚èƒRƒ}ƒ“ƒh’Ç‰Á’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"’Ç‰ÁƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ãŠæ°—ã«å…¥ã‚Šã‚³ãƒãƒ³ãƒ‰è¿½åŠ ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"è¿½åŠ ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -246,14 +373,14 @@ namespace AutoTool.ViewModel.Panels
                 {
                     FavoriteCommands.Add(SelectedItemType);
                     SaveFavoriteCommands();
-                    StatusMessage = $"{SelectedItemType.DisplayName}‚ğ‚¨‹C‚É“ü‚è‚É’Ç‰Á‚µ‚Ü‚µ‚½";
-                    _logger.LogDebug("‚¨‹C‚É“ü‚è‚É’Ç‰Á: {ItemType}", SelectedItemType.TypeName);
+                    StatusMessage = $"{SelectedItemType.DisplayName}ã‚’ãŠæ°—ã«å…¥ã‚Šã«è¿½åŠ ã—ã¾ã—ãŸ";
+                    _logger.LogDebug("ãŠæ°—ã«å…¥ã‚Šã«è¿½åŠ : {ItemType}", SelectedItemType.TypeName);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‚¨‹C‚É“ü‚è’Ç‰Á’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"‚¨‹C‚É“ü‚è’Ç‰ÁƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ãŠæ°—ã«å…¥ã‚Šè¿½åŠ ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"ãŠæ°—ã«å…¥ã‚Šè¿½åŠ ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -266,14 +393,14 @@ namespace AutoTool.ViewModel.Panels
                 {
                     FavoriteCommands.Remove(favoriteCommand);
                     SaveFavoriteCommands();
-                    StatusMessage = $"{favoriteCommand.DisplayName}‚ğ‚¨‹C‚É“ü‚è‚©‚çíœ‚µ‚Ü‚µ‚½";
-                    _logger.LogDebug("‚¨‹C‚É“ü‚è‚©‚çíœ: {ItemType}", favoriteCommand.TypeName);
+                    StatusMessage = $"{favoriteCommand.DisplayName}ã‚’ãŠæ°—ã«å…¥ã‚Šã‹ã‚‰å‰Šé™¤ã—ã¾ã—ãŸ";
+                    _logger.LogDebug("ãŠæ°—ã«å…¥ã‚Šã‹ã‚‰å‰Šé™¤: {ItemType}", favoriteCommand.TypeName);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‚¨‹C‚É“ü‚èíœ’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"‚¨‹C‚É“ü‚èíœƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ãŠæ°—ã«å…¥ã‚Šå‰Šé™¤ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"ãŠæ°—ã«å…¥ã‚Šå‰Šé™¤ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -284,149 +411,149 @@ namespace AutoTool.ViewModel.Panels
             {
                 if (IsRunning)
                 {
-                    _logger.LogInformation("’â~ƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                    _logger.LogInformation("åœæ­¢ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                     WeakReferenceMessenger.Default.Send(new StopMessage());
-                    StatusMessage = "ƒ}ƒNƒ‚ğ’â~‚µ‚Ä‚¢‚Ü‚·...";
+                    StatusMessage = "ãƒã‚¯ãƒ­ã‚’åœæ­¢ã—ã¦ã„ã¾ã™...";
                 }
                 else
                 {
-                    _logger.LogInformation("ÀsƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                    _logger.LogInformation("å®Ÿè¡Œã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                     WeakReferenceMessenger.Default.Send(new RunMessage());
-                    StatusMessage = "ƒ}ƒNƒ‚ğÀs‚µ‚Ä‚¢‚Ü‚·...";
+                    StatusMessage = "ãƒã‚¯ãƒ­ã‚’å®Ÿè¡Œã—ã¦ã„ã¾ã™...";
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Às/’â~ƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"ÀsƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "å®Ÿè¡Œ/åœæ­¢ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"å®Ÿè¡Œã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
         [RelayCommand]
-        public void Save() 
+        public void Save()
         {
             try
             {
-                _logger.LogDebug("•Û‘¶ƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                _logger.LogDebug("ä¿å­˜ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                 WeakReferenceMessenger.Default.Send(new SaveMessage());
-                StatusMessage = "ƒtƒ@ƒCƒ‹‚ğ•Û‘¶‚µ‚Ä‚¢‚Ü‚·...";
+                StatusMessage = "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ä¿å­˜ã—ã¦ã„ã¾ã™...";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "•Û‘¶ƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"•Û‘¶ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ä¿å­˜ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"ä¿å­˜ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
         [RelayCommand]
-        public void Load() 
+        public void Load()
         {
             try
             {
-                _logger.LogDebug("“Ç‚İ‚İƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                _logger.LogDebug("èª­ã¿è¾¼ã¿ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                 WeakReferenceMessenger.Default.Send(new LoadMessage());
-                StatusMessage = "ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚ñ‚Å‚¢‚Ü‚·...";
+                StatusMessage = "ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚“ã§ã„ã¾ã™...";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "“Ç‚İ‚İƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"“Ç‚İ‚İƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "èª­ã¿è¾¼ã¿ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"èª­ã¿è¾¼ã¿ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
         [RelayCommand]
-        public void Clear() 
+        public void Clear()
         {
             try
             {
-                _logger.LogDebug("ƒNƒŠƒAƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                _logger.LogDebug("ã‚¯ãƒªã‚¢ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                 WeakReferenceMessenger.Default.Send(new ClearMessage());
-                StatusMessage = "ƒRƒ}ƒ“ƒhƒŠƒXƒg‚ğƒNƒŠƒA‚µ‚Ä‚¢‚Ü‚·...";
+                StatusMessage = "ã‚³ãƒãƒ³ãƒ‰ãƒªã‚¹ãƒˆã‚’ã‚¯ãƒªã‚¢ã—ã¦ã„ã¾ã™...";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ƒNƒŠƒAƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"ƒNƒŠƒAƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ã‚¯ãƒªã‚¢ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"ã‚¯ãƒªã‚¢ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
         [RelayCommand]
-        public void Up() 
+        public void Up()
         {
             try
             {
-                _logger.LogDebug("ãˆÚ“®ƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                _logger.LogDebug("ä¸Šç§»å‹•ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                 WeakReferenceMessenger.Default.Send(new UpMessage());
-                StatusMessage = "‘I‘ğ€–Ú‚ğã‚ÉˆÚ“®‚µ‚Ü‚µ‚½";
+                StatusMessage = "é¸æŠé …ç›®ã‚’ä¸Šã«ç§»å‹•ã—ã¾ã—ãŸ";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ãˆÚ“®ƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"ˆÚ“®ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ä¸Šç§»å‹•ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"ç§»å‹•ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
         [RelayCommand]
-        public void Down() 
+        public void Down()
         {
             try
             {
-                _logger.LogDebug("‰ºˆÚ“®ƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                _logger.LogDebug("ä¸‹ç§»å‹•ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                 WeakReferenceMessenger.Default.Send(new DownMessage());
-                StatusMessage = "‘I‘ğ€–Ú‚ğ‰º‚ÉˆÚ“®‚µ‚Ü‚µ‚½";
+                StatusMessage = "é¸æŠé …ç›®ã‚’ä¸‹ã«ç§»å‹•ã—ã¾ã—ãŸ";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‰ºˆÚ“®ƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"ˆÚ“®ƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ä¸‹ç§»å‹•ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"ç§»å‹•ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
         [RelayCommand]
-        public void Delete() 
+        public void Delete()
         {
             try
             {
-                _logger.LogDebug("íœƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                _logger.LogDebug("å‰Šé™¤ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                 WeakReferenceMessenger.Default.Send(new DeleteMessage());
-                StatusMessage = "‘I‘ğ€–Ú‚ğíœ‚µ‚Ü‚µ‚½";
+                StatusMessage = "é¸æŠé …ç›®ã‚’å‰Šé™¤ã—ã¾ã—ãŸ";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "íœƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"íœƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "å‰Šé™¤ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"å‰Šé™¤ã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
         [RelayCommand]
-        public void Undo() 
+        public void Undo()
         {
             try
             {
-                _logger.LogDebug("Œ³‚É–ß‚·ƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                _logger.LogDebug("å…ƒã«æˆ»ã™ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                 WeakReferenceMessenger.Default.Send(new UndoMessage());
-                StatusMessage = "‘€ì‚ğŒ³‚É–ß‚µ‚Ü‚µ‚½";
+                StatusMessage = "æ“ä½œã‚’å…ƒã«æˆ»ã—ã¾ã—ãŸ";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Œ³‚É–ß‚·ƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"UndoƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "å…ƒã«æˆ»ã™ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"Undoã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
         [RelayCommand]
-        public void Redo() 
+        public void Redo()
         {
             try
             {
-                _logger.LogDebug("‚â‚è’¼‚µƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚Ü‚·");
+                _logger.LogDebug("ã‚„ã‚Šç›´ã—ã‚³ãƒãƒ³ãƒ‰ã‚’é€ä¿¡ã—ã¾ã™");
                 WeakReferenceMessenger.Default.Send(new RedoMessage());
-                StatusMessage = "‘€ì‚ğ‚â‚è’¼‚µ‚Ü‚µ‚½";
+                StatusMessage = "æ“ä½œã‚’ã‚„ã‚Šç›´ã—ã¾ã—ãŸ";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‚â‚è’¼‚µƒRƒ}ƒ“ƒh‚Ìˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
-                StatusMessage = $"RedoƒGƒ‰[: {ex.Message}";
+                _logger.LogError(ex, "ã‚„ã‚Šç›´ã—ã‚³ãƒãƒ³ãƒ‰ã®å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
+                StatusMessage = $"Redoã‚¨ãƒ©ãƒ¼: {ex.Message}";
             }
         }
 
@@ -434,36 +561,54 @@ namespace AutoTool.ViewModel.Panels
         public void ToggleAdvancedOptions()
         {
             ShowAdvancedOptions = !ShowAdvancedOptions;
-            StatusMessage = ShowAdvancedOptions ? "‚“x‚ÈƒIƒvƒVƒ‡ƒ“‚ğ•\¦" : "‚“x‚ÈƒIƒvƒVƒ‡ƒ“‚ğ”ñ•\¦";
+            StatusMessage = ShowAdvancedOptions ? "é«˜åº¦ãªã‚ªãƒ—ã‚·ãƒ§ãƒ³ã‚’è¡¨ç¤º" : "é«˜åº¦ãªã‚ªãƒ—ã‚·ãƒ§ãƒ³ã‚’éè¡¨ç¤º";
         }
 
         [RelayCommand]
         public void ClearSearch()
         {
             SearchText = string.Empty;
-            SelectedCategory = "‚·‚×‚Ä";
-            StatusMessage = "ŒŸõğŒ‚ğƒNƒŠƒA‚µ‚Ü‚µ‚½";
+            SelectedCategory = "ã™ã¹ã¦";
+            StatusMessage = "æ¤œç´¢æ¡ä»¶ã‚’ã‚¯ãƒªã‚¢ã—ã¾ã—ãŸ";
+        }
+
+        [RelayCommand]
+        public void TestAddMessage()
+        {
+            try
+            {
+                _logger.LogInformation("ãƒ†ã‚¹ãƒˆç”¨AddMessageé€ä¿¡é–‹å§‹");
+                var testMessage = new AddMessage("Click");
+                WeakReferenceMessenger.Default.Send(testMessage);
+                _logger.LogInformation("ãƒ†ã‚¹ãƒˆç”¨AddMessageé€ä¿¡å®Œäº†: Click");
+                StatusMessage = "ãƒ†ã‚¹ãƒˆãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’é€ä¿¡ã—ã¾ã—ãŸ (Click)";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ãƒ†ã‚¹ãƒˆãƒ¡ãƒƒã‚»ãƒ¼ã‚¸é€ä¿¡ä¸­ã«ã‚¨ãƒ©ãƒ¼");
+                StatusMessage = $"ãƒ†ã‚¹ãƒˆã‚¨ãƒ©ãƒ¼: {ex.Message}";
+            }
         }
 
         #endregion
 
-        #region Å‹ßg—pE‚¨‹C‚É“ü‚èŠÇ—
+        #region æœ€è¿‘ä½¿ç”¨ãƒ»ãŠæ°—ã«å…¥ã‚Šç®¡ç†
 
         private void AddToRecentCommands(CommandDisplayItem command)
         {
             try
             {
-                // Šù‘¶‚ÌƒAƒCƒeƒ€‚ğíœ
+                // æ—¢å­˜ã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’å‰Šé™¤
                 var existing = RecentCommands.FirstOrDefault(r => r.TypeName == command.TypeName);
                 if (existing != null)
                 {
                     RecentCommands.Remove(existing);
                 }
 
-                // æ“ª‚É’Ç‰Á
+                // å…ˆé ­ã«è¿½åŠ 
                 RecentCommands.Insert(0, command);
 
-                // Å‘å10ŒÂ‚Ü‚Å•Û
+                // æœ€å¤§10å€‹ã¾ã§ä¿æŒ
                 while (RecentCommands.Count > 10)
                 {
                     RecentCommands.RemoveAt(RecentCommands.Count - 1);
@@ -473,7 +618,7 @@ namespace AutoTool.ViewModel.Panels
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Å‹ßg—pƒRƒ}ƒ“ƒh’Ç‰Á’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
+                _logger.LogError(ex, "æœ€è¿‘ä½¿ç”¨ã‚³ãƒãƒ³ãƒ‰è¿½åŠ ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
             }
         }
 
@@ -481,13 +626,13 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                // TODO: İ’èƒtƒ@ƒCƒ‹‚©‚ç“Ç‚İ‚İ
-                // Œ»İ‚Í‹ó‚Å‰Šú‰»
+                // TODO: è¨­å®šãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰èª­ã¿è¾¼ã¿
+                // ç¾åœ¨ã¯ç©ºã§åˆæœŸåŒ–
                 RecentCommands = new ObservableCollection<CommandDisplayItem>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Å‹ßg—pƒRƒ}ƒ“ƒh“Ç‚İ‚İ’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
+                _logger.LogError(ex, "æœ€è¿‘ä½¿ç”¨ã‚³ãƒãƒ³ãƒ‰èª­ã¿è¾¼ã¿ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
                 RecentCommands = new ObservableCollection<CommandDisplayItem>();
             }
         }
@@ -496,12 +641,12 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                // TODO: İ’èƒtƒ@ƒCƒ‹‚É•Û‘¶
-                _logger.LogDebug("Å‹ßg—pƒRƒ}ƒ“ƒh‚ğ•Û‘¶‚µ‚Ü‚µ‚½: {Count}Œ", RecentCommands.Count);
+                // TODO: è¨­å®šãƒ•ã‚¡ã‚¤ãƒ«ã«ä¿å­˜
+                _logger.LogDebug("æœ€è¿‘ä½¿ç”¨ã‚³ãƒãƒ³ãƒ‰ã‚’ä¿å­˜ã—ã¾ã—ãŸ: {Count}ä»¶", RecentCommands.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Å‹ßg—pƒRƒ}ƒ“ƒh•Û‘¶’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
+                _logger.LogError(ex, "æœ€è¿‘ä½¿ç”¨ã‚³ãƒãƒ³ãƒ‰ä¿å­˜ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
             }
         }
 
@@ -509,13 +654,13 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                // TODO: İ’èƒtƒ@ƒCƒ‹‚©‚ç“Ç‚İ‚İ
-                // Œ»İ‚Í‹ó‚Å‰Šú‰»
+                // TODO: è¨­å®šãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰èª­ã¿è¾¼ã¿
+                // ç¾åœ¨ã¯ç©ºã§åˆæœŸåŒ–
                 FavoriteCommands = new ObservableCollection<CommandDisplayItem>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‚¨‹C‚É“ü‚èƒRƒ}ƒ“ƒh“Ç‚İ‚İ’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
+                _logger.LogError(ex, "ãŠæ°—ã«å…¥ã‚Šã‚³ãƒãƒ³ãƒ‰èª­ã¿è¾¼ã¿ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
                 FavoriteCommands = new ObservableCollection<CommandDisplayItem>();
             }
         }
@@ -524,34 +669,34 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                // TODO: İ’èƒtƒ@ƒCƒ‹‚É•Û‘¶
-                _logger.LogDebug("‚¨‹C‚É“ü‚èƒRƒ}ƒ“ƒh‚ğ•Û‘¶‚µ‚Ü‚µ‚½: {Count}Œ", FavoriteCommands.Count);
+                // TODO: è¨­å®šãƒ•ã‚¡ã‚¤ãƒ«ã«ä¿å­˜
+                _logger.LogDebug("ãŠæ°—ã«å…¥ã‚Šã‚³ãƒãƒ³ãƒ‰ã‚’ä¿å­˜ã—ã¾ã—ãŸ: {Count}ä»¶", FavoriteCommands.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "‚¨‹C‚É“ü‚èƒRƒ}ƒ“ƒh•Û‘¶’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½");
+                _logger.LogError(ex, "ãŠæ°—ã«å…¥ã‚Šã‚³ãƒãƒ³ãƒ‰ä¿å­˜ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ");
             }
         }
 
         #endregion
 
-        #region ‚»‚Ì‘¼
+        #region ãã®ä»–
 
-        public void SetRunningState(bool isRunning) 
+        public void SetRunningState(bool isRunning)
         {
             IsRunning = isRunning;
-            StatusMessage = isRunning ? "ƒ}ƒNƒÀs’†..." : "€”õŠ®—¹";
-            _logger.LogDebug("Àsó‘Ô‚ğİ’è: {IsRunning}", isRunning);
+            StatusMessage = isRunning ? "ãƒã‚¯ãƒ­å®Ÿè¡Œä¸­..." : "æº–å‚™å®Œäº†";
+            _logger.LogDebug("å®Ÿè¡ŒçŠ¶æ…‹ã‚’è¨­å®š: {IsRunning}", isRunning);
         }
 
-        public void Prepare() 
+        public void Prepare()
         {
-            _logger.LogDebug("ButtonPanelViewModel ‚Ì€”õ‚ğÀs‚µ‚Ü‚·");
-            StatusMessage = "€”õŠ®—¹";
+            _logger.LogDebug("ButtonPanelViewModel ã®æº–å‚™ã‚’å®Ÿè¡Œã—ã¾ã™");
+            StatusMessage = "æº–å‚™å®Œäº†";
         }
 
         /// <summary>
-        /// —˜—p‰Â”\‚ÈƒRƒ}ƒ“ƒh“Œv‚ğæ“¾
+        /// åˆ©ç”¨å¯èƒ½ãªã‚³ãƒãƒ³ãƒ‰çµ±è¨ˆã‚’å–å¾—
         /// </summary>
         public CommandTypeStats GetCommandTypeStats()
         {
@@ -565,20 +710,20 @@ namespace AutoTool.ViewModel.Panels
         }
 
         #endregion
+
+        #region è£œåŠ©ã‚¯ãƒ©ã‚¹
+
+        /// <summary>
+        /// ã‚³ãƒãƒ³ãƒ‰ã‚¿ã‚¤ãƒ—çµ±è¨ˆ
+        /// </summary>
+        public class CommandTypeStats
+        {
+            public int TotalTypes { get; set; }
+            public Dictionary<string, int> CategoryStats { get; set; } = new();
+            public int RecentCount { get; set; }
+            public int FavoriteCount { get; set; }
+        }
+
+        #endregion
     }
-
-    #region •â•ƒNƒ‰ƒX
-
-    /// <summary>
-    /// ƒRƒ}ƒ“ƒhƒ^ƒCƒv“Œv
-    /// </summary>
-    public class CommandTypeStats
-    {
-        public int TotalTypes { get; set; }
-        public Dictionary<string, int> CategoryStats { get; set; } = new();
-        public int RecentCount { get; set; }
-        public int FavoriteCount { get; set; }
-    }
-
-    #endregion
 }

@@ -246,7 +246,7 @@ namespace AutoTool.Message
         public ICommand Command { get; }
         public string Detail { get; }
         public int LineNumber { get; }
-        public string ItemType { get; }
+        public string ItemType { get; }        
         public DateTime Timestamp { get; } = DateTime.Now;
 
         public DoingCommandMessage(ICommand command, string detail)
@@ -457,4 +457,18 @@ namespace AutoTool.Message
     {
         public DateTime Timestamp { get; } = DateTime.Now;
     }
+
+    // キーボードショートカットメッセージ
+    public class KeyboardShortcutMessage
+    {
+        public string Key { get; }
+        public DateTime Timestamp { get; } = DateTime.Now;
+
+        public KeyboardShortcutMessage(string key)
+        {
+            Key = key ?? throw new ArgumentNullException(nameof(key));
+        }
+    }
+
+    // 切り替え関連メッセージ
 }

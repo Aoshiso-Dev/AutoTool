@@ -198,54 +198,126 @@ namespace AutoTool.ViewModel.Panels
             {
                 _messenger.Register<ChangeSelectedMessage>(this, (r, m) =>
                 {
-                    _logger.LogDebug("ChangeSelectedMessage受信: {ItemType}", m.SelectedItem?.ItemType ?? "null");
-                    SelectedItem = m.SelectedItem;
+                    try
+                    {
+                        _logger.LogDebug("=== ChangeSelectedMessage受信: {ItemType} ===", m.SelectedItem?.ItemType ?? "null");
+                        
+                        if (m.SelectedItem != null)
+                        {
+                            _logger.LogInformation("?? EditPanel選択受信: {ItemType} (ActualType: {ActualType})", 
+                                m.SelectedItem.ItemType, m.SelectedItem.GetType().Name);
+                        }
+                        
+                        SelectedItem = m.SelectedItem;
+                        
+                        _logger.LogDebug("=== ChangeSelectedMessage処理完了 ===");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "ChangeSelectedMessage処理中にエラー");
+                    }
                 });
 
                 _messenger.Register<ChangeItemTypeMessage>(this, (r, m) =>
                 {
-                    _logger.LogDebug("ChangeItemTypeMessage受信: {OldType} -> {NewType}",
-                        m.OldItem?.ItemType, m.NewItem?.ItemType);
+                    try
+                    {
+                        _logger.LogDebug("ChangeItemTypeMessage受信: {OldType} -> {NewType}",
+                            m.OldItem?.ItemType, m.NewItem?.ItemType);
+                        
+                        // アイテムタイプ変更後の選択更新
+                        if (SelectedItem == m.OldItem)
+                        {
+                            SelectedItem = m.NewItem;
+                            _logger.LogInformation("? アイテムタイプ変更後の選択更新完了");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "ChangeItemTypeMessage処理中にエラー");
+                    }
                 });
 
                 _messenger.Register<MacroExecutionStateMessage>(this, (r, m) =>
                 {
-                    _logger.LogDebug("MacroExecutionStateMessage受信: {IsRunning}", m.IsRunning);
-                    IsRunning = m.IsRunning;
+                    try
+                    {
+                        _logger.LogDebug("MacroExecutionStateMessage受信: {IsRunning}", m.IsRunning);
+                        IsRunning = m.IsRunning;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "MacroExecutionStateMessage処理中にエラー");
+                    }
                 });
 
                 // ファイル読み込み時のベースパス更新（遅延更新付き）が発生した場合
                 _messenger.Register<LoadMessage>(this, async (r, m) =>
                 {
-                    UpdateMacroFileBasePath(m.FilePath);
-                    // ファイル読み込み完了後に少し待ってからプレビュー更新
-                    await Task.Delay(100);
-                    if (SelectedItem != null)
+                    try
                     {
-                        UpdateImagePreview();
-                        UpdateModelInfo();
-                        UpdateProgramInfo();
-                        UpdateSaveDirectoryInfo();
+                        UpdateMacroFileBasePath(m.FilePath);
+                        // ファイル読み込み完了後に少し待ってからプレビュー更新
+                        await Task.Delay(100);
+                        if (SelectedItem != null)
+                        {
+                            UpdateImagePreview();
+                            UpdateModelInfo();
+                            UpdateProgramInfo();
+                            UpdateSaveDirectoryInfo();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "LoadMessage処理中にエラー");
                     }
                 });
 
                 // LoadFileMessage に対する処理
                 _messenger.Register<LoadFileMessage>(this, async (r, m) =>
                 {
-                    UpdateMacroFileBasePath(m.FilePath);
-                    await Task.Delay(100);
-                    if (SelectedItem != null)
+                    try
                     {
-                        UpdateImagePreview();
-                        UpdateModelInfo();
-                        UpdateProgramInfo();
-                        UpdateSaveDirectoryInfo();
+                        UpdateMacroFileBasePath(m.FilePath);
+                        await Task.Delay(100);
+                        if (SelectedItem != null)
+                        {
+                            UpdateImagePreview();
+                            UpdateModelInfo();
+                            UpdateProgramInfo();
+                            UpdateSaveDirectoryInfo();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "LoadFileMessage処理中にエラー");
                     }
                 });
 
                 // SaveMessage と SaveFileMessage に対する処理
-                _messenger.Register<SaveMessage>(this, (r, m) => UpdateMacroFileBasePath(m.FilePath));
-                _messenger.Register<SaveFileMessage>(this, (r, m) => UpdateMacroFileBasePath(m.FilePath));
+                _messenger.Register<SaveMessage>(this, (r, m) => 
+                {
+                    try
+                    {
+                        UpdateMacroFileBasePath(m.FilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "SaveMessage処理中にエラー");
+                    }
+                });
+                
+                _messenger.Register<SaveFileMessage>(this, (r, m) => 
+                {
+                    try
+                    {
+                        UpdateMacroFileBasePath(m.FilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "SaveFileMessage処理中にエラー");
+                    }
+                });
 
                 _logger.LogDebug("メッセージング設定完了");
             }
@@ -262,13 +334,13 @@ namespace AutoTool.ViewModel.Panels
                 _logger.LogDebug("コレクション初期化開始");
 
                 // CommandTypes
-                CommandRegistry.Initialize();
-                var displayItems = CommandRegistry.GetOrderedTypeNames()
+                DirectCommandRegistry.Initialize(_serviceProvider);
+                var displayItems = DirectCommandRegistry.GetOrderedTypeNames()
                     .Select(typeName => new CommandDisplayItem
                     {
                         TypeName = typeName,
-                        DisplayName = CommandRegistry.DisplayOrder.GetDisplayName(typeName),
-                        Category = CommandRegistry.DisplayOrder.GetCategoryName(typeName)
+                        DisplayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(typeName),
+                        Category = DirectCommandRegistry.DisplayOrder.GetCategoryName(typeName)
                     })
                     .ToList();
                 ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
@@ -344,12 +416,16 @@ namespace AutoTool.ViewModel.Panels
             {
                 _isUpdating = true;
 
-                _logger.LogDebug("SelectedItem変更開始: {ItemType} (ActualType: {ActualType})", 
+                _logger.LogDebug("=== SelectedItem変更開始 ===");
+                _logger.LogDebug("新しいアイテム: {ItemType} (ActualType: {ActualType})", 
                     value?.ItemType ?? "null", value?.GetType().Name ?? "null");
 
                 // 動的システムと従来システムの判定
                 bool isUniversalItem = value is UniversalCommandItem;
                 bool isUniversalWrapper = value is UniversalCommandItemWrapper;
+                
+                _logger.LogDebug("アイテム種別判定: IsUniversalItem={IsUniversal}, IsUniversalWrapper={IsWrapper}", 
+                    isUniversalItem, isUniversalWrapper);
                 
                 if (isUniversalItem || isUniversalWrapper)
                 {
@@ -358,25 +434,28 @@ namespace AutoTool.ViewModel.Panels
                     if (isUniversalItem)
                     {
                         universalItem = value as UniversalCommandItem;
+                        _logger.LogDebug("UniversalCommandItemとして直接使用: {ItemType}", value.ItemType);
                     }
                     else if (isUniversalWrapper && value is UniversalCommandItemWrapper wrapper)
                     {
-                        universalItem = wrapper.UniversalItem;
+                        universalItem = wrapper.InnerItem;
+                        _logger.LogDebug("UniversalCommandItemWrapperからUniversalItemを取得: {ItemType}", value.ItemType);
                     }
 
                     if (universalItem != null)
                     {
                         // 動的システムの処理
+                        _logger.LogDebug("動的設定初期化開始: {ItemType}", universalItem.ItemType);
                         InitializeDynamicSettings(universalItem);
                         IsDynamicItem = true;
                         IsLegacyItem = false;
                         
-                        _logger.LogDebug("動的システムアイテム選択: {ItemType} (設定項目: {SettingCount}個, グループ: {GroupCount}個)", 
+                        _logger.LogInformation("? 動的システムアイテム選択: {ItemType} (設定項目: {SettingCount}個, グループ: {GroupCount}個)", 
                             value.ItemType, SettingDefinitions.Count, SettingGroups.Count);
                     }
                     else
                     {
-                        _logger.LogWarning("UniversalCommandItemが取得できませんでした");
+                        _logger.LogWarning("? UniversalCommandItemが取得できませんでした");
                         IsDynamicItem = false;
                         IsLegacyItem = true;
                         SettingGroups.Clear();
@@ -391,7 +470,8 @@ namespace AutoTool.ViewModel.Panels
                     SettingGroups.Clear();
                     SettingDefinitions.Clear();
                     
-                    _logger.LogDebug("従来システムアイテム選択: {ItemType}", value.ItemType);
+                    _logger.LogInformation("?? 従来システムアイテム選択: {ItemType} -> {ActualType}", 
+                        value.ItemType, value.GetType().Name);
                 }
                 else
                 {
@@ -408,7 +488,7 @@ namespace AutoTool.ViewModel.Panels
                 OnPropertyChanged(nameof(ShowDynamicSettings));
                 OnPropertyChanged(nameof(ShowLegacySettings));
 
-                _logger.LogDebug("動的設定表示状態: IsDynamicItem={IsDynamic}, IsLegacyItem={IsLegacy}, ShowDynamicSettings={ShowDynamic}, ShowLegacySettings={ShowLegacy}",
+                _logger.LogDebug("最終的な動的設定表示状態: IsDynamicItem={IsDynamic}, IsLegacyItem={IsLegacy}, ShowDynamicSettings={ShowDynamic}, ShowLegacySettings={ShowLegacy}",
                     IsDynamicItem, IsLegacyItem, ShowDynamicSettings, ShowLegacySettings);
 
                 // アイテムタイプの選択を更新
@@ -431,8 +511,7 @@ namespace AutoTool.ViewModel.Panels
                 // 全ての判定プロパティを更新
                 NotifyAllPropertiesChanged();
 
-                _logger.LogDebug("SelectedItem変更完了: {ItemType} (動的: {IsDynamic}, 従来: {IsLegacy})", 
-                    value?.ItemType ?? "null", IsDynamicItem, IsLegacyItem);
+                _logger.LogDebug("=== SelectedItem変更完了 ===");
             }
             catch (Exception ex)
             {
@@ -453,7 +532,7 @@ namespace AutoTool.ViewModel.Panels
                 _logger.LogDebug("ItemType変更要求: {OldType} -> {NewType}", SelectedItem.ItemType, value.TypeName);
 
                 // 新しいタイプのアイテムを作成
-                var newItem = CommandRegistry.CreateCommandItem(value.TypeName);
+                var newItem = DirectCommandRegistry.CreateCommandItem(value.TypeName);
                 if (newItem == null)
                 {
                     _logger.LogWarning("新しいアイテムの作成に失敗: {TypeName}", value.TypeName);
@@ -1737,9 +1816,10 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogDebug("動的設定初期化開始: {ItemType}", universalItem.ItemType);
+                _logger.LogDebug("=== 動的設定初期化開始: {ItemType} ===", universalItem.ItemType);
                 
                 // 設定定義を初期化
+                _logger.LogDebug("UniversalCommandItem.InitializeSettingDefinitions()呼び出し");
                 universalItem.InitializeSettingDefinitions();
                 
                 // 設定定義をカテゴリ別にグループ化
@@ -1750,16 +1830,35 @@ namespace AutoTool.ViewModel.Panels
                 
                 if (definitions.Count == 0)
                 {
-                    _logger.LogWarning("設定定義が空です: {ItemType}", universalItem.ItemType);
-                    SettingGroups.Clear();
-                    DynamicValues.Clear();
-                    return;
+                    _logger.LogWarning("?? 設定定義が空です: {ItemType}", universalItem.ItemType);
+                    
+                    // DirectCommandRegistryから直接取得を試行
+                    _logger.LogDebug("DirectCommandRegistryから設定定義を直接取得を試行");
+                    var directDefinitions = DirectCommandRegistry.GetSettingDefinitions(universalItem.ItemType);
+                    if (directDefinitions.Count > 0)
+                    {
+                        _logger.LogInformation("? DirectCommandRegistryから設定定義を取得: {Count}項目", directDefinitions.Count);
+                        definitions = directDefinitions;
+                        SettingDefinitions = new ObservableCollection<SettingDefinition>(definitions);
+                        
+                        // UniversalCommandItemに設定定義を設定
+                        universalItem.SettingDefinitions = definitions;
+                    }
+                    else
+                    {
+                        _logger.LogError("? DirectCommandRegistryからも設定定義を取得できませんでした: {ItemType}", universalItem.ItemType);
+                        SettingGroups.Clear();
+                        DynamicValues.Clear();
+                        return;
+                    }
                 }
                 
                 // 動的設定値を初期化
+                _logger.LogDebug("動的設定値初期化開始");
                 InitializeDynamicValues(universalItem, definitions);
                 
                 // 現在値を設定定義に同期
+                _logger.LogDebug("現在値を設定定義に同期開始");
                 SyncCurrentValuesToDefinitions(universalItem, definitions);
                 
                 // カテゴリごとにグループ化
@@ -1777,25 +1876,27 @@ namespace AutoTool.ViewModel.Panels
                 // 各グループの詳細をログ出力
                 foreach (var group in groups)
                 {
-                    _logger.LogDebug("グループ: {Category}, 設定項目数: {SettingCount}", group.Category, group.Settings.Count);
-                    foreach (var setting in group.Settings.Take(3)) // 最初の3つだけ
+                    _logger.LogDebug("?? グループ: {Category}, 設定項目数: {SettingCount}", group.Category, group.Settings.Count);
+                    foreach (var setting in group.Settings.Take(3)) // 最初の3つのみ
                     {
-                        _logger.LogDebug("  - {DisplayName} ({PropertyName}): {ControlType} = {CurrentValue}", 
+                        _logger.LogDebug("  ?? {DisplayName} ({PropertyName}): {ControlType} = {CurrentValue}", 
                             setting.DisplayName, setting.PropertyName, setting.ControlType, setting.CurrentValue);
                     }
                 }
 
                 // グローバル設定を適用
+                _logger.LogDebug("グローバル設定適用開始");
                 ApplyGlobalSettings(groups);
                     
                 SettingGroups = new ObservableCollection<SettingCategoryGroup>(groups);
                 
-                _logger.LogDebug("動的設定初期化完了: {ItemType}, カテゴリ数: {CategoryCount}, 設定項目数: {SettingCount}",
+                _logger.LogInformation("? 動的設定初期化完了: {ItemType}, カテゴリ数: {CategoryCount}, 設定項目数: {SettingCount}",
                     universalItem.ItemType, groups.Count, definitions.Count);
+                _logger.LogDebug("=== 動的設定初期化終了 ===");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "動的設定初期化エラー: {ItemType}", universalItem.ItemType);
+                _logger.LogError(ex, "? 動的設定初期化エラー: {ItemType}", universalItem.ItemType);
                 SettingGroups.Clear();
                 SettingDefinitions.Clear();
                 DynamicValues.Clear();
@@ -1952,9 +2053,8 @@ namespace AutoTool.ViewModel.Panels
         }
 
         #region Dynamic Action Handlers
-
         /// <summary>
-        /// 動的アクション実行
+       /// 動的アクション実行
         /// </summary>
         [RelayCommand]
         public async Task ExecuteActionAsync(ActionExecutionContext context)
@@ -2230,18 +2330,6 @@ namespace AutoTool.ViewModel.Panels
             {
                 _logger.LogError(ex, "動的キーキャプチャ中にエラー");
             }
-        }
-
-        /// <summary>
-        /// Image系コマンドかどうかを判定
-        /// </summary>
-        private bool IsImageSearchCommand(string? itemType)
-        {
-            return itemType switch
-            {
-                "WaitImage" or "ClickImage" or "IfImageExist" or "IfImageNotExist" => true,
-                _ => false
-            };
         }
 
         private void ExecuteClearAction(ActionExecutionContext context)

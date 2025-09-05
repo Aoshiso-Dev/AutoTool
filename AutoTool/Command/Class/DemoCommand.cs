@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AutoTool.Command.Class
 {
-    [DirectCommand("Demo", "デモコマンド", description: "デモ用の包括的なコマンドです")]
+    [DirectCommand("Demo", "デモコマンド")]
     public class DemoCommand : BaseCommand
     {
         private readonly ILogger<DemoCommand>? _logger;

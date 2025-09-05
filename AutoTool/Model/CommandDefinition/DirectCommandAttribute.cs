@@ -12,9 +12,9 @@ namespace AutoTool.Model.CommandDefinition
         public string CommandId { get; }
         public string DisplayName { get; }
         public string Description { get; }
-        public DynamicCommandCategory Category { get; }
+        public string Category { get; }
 
-        public DirectCommandAttribute(string commandId, string displayName, DynamicCommandCategory category = DynamicCommandCategory.Basic, string description = "")
+        public DirectCommandAttribute(string commandId, string displayName, string category = "Basic", string description = "")
         {
             CommandId = commandId;
             DisplayName = displayName;
@@ -72,43 +72,5 @@ namespace AutoTool.Model.CommandDefinition
             SourceCollection = sourceCollection;
             ActionButtons = actionButtons;
         }
-    }
-
-    /// <summary>
-    /// 動的コマンドのカテゴリ
-    /// </summary>
-    public enum DynamicCommandCategory
-    {
-        Basic,
-        Mouse,
-        Keyboard,
-        Image,
-        AI,
-        Window,
-        File,
-        Control,
-        Advanced
-    }
-
-    /// <summary>
-    /// 設定コントロールのタイプ
-    /// </summary>
-    public enum SettingControlType
-    {
-        TextBox,
-        PasswordBox,
-        NumberBox,
-        CheckBox,
-        ComboBox,
-        Slider,
-        FilePicker,
-        FolderPicker,
-        OnnxPicker,
-        ColorPicker,
-        DatePicker,
-        TimePicker,
-        KeyPicker,
-        CoordinatePicker,
-        WindowPicker
     }
 }

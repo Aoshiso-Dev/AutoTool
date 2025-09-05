@@ -6,7 +6,7 @@ using System.Drawing;
 
 namespace AutoTool.Command.Class
 {
-    [DirectCommand("Test", "テストコマンド", description: "テスト用のコマンドです")]
+    [DirectCommand("Test", "テストコマンド")]
     public class TestCommand : BaseCommand
     {
         private readonly ILogger<TestCommand>? _logger;
