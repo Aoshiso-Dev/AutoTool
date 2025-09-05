@@ -43,4 +43,8 @@
     <ProjectReference Include="..\YoloV8DetectHelper\YoLoWinLib.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="View\Resources\" />
+  </ItemGroup>
+
 </Project>

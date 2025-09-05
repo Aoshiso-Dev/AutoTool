@@ -335,14 +335,21 @@ namespace AutoTool.Services.UI
         {
             try
             {
-                _logger.LogDebug("テストコマンド追加要求送信");
-                _messenger.Send(new AddMessage("Wait"));
-                StatusChanged?.Invoke(this, "テストコマンドを追加しました");
+                _logger.LogDebug("テストコマンド追加要求送信（動的UI版）");
+                
+                // 動的UIのUniversalCommandItemを作成
+                var testItem = AutoTool.Model.CommandDefinition.DirectCommandRegistry.CreateUniversalItem("Test");
+                
+                // AddUniversalItemMessageを送信
+                _messenger.Send(new AddUniversalItemMessage(testItem));
+                
+                StatusChanged?.Invoke(this, "動的テストコマンドを追加しました");
+                _logger.LogInformation("動的TestCommandが正常に追加されました");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "テストコマンド追加中にエラーが発生しました");
-                StatusChanged?.Invoke(this, $"テストコマンド追加エラー: {ex.Message}");
+                _logger.LogError(ex, "動的テストコマンド追加でエラーが発生しました");
+                StatusChanged?.Invoke(this, $"動的テストコマンド追加エラー: {ex.Message}");
             }
         }
 

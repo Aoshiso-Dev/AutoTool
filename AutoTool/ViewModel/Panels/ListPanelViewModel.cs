@@ -7,6 +7,7 @@ using System.Linq;
 using AutoTool.Message;
 using AutoTool.Model.List.Interface;
 using AutoTool.Model.List.Type;
+using AutoTool.Model.List.Class;
 using AutoTool.Model.CommandDefinition;
 using AutoTool.Command.Class;
 using AutoTool.Command.Interface;
@@ -14,12 +15,12 @@ using System.Text.Json;
 using System.IO;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.Input;
-using AutoTool.List.Class; 
-using System.Windows; 
-using System.Threading.Tasks; 
+using AutoTool.List.Class;
+using System.Windows;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using System.ComponentModel; 
-using System.Runtime.CompilerServices; 
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace AutoTool.ViewModel.Panels
 {
@@ -73,13 +74,13 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogDebug("CurrentExecutingItem変更: {OldItem} -> {NewItem}", 
-                    _currentExecutingItem?.ItemType ?? "null", 
+                _logger.LogDebug("CurrentExecutingItem変更: {OldItem} -> {NewItem}",
+                    _currentExecutingItem?.ItemType ?? "null",
                     value?.ItemType ?? "null");
-                
+
                 OnPropertyChanged(nameof(CurrentExecutingDescription));
                 OnPropertyChanged(nameof(Items));
-                
+
                 _logger.LogDebug("CurrentExecutingItem変更完了: {Description}", CurrentExecutingDescription);
             }
             catch (Exception ex)
@@ -100,10 +101,10 @@ namespace AutoTool.ViewModel.Panels
             get
             {
                 if (TotalProgress <= 0 || CurrentProgress <= 0) return "不明";
-                
+
                 var remaining = TotalProgress - CurrentProgress;
                 if (remaining <= 0) return "完了";
-                
+
                 var estimatedSeconds = remaining * 2;
                 return $"約{estimatedSeconds}秒";
             }
@@ -114,7 +115,7 @@ namespace AutoTool.ViewModel.Panels
             get
             {
                 if (CurrentExecutingItem == null) return "";
-                
+
                 var displayName = CommandRegistry.DisplayOrder.GetDisplayName(CurrentExecutingItem.ItemType) ?? CurrentExecutingItem.ItemType;
                 var comment = !string.IsNullOrEmpty(CurrentExecutingItem.Comment) ? $"({CurrentExecutingItem.Comment})" : "";
                 return $"実行中: {displayName} {comment}";
@@ -122,14 +123,14 @@ namespace AutoTool.ViewModel.Panels
         }
 
         public ListPanelViewModel(
-            ILogger<ListPanelViewModel> logger, 
+            ILogger<ListPanelViewModel> logger,
             IServiceProvider serviceProvider,
             CommandListService commandListService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _commandListService = commandListService ?? throw new ArgumentNullException(nameof(commandListService));
-            
+
             SetupMessaging();
             _logger.LogInformation("DI対応ListPanelViewModel を初期化しています（CommandListService統合版）");
 
@@ -137,13 +138,13 @@ namespace AutoTool.ViewModel.Panels
             {
                 TotalItems = _items.Count;
                 HasUnsavedChanges = true;
-                
+
                 OnPropertyChanged(nameof(Items));
                 OnPropertyChanged(nameof(TotalItems));
                 OnPropertyChanged(nameof(HasItems));
-                
+
                 WeakReferenceMessenger.Default.Send(new ItemCountChangedMessage(_items.Count));
-                
+
                 Task.Delay(50).ContinueWith(_ =>
                 {
                     try
@@ -162,25 +163,26 @@ namespace AutoTool.ViewModel.Panels
         {
             // コマンド操作メッセージの処理
             WeakReferenceMessenger.Default.Register<AddMessage>(this, (r, m) => AddInternal(m.ItemType));
+            WeakReferenceMessenger.Default.Register<AddUniversalItemMessage>(this, (r, m) => AddUniversalItem(m.Item));
             WeakReferenceMessenger.Default.Register<DeleteMessage>(this, (r, m) => DeleteInternal());
             WeakReferenceMessenger.Default.Register<UpMessage>(this, (r, m) => MoveUpInternal());
             WeakReferenceMessenger.Default.Register<DownMessage>(this, (r, m) => MoveDownInternal());
             WeakReferenceMessenger.Default.Register<ClearMessage>(this, (r, m) => ClearInternal());
             WeakReferenceMessenger.Default.Register<UndoMessage>(this, (r, m) => UndoInternal());
             WeakReferenceMessenger.Default.Register<RedoMessage>(this, (r, m) => RedoInternal());
-            
+
             // コマンド実行状態メッセージの処理
             WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (r, m) => OnCommandStarted(m));
             WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (r, m) => OnCommandFinished(m));
             WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (r, m) => OnProgressUpdated(m));
             WeakReferenceMessenger.Default.Register<DoingCommandMessage>(this, (r, m) => OnCommandDoing(m));
-            
+
             // ファイル操作メッセージの処理（両方のメッセージタイプに対応）
             WeakReferenceMessenger.Default.Register<LoadMessage>(this, (r, m) => LoadFileInternal(m.FilePath ?? string.Empty));
             WeakReferenceMessenger.Default.Register<SaveMessage>(this, (r, m) => SaveFileInternal(m.FilePath ?? string.Empty));
             WeakReferenceMessenger.Default.Register<LoadFileMessage>(this, (r, m) => LoadFileInternal(m.FilePath));
             WeakReferenceMessenger.Default.Register<SaveFileMessage>(this, (r, m) => SaveFileInternal(m.FilePath));
-            
+
             // マクロ実行状態メッセージの処理
             WeakReferenceMessenger.Default.Register<MacroExecutionStateMessage>(this, (r, m) => SetRunningState(m.IsRunning));
         }
@@ -209,6 +211,51 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
+        public void AddUniversalItem(UniversalCommandItem universalItem)
+        {
+            try
+            {
+                _logger.LogDebug("動的UniversalCommandItemを追加します: {ItemType}", universalItem.ItemType);
+
+                // UniversalCommandItemからICommandListItemに変換
+                var newItem = ConvertUniversalItemToCommandListItem(universalItem);
+
+                var insertIndex = SelectedIndex >= 0 && SelectedIndex < Items.Count ? SelectedIndex + 1 : Items.Count;
+
+                var operation = new CommandListOperation
+                {
+                    Type = OperationType.Add,
+                    Index = insertIndex,
+                    Item = newItem.Clone(),
+                    Description = $"動的アイテム追加: {universalItem.ItemType}"
+                };
+
+                Items.Insert(insertIndex, newItem);
+
+                SelectedIndex = insertIndex;
+                SelectedItem = newItem;
+
+                RecordOperation(operation);
+                StatusMessage = $"動的{universalItem.ItemType}を追加しました";
+
+                OnPropertyChanged(nameof(Items));
+                OnPropertyChanged(nameof(TotalItems));
+                OnPropertyChanged(nameof(HasItems));
+                OnPropertyChanged(nameof(SelectedItem));
+                OnPropertyChanged(nameof(SelectedIndex));
+
+                WeakReferenceMessenger.Default.Send(new ItemCountChangedMessage(Items.Count));
+                WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(newItem));
+
+                _logger.LogInformation("動的アイテムを追加しました: {ItemType} (合計 {Count}件)", universalItem.ItemType, Items.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "動的アイテム追加中にエラーが発生しました");
+                StatusMessage = $"動的追加エラー: {ex.Message}";
+            }
+        }
+
         public void Delete() => DeleteInternal();
         public void MoveUp() => MoveUpInternal();
         public void MoveDown() => MoveDownInternal();
@@ -227,9 +274,9 @@ namespace AutoTool.ViewModel.Panels
             {
                 _logger.LogDebug("アイテムを追加します: {ItemType}", itemType);
                 var newItem = CreateItem(itemType);
-                
+
                 var insertIndex = SelectedIndex >= 0 && SelectedIndex < Items.Count ? SelectedIndex + 1 : Items.Count;
-                
+
                 var operation = new CommandListOperation
                 {
                     Type = OperationType.Add,
@@ -239,22 +286,22 @@ namespace AutoTool.ViewModel.Panels
                 };
 
                 Items.Insert(insertIndex, newItem);
-                
+
                 SelectedIndex = insertIndex;
                 SelectedItem = newItem;
-                
+
                 RecordOperation(operation);
                 StatusMessage = $"{itemType}を追加しました";
-                
+
                 OnPropertyChanged(nameof(Items));
                 OnPropertyChanged(nameof(TotalItems));
                 OnPropertyChanged(nameof(HasItems));
                 OnPropertyChanged(nameof(SelectedItem));
                 OnPropertyChanged(nameof(SelectedIndex));
-                
+
                 WeakReferenceMessenger.Default.Send(new ItemCountChangedMessage(Items.Count));
                 WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(newItem));
-                
+
                 _logger.LogInformation("アイテムを追加しました: {ItemType} (合計 {Count}件)", itemType, Items.Count);
             }
             catch (Exception ex)
@@ -279,7 +326,7 @@ namespace AutoTool.ViewModel.Panels
                 var index = Items.IndexOf(SelectedItem);
                 var itemType = SelectedItem.ItemType;
                 var itemClone = SelectedItem.Clone();
-                
+
                 var operation = new CommandListOperation
                 {
                     Type = OperationType.Delete,
@@ -305,10 +352,10 @@ namespace AutoTool.ViewModel.Panels
                     SelectedIndex = index;
                     SelectedItem = Items.ElementAtOrDefault(index);
                 }
-                
+
                 RecordOperation(operation);
                 WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(SelectedItem));
-                
+
                 StatusMessage = $"{itemType}を削除しました";
                 _logger.LogInformation("アイテムを削除しました: {ItemType} (残り {Count}件)", itemType, Items.Count);
             }
@@ -333,7 +380,7 @@ namespace AutoTool.ViewModel.Panels
             {
                 var oldIndex = SelectedIndex;
                 var newIndex = oldIndex - 1;
-                
+
                 var operation = new CommandListOperation
                 {
                     Type = OperationType.Move,
@@ -345,7 +392,7 @@ namespace AutoTool.ViewModel.Panels
 
                 Items.Move(oldIndex, newIndex);
                 SelectedIndex = newIndex;
-                
+
                 RecordOperation(operation);
                 StatusMessage = $"{SelectedItem.ItemType}を上に移動しました";
                 _logger.LogDebug("アイテムを上に移動しました: {FromIndex} -> {ToIndex}", oldIndex, newIndex);
@@ -371,7 +418,7 @@ namespace AutoTool.ViewModel.Panels
             {
                 var oldIndex = SelectedIndex;
                 var newIndex = oldIndex + 1;
-                
+
                 var operation = new CommandListOperation
                 {
                     Type = OperationType.Move,
@@ -383,7 +430,7 @@ namespace AutoTool.ViewModel.Panels
 
                 Items.Move(oldIndex, newIndex);
                 SelectedIndex = newIndex;
-                
+
                 RecordOperation(operation);
                 StatusMessage = $"{SelectedItem.ItemType}を下に移動しました";
                 _logger.LogDebug("アイテムを下に移動しました: {FromIndex} -> {ToIndex}", oldIndex, newIndex);
@@ -408,7 +455,7 @@ namespace AutoTool.ViewModel.Panels
             {
                 var count = Items.Count;
                 var itemsClone = Items.Select(item => item.Clone()).ToList();
-                
+
                 var operation = new CommandListOperation
                 {
                     Type = OperationType.Clear,
@@ -419,10 +466,10 @@ namespace AutoTool.ViewModel.Panels
                 Items.Clear();
                 SelectedIndex = -1;
                 SelectedItem = null;
-                
+
                 RecordOperation(operation);
                 WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(null));
-                
+
                 StatusMessage = $"全アイテム({count}件)をクリアしました";
                 _logger.LogInformation("全アイテムをクリアしました: {Count}件", count);
             }
@@ -469,7 +516,7 @@ namespace AutoTool.ViewModel.Panels
 
                 StatusMessage = $"元に戻しました: {operation.Description}";
                 _logger.LogDebug("Undo実行: {Description}", operation.Description);
-                
+
                 OnPropertyChanged(nameof(CanUndo));
                 OnPropertyChanged(nameof(CanRedo));
             }
@@ -513,7 +560,7 @@ namespace AutoTool.ViewModel.Panels
 
                 StatusMessage = $"やり直しました: {operation.Description}";
                 _logger.LogDebug("Redo実行: {Description}", operation.Description);
-                
+
                 OnPropertyChanged(nameof(CanUndo));
                 OnPropertyChanged(nameof(CanRedo));
             }
@@ -537,7 +584,7 @@ namespace AutoTool.ViewModel.Panels
                 ShowProgress = TotalProgress > 0;
                 ProgressText = ShowProgress ? $"0 / {TotalProgress}" : "";
                 CurrentExecutingItem = null;
-                
+
                 _logger.LogDebug("プログレス初期化: 総数={TotalProgress}", TotalProgress);
             }
             catch (Exception ex)
@@ -552,14 +599,14 @@ namespace AutoTool.ViewModel.Panels
             {
                 CurrentProgress = Math.Min(completed, TotalProgress);
                 ProgressText = $"{CurrentProgress} / {TotalProgress}";
-                
+
                 if (CurrentProgress >= TotalProgress)
                 {
                     ShowProgress = false;
                     ProgressText = "完了";
                     CurrentExecutingItem = null;
                 }
-                
+
                 _logger.LogTrace("プログレス更新: {Current}/{Total}", CurrentProgress, TotalProgress);
             }
             catch (Exception ex)
@@ -576,7 +623,7 @@ namespace AutoTool.ViewModel.Panels
                 ShowProgress = false;
                 ProgressText = "完了";
                 CurrentExecutingItem = null;
-                
+
                 _logger.LogDebug("プログレス完了");
             }
             catch (Exception ex)
@@ -592,7 +639,7 @@ namespace AutoTool.ViewModel.Panels
                 ShowProgress = false;
                 ProgressText = "中断";
                 CurrentExecutingItem = null;
-                
+
                 _logger.LogDebug("プログレス中断");
             }
             catch (Exception ex)
@@ -731,60 +778,58 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                var factory = _serviceProvider.GetService<AutoTool.Services.ICommandListItemFactory>();
-                if (factory != null)
+                _logger.LogDebug("新しいアイテム作成開始: {TypeName}", itemType);
+
+                // CommandRegistryを使用してアイテムを作成
+                var newItem = CommandRegistry.CreateCommandItem(itemType);
+                if (newItem != null)
                 {
-                    var item = factory.CreateItem(itemType);
-                    if (item != null)
-                    {
-                        item.LineNumber = Items.Count + 1;
-                        if (string.IsNullOrEmpty(item.Comment))
-                        {
-                            item.Comment = $"新しい{itemType}コマンド";
-                        }
-                        return item;
-                    }
+                    newItem.LineNumber = GetNextLineNumber();
+                    newItem.Comment = $"{CommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}の説明";
+
+                    _logger.LogInformation("CommandRegistryでコマンドアイテムを作成: {ItemType}", itemType);
+                    return newItem;
                 }
-                
-                var itemTypes = CommandRegistry.GetTypeMapping();
-                if (itemTypes.TryGetValue(itemType, out var type))
+
+                // 最後の手段：Activatorで直接作成を試みる
+                var typeFullName = $"AutoTool.Model.List.Class.{itemType}Item";
+                var targetType = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes())
+                    .FirstOrDefault(t => t.FullName == typeFullName);
+
+                if (targetType != null)
                 {
-                    var serviceInstance = _serviceProvider.GetService(type);
-                    if (serviceInstance is ICommandListItem item)
-                    {
-                        item.LineNumber = Items.Count + 1;
-                        item.ItemType = itemType;
-                        item.IsEnable = true;
-                        return item;
-                    }
-                    
-                    if (Activator.CreateInstance(type) is ICommandListItem fallbackItem)
+                    if (Activator.CreateInstance(targetType) is ICommandListItem fallbackItem)
                     {
                         fallbackItem.LineNumber = Items.Count + 1;
-                        fallbackItem.ItemType = itemType;
-                        fallbackItem.IsEnable = true;
+                        fallbackItem.Comment = $"{CommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}の説明";
+
+                        _logger.LogInformation("Activatorでコマンドアイテムを作成: {ItemType}", itemType);
                         return fallbackItem;
                     }
                 }
 
-                var basicItem = new BasicCommandItem 
-                { 
-                    ItemType = itemType, 
-                    LineNumber = Items.Count + 1,
-                    IsEnable = true
+                _logger.LogWarning("コマンドアイテムの作成に失敗: {TypeName}", itemType);
+
+                // フォールバック: 基本的なCommandListItem
+                return new CommandListItem
+                {
+                    ItemType = itemType,
+                    LineNumber = GetNextLineNumber(),
+                    IsEnable = true,
+                    Comment = $"{itemType}コマンド"
                 };
-                
-                return basicItem;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateItem中にエラーが発生: {ItemType}", itemType);
-                
-                return new BasicCommandItem 
-                { 
-                    ItemType = itemType, 
+
+                return new CommandListItem
+                {
+                    ItemType = itemType,
                     LineNumber = Items.Count + 1,
-                    IsEnable = true
+                    IsEnable = true,
+                    Comment = $"{itemType}コマンド（エラー復旧）"
                 };
             }
         }
@@ -810,15 +855,54 @@ namespace AutoTool.ViewModel.Panels
         {
             _undoStack.Push(operation);
             _redoStack.Clear();
-            
+
             const int maxUndoSteps = 100;
             while (_undoStack.Count > maxUndoSteps)
             {
                 _undoStack.TryPop(out _);
             }
-            
+
             OnPropertyChanged(nameof(CanUndo));
             OnPropertyChanged(nameof(CanRedo));
+        }
+
+        /// <summary>
+        /// UniversalCommandItemをICommandListItemに変換
+        /// </summary>
+        private ICommandListItem ConvertUniversalItemToCommandListItem(UniversalCommandItem universalItem)
+        {
+            try
+            {
+                // UniversalCommandItemはICommandListItemを実装しているかチェック
+                if (universalItem is ICommandListItem commandListItem)
+                {
+                    commandListItem.LineNumber = Items.Count + 1;
+                    _logger.LogDebug("UniversalCommandItem を ICommandListItem として使用: {ItemType}", universalItem.ItemType);
+                    return commandListItem;
+                }
+
+                // UniversalCommandItemWrapper を作成
+                var wrapper = new UniversalCommandItemWrapper(universalItem)
+                {
+                    LineNumber = Items.Count + 1
+                };
+
+                _logger.LogDebug("UniversalCommandItemWrapper を作成: {ItemType}", universalItem.ItemType);
+                return wrapper;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "UniversalCommandItem変換中にエラー: {ItemType}", universalItem.ItemType);
+
+                // フォールバック: BasicCommandItem
+                return new BasicCommandItem
+                {
+                    ItemType = universalItem.ItemType,
+                    LineNumber = Items.Count + 1,
+                    IsEnable = universalItem.IsEnable,
+                    Comment = $"動的{universalItem.ItemType}コマンド"
+                };
+            }
         }
 
         #endregion
@@ -835,40 +919,40 @@ namespace AutoTool.ViewModel.Panels
             {
                 _logger.LogDebug("=== OnCommandStarted開始 ===");
                 _logger.LogDebug("メッセージ受信: Line={LineNumber}, Type={ItemType}", message.LineNumber, message.ItemType);
-                
+
                 // 実行カウンターを更新
                 var key = $"{message.ItemType}";
                 _executionCounter[key] = _executionCounter.GetValueOrDefault(key, 0) + 1;
                 _logger.LogDebug("実行カウンター更新: {ItemType} = {Count}", message.ItemType, _executionCounter[key]);
-                
+
                 // より柔軟な検索ロジック
                 var item = FindMatchingItem(message.LineNumber, message.ItemType);
-                
+
                 if (item != null)
                 {
-                    _logger.LogDebug("アイテム発見: Line={LineNumber}, Type={ItemType}, IsEnable={IsEnable}, IsRunning={IsRunning}", 
+                    _logger.LogDebug("アイテム発見: Line={LineNumber}, Type={ItemType}, IsEnable={IsEnable}, IsRunning={IsRunning}",
                         item.LineNumber, item.ItemType, item.IsEnable, item.IsRunning);
-                        
+
                     item.IsRunning = true;
                     item.Progress = 0;
                     CurrentExecutingItem = item;
                     _lastExecutedItem = item;
-                    
-                    _logger.LogDebug("コマンド開始: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType})", 
+
+                    _logger.LogDebug("コマンド開始: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType})",
                         item.LineNumber, message.LineNumber, item.ItemType, message.ItemType);
-                        
+
                     // UIに変更を通知
                     OnPropertyChanged(nameof(Items));
                     OnPropertyChanged(nameof(CurrentExecutingItem));
                     OnPropertyChanged(nameof(CurrentExecutingDescription));
-                    
+
                     _logger.LogDebug("UI更新完了: CurrentExecutingDescription={Description}", CurrentExecutingDescription);
                 }
                 else
                 {
-                    _logger.LogWarning("コマンド開始: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}", 
+                    _logger.LogWarning("コマンド開始: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}",
                         message.LineNumber, message.ItemType);
-                    
+
                     // 詳細なデバッグ情報を出力
                     _logger.LogDebug("現在のアイテム一覧 (総数: {Count}):", Items.Count);
                     _logger.LogDebug("実行カウンター状況:");
@@ -876,14 +960,14 @@ namespace AutoTool.ViewModel.Panels
                     {
                         _logger.LogDebug("  {ItemType}: {Count}回", kvp.Key, kvp.Value);
                     }
-                    
+
                     foreach (var debugItem in Items.Take(15))
                     {
-                        _logger.LogDebug("  Line {LineNumber}: {ItemType} (IsEnable: {IsEnable}, IsRunning: {IsRunning}, Progress: {Progress})", 
+                        _logger.LogDebug("  Line {LineNumber}: {ItemType} (IsEnable: {IsEnable}, IsRunning: {IsRunning}, Progress: {Progress})",
                             debugItem.LineNumber, debugItem.ItemType, debugItem.IsEnable, debugItem.IsRunning, debugItem.Progress);
                     }
                 }
-                
+
                 _logger.LogDebug("=== OnCommandStarted終了 ===");
             }
             catch (Exception ex)
@@ -898,43 +982,43 @@ namespace AutoTool.ViewModel.Panels
             {
                 _logger.LogDebug("=== OnCommandFinished開始 ===");
                 _logger.LogDebug("メッセージ受信: Line={LineNumber}, Type={ItemType}", message.LineNumber, message.ItemType);
-                
+
                 var item = FindMatchingItem(message.LineNumber, message.ItemType);
-                
+
                 if (item != null)
                 {
-                    _logger.LogDebug("アイテム発見: Line={LineNumber}, Type={ItemType}, IsRunning={IsRunning}", 
+                    _logger.LogDebug("アイテム発見: Line={LineNumber}, Type={ItemType}, IsRunning={IsRunning}",
                         item.LineNumber, item.ItemType, item.IsRunning);
-                        
+
                     item.IsRunning = false;
                     item.Progress = 100;
-                    
+
                     if (item.IsEnable)
                     {
                         _completedCommands++;
                         UpdateProgress(_completedCommands);
                         _logger.LogDebug("進捗更新: 完了コマンド数={CompletedCommands}", _completedCommands);
                     }
-                    
-                    _logger.LogDebug("コマンド完了: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType})", 
+
+                    _logger.LogDebug("コマンド完了: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType})",
                         item.LineNumber, message.LineNumber, item.ItemType, message.ItemType);
-                    
+
                     // CurrentExecutingItemをクリア
                     if (CurrentExecutingItem == item)
                     {
                         CurrentExecutingItem = null;
                         _logger.LogDebug("CurrentExecutingItemをクリア");
                     }
-                    
+
                     // UIに変更を通知
                     OnPropertyChanged(nameof(Items));
                     OnPropertyChanged(nameof(CurrentExecutingItem));
                     OnPropertyChanged(nameof(CurrentExecutingDescription));
-                    
+
                     _logger.LogDebug("UI更新完了: CurrentExecutingDescription={Description}", CurrentExecutingDescription);
-                    
+
                     // 一定時間後にプログレスをリセット
-                    Task.Delay(1000).ContinueWith(_ => 
+                    Task.Delay(1000).ContinueWith(_ =>
                     {
                         if (!item.IsRunning)
                         {
@@ -946,10 +1030,10 @@ namespace AutoTool.ViewModel.Panels
                 }
                 else
                 {
-                    _logger.LogWarning("コマンド完了: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}", 
+                    _logger.LogWarning("コマンド完了: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}",
                         message.LineNumber, message.ItemType);
                 }
-                
+
                 _logger.LogDebug("=== OnCommandFinished終了 ===");
             }
             catch (Exception ex)
@@ -963,14 +1047,14 @@ namespace AutoTool.ViewModel.Panels
             try
             {
                 var item = FindMatchingItem(message.LineNumber, message.ItemType);
-                
+
                 if (item != null && item.IsRunning)
                 {
                     item.Progress = message.Progress;
-                    
-                    _logger.LogTrace("進捗更新: Line {LineNumber} ({MessageLineNumber}) - {Progress}% - {ItemType} ({MessageItemType})", 
-                        item.LineNumber, message.LineNumber, message.Progress, item.ItemType, message.ItemType);
-                        
+
+                    _logger.LogTrace("進捗更新: Line {LineNumber} ({MessageLineNumber}) - {Progress}% - {ItemType} ({MessageItemType})",
+                        item.LineNumber, message.LineNumber, item.Progress, item.ItemType, message.ItemType);
+
                     // UIに変更を通知
                     OnPropertyChanged(nameof(Items));
                 }
@@ -986,54 +1070,54 @@ namespace AutoTool.ViewModel.Panels
             try
             {
                 _logger.LogDebug("=== OnCommandDoing開始 ===");
-                _logger.LogDebug("メッセージ受信: Line={LineNumber}, Type={ItemType}, Detail={Detail}", 
+                _logger.LogDebug("メッセージ受信: Line={LineNumber}, Type={ItemType}, Detail={Detail}",
                     message.LineNumber, message.ItemType, message.Detail);
-                
+
                 var item = FindMatchingItem(message.LineNumber, message.ItemType);
-                
+
                 if (item != null)
                 {
-                    _logger.LogDebug("アイテム発見: Line={LineNumber}, Type={ItemType}, IsRunning={IsRunning}", 
+                    _logger.LogDebug("アイテム発見: Line={LineNumber}, Type={ItemType}, IsRunning={IsRunning}",
                         item.LineNumber, item.ItemType, item.IsRunning);
-                        
+
                     // コマンドが実行中であることを確認
                     if (!item.IsRunning)
                     {
-                        _logger.LogDebug("実行状態でないアイテムを実行中に設定: Line={LineNumber}, Type={ItemType}", 
+                        _logger.LogDebug("実行状態でないアイテムを実行中に設定: Line={LineNumber}, Type={ItemType}",
                             item.LineNumber, item.ItemType);
-                        
+
                         item.IsRunning = true;
                         item.Progress = 0;
                         CurrentExecutingItem = item;
-                        
-                        _logger.LogDebug("DoingMessage受信時にコマンド実行状態を設定: Line {LineNumber} - {ItemType}", 
+
+                        _logger.LogDebug("DoingMessage受信時にコマンド実行状態を設定: Line {LineNumber} - {ItemType}",
                             item.LineNumber, item.ItemType);
                     }
-                    
+
                     // UIに変更を通知
                     OnPropertyChanged(nameof(Items));
                     OnPropertyChanged(nameof(CurrentExecutingItem));
                     OnPropertyChanged(nameof(CurrentExecutingDescription));
-                    
+
                     _logger.LogDebug("UI更新完了: CurrentExecutingDescription={Description}", CurrentExecutingDescription);
-                    
-                    _logger.LogTrace("コマンド実行中: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType}) - {Detail}", 
+
+                    _logger.LogTrace("コマンド実行中: Line {LineNumber} ({MessageLineNumber}) - {ItemType} ({MessageItemType}) - {Detail}",
                         item.LineNumber, message.LineNumber, item.ItemType, message.ItemType, message.Detail);
                 }
                 else
                 {
-                    _logger.LogWarning("DoingMessage: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}", 
+                    _logger.LogWarning("DoingMessage: 対応するアイテムが見つかりません - Line {MessageLineNumber}, Type {MessageItemType}",
                         message.LineNumber, message.ItemType);
-                        
+
                     // 詳細なデバッグ情報を出力
                     _logger.LogDebug("DoingMessage - 現在のアイテム一覧 (総数: {Count}):", Items.Count);
                     foreach (var debugItem in Items.Take(10))
                     {
-                        _logger.LogDebug("  Line {LineNumber}: {ItemType} (IsEnable: {IsEnable}, IsRunning: {IsRunning})", 
+                        _logger.LogDebug("  Line {LineNumber}: {ItemType} (IsEnable: {IsEnable}, IsRunning: {IsRunning})",
                             debugItem.LineNumber, debugItem.ItemType, debugItem.IsEnable, debugItem.IsRunning);
                     }
                 }
-                
+
                 _logger.LogDebug("=== OnCommandDoing終了 ===");
             }
             catch (Exception ex)
@@ -1047,22 +1131,22 @@ namespace AutoTool.ViewModel.Panels
             try
             {
                 var cleanMessageType = CleanItemType(messageItemType);
-                
+
                 _logger.LogTrace("=== FindMatchingItem開始 ===");
-                _logger.LogTrace("検索条件: MessageLine={MessageLine}, MessageType={MessageType}, CleanType={CleanType}", 
+                _logger.LogTrace("検索条件: MessageLine={MessageLine}, MessageType={MessageType}, CleanType={CleanType}",
                     messageLineNumber, messageItemType, cleanMessageType);
-                
+
                 // 修正: LineNumber=0の場合のみ実行順序ベースの検索を行う
                 // LineNumber > 0の場合は通常の検索を優先
-                
+
                 // 1. 正確な一致を最優先（LineNumber + ItemType）
-                var exactMatch = Items.FirstOrDefault(x => 
-                    x.LineNumber == messageLineNumber && 
+                var exactMatch = Items.FirstOrDefault(x =>
+                    x.LineNumber == messageLineNumber &&
                     (x.ItemType == messageItemType || x.ItemType == cleanMessageType));
-                    
+
                 if (exactMatch != null)
                 {
-                    _logger.LogTrace("FindMatchingItem: 正確な一致発見 - Line:{Line}, Type:{Type}", 
+                    _logger.LogTrace("FindMatchingItem: 正確な一致発見 - Line:{Line}, Type:{Type}",
                         exactMatch.LineNumber, exactMatch.ItemType);
                     return exactMatch;
                 }
@@ -1070,27 +1154,27 @@ namespace AutoTool.ViewModel.Panels
                 // 2. LineNumberが一致するもの（複数ある場合は最初の有効なもの）
                 var sameLineItems = Items.Where(x => x.LineNumber == messageLineNumber && x.IsEnable).ToList();
                 _logger.LogTrace("同一行の有効アイテム数: {Count}", sameLineItems.Count);
-                
+
                 if (sameLineItems.Count == 1)
                 {
-                    _logger.LogTrace("FindMatchingItem: 同一行の有効アイテム発見 - Line:{Line}, Type:{Type}", 
+                    _logger.LogTrace("FindMatchingItem: 同一行の有効アイテム発見 - Line:{Line}, Type:{Type}",
                         sameLineItems[0].LineNumber, sameLineItems[0].ItemType);
                     return sameLineItems[0];
                 }
                 else if (sameLineItems.Count > 1)
                 {
                     // 複数ある場合はタイプが類似しているものを優先
-                    var similarTypeMatch = sameLineItems.FirstOrDefault(x => 
+                    var similarTypeMatch = sameLineItems.FirstOrDefault(x =>
                         AreItemTypesSimilar(x.ItemType, messageItemType));
                     if (similarTypeMatch != null)
                     {
-                        _logger.LogTrace("FindMatchingItem: 同一行の類似タイプ発見 - Line:{Line}, Type:{Type}", 
+                        _logger.LogTrace("FindMatchingItem: 同一行の類似タイプ発見 - Line:{Line}, Type:{Type}",
                             similarTypeMatch.LineNumber, similarTypeMatch.ItemType);
                         return similarTypeMatch;
                     }
-                    
+
                     // 類似タイプがない場合は最初のもの
-                    _logger.LogTrace("FindMatchingItem: 同一行の最初のアイテム選択 - Line:{Line}, Type:{Type}", 
+                    _logger.LogTrace("FindMatchingItem: 同一行の最初のアイテム選択 - Line:{Line}, Type:{Type}",
                         sameLineItems[0].LineNumber, sameLineItems[0].ItemType);
                     return sameLineItems[0];
                 }
@@ -1103,20 +1187,20 @@ namespace AutoTool.ViewModel.Panels
                 }
 
                 // 4. 近い行番号でタイプが一致するもの（±3の範囲）
-                var nearbyMatch = Items.FirstOrDefault(x => 
-                    Math.Abs(x.LineNumber - messageLineNumber) <= 3 && 
+                var nearbyMatch = Items.FirstOrDefault(x =>
+                    Math.Abs(x.LineNumber - messageLineNumber) <= 3 &&
                     x.IsEnable &&
                     (x.ItemType == messageItemType || x.ItemType == cleanMessageType ||
                      AreItemTypesSimilar(x.ItemType, messageItemType)));
-                     
+
                 if (nearbyMatch != null)
                 {
-                    _logger.LogTrace("FindMatchingItem: 近隣行でタイプ一致 - Line:{Line}, Type:{Type} (距離:{Distance})", 
+                    _logger.LogTrace("FindMatchingItem: 近隣行でタイプ一致 - Line:{Line}, Type:{Type} (距離:{Distance})",
                         nearbyMatch.LineNumber, nearbyMatch.ItemType, Math.Abs(nearbyMatch.LineNumber - messageLineNumber));
                     return nearbyMatch;
                 }
 
-                _logger.LogWarning("FindMatchingItem: 一致するアイテムが見つかりません - MessageLine:{MessageLine}, MessageType:{MessageType}", 
+                _logger.LogWarning("FindMatchingItem: 一致するアイテムが見つかりません - MessageLine:{MessageLine}, MessageType:{MessageType}",
                     messageLineNumber, messageItemType);
 
                 _logger.LogTrace("=== FindMatchingItem終了: null ===");
@@ -1136,20 +1220,20 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogTrace("実行順序ベース検索開始: MessageType={MessageType}, CleanType={CleanType}", 
+                _logger.LogTrace("実行順序ベース検索開始: MessageType={MessageType}, CleanType={CleanType}",
                     messageItemType, cleanMessageType);
 
                 // 1. 現在実行中のアイテムからタイプ一致を検索
                 var runningItems = Items.Where(x => x.IsRunning).ToList();
                 _logger.LogTrace("実行中のアイテム数: {Count}", runningItems.Count);
-                
+
                 foreach (var runningItem in runningItems)
                 {
-                    if (runningItem.ItemType == messageItemType || 
+                    if (runningItem.ItemType == messageItemType ||
                         runningItem.ItemType == cleanMessageType ||
                         AreItemTypesSimilar(runningItem.ItemType, messageItemType))
                     {
-                        _logger.LogTrace("FindItemByExecutionOrder: 実行中アイテムからタイプ一致 - Line:{Line}, Type:{Type}", 
+                        _logger.LogTrace("FindItemByExecutionOrder: 実行中アイテムからタイプ一致 - Line:{Line}, Type:{Type}",
                             runningItem.LineNumber, runningItem.ItemType);
                         return runningItem;
                     }
@@ -1159,20 +1243,21 @@ namespace AutoTool.ViewModel.Panels
                 var nextExecutableItem = FindNextExecutableItem(messageItemType, cleanMessageType);
                 if (nextExecutableItem != null)
                 {
-                    _logger.LogTrace("FindItemByExecutionOrder: 次の実行可能アイテム発見 - Line:{Line}, Type:{Type}", 
+                    _logger.LogTrace("FindItemByExecutionOrder: 次の実行可能アイテム発見 - Line:{Line}, Type:{Type}",
                         nextExecutableItem.LineNumber, nextExecutableItem.ItemType);
                     return nextExecutableItem;
                 }
 
                 // 3. タイプのみで一致（最初に見つかったもの）
-                var typeOnlyMatch = Items.FirstOrDefault(x => 
+                var typeOnlyMatch = Items.FirstOrDefault(x =>
                     x.IsEnable &&
                     (x.ItemType == messageItemType || x.ItemType == cleanMessageType ||
                      AreItemTypesSimilar(x.ItemType, messageItemType)));
-                     
+
+
                 if (typeOnlyMatch != null)
                 {
-                    _logger.LogTrace("FindItemByExecutionOrder: タイプのみ一致 - Line:{Line}, Type:{Type}", 
+                    _logger.LogTrace("FindItemByExecutionOrder: タイプのみ一致 - Line:{Line}, Type:{Type}",
                         typeOnlyMatch.LineNumber, typeOnlyMatch.ItemType);
                     return typeOnlyMatch;
                 }
@@ -1195,18 +1280,18 @@ namespace AutoTool.ViewModel.Panels
             try
             {
                 // 最後に実行されたアイテムを取得
-                var lastExecutedItem = CurrentExecutingItem ?? 
+                var lastExecutedItem = CurrentExecutingItem ??
                     Items.Where(x => x.Progress > 0).OrderByDescending(x => x.Progress).FirstOrDefault() ??
                     Items.FirstOrDefault(x => x.IsRunning);
 
                 if (lastExecutedItem != null)
                 {
-                    _logger.LogTrace("最後の実行アイテム: Line={LineNumber}, Type={ItemType}", 
+                    _logger.LogTrace("最後の実行アイテム: Line={LineNumber}, Type={ItemType}",
                         lastExecutedItem.LineNumber, lastExecutedItem.ItemType);
 
                     // 次に実行されるべきアイテムを論理的順序で検索
-                    var candidateItems = Items.Where(x => 
-                        x.IsEnable && 
+                    var candidateItems = Items.Where(x =>
+                        x.IsEnable &&
                         x.LineNumber > lastExecutedItem.LineNumber &&
                         (x.ItemType == messageItemType || x.ItemType == cleanMessageType ||
                          AreItemTypesSimilar(x.ItemType, messageItemType))).ToList();
@@ -1214,23 +1299,23 @@ namespace AutoTool.ViewModel.Panels
                     if (candidateItems.Count > 0)
                     {
                         var nextItem = candidateItems.OrderBy(x => x.LineNumber).First();
-                        _logger.LogTrace("論理的次のアイテム発見: Line={LineNumber}, Type={ItemType}", 
+                        _logger.LogTrace("論理的次のアイテム発見: Line={LineNumber}, Type={ItemType}",
                             nextItem.LineNumber, nextItem.ItemType);
                         return nextItem;
                     }
                 }
 
                 // フォールバック: 最初の未実行のマッチするアイテム
-                var firstMatch = Items.Where(x => 
-                    x.IsEnable && 
-                    !x.IsRunning && 
+                var firstMatch = Items.Where(x =>
+                    x.IsEnable &&
+                    !x.IsRunning &&
                     x.Progress == 0 &&
                     (x.ItemType == messageItemType || x.ItemType == cleanMessageType ||
                      AreItemTypesSimilar(x.ItemType, messageItemType))).OrderBy(x => x.LineNumber).FirstOrDefault();
 
                 if (firstMatch != null)
                 {
-                    _logger.LogTrace("最初の未実行アイテム発見: Line={LineNumber}, Type={ItemType}", 
+                    _logger.LogTrace("最初の未実行アイテム発見: Line={LineNumber}, Type={ItemType}",
                         firstMatch.LineNumber, firstMatch.ItemType);
                 }
 
@@ -1243,27 +1328,32 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
+        private int GetNextLineNumber()
+        {
+            return Items.Count > 0 ? Items.Max(i => i.LineNumber) + 1 : 1;
+        }
+
         private string CleanItemType(string itemType)
         {
             if (string.IsNullOrEmpty(itemType)) return itemType;
-            
+
             if (itemType.EndsWith("Command"))
             {
                 return itemType.Substring(0, itemType.Length - "Command".Length);
             }
-            
+
             return itemType;
         }
 
         private bool AreItemTypesSimilar(string type1, string type2)
         {
             if (string.IsNullOrEmpty(type1) || string.IsNullOrEmpty(type2)) return false;
-            
+
             var clean1 = CleanItemType(type1);
             var clean2 = CleanItemType(type2);
-            
+
             if (clean1.Equals(clean2, StringComparison.OrdinalIgnoreCase)) return true;
-            
+
             return (clean1, clean2) switch
             {
                 ("WaitImage", "Wait_Image") or ("Wait_Image", "WaitImage") => true,
@@ -1280,47 +1370,47 @@ namespace AutoTool.ViewModel.Panels
             };
         }
 
-        public void SetRunningState(bool isRunning) 
+        public void SetRunningState(bool isRunning)
         {
             _logger.LogDebug("=== SetRunningState開始: {IsRunning} ===", isRunning);
-            
+
             IsRunning = isRunning;
             StatusMessage = isRunning ? "実行中..." : "準備完了";
             _logger.LogDebug("実行状態を設定: {IsRunning}", isRunning);
-            
+
             if (isRunning)
             {
                 _logger.LogDebug("実行開始 - プログレス初期化");
                 InitializeProgress();
                 _completedCommands = 0;
-                
+
                 // 実行カウンターをリセット
                 _executionCounter.Clear();
                 _lastExecutedItem = null;
                 _logger.LogDebug("実行カウンターと追跡状態をリセット");
-                
+
                 // 全アイテムの実行状態をリセット
                 foreach (var item in Items)
                 {
                     item.IsRunning = false;
                     item.Progress = 0;
                 }
-                
+
                 _logger.LogDebug("実行開始 - 全アイテム状態リセット完了");
             }
             else
             {
                 _logger.LogDebug("実行終了 - クリーンアップ開始");
-                
+
                 if (ShowProgress)
                 {
                     CompleteProgress();
                 }
-                
+
                 // 実行カウンターと追跡状態をクリア
                 _executionCounter.Clear();
                 _lastExecutedItem = null;
-                
+
                 // 全アイテムの実行状態をクリア
                 var runningCount = 0;
                 foreach (var item in Items)
@@ -1332,17 +1422,17 @@ namespace AutoTool.ViewModel.Panels
                         item.Progress = 0;
                     }
                 }
-                
+
                 CurrentExecutingItem = null;
-                
+
                 _logger.LogDebug("実行終了 - {RunningCount}個のアイテムの実行状態をクリア", runningCount);
-                
+
                 // UIに変更を通知
                 OnPropertyChanged(nameof(Items));
                 OnPropertyChanged(nameof(CurrentExecutingItem));
                 OnPropertyChanged(nameof(CurrentExecutingDescription));
             }
-            
+
             _logger.LogDebug("=== SetRunningState終了: {IsRunning} ===", isRunning);
         }
 
