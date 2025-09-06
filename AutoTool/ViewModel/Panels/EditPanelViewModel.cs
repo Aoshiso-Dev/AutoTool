@@ -1,6 +1,4 @@
 ﻿using AutoTool.Message;
-using AutoTool.Model.CommandDefinition;
-using AutoTool.Model.List.Class;
 using AutoTool.Model.MacroFactory;
 using AutoTool.ViewModel.Shared;
 using AutoTool.Services.Capture;
@@ -21,7 +19,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
-using static MouseHelper.Input;
+using AutoTool.Command.Definition;
 
 namespace AutoTool.ViewModel.Panels
 {

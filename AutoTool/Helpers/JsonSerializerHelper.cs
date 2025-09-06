@@ -5,10 +5,10 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
-using AutoTool.Model.List.Class;
-using AutoTool.Model.CommandDefinition; // UniversalCommandItem用
 using System.Windows.Input;
-using System.Linq; // 追加
+using System.Linq;
+using AutoTool.Command.Definition;
+using AutoTool.ViewModel.Shared; // 追加
 
 namespace AutoTool.Helpers
 {
@@ -257,23 +257,23 @@ namespace AutoTool.Helpers
         private static readonly Dictionary<string, Type> ItemTypeToTypeMap = new()
         {
             { "Click", typeof(UniversalCommandItem) },
-            { "Wait_Image", typeof(UniversalCommandItem) },
-            { "Click_Image", typeof(UniversalCommandItem) },
-            { "Click_Image_AI", typeof(UniversalCommandItem) },
+            { "WaitImage", typeof(UniversalCommandItem) },
+            { "ClickImage", typeof(UniversalCommandItem) },
+            { "ClickImage_AI", typeof(UniversalCommandItem) },
             { "Hotkey", typeof(UniversalCommandItem) },
             { "Wait", typeof(UniversalCommandItem) },
             { "Loop", typeof(UniversalCommandItem) },
-            { "Loop_End", typeof(UniversalCommandItem) },
-            { "Loop_Break", typeof(UniversalCommandItem) },
-            { "IF_ImageExist", typeof(UniversalCommandItem) },
-            { "IF_ImageNotExist", typeof(UniversalCommandItem) },
-            { "IF_End", typeof(UniversalCommandItem) },
-            { "IF_ImageExist_AI", typeof(UniversalCommandItem) },
-            { "IF_ImageNotExist_AI", typeof(UniversalCommandItem) },
+            { "LoopEnd", typeof(UniversalCommandItem) },
+            { "LoopBreak", typeof(UniversalCommandItem) },
+            { "IfImageExist", typeof(UniversalCommandItem) },
+            { "IfImageNotExist", typeof(UniversalCommandItem) },
+            { "IfEnd", typeof(UniversalCommandItem) },
+            { "IfImageExist_AI", typeof(UniversalCommandItem) },
+            { "IfImageNotExist_AI", typeof(UniversalCommandItem) },
             { "Execute", typeof(UniversalCommandItem) },
             { "SetVariable", typeof(UniversalCommandItem) },
             { "SetVariable_AI", typeof(UniversalCommandItem) },
-            { "IF_Variable", typeof(UniversalCommandItem) },
+            { "IfVariable", typeof(UniversalCommandItem) },
             { "Screenshot", typeof(UniversalCommandItem) },
             // フォールバック用
             { "", typeof(UniversalCommandItem) }

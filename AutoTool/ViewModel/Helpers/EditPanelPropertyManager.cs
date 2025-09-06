@@ -1,5 +1,5 @@
 using System;
-using AutoTool.Model.CommandDefinition;
+using AutoTool.ViewModel.Shared;
 
 namespace AutoTool.ViewModel.Helpers
 {

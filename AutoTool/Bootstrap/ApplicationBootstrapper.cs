@@ -7,7 +7,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using AutoTool.Services;
-using AutoTool.Model.CommandDefinition;
+using AutoTool.Command.Definition;
 
 namespace AutoTool.Bootstrap
 {

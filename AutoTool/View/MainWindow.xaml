@@ -60,35 +60,32 @@
                         </DataTemplate>
                     </MenuItem.ItemTemplate>
                 </MenuItem>
+                <!--
                 <Separator/>
                 <MenuItem Header="設定" />
+                -->
                 <Separator/>
                 <MenuItem Header="終了(_X)" Command="{Binding ExitCommand}" InputGestureText="Alt+F4"/>
             </MenuItem>
             <MenuItem Header="編集(_E)">
                 <MenuItem Header="元に戻す(_U)" Command="{Binding UndoCommand}" InputGestureText="Ctrl+Z"/>
                 <MenuItem Header="やり直し(_R)" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y"/>
+                <!--
                 <Separator/>
                 <MenuItem Header="切り取り(_T)" Command="ApplicationCommands.Cut" InputGestureText="Ctrl+X"/>
                 <MenuItem Header="コピー(_C)" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C"/>
                 <MenuItem Header="貼り付け(_P)" Command="ApplicationCommands.Paste" InputGestureText="Ctrl+V"/>
+                -->
                 <MenuItem Header="削除(_D)" Command="ApplicationCommands.Delete" InputGestureText="Delete"/>
             </MenuItem>
-            <MenuItem Header="表示(_V)">
-                <MenuItem Header="テーマ(_T)">
-                    <MenuItem Header="ライト" Command="{Binding ChangeThemeCommand}" CommandParameter="Light" />
-                    <MenuItem Header="ダーク" Command="{Binding ChangeThemeCommand}" CommandParameter="Dark" />
-                    <MenuItem Header="システム設定に合わせる" Command="{Binding ChangeThemeCommand}" CommandParameter="Auto" />
-                </MenuItem>
-                <Separator/>
-                <MenuItem Header="パフォーマンス情報を更新" Command="{Binding RefreshPerformanceCommand}" />
-            </MenuItem>
+            <!--
             <MenuItem Header="プラグイン(_P)">
                 <MenuItem Header="プラグインの読み込み..." Command="{Binding LoadPluginFileCommand}" />
                 <MenuItem Header="全プラグインの再読み込み" Command="{Binding RefreshPluginsCommand}" />
                 <Separator/>
                 <MenuItem Header="プラグイン情報の表示" Command="{Binding ShowPluginInfoCommand}" />
             </MenuItem>
+            -->
             <MenuItem Header="ツール(_T)">
                 <MenuItem Header="アプリケーションフォルダを開く" Command="{Binding OpenAppDirCommand}" />
             </MenuItem>

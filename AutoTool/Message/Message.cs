@@ -1,5 +1,5 @@
 using AutoTool.Command.Interface;
-using AutoTool.Model.CommandDefinition;
+using AutoTool.ViewModel.Shared;
 using System;
 
 namespace AutoTool.Message
@@ -167,24 +167,24 @@ namespace AutoTool.Message
         {
             return command.GetType().Name switch
             {
-                "WaitImageCommand" => "Wait_Image",
-                "ClickImageCommand" => "Click_Image", 
-                "ClickImageAICommand" => "Click_Image_AI",
+                "WaitImageCommand" => "WaitImage",
+                "ClickImageCommand" => "ClickImage", 
+                "ClickImageAICommand" => "ClickImageAI",
                 "HotkeyCommand" => "Hotkey",
                 "ClickCommand" => "Click",
                 "WaitCommand" => "Wait",
                 "LoopCommand" => "Loop",
-                "LoopBreakCommand" => "Loop_Break",
+                "LoopBreakCommand" => "LoopBreak",
                 "LoopEndCommand" => "Loop_End",
-                "IfImageExistCommand" => "IF_ImageExist",
-                "IfImageNotExistCommand" => "IF_ImageNotExist",
-                "IfImageExistAICommand" => "IF_ImageExist_AI",
-                "IfImageNotExistAICommand" => "IF_ImageNotExist_AI",
-                "IfVariableCommand" => "IF_Variable",
-                "IfEndCommand" => "IF_End",
+                "IfImageExistCommand" => "IfImageExist",
+                "IfImageNotExistCommand" => "IfImageNotExist",
+                "IfImageExistAICommand" => "IfImageExistAI",
+                "IfImageNotExistAICommand" => "IfImageNotExistAI",
+                "IfVariableCommand" => "IfVariable",
+                "IfEndCommand" => "IfEnd",
                 "ExecuteCommand" => "Execute",
                 "SetVariableCommand" => "SetVariable",
-                "SetVariableAICommand" => "SetVariable_AI",
+                "SetVariableAICommand" => "SetVariableAI",
                 "ScreenshotCommand" => "Screenshot",
                 _ => command.GetType().Name.Replace("Command", "")
             };

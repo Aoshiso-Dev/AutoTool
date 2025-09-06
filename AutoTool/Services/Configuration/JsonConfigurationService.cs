@@ -181,7 +181,6 @@ namespace AutoTool.Services.Configuration
                 _logger.LogInformation("デフォルト設定を作成します");
 
                 // デフォルト設定値
-                SetValue("App.Theme", "Light");
                 SetValue("App.Language", "ja-JP");
                 SetValue("App.AutoSave", true);
                 SetValue("App.AutoSaveInterval", 300); // 5分

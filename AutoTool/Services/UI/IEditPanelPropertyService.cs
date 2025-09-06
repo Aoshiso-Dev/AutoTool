@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using AutoTool.Model.CommandDefinition;
+using AutoTool.ViewModel.Shared;
 
 namespace AutoTool.Services.UI
 {
@@ -40,7 +40,7 @@ namespace AutoTool.Services.UI
         void SetProperty<T>(string propertyName, T value);
 
         /// <summary>
-        /// コマンド用の設定定義を取得
+        /// コマンド用の設定定義取得
         /// </summary>
         List<SettingDefinition> GetSettingDefinitions(string commandType);
 

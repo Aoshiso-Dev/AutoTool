@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AutoTool.Services.Plugin;
-using AutoTool.Model.CommandDefinition;
+using AutoTool.ViewModel.Shared;
 
 namespace AutoTool.Services.Plugin
 {

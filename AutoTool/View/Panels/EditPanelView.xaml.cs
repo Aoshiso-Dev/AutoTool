@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using AutoTool.ViewModel.Panels;
-using AutoTool.Model.CommandDefinition;
+using AutoTool.Command.Definition;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

@@ -1,8 +1,5 @@
-using AutoTool.Command.Class;
 using AutoTool.Services.Plugin;
 using AutoTool.Command.Interface;
-using AutoTool.Model.List.Class;
-using AutoTool.Model.CommandDefinition;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -11,6 +8,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoTool.Command.Base;
+using AutoTool.Command.Definition;
+using AutoTool.ViewModel.Shared;
 
 namespace AutoTool.Model.MacroFactory
 {
@@ -221,11 +221,11 @@ namespace AutoTool.Model.MacroFactory
             return itemType switch
             {
                 "Loop" => true,
-                "IF_ImageExist" => true,
-                "IF_ImageNotExist" => true,
-                "IF_ImageExist_AI" => true,
-                "IF_ImageNotExist_AI" => true,
-                "IF_Variable" => true,
+                "IfImageExist" => true,
+                "IfImageNotExist" => true,
+                "IfImageExist_AI" => true,
+                "IfImageNotExist_AI" => true,
+                "IfVariable" => true,
                 _ => false
             };
         }
@@ -281,12 +281,12 @@ namespace AutoTool.Model.MacroFactory
         {
             return startCommandType switch
             {
-                "Loop" => "Loop_End",
-                "IF_ImageExist" => "IF_End",
-                "IF_ImageNotExist" => "IF_End",
-                "IF_ImageExist_AI" => "IF_End",
-                "IF_ImageNotExist_AI" => "IF_End",
-                "IF_Variable" => "IF_End",
+                "Loop" => "LoopEnd",
+                "IfImageExist" => "IfEnd",
+                "IfImageNotExist" => "IfEnd",
+                "IfImageExistAI" => "IfEnd",
+                "IfImageNotExistAI" => "IfEnd",
+                "IfVariable" => "IfEnd",
                 _ => string.Empty
             };
         }

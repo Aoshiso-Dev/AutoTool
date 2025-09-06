@@ -15,8 +15,6 @@ namespace AutoTool
     {
         private ILogger<MainWindow>? _logger;
         private IServiceProvider? _serviceProvider;
-        private IDataContextLocator? _dataContextLocator;
-        private IMainWindowButtonService? _buttonService;
 
         /// <summary>
         /// MainWindowのコンストラクタ
@@ -64,8 +62,6 @@ namespace AutoTool
             {
                 _serviceProvider = app.Services;
                 _logger = _serviceProvider.GetService<ILogger<MainWindow>>();
-                _dataContextLocator = _serviceProvider.GetService<IDataContextLocator>();
-                _buttonService = _serviceProvider.GetService<IMainWindowButtonService>();
 
                 _logger?.LogDebug("MainWindow DI初期化完了");
             }
@@ -120,7 +116,7 @@ namespace AutoTool
         {
             try
             {
-                var variableStore = _serviceProvider?.GetService<AutoTool.Services.IVariableStore>();
+                var variableStore = _serviceProvider?.GetService<AutoTool.Services.IVariableStoreService>();
                 if (variableStore != null)
                 {
                     variableStore.Set("TestVariable", "Hello World");
@@ -142,22 +138,6 @@ namespace AutoTool
             try
             {
                 _logger?.LogInformation("MainWindow終了処理開始");
-                
-                // 実行中の場合は警告
-                if (DataContext is MainWindowViewModel viewModel && (_buttonService?.IsRunning ?? false))
-                {
-                    var result = System.Windows.MessageBox.Show(
-                        "マクロが実行中です。終了しますか？",
-                        "確認",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-                    
-                    if (result == MessageBoxResult.No)
-                    {
-                        e.Cancel = true;
-                        return;
-                    }
-                }
                 
                 _logger?.LogInformation("MainWindow正常終了");
             }

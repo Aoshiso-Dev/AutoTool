@@ -1,4 +1,4 @@
-using AutoTool.Model.CommandDefinition;
+using AutoTool.ViewModel.Shared;
 
 namespace AutoTool.Message
 {

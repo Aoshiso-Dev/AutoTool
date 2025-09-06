@@ -27,9 +27,6 @@ namespace AutoTool.Services.UI
         IRelayCommand ExitCommand { get; }
         IRelayCommand OpenRecentFileCommand { get; }
         
-        // テーマ操作
-        IRelayCommand ChangeThemeCommand { get; }
-        
         // プラグイン操作
         IRelayCommand LoadPluginFileCommand { get; }
         IRelayCommand RefreshPluginsCommand { get; }
@@ -76,7 +73,6 @@ namespace AutoTool.Services.UI
     {
         private readonly ILogger<MainWindowMenuService> _logger;
         private readonly IMessenger _messenger;
-        private readonly IEnhancedThemeService _themeService;
         private readonly IEnhancedConfigurationService _configService;
         
         [ObservableProperty]
@@ -90,7 +86,6 @@ namespace AutoTool.Services.UI
         public IRelayCommand SaveFileAsCommand { get; }
         public IRelayCommand ExitCommand { get; }
         public IRelayCommand OpenRecentFileCommand { get; }
-        public IRelayCommand ChangeThemeCommand { get; }
         public IRelayCommand LoadPluginFileCommand { get; }
         public IRelayCommand RefreshPluginsCommand { get; }
         public IRelayCommand ShowPluginInfoCommand { get; }
@@ -105,12 +100,10 @@ namespace AutoTool.Services.UI
         public MainWindowMenuService(
             ILogger<MainWindowMenuService> logger,
             IMessenger messenger,
-            IEnhancedThemeService themeService,
             IEnhancedConfigurationService configService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
-            _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
             _configService = configService ?? throw new ArgumentNullException(nameof(configService));
 
             // Initialize commands
@@ -119,7 +112,6 @@ namespace AutoTool.Services.UI
             SaveFileAsCommand = new RelayCommand(ExecuteSaveFileAs);
             ExitCommand = new RelayCommand(ExecuteExit);
             OpenRecentFileCommand = new RelayCommand<string>(ExecuteOpenRecentFile);
-            ChangeThemeCommand = new RelayCommand<string>(ExecuteChangeTheme);
             LoadPluginFileCommand = new RelayCommand(ExecuteLoadPluginFile);
             RefreshPluginsCommand = new RelayCommand(ExecuteRefreshPlugins);
             ShowPluginInfoCommand = new RelayCommand(ExecuteShowPluginInfo);
@@ -257,25 +249,6 @@ namespace AutoTool.Services.UI
             {
                 _logger.LogError(ex, "最近のファイルオープン中にエラーが発生: {FilePath}", filePath);
                 System.Windows.MessageBox.Show($"ファイルを開く際にエラーが発生しました。\n\n{ex.Message}",
-                    "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-            }
-        }
-
-        private void ExecuteChangeTheme(string? themeName)
-        {
-            if (string.IsNullOrEmpty(themeName)) return;
-
-            try
-            {
-                var theme = ThemeDefinitionFactory.ParseTheme(themeName);
-                _themeService.SetTheme(theme);
-                
-                _logger.LogInformation("テーマを変更しました: {Theme}", themeName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "テーマ変更中にエラーが発生: {Theme}", themeName);
-                System.Windows.MessageBox.Show($"テーマを変更する際にエラーが発生しました。\n\n{ex.Message}",
                     "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }

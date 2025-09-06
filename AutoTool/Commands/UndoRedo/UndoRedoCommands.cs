@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using AutoTool.Model.CommandDefinition;
+using AutoTool.ViewModel.Shared;
 
 namespace AutoTool.Commands.UndoRedo
 {

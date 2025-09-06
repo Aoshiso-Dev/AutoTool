@@ -1,15 +1,16 @@
-using System;
+ï»¿using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 using AutoTool.ViewModel.Panels;
-using AutoTool.Model.CommandDefinition;
+using AutoTool.Command.Definition;
+using AutoTool.ViewModel.Shared;
 
 namespace AutoTool.View.Converters
 {
     /// <summary>
-    /// ƒlƒXƒgƒŒƒxƒ‹‚ÉŠî‚Ã‚­•\¦ƒeƒLƒXƒgƒRƒ“ƒo[ƒ^[
+    /// ãƒã‚¹ãƒˆãƒ¬ãƒ™ãƒ«ã«åŸºã¥ãè¡¨ç¤ºãƒ†ã‚­ã‚¹ãƒˆã‚³ãƒ³ãƒãƒ¼ã‚¿ãƒ¼
     /// </summary>
     public class NestLevelToDisplayTextConverter : IValueConverter
     {
@@ -19,33 +20,33 @@ namespace AutoTool.View.Converters
             {
                 var prefix = "";
                 
-                // ƒlƒXƒgƒŒƒxƒ‹‚É‰‚¶‚½‹Šo“I‚È•\Œ»
+                // ãƒã‚¹ãƒˆãƒ¬ãƒ™ãƒ«ã«å¿œã˜ãŸè¦–è¦šçš„ãªè¡¨ç¾
                 for (int i = 0; i < item.NestLevel; i++)
                 {
                     if (i == 0)
-                        prefix += "„¥„Ÿ„Ÿ "; // Å‰‚ÌƒŒƒxƒ‹‚Í„¥„Ÿ„Ÿ
+                        prefix += "â”œâ”€â”€ "; // æœ€åˆã®ãƒ¬ãƒ™ãƒ«ã¯â”œâ”€â”€
                     else
-                        prefix += "„    "; // ‚»‚ÌŒã‚ÌƒŒƒxƒ‹‚Í„ ‚ÆƒXƒy[ƒX
+                        prefix += "â”‚   "; // ãã®å¾Œã®ãƒ¬ãƒ™ãƒ«ã¯â”‚ã¨ã‚¹ãƒšãƒ¼ã‚¹
                 }
                 
-                var displayName = AutoTool.Model.CommandDefinition.DirectCommandRegistry.DisplayOrder.GetDisplayName(item.ItemType) ?? item.ItemType;
+                var displayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(item.ItemType) ?? item.ItemType;
                 
-                // I—¹ƒRƒ}ƒ“ƒh‚Í“Á•Ê‚È•\‹L
-                if (item.ItemType == "Loop_End" || item.ItemType == "IF_End")
+                // çµ‚äº†ã‚³ãƒãƒ³ãƒ‰ã¯ç‰¹åˆ¥ãªè¡¨è¨˜
+                if (item.ItemType == "Loop_End" || item.ItemType == "IfEnd")
                 {
                     if (item.NestLevel > 0)
                     {
-                        // I—¹ƒRƒ}ƒ“ƒh‚Í„¤„Ÿ„Ÿ‚Å•\Œ»
+                        // çµ‚äº†ã‚³ãƒãƒ³ãƒ‰ã¯â””â”€â”€ã§è¡¨ç¾
                         prefix = "";
                         for (int i = 0; i < item.NestLevel - 1; i++)
                         {
-                            prefix += "„    ";
+                            prefix += "â”‚   ";
                         }
-                        prefix += "„¤„Ÿ„Ÿ ";
+                        prefix += "â””â”€â”€ ";
                     }
                     else
                     {
-                        prefix = "„¤„Ÿ„Ÿ ";
+                        prefix = "â””â”€â”€ ";
                     }
                 }
                 
@@ -61,7 +62,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// Àsó‘Ô‚ÉŠî‚Ã‚­”wŒiFƒRƒ“ƒo[ƒ^[
+    /// å®Ÿè¡ŒçŠ¶æ…‹ã«åŸºã¥ãèƒŒæ™¯è‰²ã‚³ãƒ³ãƒãƒ¼ã‚¿ãƒ¼
     /// </summary>
     public class ExecutionStateToBackgroundConverter : IMultiValueConverter
     {
@@ -73,30 +74,30 @@ namespace AutoTool.View.Converters
                 {
                     var currentExecutingItem = values[1] as UniversalCommandItem;
                     
-                    // Œ»İÀs’†‚ÌƒAƒCƒeƒ€‚ğƒ`ƒFƒbƒN
+                    // ç¾åœ¨å®Ÿè¡Œä¸­ã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’ãƒã‚§ãƒƒã‚¯
                     var isCurrentExecuting = IsCurrentExecutingItem(item, currentExecutingItem);
                     
                     if (item.IsRunning || isCurrentExecuting)
                     {
-                        return new SolidColorBrush(System.Windows.Media.Color.FromArgb(150, 255, 255, 0)); // ”¼“§–¾‰©F
+                        return new SolidColorBrush(System.Windows.Media.Color.FromArgb(150, 255, 255, 0)); // åŠé€æ˜é»„è‰²
                     }
                     else if (!item.IsEnable)
                     {
                         return new SolidColorBrush(System.Windows.Media.Color.FromArgb(80, 128, 128, 128));
                     }
                     
-                    // ƒlƒXƒgƒŒƒxƒ‹‚É‰‚¶‚½”wŒiFi‰ü—Ç”Åj
+                    // ãƒã‚¹ãƒˆãƒ¬ãƒ™ãƒ«ã«å¿œã˜ãŸèƒŒæ™¯è‰²ï¼ˆæ”¹è‰¯ç‰ˆï¼‰
                     var nestBrush = item.NestLevel switch
                     {
                         0 => System.Windows.Media.Brushes.Transparent,
                         1 => item.IsInLoop && item.IsInIf 
-                             ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 128, 0, 128)) // Loop + If: ‡
+                             ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 128, 0, 128)) // Loop + If: ç´«
                              : item.IsInLoop 
-                               ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(25, 0, 150, 255))   // Loop: Â
-                               : new SolidColorBrush(System.Windows.Media.Color.FromArgb(25, 0, 200, 100)),  // If: —Î
-                        2 => new SolidColorBrush(System.Windows.Media.Color.FromArgb(35, 255, 140, 0)),     // ƒIƒŒƒ“ƒW
-                        3 => new SolidColorBrush(System.Windows.Media.Color.FromArgb(45, 200, 0, 200)),     // ƒ}ƒ[ƒ“ƒ^
-                        _ => new SolidColorBrush(System.Windows.Media.Color.FromArgb(55, 100, 100, 100))    // ƒOƒŒ[
+                               ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(25, 0, 150, 255))   // Loop: é’
+                               : new SolidColorBrush(System.Windows.Media.Color.FromArgb(25, 0, 200, 100)),  // If: ç·‘
+                        2 => new SolidColorBrush(System.Windows.Media.Color.FromArgb(35, 255, 140, 0)),     // ã‚ªãƒ¬ãƒ³ã‚¸
+                        3 => new SolidColorBrush(System.Windows.Media.Color.FromArgb(45, 200, 0, 200)),     // ãƒã‚¼ãƒ³ã‚¿
+                        _ => new SolidColorBrush(System.Windows.Media.Color.FromArgb(55, 100, 100, 100))    // ã‚°ãƒ¬ãƒ¼
                     };
                     
                     return nestBrush;
@@ -123,7 +124,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// Àsó‘ÔƒAƒCƒRƒ“ƒRƒ“ƒo[ƒ^[
+    /// å®Ÿè¡ŒçŠ¶æ…‹ã‚¢ã‚¤ã‚³ãƒ³ã‚³ãƒ³ãƒãƒ¼ã‚¿ãƒ¼
     /// </summary>
     public class ExecutionStateToIconConverter : IValueConverter
     {
@@ -135,47 +136,47 @@ namespace AutoTool.View.Converters
                 {
                     if (item.IsRunning)
                     {
-                        return "?"; // Às’†
+                        return "â–¶"; // å®Ÿè¡Œä¸­
                     }
                     else if (!item.IsEnable)
                     {
-                        return "?"; // –³Œø
+                        return "â¸"; // ç„¡åŠ¹
                     }
                     else
                     {
-                        // ƒRƒ}ƒ“ƒhƒ^ƒCƒv‚É‰‚¶‚½ƒAƒCƒRƒ“
+                        // ã‚³ãƒãƒ³ãƒ‰ã‚¿ã‚¤ãƒ—ã«å¿œã˜ãŸã‚¢ã‚¤ã‚³ãƒ³
                         var icon = item.ItemType switch
                         {
-                            "Loop" => "??",
-                            "Loop_End" => "??",
-                            "Loop_Break" => "?",
-                            "IF_ImageExist" => "?",
-                            "IF_ImageNotExist" => "?",
-                            "IF_ImageExist_AI" => "??",
-                            "IF_ImageNotExist_AI" => "??",
-                            "IF_Variable" => "??",
-                            "IF_End" => "?",
-                            "Wait_Image" => "?",
-                            "Click_Image" => "??",
-                            "Click_Image_AI" => "??",
-                            "Hotkey" => "?",
-                            "Click" => "??",
-                            "Wait" => "?",
-                            "Execute" => "??",
-                            "SetVariable" => "??",
-                            "SetVariable_AI" => "??",
-                            "Screenshot" => "??",
-                            _ => "??"
+                            "Loop" => "ğŸ”„",
+                            "LoopEnd" => "ğŸ”š",
+                            "LoopBreak" => "âš¡",
+                            "IfImageExist" => "â“",
+                            "IfImageNotExist" => "â—",
+                            "IfImageExistAI" => "ğŸ”",
+                            "IfImageNotExist_AI" => "ğŸ”",
+                            "IfVariable" => "ğŸ“Š",
+                            "IfEnd" => "âœ…",
+                            "WaitImage" => "â±",
+                            "ClickImage" => "ğŸ–±",
+                            "ClickImageAI" => "ğŸ¤–",
+                            "Hotkey" => "âŒ¨",
+                            "Click" => "ğŸ‘†",
+                            "Wait" => "â¸",
+                            "Execute" => "ğŸš€",
+                            "SetVariable" => "ğŸ“",
+                            "SetVariableAI" => "ğŸ§ ",
+                            "Screenshot" => "ğŸ“¸",
+                            _ => "ğŸ“„"
                         };
                         
                         return icon;
                     }
                 }
-                return "??";
+                return "ğŸ“„";
             }
             catch (Exception)
             {
-                return "??";
+                return "ğŸ“„";
             }
         }
 
@@ -186,7 +187,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// ƒvƒƒOƒŒƒX•\¦‰Â‹«ƒRƒ“ƒo[ƒ^[
+    /// ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹è¡¨ç¤ºå¯è¦–æ€§ã‚³ãƒ³ãƒãƒ¼ã‚¿ãƒ¼
     /// </summary>
     public class ProgressVisibilityConverter : IValueConverter
     {
@@ -214,7 +215,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// ƒu[ƒ‹’l‚©‚ç‰Â‹«‚Ö‚Ì•ÏŠ·
+    /// ãƒ–ãƒ¼ãƒ«å€¤ã‹ã‚‰å¯è¦–æ€§ã¸ã®å¤‰æ›
     /// </summary>
     public class BooleanToVisibilityConverter : IValueConverter
     {
@@ -238,7 +239,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// ƒyƒAƒŠƒ“ƒO•\¦—pƒRƒ“ƒo[ƒ^[i‰ü—Ç”Åj
+    /// ãƒšã‚¢ãƒªãƒ³ã‚°è¡¨ç¤ºç”¨ã‚³ãƒ³ãƒãƒ¼ã‚¿ãƒ¼ï¼ˆæ”¹è‰¯ç‰ˆï¼‰
     /// </summary>
     public class PairLineNumberConverter : IValueConverter
     {
@@ -246,45 +247,45 @@ namespace AutoTool.View.Converters
         {
             if (value is UniversalCommandItem item)
             {
-                // PairƒvƒƒpƒeƒB‚ğ“®“I‚Éæ“¾
+                // Pairãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’å‹•çš„ã«å–å¾—
                 var pairProperty = item.GetType().GetProperty("Pair");
                 if (pairProperty != null)
                 {
                     var pairValue = pairProperty.GetValue(item) as UniversalCommandItem;
                     if (pairValue != null)
                     {
-                        // ŠJnƒRƒ}ƒ“ƒh‚ÆI—¹ƒRƒ}ƒ“ƒh‚Å•\¦‚ğ•Ï‚¦‚é
+                        // é–‹å§‹ã‚³ãƒãƒ³ãƒ‰ã¨çµ‚äº†ã‚³ãƒãƒ³ãƒ‰ã§è¡¨ç¤ºã‚’å¤‰ãˆã‚‹
                         if (item.ItemType == "Loop")
-                            return $"{item.LineNumber}„¦{pairValue.LineNumber}"; // LoopŠJn
-                        else if (item.ItemType == "Loop_End")
-                            return $"{pairValue.LineNumber}„¨{item.LineNumber}"; // LoopI—¹
+                            return $"{item.LineNumber}â”¬{pairValue.LineNumber}"; // Loopé–‹å§‹
+                        else if (item.ItemType == "LoopEnd")
+                            return $"{pairValue.LineNumber}â”´{item.LineNumber}"; // Loopçµ‚äº†
                         else if (IsIfCommand(item.ItemType))
-                            return $"{item.LineNumber}„¦{pairValue.LineNumber}"; // IfŠJn
-                        else if (item.ItemType == "IF_End")
-                            return $"{pairValue.LineNumber}„¨{item.LineNumber}"; // IfI—¹
+                            return $"{item.LineNumber}â”¬{pairValue.LineNumber}"; // Ifé–‹å§‹
+                        else if (item.ItemType == "IfEnd")
+                            return $"{pairValue.LineNumber}â”´{item.LineNumber}"; // Ifçµ‚äº†
                         else
-                            return $"{item.LineNumber}?{pairValue.LineNumber}"; // ‚»‚Ì‘¼‚ÌƒyƒA
+                            return $"{item.LineNumber}â†”{pairValue.LineNumber}"; // ãã®ä»–ã®ãƒšã‚¢
                     }
                 }
                 
-                // ƒyƒA‚ª‚È‚¢ê‡‚Ì•\¦
+                // ãƒšã‚¢ãŒãªã„å ´åˆã®è¡¨ç¤º
                 if (item.ItemType == "Loop" || IsIfCommand(item.ItemType))
-                    return $"{item.LineNumber}„¦?"; // ŠJnƒRƒ}ƒ“ƒh‚Å‘Î‰‚·‚éI—¹‚ª‚È‚¢
-                else if (item.ItemType == "Loop_End" || item.ItemType == "IF_End")
-                    return $"?„¨{item.LineNumber}"; // I—¹ƒRƒ}ƒ“ƒh‚Å‘Î‰‚·‚éŠJn‚ª‚È‚¢
+                    return $"{item.LineNumber}â”¬?"; // é–‹å§‹ã‚³ãƒãƒ³ãƒ‰ã§å¯¾å¿œã™ã‚‹çµ‚äº†ãŒãªã„
+                else if (item.ItemType == "LoopEnd" || item.ItemType == "IfEnd")
+                    return $"?â”´{item.LineNumber}"; // çµ‚äº†ã‚³ãƒãƒ³ãƒ‰ã§å¯¾å¿œã™ã‚‹é–‹å§‹ãŒãªã„
                 else
-                    return $"{item.LineNumber}"; // ’Êí‚ÌƒRƒ}ƒ“ƒh
+                    return $"{item.LineNumber}"; // é€šå¸¸ã®ã‚³ãƒãƒ³ãƒ‰
             }
             return "";
         }
 
         private bool IsIfCommand(string itemType) => itemType switch
         {
-            "IF_ImageExist" => true,
-            "IF_ImageNotExist" => true,
-            "IF_ImageExist_AI" => true,
-            "IF_ImageNotExist_AI" => true,
-            "IF_Variable" => true,
+            "IfImageExist" => true,
+            "IfImageNotExist" => true,
+            "IfImageExistAI" => true,
+            "IfImageNotExistAI" => true,
+            "IfVariable" => true,
             _ => false
         };
 
@@ -295,7 +296,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// ƒRƒƒ“ƒg•\¦—pƒRƒ“ƒo[ƒ^[
+    /// ã‚³ãƒ¡ãƒ³ãƒˆè¡¨ç¤ºç”¨ã‚³ãƒ³ãƒãƒ¼ã‚¿ãƒ¼
     /// </summary>
     public class CommentDisplayConverter : IValueConverter
     {
@@ -318,7 +319,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// ƒvƒƒOƒŒƒX—¦ƒRƒ“ƒo[ƒ^[
+    /// ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹ç‡ã‚³ãƒ³ãƒãƒ¼ã‚¿ãƒ¼
     /// </summary>
     public class ProgressPercentageConverter : IMultiValueConverter
     {
@@ -341,7 +342,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// ƒu[ƒ‹’l‚©‚çƒtƒHƒ“ƒgƒEƒFƒCƒg‚Ö‚Ì•ÏŠ·
+    /// ãƒ–ãƒ¼ãƒ«å€¤ã‹ã‚‰ãƒ•ã‚©ãƒ³ãƒˆã‚¦ã‚§ã‚¤ãƒˆã¸ã®å¤‰æ›
     /// </summary>
     public class BoolToFontWeightConverter : IValueConverter
     {
@@ -361,7 +362,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// Àsó‘Ô‚©‚çF‚Ö‚Ì•ÏŠ·iC³”Åj
+    /// å®Ÿè¡ŒçŠ¶æ…‹ã‹ã‚‰è‰²ã¸ã®å¤‰æ›ï¼ˆä¿®æ­£ç‰ˆï¼‰
     /// </summary>
     public class RunningStateToColorConverter : IMultiValueConverter
     {
@@ -373,11 +374,11 @@ namespace AutoTool.View.Converters
                 var showProgress = values[1] is bool progress && progress;
                 
                 if (isRunning && showProgress)
-                    return Colors.LimeGreen; // Às’†
+                    return Colors.LimeGreen; // å®Ÿè¡Œä¸­
                 else if (isRunning)
-                    return Colors.Orange;    // €”õ’†
+                    return Colors.Orange;    // æº–å‚™ä¸­
                 else
-                    return Colors.Gray;      // ’â~’†
+                    return Colors.Gray;      // åœæ­¢ä¸­
             }
             return Colors.Gray;
         }
@@ -389,7 +390,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// Àsó‘Ô‚©‚çƒeƒLƒXƒg‚Ö‚Ì•ÏŠ·
+    /// å®Ÿè¡ŒçŠ¶æ…‹ã‹ã‚‰ãƒ†ã‚­ã‚¹ãƒˆã¸ã®å¤‰æ›
     /// </summary>
     public class RunningStateToTextConverter : IMultiValueConverter
     {
@@ -401,13 +402,13 @@ namespace AutoTool.View.Converters
                 var showProgress = values[1] is bool progress && progress;
                 
                 if (isRunning && showProgress)
-                    return "Às’†";
+                    return "å®Ÿè¡Œä¸­";
                 else if (isRunning)
-                    return "€”õ’†";
+                    return "æº–å‚™ä¸­";
                 else
-                    return "‘Ò‹@’†";
+                    return "å¾…æ©Ÿä¸­";
             }
-            return "‘Ò‹@’†";
+            return "å¾…æ©Ÿä¸­";
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
@@ -417,7 +418,7 @@ namespace AutoTool.View.Converters
     }
 
     /// <summary>
-    /// ƒvƒƒOƒŒƒX’l‚©‚çƒXƒP[ƒ‹’l‚Ö‚Ì•ÏŠ·
+    /// ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹å€¤ã‹ã‚‰ã‚¹ã‚±ãƒ¼ãƒ«å€¤ã¸ã®å¤‰æ›
     /// </summary>
     public class ProgressToScaleConverter : IValueConverter
     {

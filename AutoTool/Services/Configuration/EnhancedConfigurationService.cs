@@ -162,7 +162,6 @@ namespace AutoTool.Services.Configuration
             _settings.Clear();
             
             // デフォルト設定値
-            SetValue("App:Theme", "Light");
             SetValue("App:Language", "ja-JP");
             SetValue("App:AutoSave", true);
             SetValue("App:AutoSaveInterval", 300);
@@ -185,7 +184,6 @@ namespace AutoTool.Services.Configuration
     {
         public static class App
         {
-            public const string Theme = "App:Theme";
             public const string Language = "App:Language";
             public const string AutoSave = "App:AutoSave";
             public const string AutoSaveInterval = "App:AutoSaveInterval";

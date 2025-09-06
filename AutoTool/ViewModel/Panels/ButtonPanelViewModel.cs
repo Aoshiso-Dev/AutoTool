@@ -6,10 +6,10 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using AutoTool.Message;
-using AutoTool.Model.CommandDefinition;
 using AutoTool.ViewModel.Shared;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AutoTool.Command.Definition;
 
 namespace AutoTool.ViewModel.Panels
 {

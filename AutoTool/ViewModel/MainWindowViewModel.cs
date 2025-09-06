@@ -9,9 +9,9 @@ using AutoTool.Services.Plugin;
 using AutoTool.Services.UI;
 using AutoTool.ViewModel.Panels;
 using AutoTool.ViewModel.Shared;
-using AutoTool.Model.CommandDefinition;
 using System.Collections.ObjectModel;
 using System.Linq;
+using AutoTool.Command.Definition;
 
 namespace AutoTool.ViewModel
 {
@@ -22,10 +22,9 @@ namespace AutoTool.ViewModel
     {
         private readonly ILogger<MainWindowViewModel> _logger;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IRecentFileService _recentFileService;
+        private readonly RecentFileService _recentFileService;
         private readonly IPluginService _pluginService;
         private readonly IMainWindowMenuService _menuService;
-        private readonly IMainWindowButtonService _buttonService;
 
         [ObservableProperty]
         private string _title = "AutoTool - 自動化ツール";
@@ -56,22 +55,6 @@ namespace AutoTool.ViewModel
         // 統計プロパティ
         public int CommandCount => ListPanelViewModel.Items.Count;
         public bool HasCommands => CommandCount > 0;
-
-        // その他のダミーコマンド（バインディングエラー回避用）
-        [RelayCommand]
-        private void ChangeTheme(string theme)
-        {
-            try
-            {
-                _logger.LogDebug("テーマ変更要求: {Theme}", theme);
-                StatusMessage = $"テーマを{theme}に変更しました";
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "テーマ変更中にエラー");
-                StatusMessage = $"テーマ変更エラー: {ex.Message}";
-            }
-        }
 
         [RelayCommand]
         private void RefreshPerformance()
@@ -121,10 +104,9 @@ namespace AutoTool.ViewModel
         public MainWindowViewModel(
             ILogger<MainWindowViewModel> logger,
             IServiceProvider serviceProvider,
-            IRecentFileService recentFileService,
+            RecentFileService recentFileService,
             IPluginService pluginService,
             IMainWindowMenuService menuService,
-            IMainWindowButtonService buttonService,
             ListPanelViewModel listPanelViewModel,
             EditPanelViewModel editPanelViewModel,
             ButtonPanelViewModel buttonPanelViewModel)
@@ -134,7 +116,6 @@ namespace AutoTool.ViewModel
             _recentFileService = recentFileService ?? throw new ArgumentNullException(nameof(recentFileService));
             _pluginService = pluginService ?? throw new ArgumentNullException(nameof(pluginService));
             _menuService = menuService ?? throw new ArgumentNullException(nameof(menuService));
-            _buttonService = buttonService ?? throw new ArgumentNullException(nameof(buttonService));
             
             ListPanelViewModel = listPanelViewModel ?? throw new ArgumentNullException(nameof(listPanelViewModel));
             EditPanelViewModel = editPanelViewModel ?? throw new ArgumentNullException(nameof(editPanelViewModel));

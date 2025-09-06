@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using AutoTool.Bootstrap;
 using AutoTool.ViewModel;
+using AutoTool.Command.Definition;
 
 namespace AutoTool
 {
@@ -47,7 +48,7 @@ namespace AutoTool
                 _logger.LogInformation("AutoTool アプリケーション開始");
 
                 // DirectCommandRegistryの初期化を追加
-                AutoTool.Model.CommandDefinition.DirectCommandRegistry.Initialize(_bootstrapper.Host.Services);
+                DirectCommandRegistry.Initialize(_bootstrapper.Host.Services);
                 _logger.LogInformation("DirectCommandRegistry初期化完了");
 
                 // メインウィンドウの作成と表示
@@ -121,10 +122,9 @@ namespace AutoTool
                 {
                     typeof(ILogger<MainWindowViewModel>),
                     typeof(IServiceProvider),
-                    typeof(AutoTool.Services.IRecentFileService),
+                    typeof(AutoTool.Services.RecentFileService),
                     typeof(AutoTool.Services.Plugin.IPluginService),
                     typeof(AutoTool.Services.UI.IMainWindowMenuService),
-                    typeof(AutoTool.Services.UI.IMainWindowButtonService)
                 };
 
                 foreach (var serviceType in requiredServices)
@@ -325,7 +325,6 @@ namespace AutoTool
                     }
                   },
                   "App": {
-                    "Theme": "Light",
                     "Language": "ja-JP",
                     "AutoSave": true,
                     "AutoSaveInterval": 300
