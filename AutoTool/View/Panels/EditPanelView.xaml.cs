@@ -98,7 +98,19 @@ namespace AutoTool.View.Panels
         {
             if (sender is System.Windows.Controls.TextBox textBox && textBox.Tag is string propertyName && ViewModel != null)
             {
-                var value = ViewModel.GetDynamicProperty(propertyName)?.ToString() ?? string.Empty;
+                var raw = ViewModel.GetDynamicProperty(propertyName);
+                string value;
+
+                // Special-case: avoid showing "False" for window title/class
+                if ((propertyName == "WindowTitle" || propertyName == "WindowClassName") && raw is bool boolVal && boolVal == false)
+                {
+                    value = string.Empty;
+                }
+                else
+                {
+                    value = raw?.ToString() ?? string.Empty;
+                }
+
                 textBox.Text = value;
                 _logger?.LogTrace("TextBoxèâä˙âª: {Property} = {Value}", propertyName, value);
             }
@@ -655,7 +667,19 @@ namespace AutoTool.View.Panels
         {
             if (sender is System.Windows.Controls.TextBox windowTitleBox && windowTitleBox.Tag is string propertyName && ViewModel != null)
             {
-                var value = ViewModel.GetDynamicProperty(propertyName)?.ToString() ?? string.Empty;
+                var raw = ViewModel.GetDynamicProperty(propertyName);
+                string value;
+
+                // Avoid showing boolean false as "False" for window fields
+                if (raw is bool boolVal && boolVal == false)
+                {
+                    value = string.Empty;
+                }
+                else
+                {
+                    value = raw?.ToString() ?? string.Empty;
+                }
+
                 windowTitleBox.Text = value;
                 _logger?.LogTrace("WindowTitleèâä˙âª: {Property} = {Value}", propertyName, value);
             }

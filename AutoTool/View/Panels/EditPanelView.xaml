@@ -12,6 +12,9 @@
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter" />
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <converters:MultiBoolToVisibilityConverter x:Key="MultiBoolToVisibilityConverter" />
+        <!-- Converters for dynamic color display -->
+        <converters:ColorToBrushConverter x:Key="ColorToBrushConverter" />
+        <converters:ColorToHexConverter x:Key="ColorToHexConverter" />
     </UserControl.Resources>
     
     <!-- Edit Panel Content -->
@@ -107,8 +110,7 @@
                                                                                                  Tag="{Binding PropertyName}"
                                                                                                  Width="300" Height="25" 
                                                                                                  HorizontalAlignment="Left"
-                                                                                                 Loaded="DynamicTextBox_Loaded"
-                                                                                                 TextChanged="DynamicTextBox_TextChanged">
+                                                                                                 Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}">
                                                                                     <TextBox.Style>
                                                                                         <Style TargetType="TextBox">
                                                                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -155,7 +157,7 @@
                                                                                     <TextBox x:Name="DynamicNumberBox" 
                                                                                                      Tag="{Binding PropertyName}"
                                                                                                      Width="150" Height="25" 
-                                                                                                     Loaded="DynamicNumberBox_Loaded"
+                                                                                                     Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                                                                                      TextChanged="DynamicNumberBox_TextChanged"/>
                                                                                     <TextBlock Text="{Binding Unit}" Margin="5,0" VerticalAlignment="Center" 
                                                                                                        Foreground="Gray" FontSize="10"
@@ -175,6 +177,7 @@
                                                                                                   Tag="{Binding PropertyName}"
                                                                                                   Content="{Binding DisplayName}" 
                                                                                                   VerticalAlignment="Center"
+                                                                                                  IsChecked="{Binding CurrentValue, Mode=OneWay}"
                                                                                                   Loaded="DynamicCheckBox_Loaded"
                                                                                                   Checked="DynamicCheckBox_Changed"
                                                                                                   Unchecked="DynamicCheckBox_Changed">
@@ -196,6 +199,7 @@
                                                                                                   Width="300" Height="25" 
                                                                                                   HorizontalAlignment="Left"
                                                                                                   ItemsSource="{Binding SourceItems}"
+                                                                                                  SelectedItem="{Binding CurrentValue, Mode=OneWay}"
                                                                                                   Loaded="DynamicComboBox_Loaded"
                                                                                                   SelectionChanged="DynamicComboBox_SelectionChanged">
                                                                                     <ComboBox.Style>
@@ -227,6 +231,7 @@
                                                                                                     Width="200" VerticalAlignment="Center"
                                                                                                     Minimum="{Binding MinValue}" Maximum="{Binding MaxValue}"
                                                                                                     SmallChange="0.01" LargeChange="0.1"
+                                                                                                    Value="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                                                                                     Loaded="DynamicSlider_Loaded"
                                                                                                     ValueChanged="DynamicSlider_ValueChanged"/>
                                                                                     <TextBlock Text="{Binding ElementName=DynamicSlider, Path=Value, StringFormat=F3}" 
@@ -251,7 +256,7 @@
                                                                                                          Tag="{Binding PropertyName}"
                                                                                                          Width="250" Height="25" IsReadOnly="True" 
                                                                                                          Background="#F5F5F5"
-                                                                                                         Loaded="DynamicFilePath_Loaded"/>
+                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                                                         <Button Content="📁" Width="30" Height="25" FontSize="12" 
                                                                                                         Click="DynamicBrowseFile_Click" Tag="{Binding}" Margin="5,0"/>
                                                                                         <Button Content="🗑" Width="30" Height="25" FontSize="12" 
@@ -279,7 +284,7 @@
                                                                                                          Tag="{Binding PropertyName}"
                                                                                                          Width="250" Height="25" IsReadOnly="True" 
                                                                                                          Background="#F5F5F5"
-                                                                                                         Loaded="DynamicFolderPath_Loaded"/>
+                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                                                         <Button Content="📂" Width="30" Height="25" FontSize="12" 
                                                                                                         Click="DynamicBrowseFolder_Click" Tag="{Binding}" Margin="5,0"/>
                                                                                         <Button Content="🗑" Width="30" Height="25" FontSize="12" 
@@ -304,7 +309,7 @@
                                                                                                          Tag="{Binding PropertyName}"
                                                                                                          Width="250" Height="25" IsReadOnly="True" 
                                                                                                          Background="#F5F5F5"
-                                                                                                         Loaded="DynamicOnnxPath_Loaded"/>
+                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                                                         <Button Content="🧠" Width="30" Height="25" FontSize="12" 
                                                                                                         Click="DynamicBrowseOnnx_Click" Tag="{Binding}" Margin="5,0"/>
                                                                                         <Button Content="🗑" Width="30" Height="25" FontSize="12" 
@@ -329,11 +334,11 @@
                                                                                     <Border x:Name="DynamicColorDisplay" 
                                                                                                     Width="30" Height="25" BorderBrush="Black" BorderThickness="1"
                                                                                                     Tag="{Binding PropertyName}"
-                                                                                                    Loaded="DynamicColorDisplay_Loaded"/>
+                                                                                                    Background="{Binding CurrentValue, Converter={StaticResource ColorToBrushConverter}}"/>
                                                                                     <TextBox x:Name="DynamicColorTextBox" 
                                                                                                      Tag="{Binding PropertyName}"
                                                                                                      Width="80" Height="25" Margin="5,0"
-                                                                                                     Loaded="DynamicColorText_Loaded"
+                                                                                                     Text="{Binding CurrentValue, Converter={StaticResource ColorToHexConverter}, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                                                                                      TextChanged="DynamicColorText_Changed"/>
                                                                                     <Button Content="🎨" Width="30" Height="25" FontSize="12" 
                                                                                                     Click="DynamicPickColor_Click" Tag="{Binding}" Margin="5,0"/>
@@ -346,7 +351,7 @@
                                                                                                     Tag="{Binding PropertyName}"
                                                                                                     Width="200" Height="25" 
                                                                                                     HorizontalAlignment="Left"
-                                                                                                    Loaded="DynamicDatePicker_Loaded"
+                                                                                                    SelectedDate="{Binding CurrentValue, Mode=OneWay}" 
                                                                                                     SelectedDateChanged="DynamicDatePicker_Changed">
                                                                                     <DatePicker.Style>
                                                                                         <Style TargetType="DatePicker">
@@ -399,7 +404,7 @@
                                                                                                      Tag="{Binding PropertyName}"
                                                                                                      Width="150" Height="25" IsReadOnly="True"
                                                                                                      Background="#F5F5F5"
-                                                                                                     Loaded="DynamicKeyPicker_Loaded"/>
+                                                                                                     Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                                                     <Button Content="⌨️" Width="30" Height="25" FontSize="12" 
                                                                                                     Click="DynamicCaptureKey_Click" Tag="{Binding}" Margin="5,0"/>
                                                                                     <Button Content="🗑" Width="30" Height="25" FontSize="12" 
@@ -423,13 +428,13 @@
                                                                                         <TextBox x:Name="DynamicXBox" 
                                                                                                          Tag="X"
                                                                                                          Width="60" Height="25" 
-                                                                                                         Loaded="DynamicCoordinate_Loaded"
+                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                                                                                          TextChanged="DynamicCoordinate_TextChanged"/>
                                                                                         <TextBlock Text="Y:" Margin="15,0,5,0" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                                                                         <TextBox x:Name="DynamicYBox" 
                                                                                                          Tag="Y"
                                                                                                          Width="60" Height="25" 
-                                                                                                         Loaded="DynamicCoordinate_Loaded"
+                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                                                                                                          TextChanged="DynamicCoordinate_TextChanged"/>
                                                                                     </StackPanel>
                                                                                     <StackPanel Orientation="Horizontal">
@@ -459,7 +464,7 @@
                                                                                                          Tag="{Binding PropertyName}"
                                                                                                          Width="200" Height="25" IsReadOnly="True" 
                                                                                                          Background="#F5F5F5"
-                                                                                                         Loaded="DynamicWindowTitle_Loaded"/>
+                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
                                                                                         <Button Content="🪟" Width="30" Height="25" FontSize="12" 
                                                                                                         Click="DynamicGetWindowInfo_Click" Tag="{Binding}" Margin="5,0"/>
                                                                                         <Button Content="📋" Width="30" Height="25" FontSize="12" 
@@ -480,8 +485,7 @@
                                                                                         <TextBlock x:Name="DynamicCurrentValueDisplay"
                                                                                                            Tag="{Binding PropertyName}"
                                                                                                            Text="{Binding CurrentValue}" 
-                                                                                                           FontSize="9" Foreground="DarkBlue" FontWeight="Bold"
-                                                                                                           Loaded="DynamicCurrentValue_Loaded"/>
+                                                                                                           FontSize="9" Foreground="DarkBlue" FontWeight="Bold"/>
                                                                                     </StackPanel>
                                                                                 </Border>
                                                                             </StackPanel>

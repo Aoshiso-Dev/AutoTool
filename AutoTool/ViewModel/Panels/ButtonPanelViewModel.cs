@@ -20,6 +20,8 @@ namespace AutoTool.ViewModel.Panels
     {
         private readonly ILogger<ButtonPanelViewModel> _logger;
 
+        private readonly Guid _instanceId = Guid.NewGuid();
+
         [ObservableProperty]
         private bool _isRunning = false;
 
@@ -56,15 +58,13 @@ namespace AutoTool.ViewModel.Panels
         [ObservableProperty]
         private string _statusMessage = "準備完了";
 
-        /// <summary>
-        /// StatusTextプロパティ（MainWindowViewModelから参照用）
-        /// </summary>
-        public string StatusText => StatusMessage;
+        [ObservableProperty]
+        private string _currentCommandDescription = string.Empty;
 
         public ButtonPanelViewModel(ILogger<ButtonPanelViewModel> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _logger.LogInformation("Phase 5完全统合：ButtonPanelViewModel が初期化されています");
+            _logger.LogInformation("Phase 5完全統合：ButtonPanelViewModel が初期化されています (Instance={InstanceId})", _instanceId);
 
             // メッセンジャーの状態を確認
             var messengerInfo = WeakReferenceMessenger.Default.ToString();
@@ -411,13 +411,13 @@ namespace AutoTool.ViewModel.Panels
             {
                 if (IsRunning)
                 {
-                    _logger.LogInformation("停止コマンドを送信します");
+                    _logger.LogInformation("停止コマンドを送信します (ButtonPanel -> MainWindow統合)");
                     WeakReferenceMessenger.Default.Send(new StopMessage());
                     StatusMessage = "マクロを停止しています...";
                 }
                 else
                 {
-                    _logger.LogInformation("実行コマンドを送信します");
+                    _logger.LogInformation("実行コマンドを送信します (ButtonPanel -> MainWindow統合)");
                     WeakReferenceMessenger.Default.Send(new RunMessage());
                     StatusMessage = "マクロを実行しています...";
                 }
@@ -434,7 +434,7 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogDebug("保存コマンドを送信します");
+                _logger.LogDebug("保存コマンドを送信します (ButtonPanel -> MainWindow統合)");
                 WeakReferenceMessenger.Default.Send(new SaveMessage());
                 StatusMessage = "ファイルを保存しています...";
             }
@@ -450,7 +450,7 @@ namespace AutoTool.ViewModel.Panels
         {
             try
             {
-                _logger.LogDebug("読み込みコマンドを送信します");
+                _logger.LogDebug("読み込みコマンドを送信します (ButtonPanel -> MainWindow統合)");
                 WeakReferenceMessenger.Default.Send(new LoadMessage());
                 StatusMessage = "ファイルを読み込んでいます...";
             }
@@ -681,6 +681,11 @@ namespace AutoTool.ViewModel.Panels
         #endregion
 
         #region その他
+
+        /// <summary>
+        /// StatusTextプロパティ（MainWindowViewModelから参照用）
+        /// </summary>
+        public string StatusText => StatusMessage;
 
         public void SetRunningState(bool isRunning)
         {

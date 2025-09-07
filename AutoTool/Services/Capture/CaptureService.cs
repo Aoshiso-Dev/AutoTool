@@ -1005,17 +1005,6 @@ namespace AutoTool.Services.Capture
         {
             try
             {
-                var result = System.Windows.MessageBox.Show(
-                    "対象位置で右クリックしてください。\n\n右クリックした瞬間の位置を取得します。\nキャンセルするには×ボタンを押してください。",
-                    "右クリック位置待機", 
-                    MessageBoxButton.OKCancel, 
-                    MessageBoxImage.Information);
-
-                if (result != MessageBoxResult.OK)
-                {
-                    return null;
-                }
-
                 // 右クリックイベントを捕捉
                 var hookResult = await WaitForRightClickHookAsync();
                 return hookResult;
@@ -1028,47 +1017,26 @@ namespace AutoTool.Services.Capture
         }
 
         /// <summary>
-        /// 右クリックフックを待機（実装）
+        /// 右クリックフックを待機（MouseServiceへ委譲）
         /// </summary>
         private async Task<System.Drawing.Point?> WaitForRightClickHookAsync()
         {
             try
             {
-                var cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // 10秒のタイムアウト
+                var timeout = TimeSpan.FromSeconds(10); // 右クリック待機のタイムアウト
+                _logger.LogInformation("MouseService で右クリック待機開始 (タイムアウト: {Seconds}s)", timeout.TotalSeconds);
 
-                using (var autoResetEvent = new AutoResetEvent(false))
+                // MouseService に実装されているフック待機を使用
+                var result = await _mouseService.WaitForRightClickWithTimeoutAsync(timeout);
+
+                if (result.HasValue)
                 {
-                    // MouseHelper.Event.StartHook(); // 暫定的にコメントアウト
-                    _logger.LogInformation("マウスフック開始（暫定実装）");
-
-                    void OnRightButtonUp(object? sender, EventArgs e) // MouseHelper.Event.MouseEventArgs e から変更
-                    {
-                        _logger.LogInformation("右クリック検出（暫定実装）");
-                        autoResetEvent.Set();
-                    }
-
-                    // MouseHelper.Event.RButtonUp += OnRightButtonUp; // 暫定的にコメントアウト
-                    _logger.LogInformation("右クリックイベント登録（暫定実装）");
-
-                    try
-                    {
-                        // 暫定実装：即座にキャプチャ開始（右クリック待機なし）
-                        _logger.LogInformation("暫定実装：右クリック待機をスキップしてキャプチャ開始");
-                        
-                        // 実際のキャプチャ処理をここに実装
-                        // TODO: 将来的にはMouseHelperの右クリック待機を実装
-                    }
-                    finally
-                    {
-                        // MouseHelper.Event.RButtonUp -= OnRightButtonUp; // 暫定的にコメントアウト
-                        _logger.LogInformation("右クリックイベント解除（暫定実装）");
-                    }
-
-                    // MouseHelper.Event.StopHook(); // 暫定的にコメントアウト
-                    _logger.LogInformation("マウスフック停止（暫定実装）");
+                    _logger.LogInformation("右クリック検出: {X},{Y}", result.Value.X, result.Value.Y);
+                    return result.Value;
                 }
 
-                return await Task.FromResult<System.Drawing.Point?>(null); // 一時的にnullを返却
+                _logger.LogInformation("右クリック待機がタイムアウトまたはキャンセルされました");
+                return null;
             }
             catch (Exception ex)
             {

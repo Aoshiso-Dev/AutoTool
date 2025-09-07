@@ -55,39 +55,51 @@ namespace AutoTool.Command.Commands
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
+            // 0以下は即完了
+            if (Wait <= 0)
+            {
+                ReportProgress(1, 1);
+                LogMessage("待機時間0のため即完了");
+                return true;
+            }
+
             var stopwatch = Stopwatch.StartNew();
             var totalWaitMs = Wait;
-            int lastReportedProgress = -1;
+            int lastReported = -1;
 
             LogMessage($"待機開始 ({totalWaitMs}ms)");
 
-            while (stopwatch.ElapsedMilliseconds < totalWaitMs)
+            while (true)
             {
-                if (cancellationToken.IsCancellationRequested) 
+                if (cancellationToken.IsCancellationRequested)
                 {
                     LogMessage("待機がキャンセルされました");
                     return false;
                 }
 
                 var elapsed = stopwatch.ElapsedMilliseconds;
-                var currentProgress = totalWaitMs > 0 ? (int)((elapsed / (double)totalWaitMs) * 100) : 100;
-                
-                // 進捗が変わった場合のみ報告（頻度を減らすため）
-                if (currentProgress != lastReportedProgress)
+                if (elapsed >= totalWaitMs)
                 {
-                    ReportProgress(elapsed, totalWaitMs);
-                    lastReportedProgress = currentProgress;
-                    
-                    // より詳細な状態報告
-                    var remaining = totalWaitMs - elapsed;
-                    LogMessage($"待機中... {currentProgress}% (残り約{remaining}ms)");
+                    // 最終100%通知（先に送る事で次コマンド開始前にUI反映）
+                    ReportProgress(totalWaitMs, totalWaitMs);
+                    LogMessage("待機が完了しました");
+                    return true;
                 }
 
-                await Task.Delay(100, cancellationToken); // 100msごとに確認
-            }
+                var progress = (int)Math.Clamp((elapsed / (double)totalWaitMs) * 100, 0, 100);
+                if (progress != lastReported)
+                {
+                    ReportProgress(elapsed, totalWaitMs);
+                    lastReported = progress;
 
-            LogMessage("待機が完了しました");
-            return true;
+                    var remaining = Math.Max(0, totalWaitMs - elapsed);
+                    LogMessage($"待機中... {progress}% (残り約{remaining}ms)");
+                }
+
+                // 残りが100ms未満ならその分だけ待機して正確に終了
+                var nextSlice = (int)Math.Min(100, totalWaitMs - elapsed);
+                await Task.Delay(nextSlice, cancellationToken);
+            }
         }
     }
 
@@ -108,7 +120,7 @@ namespace AutoTool.Command.Commands
             description: "タイムアウト時間（ミリ秒）",
             category: "基本設定",
             defaultValue: 5000)]
-        public int Timeout { get; set; } = 5000;
+        public int Timeout { get; set; } = 5000; // ミリ秒扱い（以前は *1000 されていた不具合を是正）
 
         [SettingProperty("検索間隔", SettingControlType.NumberBox,
             description: "画像検索の間隔（ミリ秒）",
@@ -162,57 +174,80 @@ namespace AutoTool.Command.Commands
         {
             if (string.IsNullOrEmpty(ImagePath)) return false;
 
+            var timeoutMs = Timeout <= 0 ? 0 : Timeout; // ms
+            var intervalMs = Interval <= 0 ? 500 : Interval; // 安全な下限
             var stopwatch = Stopwatch.StartNew();
+            bool found = false;
 
-            do
+            LogMessage($"画像待機開始 Timeout={timeoutMs}ms Interval={intervalMs}ms Image={ImagePath}");
+
+            if (timeoutMs == 0)
             {
-                // 相対パスを解決して実際の検索に使用
+                LogMessage("Timeout=0 のため即終了(失敗)" );
+                ReportProgress(1, 1);
+                return false;
+            }
+
+            while (stopwatch.ElapsedMilliseconds < timeoutMs && !cancellationToken.IsCancellationRequested)
+            {
                 var resolvedImagePath = ResolvePath(ImagePath);
-                
                 System.Windows.Point? point = null;
 
-                if (SearchColor.HasValue)
+                try
                 {
-                    // カラーフィルター付き画像検索
-                    var searchColorDrawing = System.Drawing.Color.FromArgb(
-                        SearchColor.Value.A,
-                        SearchColor.Value.R,
-                        SearchColor.Value.G,
-                        SearchColor.Value.B);
-
-                    point = await _imageProcessingService.SearchImageWithColorFilterAsync(
-                        resolvedImagePath, searchColorDrawing, Threshold, WindowTitle, WindowClassName, cancellationToken);
+                    if (SearchColor.HasValue)
+                    {
+                        var c = System.Drawing.Color.FromArgb(SearchColor.Value.A, SearchColor.Value.R, SearchColor.Value.G, SearchColor.Value.B);
+                        point = await _imageProcessingService.SearchImageWithColorFilterAsync(resolvedImagePath, c, Threshold, WindowTitle, WindowClassName, cancellationToken);
+                    }
+                    else if (!string.IsNullOrEmpty(WindowTitle))
+                    {
+                        point = await _imageProcessingService.SearchImageInWindowAsync(resolvedImagePath, WindowTitle, WindowClassName, Threshold, cancellationToken);
+                    }
+                    else
+                    {
+                        point = await _imageProcessingService.SearchImageOnScreenAsync(resolvedImagePath, Threshold, cancellationToken);
+                    }
                 }
-                else if (!string.IsNullOrEmpty(WindowTitle))
+                catch (OperationCanceledException)
                 {
-                    // ウィンドウ内画像検索
-                    point = await _imageProcessingService.SearchImageInWindowAsync(
-                        resolvedImagePath, WindowTitle, WindowClassName, Threshold, cancellationToken);
+                    LogMessage("画像待機がキャンセルされました");
+                    return false;
                 }
-                else
+                catch (Exception ex)
                 {
-                    // スクリーン全体で画像検索
-                    point = await _imageProcessingService.SearchImageOnScreenAsync(
-                        resolvedImagePath, Threshold, cancellationToken);
+                    LogMessage($"画像検索中エラー: {ex.Message}");
                 }
 
                 if (point != null)
                 {
-                    stopwatch.Stop();
+                    found = true;
                     LogMessage($"画像が見つかりました: ({point.Value.X}, {point.Value.Y}) - {stopwatch.ElapsedMilliseconds}ms");
-                    return true;
+                    break;
                 }
 
-                // 進捗報告
+                // 進捗更新
                 var elapsed = stopwatch.ElapsedMilliseconds;
-                var total = Timeout * 1000;
-                ReportProgress(elapsed, total);
+                ReportProgress(elapsed, timeoutMs);
 
-                await Task.Delay(100, cancellationToken);
-            } while (stopwatch.ElapsedMilliseconds < Timeout * 1000);
+                // Interval を尊重。ただしUI反映を阻害しないよう最大250msに分割
+                var slice = Math.Min(intervalMs, 250);
+                await Task.Delay(slice, cancellationToken);
+            }
 
-            LogMessage("画像が見つかりませんでした。");
-            return false;
+            if (!found)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    LogMessage("画像待機がキャンセルされました");
+                    return false;
+                }
+                LogMessage("画像が見つかりませんでした");
+            }
+
+            // 最終状態 100% を通知（見つかった / 見つからなかった 双方で統一）
+            ReportProgress(timeoutMs, timeoutMs);
+            return found;
         }
     }
 }

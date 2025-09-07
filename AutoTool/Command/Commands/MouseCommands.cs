@@ -66,18 +66,12 @@ namespace AutoTool.Command.Commands
     {
         private readonly IMouseService _mouseService;
 
-        [SettingProperty("X座標", SettingControlType.NumberBox,
-            description: "クリックするX座標",
+        [SettingProperty("座標", SettingControlType.CoordinatePicker,
+            description: "クリックする座標",
             category: "基本設定",
             isRequired: true,
             defaultValue: 0)]
         public int X { get; set; } = 0;
-
-        [SettingProperty("Y座標", SettingControlType.NumberBox,
-            description: "クリックするY座標",
-            category: "基本設定",
-            isRequired: true,
-            defaultValue: 0)]
         public int Y { get; set; } = 0;
 
         [SettingProperty("マウスボタン", SettingControlType.ComboBox,

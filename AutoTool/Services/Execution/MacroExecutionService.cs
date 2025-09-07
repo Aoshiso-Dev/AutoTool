@@ -183,6 +183,27 @@ namespace AutoTool.Services.Execution
             {
                 _logger.LogDebug("MacroFactory.CreateMacro呼び出し開始");
                 var itemsSnapshot = new List<UniversalCommandItem>(items);
+
+                // Normalize window-related settings to avoid boolean false or "False" strings
+                try
+                {
+                    foreach (var it in itemsSnapshot)
+                    {
+                        try
+                        {
+                            NormalizeWindowSettings(it);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(ex, "アイテムのウィンドウ設定正規化中にエラーが発生しました: Line={Line}, ItemType={Type}", it?.LineNumber, it?.ItemType);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "ウィンドウ設定正規化処理でエラーが発生しました");
+                }
+                
                 var root = AutoTool.Model.MacroFactory.MacroFactory.CreateMacro(itemsSnapshot);
                 
                 // コマンド総数の取得
@@ -345,6 +366,37 @@ namespace AutoTool.Services.Execution
         private void NotifyProgress(double progress)
         {
             ProgressChanged?.Invoke(this, progress);
+        }
+
+        /// <summary>
+        /// ウィンドウ設定の正規化
+        /// </summary>
+        // Ensure WindowTitle/WindowClassName are proper strings (empty when not set)
+        private void NormalizeWindowSettings(UniversalCommandItem item)
+        {
+            if (item == null) return;
+            try
+            {
+                object? val = null;
+
+                // WindowTitle
+                try { val = item.GetSetting<object>("WindowTitle"); }
+                catch { val = null; }
+                if (val is bool b && b == false) item.SetSetting("WindowTitle", string.Empty);
+                else if (val is string s && string.Equals(s, "False", StringComparison.OrdinalIgnoreCase)) item.SetSetting("WindowTitle", string.Empty);
+                else if (val == null) item.SetSetting("WindowTitle", string.Empty);
+
+                // WindowClassName
+                try { val = item.GetSetting<object>("WindowClassName"); }
+                catch { val = null; }
+                if (val is bool b2 && b2 == false) item.SetSetting("WindowClassName", string.Empty);
+                else if (val is string s2 && string.Equals(s2, "False", StringComparison.OrdinalIgnoreCase)) item.SetSetting("WindowClassName", string.Empty);
+                else if (val == null) item.SetSetting("WindowClassName", string.Empty);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "NormalizeWindowSettings failed for item: {ItemType} Line={Line}", item?.ItemType, item?.LineNumber);
+            }
         }
 
         #endregion

@@ -84,11 +84,12 @@ namespace AutoTool.Services
             // Window Services
             services.AddSingleton<AutoTool.Services.Window.IWindowInfoService, AutoTool.Services.Window.WindowInfoService>();
             
-            // ViewModels
-            services.AddTransient<MainWindowViewModel>();
-            services.AddTransient<ListPanelViewModel>();
-            services.AddTransient<EditPanelViewModel>();
-            services.AddTransient<ButtonPanelViewModel>();
+            // ViewModels (全体で単一インスタンスを共有するため Singleton 登録に変更)
+            // 以前は Transient だったため、MainWindow と各パネル設定時に複数回生成され Messenger に多重登録されていた。
+            services.AddSingleton<MainWindowViewModel>();
+            services.AddSingleton<ListPanelViewModel>();
+            services.AddSingleton<EditPanelViewModel>();
+            services.AddSingleton<ButtonPanelViewModel>();
 
             // Command List Item Factory
             services.AddSingleton<IUniversalCommandItemFactory, UniversalCommandItemFactory>();

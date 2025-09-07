@@ -29,14 +29,17 @@ namespace AutoTool.Command.Commands
     {
         private readonly IKeyboardService _keyboardService;
 
-        [SettingProperty("キー", SettingControlType.ComboBox,
+        [SettingProperty("キー", SettingControlType.KeyPicker,
             description: "送信するキー",
             category: "基本設定",
             sourceCollection: "Keys",
             isRequired: true,
             defaultValue: Key.Enter)]
         public Key Key { get; set; } = Key.Enter;
-
+        public bool Ctrl { get; set; } = false;
+        public bool Alt { get; set; } = false;
+        public bool Shift { get; set; } = false;
+        /*
         [SettingProperty("Ctrlキー", SettingControlType.CheckBox,
             description: "Ctrlキーを同時に押すかどうか",
             category: "修飾キー",
@@ -54,7 +57,7 @@ namespace AutoTool.Command.Commands
             category: "修飾キー",
             defaultValue: false)]
         public bool Shift { get; set; } = false;
-
+        */
         [SettingProperty("ウィンドウタイトル", SettingControlType.WindowPicker,
             description: "対象ウィンドウのタイトル",
             category: "ウィンドウ")]
