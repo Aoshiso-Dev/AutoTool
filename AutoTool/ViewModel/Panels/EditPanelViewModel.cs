@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
 using AutoTool.Command.Definition;
+using System.Collections.Generic;
 
 namespace AutoTool.ViewModel.Panels
 {
@@ -1950,6 +1951,37 @@ namespace AutoTool.ViewModel.Panels
             return null;
         }
 
+        // 追加: 動的プロパティが数値型か判定
+        public bool IsNumericDynamicProperty(string propertyName)
+        {
+            try
+            {
+                var def = SettingDefinitions.FirstOrDefault(d => d.PropertyName == propertyName);
+                if (def != null && def.PropertyType != null)
+                {
+                    var t = def.PropertyType;
+                    t = Nullable.GetUnderlyingType(t) ?? t;
+                    if (t == typeof(decimal) || t == typeof(double) || t == typeof(float) ||
+                        t == typeof(int) || t == typeof(long) || t == typeof(short) || t == typeof(byte))
+                        return true;
+                    return false;
+                }
+                if (DynamicValues.TryGetValue(propertyName, out var v) && v != null)
+                {
+                    var t = v.GetType();
+                    t = Nullable.GetUnderlyingType(t) ?? t;
+                    if (t == typeof(decimal) || t == typeof(double) || t == typeof(float) ||
+                        t == typeof(int) || t == typeof(long) || t == typeof(short) || t == typeof(byte))
+                        return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "IsNumericDynamicProperty判定中エラー: {Property}", propertyName);
+            }
+            return false;
+        }
+
         /// <summary>
         /// 動的プロパティ設定
         /// </summary>
@@ -1957,25 +1989,85 @@ namespace AutoTool.ViewModel.Panels
         {
             if (SelectedItem is UniversalCommandItem universalItem)
             {
-                universalItem.SetSetting(propertyName, value);
-                DynamicValues[propertyName] = value;
-                
-                // 設定定義の現在値も更新
-                var settingDefinition = SettingDefinitions.FirstOrDefault(s => s.PropertyName == propertyName);
-                if (settingDefinition != null)
+                try
                 {
-                    settingDefinition.CurrentValue = value;
-                    _logger.LogTrace("設定定義の現在値更新: {PropertyName} = {Value}", propertyName, value);
+                    // Guard: MousePosition must be Point. Ignore invalid primitive updates coming from NumberBox etc.
+                    if (propertyName == "MousePosition" && value is not System.Windows.Point && value is not null)
+                    {
+                        _logger.LogTrace("Skip non-Point assignment to MousePosition (Type={Type}, Value={Value})", value.GetType().Name, value);
+                        return;
+                    }
+
+                    universalItem.SetSetting(propertyName, value);
+                    DynamicValues[propertyName] = value;
+
+                    // 設定定義の現在値を更新
+                    var settingDefinition = SettingDefinitions.FirstOrDefault(s => s.PropertyName == propertyName);
+                    if (settingDefinition != null)
+                    {
+                        settingDefinition.CurrentValue = value;
+                        _logger.LogTrace("設定定義の現在値更新: {PropertyName} = {Value}", propertyName, value);
+                    }
+
+                    // 座標同期処理
+                    SyncCoordinateDynamicProperties(propertyName, value);
+
+                    OnPropertyChanged(nameof(DynamicValues));
+                    _logger.LogTrace("動的プロパティ設定: {PropertyName} = {Value}", propertyName, value);
                 }
-                
-                OnPropertyChanged(nameof(DynamicValues));
-                _logger.LogTrace("動的プロパティ設定: {PropertyName} = {Value}", propertyName, value);
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "動的プロパティ設定エラー: {PropertyName}", propertyName);
+                }
             }
         }
 
-        /// <summary>
-        /// 動的設定の保存
-        /// </summary>
+        private void SyncCoordinateDynamicProperties(string updatedProperty, object? value)
+        {
+            try
+            {
+                var coordinateDef = SettingDefinitions.FirstOrDefault(s => s.ControlType.ToString() == "CoordinatePicker" || s.PropertyName == "MousePosition");
+                if (updatedProperty == "X" || updatedProperty == "Y")
+                {
+                    if (coordinateDef != null)
+                    {
+                        int x = 0, y = 0;
+                        if (DynamicValues.TryGetValue("X", out var xv) && int.TryParse(xv?.ToString(), out var ix)) x = ix;
+                        if (DynamicValues.TryGetValue("Y", out var yv) && int.TryParse(yv?.ToString(), out var iy)) y = iy;
+                        var point = new System.Windows.Point(x, y);
+                        coordinateDef.CurrentValue = point;
+                        DynamicValues[coordinateDef.PropertyName] = point; // ここでPointとして保持
+                        if (!string.IsNullOrEmpty(coordinateDef.PropertyName) && SelectedItem is UniversalCommandItem u)
+                            u.SetSetting(coordinateDef.PropertyName, point);
+                        _logger.LogTrace("座標同期: X/Y -> MousePosition ({X},{Y})", x, y);
+                        OnPropertyChanged(nameof(DynamicValues));
+                    }
+                    return;
+                }
+                if (coordinateDef != null && updatedProperty == coordinateDef.PropertyName && value is System.Windows.Point p)
+                {
+                    DynamicValues["X"] = (int)p.X;
+                    DynamicValues["Y"] = (int)p.Y;
+                    if (SelectedItem is UniversalCommandItem uni)
+                    {
+                        uni.SetSetting("X", (int)p.X);
+                        uni.SetSetting("Y", (int)p.Y);
+                    }
+                    var xDef = SettingDefinitions.FirstOrDefault(s => s.PropertyName == "X");
+                    var yDef = SettingDefinitions.FirstOrDefault(s => s.PropertyName == "Y");
+                    if (xDef != null) xDef.CurrentValue = (int)p.X;
+                    if (yDef != null) yDef.CurrentValue = (int)p.Y;
+                    _logger.LogTrace("座標同期: MousePosition -> X/Y ({X},{Y})", p.X, p.Y);
+                    OnPropertyChanged(nameof(DynamicValues));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "座標同期処理エラー: {UpdatedProperty}", updatedProperty);
+            }
+        }
+
+        // ===== Dynamic Settings Save & Action Handling (restored) =====
         public bool SaveDynamicSettings()
         {
             try
@@ -1983,27 +2075,22 @@ namespace AutoTool.ViewModel.Panels
                 if (SelectedItem is not UniversalCommandItem universalItem)
                     return false;
 
-                // 設定検証
                 var validationErrors = new List<string>();
                 foreach (var definition in SettingDefinitions)
                 {
                     if (definition.IsRequired)
                     {
-                        var value = universalItem.GetSetting<object>(definition.PropertyName);
-                        if (value == null || (value is string str && string.IsNullOrWhiteSpace(str)))
-                        {
-                            validationErrors.Add($"{definition.DisplayName}は必須項目です");
-                        }
+                        var val = universalItem.GetSetting<object>(definition.PropertyName);
+                        if (val == null || (val is string s && string.IsNullOrWhiteSpace(s)))
+                            validationErrors.Add(definition.DisplayName);
                     }
                 }
-
                 if (validationErrors.Count > 0)
                 {
-                    _logger.LogWarning("動的設定検証エラー: {Errors}", string.Join(", ", validationErrors));
+                    _logger.LogWarning("必須未入力: {List}", string.Join(",", validationErrors));
                     return false;
                 }
-
-                _logger.LogInformation("動的設定保存完了: {ItemType}", universalItem.ItemType);
+                _logger.LogInformation("動的設定保存成功: {ItemType}", universalItem.ItemType);
                 return true;
             }
             catch (Exception ex)
@@ -2013,41 +2100,30 @@ namespace AutoTool.ViewModel.Panels
             }
         }
 
-        // ===== Dynamic Action Handlers (FIXED) =====
         [RelayCommand]
         public async Task ExecuteActionAsync(ActionExecutionContext context)
         {
-            if (SelectedItem == null || string.IsNullOrEmpty(context.ActionType)) return;
+            if (SelectedItem == null || context?.SettingDefinition == null || string.IsNullOrEmpty(context.ActionType)) return;
             try
             {
-                _logger.LogDebug("DynamicAction: {Action} -> {Property}", context.ActionType, context.SettingDefinition.PropertyName);
+                _logger.LogDebug("DynamicAction開始: {Action} -> {Property}", context.ActionType, context.SettingDefinition.PropertyName);
                 switch (context.ActionType)
                 {
-                    case "Browse":
-                        await ExecuteBrowseActionAsync(context); break;
-                    case "BrowseFolder":
-                        await ExecuteBrowseFolderActionAsync(context); break;
-                    case "GetMousePosition":
-                        await ExecuteGetMousePositionActionAsync(context); break;
-                    case "GetCurrentPosition":
-                        ExecuteGetCurrentPositionAction(context); break;
-                    case "GetWindowInfo":
-                        await ExecuteGetWindowInfoActionAsync(context); break;
-                    case "PickColor":
-                        await ExecutePickColorActionAsync(context); break;
-                    case "CaptureColor":
-                        await ExecuteCaptureColorActionAsync(context); break;
-                    case "CaptureKey":
-                        await ExecuteCaptureKeyActionAsync(context); break;
-                    case "Clear":
-                        ExecuteClearAction(context); break;
-                    default:
-                        _logger.LogWarning("Unknown dynamic action: {Action}", context.ActionType); break;
+                    case "Browse": await ExecuteBrowseActionAsync(context); break;
+                    case "BrowseFolder": await ExecuteBrowseFolderActionAsync(context); break;
+                    case "GetMousePosition": await ExecuteGetMousePositionActionAsync(context); break;
+                    case "GetCurrentPosition": ExecuteGetCurrentPositionAction(context); break;
+                    case "GetWindowInfo": await ExecuteGetWindowInfoActionAsync(context); break;
+                    case "PickColor": await ExecutePickColorActionAsync(context); break;
+                    case "CaptureColor": await ExecuteCaptureColorActionAsync(context); break;
+                    case "CaptureKey": await ExecuteCaptureKeyActionAsync(context); break;
+                    case "Clear": ExecuteClearAction(context); break;
+                    default: _logger.LogWarning("未知のDynamicAction: {Action}", context.ActionType); break;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Dynamic action error: {Action}", context.ActionType);
+                _logger.LogError(ex, "DynamicActionエラー: {Action}", context.ActionType);
             }
         }
 
@@ -2079,53 +2155,54 @@ namespace AutoTool.ViewModel.Panels
                 {
                     dlg.InitialDirectory = _macroFileBasePath;
                 }
-
                 if (dlg.ShowDialog() == true)
                 {
                     var relative = ConvertToRelativePath(dlg.FileName);
                     SetDynamicProperty(setting.PropertyName, relative);
-                    UpdateImagePreview();
-                    _logger.LogInformation("画像パスを更新: {Property} = {Value}", setting.PropertyName, relative);
+                    if (setting.PropertyName.Equals("ImagePath", StringComparison.OrdinalIgnoreCase))
+                        UpdateImagePreview();
+                    _logger.LogInformation("ファイル選択: {Property} = {Value}", setting.PropertyName, relative);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Browse action failed: {Property}", setting.PropertyName);
+                _logger.LogError(ex, "BrowseAction失敗: {Property}", setting.PropertyName);
             }
         }
 
         private async Task ExecuteBrowseFolderActionAsync(ActionExecutionContext context)
         {
+            var setting = context.SettingDefinition;
             try
             {
                 var dlg = new Microsoft.Win32.OpenFileDialog
                 {
-                    Title = $"{context.SettingDefinition.DisplayName} のフォルダを選択",
+                    Title = $"{setting.DisplayName} のフォルダを選択",
                     CheckFileExists = false,
                     FileName = "フォルダを選択"
                 };
-                var current = GetDynamicProperty(context.SettingDefinition.PropertyName)?.ToString() ?? string.Empty;
+                var current = GetDynamicProperty(setting.PropertyName)?.ToString() ?? string.Empty;
                 var resolved = ResolvePath(current);
                 if (!string.IsNullOrEmpty(resolved) && Directory.Exists(resolved))
                     dlg.InitialDirectory = resolved;
                 else if (!string.IsNullOrEmpty(_macroFileBasePath))
                     dlg.InitialDirectory = _macroFileBasePath;
-
                 if (dlg.ShowDialog() == true)
                 {
                     var folder = Path.GetDirectoryName(dlg.FileName);
                     if (!string.IsNullOrEmpty(folder))
                     {
                         var relative = ConvertToRelativePath(folder);
-                        SetDynamicProperty(context.SettingDefinition.PropertyName, relative);
-                        UpdateSaveDirectoryInfo();
-                        _logger.LogInformation("フォルダパスを更新: {Property} = {Value}", context.SettingDefinition.PropertyName, relative);
+                        SetDynamicProperty(setting.PropertyName, relative);
+                        if (setting.PropertyName.Equals("SaveDirectory", StringComparison.OrdinalIgnoreCase))
+                            UpdateSaveDirectoryInfo();
+                        _logger.LogInformation("フォルダ選択: {Property} = {Value}", setting.PropertyName, relative);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "BrowseFolder action failed: {Property}", context.SettingDefinition.PropertyName);
+                _logger.LogError(ex, "BrowseFolderAction失敗: {Property}", setting.PropertyName);
             }
         }
 
@@ -2140,14 +2217,16 @@ namespace AutoTool.ViewModel.Panels
                 {
                     SetDynamicProperty("X", p.Value.X);
                     SetDynamicProperty("Y", p.Value.Y);
+                    var x = GetDynamicProperty("X");
+                    var y = GetDynamicProperty("Y");
                     if (SettingDefinitions.Any(s => s.PropertyName == "MousePosition"))
                         SetDynamicProperty("MousePosition", new System.Windows.Point(p.Value.X, p.Value.Y));
-                    _logger.LogInformation("Captured mouse position: ({X},{Y})", p.Value.X, p.Value.Y);
+                    _logger.LogInformation("座標取得: ({X},{Y})", p.Value.X, p.Value.Y);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "GetMousePosition action failed");
+                _logger.LogError(ex, "GetMousePosition失敗");
             }
             finally
             {
@@ -2165,11 +2244,11 @@ namespace AutoTool.ViewModel.Panels
                 SetDynamicProperty("Y", p.Y);
                 if (SettingDefinitions.Any(s => s.PropertyName == "MousePosition"))
                     SetDynamicProperty("MousePosition", new System.Windows.Point(p.X, p.Y));
-                _logger.LogInformation("Current mouse position: ({X},{Y})", p.X, p.Y);
+                _logger.LogInformation("現在座標: ({X},{Y})", p.X, p.Y);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "現在のマウス位置取得中にエラー");
+                _logger.LogError(ex, "現在座標取得失敗");
             }
         }
 
@@ -2184,12 +2263,12 @@ namespace AutoTool.ViewModel.Panels
                 {
                     SetDynamicProperty("WindowTitle", info.Title);
                     SetDynamicProperty("WindowClassName", info.ClassName);
-                    _logger.LogInformation("Captured window info: {Title} [{Class}]", info.Title, info.ClassName);
+                    _logger.LogInformation("ウィンドウ取得: {Title} [{Class}]", info.Title, info.ClassName);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "GetWindowInfo action failed");
+                _logger.LogError(ex, "GetWindowInfo失敗");
             }
             finally
             {
@@ -2204,17 +2283,17 @@ namespace AutoTool.ViewModel.Panels
             {
                 IsWaitingForRightClick = true;
                 MouseWaitMessage = "取得したい色の場所で右クリックしてください";
-                var drawing = await _captureService.CaptureColorFromScreenAsync();
-                if (drawing.HasValue)
+                var c = await _captureService.CaptureColorFromScreenAsync();
+                if (c.HasValue)
                 {
-                    var media = System.Windows.Media.Color.FromArgb(drawing.Value.A, drawing.Value.R, drawing.Value.G, drawing.Value.B);
+                    var media = System.Windows.Media.Color.FromArgb(c.Value.A, c.Value.R, c.Value.G, c.Value.B);
                     SetDynamicProperty(context.SettingDefinition.PropertyName, media);
-                    _logger.LogInformation("Picked color: {Color}", media);
+                    _logger.LogInformation("色取得: {C}", media);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "PickColor action failed");
+                _logger.LogError(ex, "PickColor失敗");
             }
             finally
             {
@@ -2234,12 +2313,12 @@ namespace AutoTool.ViewModel.Panels
                 {
                     var media = System.Windows.Media.Color.FromArgb(c.Value.A, c.Value.R, c.Value.G, c.Value.B);
                     SetDynamicProperty(context.SettingDefinition.PropertyName, media);
-                    _logger.LogInformation("Captured color: {Color}", media);
+                    _logger.LogInformation("色キャプチャ: {C}", media);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "CaptureColor action failed");
+                _logger.LogError(ex, "CaptureColor失敗");
             }
             finally
             {
@@ -2258,14 +2337,12 @@ namespace AutoTool.ViewModel.Panels
                     SetDynamicProperty(context.SettingDefinition.PropertyName, keyInfo.Key);
                     if (context.SettingDefinition.PropertyName != "Key" && SettingDefinitions.Any(s => s.PropertyName == "Key"))
                         SetDynamicProperty("Key", keyInfo.Key);
-                    if (context.SettingDefinition.PropertyName != "HotKey" && SettingDefinitions.Any(s => s.PropertyName == "HotKey"))
-                        SetDynamicProperty("HotKey", keyInfo.Key);
-                    _logger.LogInformation("Captured key: {Key}", keyInfo.DisplayText);
+                    _logger.LogInformation("キー取得: {Key}", keyInfo.DisplayText);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "CaptureKey action failed");
+                _logger.LogError(ex, "CaptureKey失敗");
             }
         }
 
@@ -2286,13 +2363,14 @@ namespace AutoTool.ViewModel.Panels
                     case "SearchColor": SetDynamicProperty(name, null); break;
                     default: SetDynamicProperty(name, context.SettingDefinition.DefaultValue); break;
                 }
-                _logger.LogInformation("Cleared property {Property}", name);
+                _logger.LogInformation("クリア: {Property}", name);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Clear action failed: {Property}", name);
+                _logger.LogError(ex, "ClearAction失敗: {Property}", name);
             }
         }
+        // ===== End Dynamic Action Handling =====
     }
 
     /// <summary>

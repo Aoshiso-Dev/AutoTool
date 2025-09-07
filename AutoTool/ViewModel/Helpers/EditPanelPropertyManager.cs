@@ -3,6 +3,7 @@ using AutoTool.ViewModel.Shared;
 
 namespace AutoTool.ViewModel.Helpers
 {
+    /*
     /// <summary>
     /// EditPanelプロパティ管理クラス
     /// UniversalCommandItem 専用版
@@ -47,4 +48,5 @@ namespace AutoTool.ViewModel.Helpers
             item?.SetSetting("WindowClassName", value ?? string.Empty);
         }
     }
+    */
 }

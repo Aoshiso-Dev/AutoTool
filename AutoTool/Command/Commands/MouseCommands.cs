@@ -21,8 +21,7 @@ namespace AutoTool.Command.Commands
     // インターフェース定義
     public interface IClickCommand : AutoTool.Command.Interface.ICommand 
     {
-        int X { get; set; }
-        int Y { get; set; }
+        System.Windows.Point MousePosition { get; set; }
         MouseButton Button { get; set; }
         bool UseBackgroundClick { get; set; }
         string WindowTitle { get; set; }
@@ -58,20 +57,18 @@ namespace AutoTool.Command.Commands
 
     // 実装クラス
     /// <summary>
-    /// クリックコマンド（DI対応）
+    /// クリックコマンド（DI対応） - X/Y を MousePosition に統合
     /// </summary>
     [DirectCommand(DirectCommandRegistry.CommandTypes.Click, "クリック", "Mouse", "指定した座標をクリックします")]
     public class ClickCommand : BaseCommand, IClickCommand
     {
         private readonly IMouseService _mouseService;
 
-        [SettingProperty("座標", SettingControlType.CoordinatePicker,
-            description: "クリックする座標",
-            category: "基本設定",
-            isRequired: true,
-            defaultValue: 0)]
-        public int X { get; set; } = 0;
-        public int Y { get; set; } = 0;
+        [SettingProperty("クリック座標", SettingControlType.CoordinatePicker,
+             description: "クリックする座標 (X,Y)",
+             category: "座標",
+             defaultValue: null)]
+        public System.Windows.Point MousePosition { get; set; } = new(100, 100);
 
         [SettingProperty("マウスボタン", SettingControlType.ComboBox,
             description: "使用するマウスボタン",
@@ -105,8 +102,7 @@ namespace AutoTool.Command.Commands
 
         protected override void ValidateSettings()
         {
-            // X,Yは負でないことを最低限チェック
-            if (X < 0 || Y < 0)
+            if (MousePosition.X < 0 || MousePosition.Y < 0)
             {
                 throw new ArgumentException("座標は0以上で指定してください。");
             }
@@ -114,25 +110,26 @@ namespace AutoTool.Command.Commands
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
+            var x = (int)MousePosition.X;
+            var y = (int)MousePosition.Y;
+
             await (Button switch
             {
                 MouseButton.Left => UseBackgroundClick
-                    ? _mouseService.BackgroundClickAsync(X, Y, WindowTitle, WindowClassName)
-                    : _mouseService.ClickAsync(X, Y, WindowTitle, WindowClassName),
+                    ? _mouseService.BackgroundClickAsync(x, y, WindowTitle, WindowClassName)
+                    : _mouseService.ClickAsync(x, y, WindowTitle, WindowClassName),
                 MouseButton.Right => UseBackgroundClick
-                    ? _mouseService.BackgroundRightClickAsync(X, Y, WindowTitle, WindowClassName)
-                    : _mouseService.RightClickAsync(X, Y, WindowTitle, WindowClassName),
+                    ? _mouseService.BackgroundRightClickAsync(x, y, WindowTitle, WindowClassName)
+                    : _mouseService.RightClickAsync(x, y, WindowTitle, WindowClassName),
                 MouseButton.Middle => UseBackgroundClick
-                    ? _mouseService.BackgroundMiddleClickAsync(X, Y, WindowTitle, WindowClassName)
-                    : _mouseService.MiddleClickAsync(X, Y, WindowTitle, WindowClassName),
+                    ? _mouseService.BackgroundMiddleClickAsync(x, y, WindowTitle, WindowClassName)
+                    : _mouseService.MiddleClickAsync(x, y, WindowTitle, WindowClassName),
                 _ => throw new Exception("マウスボタンが不正です。"),
             });
 
             var targetDesc = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
                 ? "グローバル" : $"{WindowTitle}[{WindowClassName}]";
-            
-            LogMessage($"{targetDesc} の ({X}, {Y}) を {(UseBackgroundClick ? "バックグラウンドで" : string.Empty)}{Button} クリックしました");
-
+            LogMessage($"{targetDesc} の ({x}, {y}) を {(UseBackgroundClick ? "バックグラウンドで" : string.Empty)}{Button} クリックしました");
             return true;
         }
     }
@@ -234,7 +231,6 @@ namespace AutoTool.Command.Commands
             var stopwatch = Stopwatch.StartNew();
             bool found = false;
 
-            // 相対パスを解決して実際の検索に使用
             var resolvedImagePath = ResolvePath(ImagePath);
             _logger?.LogDebug("[DoExecuteAsync] ClickImage 解決されたImagePath: {OriginalPath} -> {ResolvedPath}", ImagePath, resolvedImagePath);
 
@@ -299,11 +295,9 @@ namespace AutoTool.Command.Commands
                     break;
                 }
 
-                // 進捗更新
                 var elapsed = stopwatch.ElapsedMilliseconds;
                 ReportProgress(elapsed, timeoutMs);
 
-                // Interval を尊重。ただしUI反映を阻害しないよう最大250msに分割
                 var slice = Math.Min(intervalMs, 250);
                 await Task.Delay(slice, cancellationToken);
             }
@@ -319,7 +313,6 @@ namespace AutoTool.Command.Commands
                 throw new TimeoutException("画像が見つかりませんでした。");
             }
 
-            // 最終状態 100% を通知（見つかった / 見つからなかった 双方で統一）
             ReportProgress(timeoutMs, timeoutMs);
             return found;
         }
@@ -431,7 +424,6 @@ namespace AutoTool.Command.Commands
             var stopwatch = Stopwatch.StartNew();
             bool found = false;
 
-            // 相対パスを解決して実際のモデル読み込みに使用
             var resolvedModelPath = ResolvePath(ModelPath);
             _logger?.LogDebug("[DoExecuteAsync] ClickImageAI 解決されたModelPath: {OriginalPath} -> {ResolvedPath}", ModelPath, resolvedModelPath);
 
@@ -446,7 +438,6 @@ namespace AutoTool.Command.Commands
 
             try
             {
-                // モデル初期化
                 YoloWin.Init(resolvedModelPath, 640, true);
 
                 while (stopwatch.ElapsedMilliseconds < timeoutMs && !cancellationToken.IsCancellationRequested)
@@ -465,7 +456,6 @@ namespace AutoTool.Command.Commands
 
                                 LogMessage($"AI画像が見つかりました: ({centerX}, {centerY}) ClassId: {detected.ClassId}");
 
-                                // マウスクリック実行
                                 await (Button switch
                                 {
                                     MouseButton.Left => UseBackgroundClick
@@ -501,11 +491,9 @@ namespace AutoTool.Command.Commands
                         throw;
                     }
 
-                    // 進捗更新
                     var elapsed = stopwatch.ElapsedMilliseconds;
                     ReportProgress(elapsed, timeoutMs);
 
-                    // Interval を尊重。ただしUI反映を阻害しないよう最大250msに分割
                     var slice = Math.Min(intervalMs, 250);
                     await Task.Delay(slice, cancellationToken);
                 }
@@ -534,7 +522,6 @@ namespace AutoTool.Command.Commands
                 throw new TimeoutException("AI画像が見つかりませんでした。");
             }
 
-            // 最終状態 100% を通知
             ReportProgress(timeoutMs, timeoutMs);
             return true;
         }

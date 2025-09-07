@@ -261,11 +261,7 @@ namespace AutoTool.View.Panels
             {
                 if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
                 {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "Browse"
-                    };
+                    var context = new ActionExecutionContext { SettingDefinition = setting, ActionType = "Browse" };
                     _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
                     _logger?.LogInformation("動的ファイル選択: {PropertyName}", setting.PropertyName);
                 }
@@ -282,11 +278,7 @@ namespace AutoTool.View.Panels
             {
                 if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
                 {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "Clear"
-                    };
+                    var context = new ActionExecutionContext { SettingDefinition = setting, ActionType = "Clear" };
                     _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
                     _logger?.LogInformation("動的ファイルクリア: {PropertyName}", setting.PropertyName);
                 }
@@ -314,11 +306,7 @@ namespace AutoTool.View.Panels
             {
                 if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
                 {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "BrowseFolder"
-                    };
+                    var context = new ActionExecutionContext { SettingDefinition = setting, ActionType = "BrowseFolder" };
                     _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
                     _logger?.LogInformation("動的フォルダ選択: {PropertyName}", setting.PropertyName);
                 }
@@ -335,11 +323,7 @@ namespace AutoTool.View.Panels
             {
                 if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
                 {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "Clear"
-                    };
+                    var context = new ActionExecutionContext { SettingDefinition = setting, ActionType = "Clear" };
                     _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
                     _logger?.LogInformation("動的フォルダクリア: {PropertyName}", setting.PropertyName);
                 }
@@ -367,11 +351,7 @@ namespace AutoTool.View.Panels
             {
                 if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
                 {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "Browse"
-                    };
+                    var context = new ActionExecutionContext { SettingDefinition = setting, ActionType = "Browse" };
                     _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
                     _logger?.LogInformation("動的ONNX選択: {PropertyName}", setting.PropertyName);
                 }
@@ -388,11 +368,7 @@ namespace AutoTool.View.Panels
             {
                 if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
                 {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "Clear"
-                    };
+                    var context = new ActionExecutionContext { SettingDefinition = setting, ActionType = "Clear" };
                     _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
                     _logger?.LogInformation("動的ONNXクリア: {PropertyName}", setting.PropertyName);
                 }
@@ -451,299 +427,6 @@ namespace AutoTool.View.Panels
             }
         }
 
-        private void DynamicPickColor_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
-                {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "PickColor"
-                    };
-                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "動的色選択エラー");
-            }
-        }
-
-        private void DynamicCaptureColor_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
-                {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "CaptureColor"
-                    };
-                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "動的色キャプチャエラー");
-            }
-        }
-
-        // 日付関連
-        private void DynamicDatePicker_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is DatePicker datePicker && datePicker.Tag is string propertyName && ViewModel != null)
-            {
-                var value = ViewModel.GetDynamicProperty(propertyName);
-                if (value is DateTime dateTime)
-                {
-                    datePicker.SelectedDate = dateTime;
-                }
-                _logger?.LogTrace("DatePicker初期化: {Property} = {Value}", propertyName, value);
-            }
-        }
-
-        private void DynamicDatePicker_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is DatePicker datePicker && datePicker.Tag is string propertyName && ViewModel != null)
-            {
-                if (datePicker.SelectedDate.HasValue)
-                {
-                    ViewModel.SetDynamicProperty(propertyName, datePicker.SelectedDate.Value);
-                    _logger?.LogTrace("DatePicker変更: {Property} = {Value}", propertyName, datePicker.SelectedDate.Value);
-                }
-            }
-        }
-
-        // 時間関連
-        private void DynamicTimePicker_Loaded(object sender, RoutedEventArgs e)
-        {
-            // 簡易実装
-        }
-
-        private void DynamicTimePicker_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            // 簡易実装
-        }
-
-        // キー関連
-        private void DynamicKeyPicker_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.TextBox keyTextBox && keyTextBox.Tag is string propertyName && ViewModel != null)
-            {
-                var value = ViewModel.GetDynamicProperty(propertyName);
-                keyTextBox.Text = value?.ToString() ?? "未設定";
-                _logger?.LogTrace("KeyPicker初期化: {Property} = {Value}", propertyName, value);
-            }
-        }
-
-        private void DynamicCaptureKey_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
-                {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "CaptureKey"
-                    };
-                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "動的キーキャプチャエラー");
-            }
-        }
-
-        private void DynamicClearKey_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
-                {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "Clear"
-                    };
-                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "動的キークリアエラー");
-            }
-        }
-
-        // 座標関連
-        private void DynamicCoordinate_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.TextBox coordinateBox && coordinateBox.Tag is string coordinate && ViewModel != null)
-            {
-                var value = ViewModel.GetDynamicProperty(coordinate);
-                coordinateBox.Text = value?.ToString() ?? "0";
-                _logger?.LogTrace("Coordinate初期化: {Coordinate} = {Value}", coordinate, value);
-            }
-        }
-
-        private void DynamicCoordinate_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.TextBox coordinateBox && coordinateBox.Tag is string coordinate && ViewModel != null)
-            {
-                if (int.TryParse(coordinateBox.Text, out var intValue))
-                {
-                    ViewModel.SetDynamicProperty(coordinate, intValue);
-                    _logger?.LogTrace("Coordinate変更: {Coordinate} = {Value}", coordinate, intValue);
-                }
-            }
-        }
-
-        private void DynamicGetMousePosition_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
-                {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "GetMousePosition"
-                    };
-                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "動的マウス位置取得エラー");
-            }
-        }
-
-        private void DynamicGetCurrentPosition_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
-                {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "GetCurrentPosition"
-                    };
-                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "動的現在位置取得エラー");
-            }
-        }
-
-        private void DynamicClearCoordinate_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
-                {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "Clear"
-                    };
-                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "動的座標クリアエラー");
-            }
-        }
-
-        // ウィンドウ関連
-        private void DynamicWindowTitle_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.TextBox windowTitleBox && windowTitleBox.Tag is string propertyName && ViewModel != null)
-            {
-                var raw = ViewModel.GetDynamicProperty(propertyName);
-                string value;
-
-                // Avoid showing boolean false as "False" for window fields
-                if (raw is bool boolVal && boolVal == false)
-                {
-                    value = string.Empty;
-                }
-                else
-                {
-                    value = raw?.ToString() ?? string.Empty;
-                }
-
-                windowTitleBox.Text = value;
-                _logger?.LogTrace("WindowTitle初期化: {Property} = {Value}", propertyName, value);
-            }
-        }
-
-        private void DynamicGetWindowInfo_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
-                {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "GetWindowInfo"
-                    };
-                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "動的ウィンドウ情報取得エラー");
-            }
-        }
-
-        private void DynamicListWindows_Click(object sender, RoutedEventArgs e)
-        {
-            // 簡易実装
-        }
-
-        private void DynamicClearWindow_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is System.Windows.Controls.Button button && button.Tag is SettingDefinition setting)
-                {
-                    var context = new ActionExecutionContext
-                    {
-                        SettingDefinition = setting,
-                        ActionType = "Clear"
-                    };
-                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "動的ウィンドウクリアエラー");
-            }
-        }
-
-        // 現在値表示
-        private void DynamicCurrentValue_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is TextBlock textBlock && textBlock.Tag is string propertyName && ViewModel != null)
-            {
-                var value = ViewModel.GetDynamicProperty(propertyName);
-                if (value != null)
-                {
-                    textBlock.Text = value.ToString();
-                }
-                _logger?.LogTrace("CurrentValue初期化: {Property} = {Value}", propertyName, value);
-            }
-        }
-
         // 動的設定UI操作ボタン
         private void SaveDynamicSettings_Click(object sender, RoutedEventArgs e)
         {
@@ -754,14 +437,12 @@ namespace AutoTool.View.Panels
                     var success = ViewModel.SaveDynamicSettings();
                     if (success)
                     {
-                        System.Windows.MessageBox.Show("設定を保存しました。", "設定保存", 
-                            MessageBoxButton.OK, MessageBoxImage.Information);
+                        System.Windows.MessageBox.Show("設定を保存しました。", "設定保存", MessageBoxButton.OK, MessageBoxImage.Information);
                         _logger?.LogInformation("動的設定保存成功");
                     }
                     else
                     {
-                        System.Windows.MessageBox.Show("設定の保存に失敗しました。", "設定保存エラー", 
-                            MessageBoxButton.OK, MessageBoxImage.Warning);
+                        System.Windows.MessageBox.Show("設定の保存に失敗しました。", "設定保存エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
                         _logger?.LogWarning("動的設定保存失敗");
                     }
                 }
@@ -769,8 +450,7 @@ namespace AutoTool.View.Panels
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "動的設定保存エラー");
-                System.Windows.MessageBox.Show($"設定保存中にエラーが発生しました: {ex.Message}", 
-                    "設定保存エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show($"設定保存中にエラーが発生しました: {ex.Message}", "設定保存エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -820,6 +500,207 @@ namespace AutoTool.View.Panels
             // 簡易実装
         }
 
+        #endregion
+
+        #region 追加: XAML参照の欠落イベントハンドラ
+        private void DynamicPickColor_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is SettingDefinition def)
+                {
+                    var ctx = new ActionExecutionContext { SettingDefinition = def, ActionType = "PickColor" };
+                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(ctx);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DynamicPickColor_Click エラー"); }
+        }
+        private void DynamicCaptureColor_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is SettingDefinition def)
+                {
+                    var ctx = new ActionExecutionContext { SettingDefinition = def, ActionType = "CaptureColor" };
+                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(ctx);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DynamicCaptureColor_Click エラー"); }
+        }
+        private void DynamicDatePicker_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (sender is DatePicker dp && dp.Tag is string prop && ViewModel!=null && dp.SelectedDate.HasValue)
+                {
+                    ViewModel.SetDynamicProperty(prop, dp.SelectedDate.Value);
+                    _logger?.LogTrace("DatePicker変更: {Prop}={Val}", prop, dp.SelectedDate.Value);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DatePicker変更エラー"); }
+        }
+        private void DynamicTimePicker_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.ComboBox cb && cb.Tag is string part && cb.Items.Count==0)
+            {
+                if(part=="Hour"){ for(int i=0;i<24;i++) cb.Items.Add(i.ToString("D2")); }
+                else if(part=="Minute"){ for(int i=0;i<60;i++) cb.Items.Add(i.ToString("D2")); }
+                cb.SelectedIndex=0;
+            }
+        }
+        private void DynamicTimePicker_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (ViewModel==null) return; var fe = sender as FrameworkElement; var parent = fe?.Parent as System.Windows.Controls.Panel; if (parent==null) return; System.Windows.Controls.ComboBox hour=null, minute=null; foreach(var child in parent.Children){ if(child is System.Windows.Controls.ComboBox cb && cb.Tag as string=="Hour") hour=cb; else if(child is System.Windows.Controls.ComboBox cb2 && cb2.Tag as string=="Minute") minute=cb2; }
+                if(hour!=null && minute!=null){ var timeStr=$"{hour.SelectedItem}:{minute.SelectedItem}"; ViewModel.SetDynamicProperty("Time", timeStr);}
+            }
+            catch(Exception ex){ _logger?.LogError(ex,"TimePicker変更エラー"); }
+        }
+        private void DynamicCaptureKey_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is SettingDefinition def)
+                {
+                    var ctx = new ActionExecutionContext { SettingDefinition = def, ActionType = "CaptureKey" };
+                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(ctx);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DynamicCaptureKey_Click エラー"); }
+        }
+        private void DynamicClearKey_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is SettingDefinition def)
+                {
+                    var ctx = new ActionExecutionContext { SettingDefinition = def, ActionType = "Clear" };
+                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(ctx);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DynamicClearKey_Click エラー"); }
+        }
+        private void DynamicCoordinate_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.TextBox tb && ViewModel!=null && tb.Tag is string axis && (axis=="X"||axis=="Y"))
+            {
+                if(int.TryParse(tb.Text,out var v))
+                {
+                    // 軸用SettingDefinitionが存在するか確認（統合後は存在しない想定）
+                    bool hasAxisDefinition = ViewModel.SettingDefinitions != null && System.Linq.Enumerable.Any(ViewModel.SettingDefinitions, d => d.PropertyName == axis);
+                    if (hasAxisDefinition)
+                    {
+                        ViewModel.SetDynamicProperty(axis,v);
+                    }
+                    else
+                    {
+                        // MousePositionのみの統合モード
+                        var mpRaw = ViewModel.GetDynamicProperty("MousePosition");
+                        System.Windows.Point p = mpRaw is System.Windows.Point pt ? pt : new System.Windows.Point();
+                        if(axis=="X") p.X = v; else p.Y = v;
+                        ViewModel.SetDynamicProperty("MousePosition", p);
+                    }
+                }
+            }
+        }
+
+        private void DynamicCoordinate_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.TextBox tb && ViewModel!=null && tb.Tag is string axis && (axis=="X"||axis=="Y"))
+                {
+                    bool hasAxisDefinition = ViewModel.SettingDefinitions != null && System.Linq.Enumerable.Any(ViewModel.SettingDefinitions, d => d.PropertyName == axis);
+                    if (hasAxisDefinition)
+                    {
+                        var val = ViewModel.GetDynamicProperty(axis);
+                        if(val is int i)
+                            tb.Text = i.ToString();
+                        else if(int.TryParse(val?.ToString(), out var parsed))
+                            tb.Text = parsed.ToString();
+                        else
+                            tb.Text = "0";
+                    }
+                    else
+                    {
+                        var mpRaw = ViewModel.GetDynamicProperty("MousePosition");
+                        System.Windows.Point p = mpRaw is System.Windows.Point pt ? pt : new System.Windows.Point();
+                        tb.Text = axis=="X" ? ((int)p.X).ToString() : ((int)p.Y).ToString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "DynamicCoordinate_Loaded error");
+            }
+        }
+
+        private void DynamicGetMousePosition_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is SettingDefinition def)
+                {
+                    var ctx = new ActionExecutionContext { SettingDefinition = def, ActionType = "GetMousePosition" };
+                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(ctx);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DynamicGetMousePosition_Click エラー"); }
+        }
+        private void DynamicGetCurrentPosition_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is SettingDefinition def)
+                {
+                    var ctx = new ActionExecutionContext { SettingDefinition = def, ActionType = "GetCurrentPosition" };
+                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(ctx);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DynamicGetCurrentPosition_Click エラー"); }
+        }
+        private void DynamicClearCoordinate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is SettingDefinition def)
+                {
+                    var ctx = new ActionExecutionContext { SettingDefinition = def, ActionType = "Clear" };
+                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(ctx);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DynamicClearCoordinate_Click エラー"); }
+        }
+        private void DynamicGetWindowInfo_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is SettingDefinition def)
+                {
+                    var ctx = new ActionExecutionContext { SettingDefinition = def, ActionType = "GetWindowInfo" };
+                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(ctx);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DynamicGetWindowInfo_Click エラー"); }
+        }
+        private void DynamicListWindows_Click(object sender, RoutedEventArgs e)
+        {
+            // 未実装（必要ならウィンドウ列挙ダイアログ表示）
+            _logger?.LogInformation("DynamicListWindows_Click 呼び出し(未実装)");
+        }
+        private void DynamicClearWindow_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is SettingDefinition def)
+                {
+                    var ctx = new ActionExecutionContext { SettingDefinition = def, ActionType = "Clear" };
+                    _ = ViewModel?.ExecuteActionCommand.ExecuteAsync(ctx);
+                }
+            }
+            catch (Exception ex) { _logger?.LogError(ex, "DynamicClearWindow_Click エラー"); }
+        }
         #endregion
     }
 }

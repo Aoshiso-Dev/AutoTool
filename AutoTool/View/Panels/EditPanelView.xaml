@@ -12,9 +12,9 @@
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter" />
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <converters:MultiBoolToVisibilityConverter x:Key="MultiBoolToVisibilityConverter" />
-        <!-- Converters for dynamic color display -->
         <converters:ColorToBrushConverter x:Key="ColorToBrushConverter" />
         <converters:ColorToHexConverter x:Key="ColorToHexConverter" />
+        <converters:PointAxisConverter x:Key="PointAxisConverter" />
     </UserControl.Resources>
     
     <!-- Edit Panel Content -->
@@ -428,13 +428,13 @@
                                                                                         <TextBox x:Name="DynamicXBox" 
                                                                                                          Tag="X"
                                                                                                          Width="60" Height="25" 
-                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, Converter={StaticResource PointAxisConverter}, ConverterParameter=X}" 
                                                                                                          TextChanged="DynamicCoordinate_TextChanged"/>
                                                                                         <TextBlock Text="Y:" Margin="15,0,5,0" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                                                                         <TextBox x:Name="DynamicYBox" 
                                                                                                          Tag="Y"
                                                                                                          Width="60" Height="25" 
-                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, Converter={StaticResource PointAxisConverter}, ConverterParameter=Y}"
                                                                                                          TextChanged="DynamicCoordinate_TextChanged"/>
                                                                                     </StackPanel>
                                                                                     <StackPanel Orientation="Horizontal">
