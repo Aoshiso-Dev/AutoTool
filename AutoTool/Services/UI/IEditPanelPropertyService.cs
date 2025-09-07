@@ -3,6 +3,7 @@ using AutoTool.ViewModel.Shared;
 
 namespace AutoTool.Services.UI
 {
+    /*
     /// <summary>
     /// EditPanel設定プロパティサービスのインターフェース
     /// </summary>
@@ -64,4 +65,5 @@ namespace AutoTool.Services.UI
         /// </summary>
         void ChangeItemType(UniversalCommandItem item, string newItemType);
     }
+    */
 }

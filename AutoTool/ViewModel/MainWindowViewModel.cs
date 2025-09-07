@@ -161,6 +161,9 @@ namespace AutoTool.ViewModel
         public string MenuItemHeader_SaveFileAs => "名前を付けて保存(_A)";
         public ObservableCollection<object> RecentFiles { get; } = new();
         public ObservableCollection<string> LogEntries { get; } = new();
+        // Detailed log (ILogger output) from in-memory logger
+        public ObservableCollection<string> DetailedLogEntries { get; }
+        private readonly Services.Logging.LogMessageService? _logMessageService;
         public string MemoryUsage => "0 MB";
         public string CpuUsage => "0%";
         public int PluginCount => 0;
@@ -215,6 +218,17 @@ namespace AutoTool.ViewModel
             // Register execution log binding so ListPanel's ExecutionLog shows up in MainWindow's LogEntries
             RegisterExecutionLogBinding();
 
+            // Try to obtain LogMessageService for detailed logger view
+            _logMessageService = serviceProvider.GetService<Services.Logging.LogMessageService>();
+            if (_logMessageService != null)
+            {
+                DetailedLogEntries = _logMessageService.Messages;
+            }
+            else
+            {
+                DetailedLogEntries = new ObservableCollection<string>();
+            }
+
             Initialize();
         }
 
@@ -225,13 +239,13 @@ namespace AutoTool.ViewModel
                 if (ListPanelViewModel?.ExecutionLog == null) return;
 
                 // Copy existing entries
-                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    foreach (var entry in ListPanelViewModel.ExecutionLog)
-                    {
-                        LogEntries.Add(entry);
-                    }
-                });
+                //System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                //{
+                //    foreach (var entry in ListPanelViewModel.ExecutionLog)
+                //    {
+                //        LogEntries.Add(entry);
+                //    }
+                //});
 
                 // Subscribe to changes
                 ListPanelViewModel.ExecutionLog.CollectionChanged += ExecutionLog_CollectionChanged;
@@ -773,6 +787,71 @@ namespace AutoTool.ViewModel
         {
             base.OnPropertyChanged(e);
             _logger.LogTrace("プロパティ変更: {PropertyName}", e.PropertyName);
+        }
+
+        // ClearLog now also clears detailed logger contents
+        [RelayCommand]
+        private void ClearDetailedLog()
+        {
+            try
+            {
+                _logMessageService?.Clear();
+                DetailedLogEntries.Clear();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "詳細ログクリア中にエラー");
+            }
+        }
+
+        [RelayCommand]
+        private void CopyLog()
+        {
+            try
+            {
+                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    if (LogEntries == null || LogEntries.Count == 0)
+                    {
+                        StatusMessage = "コピーする実行ログがありません";
+                        return;
+                    }
+
+                    var text = string.Join(Environment.NewLine, LogEntries);
+                    System.Windows.Clipboard.SetText(text);
+                    StatusMessage = "実行ログをクリップボードにコピーしました";
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "実行ログのコピー中にエラー");
+                StatusMessage = $"コピーエラー: {ex.Message}";
+            }
+        }
+
+        [RelayCommand]
+        private void CopyDetailedLog()
+        {
+            try
+            {
+                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    if (DetailedLogEntries == null || DetailedLogEntries.Count == 0)
+                    {
+                        StatusMessage = "コピーする詳細ログがありません";
+                        return;
+                    }
+
+                    var text = string.Join(Environment.NewLine, DetailedLogEntries);
+                    System.Windows.Clipboard.SetText(text);
+                    StatusMessage = "詳細ログをクリップボードにコピーしました";
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "詳細ログのコピー中にエラー");
+                StatusMessage = $"コピーエラー: {ex.Message}";
+            }
         }
     }
 }

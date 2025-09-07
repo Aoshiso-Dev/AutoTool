@@ -83,6 +83,15 @@ namespace AutoTool.Command.Commands
             UpdateHotkeyText();
         }
 
+        protected override void ValidateSettings()
+        {
+            // Key は None を許容しない
+            if (Key == Key.None)
+            {
+                throw new ArgumentException("キーを指定してください。");
+            }
+        }
+
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             try
@@ -152,6 +161,19 @@ namespace AutoTool.Command.Commands
         {
             Description = "テキスト入力";
             _keyboardService = serviceProvider?.GetService<IKeyboardService>() ?? throw new InvalidOperationException("IKeyboardServiceが見つかりません");
+        }
+
+        protected override void ValidateSettings()
+        {
+            if (string.IsNullOrWhiteSpace(Text))
+            {
+                throw new ArgumentException("入力テキストが空です。テキストを指定してください。");
+            }
+
+            if (InputInterval < 0)
+            {
+                throw new ArgumentException("入力間隔は0以上で指定してください。");
+            }
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)

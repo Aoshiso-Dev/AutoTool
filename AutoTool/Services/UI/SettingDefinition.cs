@@ -5,6 +5,29 @@ using System.Runtime.CompilerServices;
 
 namespace AutoTool.Services.UI
 {
+    /*
+    /// <summary>
+    /// 設定コントロールの種類
+    /// </summary>
+    public enum SettingControlType
+    {
+        TextBox,
+        NumberBox,
+        CheckBox,
+        ComboBox,
+        Slider,
+        FilePicker,
+        FolderPicker,
+        OnnxPicker,
+        ColorPicker,
+        DatePicker,
+        TimePicker,
+        KeyPicker,
+        CoordinatePicker,
+        WindowPicker,
+        PasswordBox
+    }
+
     /// <summary>
     /// コマンド設定定義（動的UI拡張版）
     /// </summary>
@@ -24,7 +47,7 @@ namespace AutoTool.Services.UI
         private int _order;
         private string _editorType = "Text";
         private string? _validationRule;
-        private string _controlType = "TextBox"; // XAML側の制御判定用
+        private SettingControlType _controlType = SettingControlType.TextBox; // XAML側の制御判定用
         private object? _currentValue;            // 現在値（表示用）
         private bool _showCurrentValue = true;    // 現在値表示フラグ
         private string? _unit;                    // 単位
@@ -116,9 +139,9 @@ namespace AutoTool.Services.UI
         }
 
         /// <summary>
-        /// 動的UIで使用するコントロール種別（TextBox / NumberBox / CheckBox / ComboBox / Slider / FilePicker / FolderPicker / OnnxPicker / ColorPicker / DatePicker / TimePicker / KeyPicker / CoordinatePicker / WindowPicker 等）
+        /// 動的UIで使用するコントロール種別
         /// </summary>
-        public string ControlType
+        public SettingControlType ControlType
         {
             get => _controlType;
             set => SetField(ref _controlType, value);
@@ -198,4 +221,5 @@ namespace AutoTool.Services.UI
         }
         #endregion
     }
+    */
 }

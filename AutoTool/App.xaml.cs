@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using AutoTool.Bootstrap;
 using AutoTool.ViewModel;
 using AutoTool.Command.Definition;
+using AutoTool.Services.Logging;
+using AutoTool.Logging;
 
 namespace AutoTool
 {
@@ -116,7 +118,21 @@ namespace AutoTool
                 
                 // 依存関係の詳細チェック
                 var services = _bootstrapper.Host.Services;
-                
+                // Register in-memory log provider if LogMessageService is registered
+                try
+                {
+                    var logService = services.GetService<LogMessageService>();
+                    if (logService != null)
+                    {
+                        var loggerFactory = services.GetService<Microsoft.Extensions.Logging.ILoggerFactory>();
+                        if (loggerFactory != null)
+                        {
+                            loggerFactory.AddProvider(new InMemoryLoggerProvider(logService));
+                        }
+                    }
+                }
+                catch { }
+
                 // 必要な依存関係が登録されているかチェック
                 var requiredServices = new[]
                 {

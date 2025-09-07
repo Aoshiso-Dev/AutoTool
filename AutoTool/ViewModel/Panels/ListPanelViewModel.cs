@@ -167,7 +167,44 @@ namespace AutoTool.ViewModel.Panels
             WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, OnFinishCommandMessage);
             WeakReferenceMessenger.Default.Register<DoingCommandMessage>(this, OnDoingCommandMessage);
             WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, OnUpdateProgressMessage);
-            WeakReferenceMessenger.Default.Register<CommandErrorMessage>(this, OnCommandErrorMessage);
+
+            // CommandErrorMessage は受信されているかをトレースするため、ラップして登録
+            // 受信登録時点での受信者数をログ出力（診断用）
+            try
+            {
+                try
+                {
+                    var messengerType = WeakReferenceMessenger.Default.GetType();
+                    var recipientsField = messengerType.GetField("recipients", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (recipientsField?.GetValue(WeakReferenceMessenger.Default) is System.Collections.IDictionary recipients)
+                    {
+                        _logger.LogDebug("Messenger 登録時の recipients カウント: {Count}", recipients.Count);
+                    }
+                }
+                catch { /* ignore */ }
+
+                WeakReferenceMessenger.Default.Register<CommandErrorMessage>(this, (recipient, message) =>
+                {
+                    try
+                    {
+                        _logger.LogDebug("CommandErrorMessage 受信トレース: Line={LineNumber}, CommandType={CommandType}, Exception={ExceptionType}",
+                            message.Command?.LineNumber, message.Command?.GetType().Name, message.Exception?.GetType().Name);
+                    }
+                    catch (Exception logEx)
+                    {
+                        _logger.LogWarning(logEx, "CommandErrorMessage 受信トレースログで例外発生");
+                    }
+
+                    // 既存のハンドラを呼ぶ
+                    OnCommandErrorMessage(recipient, message);
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "CommandErrorMessage の登録トレース処理中に例外が発生しました");
+                // 通常登録にフォールバック
+                WeakReferenceMessenger.Default.Register<CommandErrorMessage>(this, OnCommandErrorMessage);
+            }
 
             _logger.LogInformation("ListPanelViewModel (Phase 5) が初期化されました");
 
@@ -622,8 +659,37 @@ namespace AutoTool.ViewModel.Panels
         /// </summary>
         private void OnMacroExecutionRunningStateChanged(object? sender, bool isRunning)
         {
-            IsRunning = isRunning;
-            CanExecute = !isRunning && Items.Count > 0;
+            try
+            {
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    IsRunning = isRunning;
+                    CanExecute = !isRunning && Items.Count > 0;
+
+                    if (!isRunning)
+                    {
+                        // マクロが停止/完了したタイミングで、すべてのアイテムの実行フラグとカレント実行アイテム、進捗を確実にクリア
+                        try
+                        {
+                            foreach (var it in Items)
+                            {
+                                it.IsRunning = false;
+                                it.Progress = 0; // 進捗をクリア
+                            }
+
+                            CurrentExecutingItem = null;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "マクロ停止時の実行フラグ/進捗クリア中に警告");
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "MacroExecutionService 実行状態変更処理中にエラー");
+            }
         }
 
         /// <summary>
@@ -698,6 +764,13 @@ namespace AutoTool.ViewModel.Panels
                     if (targetItem != null)
                     {
                         targetItem.IsRunning = false;
+                        targetItem.Progress = 0; // 完了時に個別進捗をクリアしてUIのバーを消す
+
+                        // 現在実行中として記録されているアイテムが完了した場合はカレントをクリア
+                        if (CurrentExecutingItem == targetItem)
+                        {
+                            CurrentExecutingItem = null;
+                        }
                     }
                 });
             }
@@ -760,18 +833,77 @@ namespace AutoTool.ViewModel.Panels
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     var targetItem = Items.FirstOrDefault(item => item.LineNumber == message.Command.LineNumber);
+                    var now = DateTime.Now;
+                    var ex = message.Exception;
+                    var shortReason = GetShortErrorReason(ex, message.Command);
+
+                    // 実行ログに中断メッセージ（例: 中断: ClickImage (行 3) - FileNotFoundException: ～）
                     if (targetItem != null)
                     {
                         targetItem.IsRunning = false;
-                        ExecutionLog.Add($"[{DateTime.Now:HH:mm:ss}] エラー: {targetItem.ItemType} (行 {targetItem.LineNumber}) - {message.Exception.Message}");
+                        targetItem.Progress = 0; // エラーでも進捗はクリアしておく
+
+                        ExecutionLog.Add($"[{now:HH:mm:ss}] 中断: {targetItem.ItemType} (行 {targetItem.LineNumber}) - {ex.GetType().Name}: {ex.Message}");
+                        ExecutionLog.Add($"[{now:HH:mm:ss}] 原因: {shortReason}");
+
+                        // エラーで終了したアイテムがカレントの場合はクリア
+                        if (CurrentExecutingItem == targetItem)
+                        {
+                            CurrentExecutingItem = null;
+                        }
                     }
-                    StatusMessage = $"コマンドエラー: {message.Exception.Message}";
+                    else
+                    {
+                        // 対象アイテムが見つからない場合もログは残す
+                        //ExecutionLog.Add($"[{now:HH:mm:ss}] コマンドエラー: {ex.GetType().Name}: {ex.Message}");
+                        //ExecutionLog.Add($"[{now:HH:mm:ss}] 原因: {shortReason}");
+                    }
+
+                    // 詳細はILoggerへ（スタックトレース等）
+                    _logger.LogError(ex, "コマンドがエラーで中断しました: Line {Line}", message.Command.LineNumber);
+
+                    // UI向けステータスメッセージ
+                    StatusMessage = $"コマンドがエラーで中断しました: {ex.Message}";
                 });
             }
-            catch (Exception ex)
+            catch (Exception ex2)
             {
-                _logger.LogError(ex, "CommandErrorMessage処理中にエラー");
+                _logger.LogError(ex2, "CommandErrorMessage処理中にエラー");
             }
+        }
+
+        // 短い原因説明を返す補助メソッド（コマンド種別や例外内容に基づく）
+        private string GetShortErrorReason(Exception ex, ICommand? command)
+        {
+            if (ex is System.IO.FileNotFoundException)
+            {
+                return "指定されたファイルが見つかりません。ファイルパスを確認してください。";
+            }
+            if (ex is System.IO.DirectoryNotFoundException)
+            {
+                return "指定されたフォルダが見つかりません。パスを確認してください。";
+            }
+            if (ex is UnauthorizedAccessException)
+            {
+                return "アクセス権が不足しています。ファイル/フォルダの権限を確認してください。";
+            }
+            if (ex is TimeoutException)
+            {
+                return "処理がタイムアウトしました。条件やタイムアウト設定を確認してください。";
+            }
+            if (ex is NullReferenceException)
+            {
+                return "内部参照（null）が原因で失敗しました。設定や対象オブジェクトを確認してください。";
+            }
+            if (ex is System.IO.IOException)
+            {
+                return "入出力エラーが発生しました。デバイスやファイルの状態を確認してください。";
+            }
+
+            // デフォルトは例外メッセージを短くして返す
+            var msg = ex.Message ?? "不明なエラーです";
+            if (msg.Length > 200) msg = msg.Substring(0, 200) + "…";
+            return msg;
         }
 
         [RelayCommand(CanExecute = nameof(CanUndo))]

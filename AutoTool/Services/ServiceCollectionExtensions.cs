@@ -63,6 +63,9 @@ namespace AutoTool.Services
             // Capture Services (includes ColorPick + KeyHelper functionality)
             services.AddSingleton<ICaptureService, CaptureService>();
 
+            // In-memory log message service for detailed UI log tab
+            services.AddSingleton<AutoTool.Services.Logging.LogMessageService>();
+
             // Image Processing Services (OpenCVHelperìùçáÅEWPFëŒâû)
             services.AddSingleton<IImageProcessingService, ImageProcessingService>();
 

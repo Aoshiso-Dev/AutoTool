@@ -149,24 +149,71 @@
 
                         <!-- Log Header -->
                         <Border Grid.Row="0" Background="LightGray" Padding="5">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="実行ログ" FontWeight="Bold" VerticalAlignment="Center"/>
-                                <Button Content="クリア" Command="{Binding ClearLogCommand}" 
-                                        Width="50" Height="20" Margin="10,0,0,0" FontSize="10"/>
-                            </StackPanel>
+                            <DockPanel>
+                                <TextBlock Text="実行ログ" FontWeight="Bold" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                <!-- Buttons moved into each tab -->
+                            </DockPanel>
                         </Border>
 
-                        <!-- Log List -->
-                        <ListBox Grid.Row="1" 
-                                 ItemsSource="{Binding LogEntries}"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                 ScrollViewer.VerticalScrollBarVisibility="Auto">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="10" TextWrapping="Wrap"/>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <!-- Log Tabs -->
+                        <TabControl Grid.Row="1">
+                            <TabItem Header="実行ログ">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <DockPanel Grid.Row="0" Margin="2">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Button Content="クリア" Command="{Binding ClearLogCommand}" 
+                                                    Width="50" Height="20" Margin="10,0,0,0" FontSize="10"/>
+                                            <Button Content="コピー" Command="{Binding CopyLogCommand}"
+                                                    Width="50" Height="20" Margin="10,0,0,0" FontSize="10"/>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <ListBox Grid.Row="1"
+                                         ItemsSource="{Binding LogEntries}"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="10" TextWrapping="Wrap"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </TabItem>
+                            <TabItem Header="詳細ログ">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <DockPanel Grid.Row="0" Margin="2">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Button Content="詳細クリア" Command="{Binding ClearDetailedLogCommand}" 
+                                                    Width="70" Height="20" Margin="10,0,0,0" FontSize="10"/>
+                                            <Button Content="詳細コピー" Command="{Binding CopyDetailedLogCommand}"
+                                                    Width="70" Height="20" Margin="10,0,0,0" FontSize="10"/>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <ListBox Grid.Row="1"
+                                         ItemsSource="{Binding DetailedLogEntries}"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="10" TextWrapping="Wrap"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </TabItem>
+                        </TabControl>
                     </Grid>
                 </Grid>
 

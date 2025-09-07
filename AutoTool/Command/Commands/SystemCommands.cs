@@ -57,6 +57,11 @@ namespace AutoTool.Command.Commands
             Description = "プログラム実行";
         }
 
+        protected override void ValidateSettings()
+        {
+            if (string.IsNullOrWhiteSpace(ProgramPath)) throw new ArgumentException("実行するプログラムのパスを指定してください。");
+        }
+
         protected override void ValidateFiles()
         {
             if (!string.IsNullOrEmpty(ProgramPath))
@@ -95,7 +100,7 @@ namespace AutoTool.Command.Commands
                 await Task.Run(() =>
                 {
                     Process.Start(startInfo);
-                    LogMessage($"プログラムを実行しました。");
+                    LogMessage($"プログラムを実行しました: {Path.GetFileName(resolvedProgramPath)}");
                 });
                 return true;
             }

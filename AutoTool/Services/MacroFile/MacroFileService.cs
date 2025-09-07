@@ -138,7 +138,7 @@ namespace AutoTool.Services.MacroFile
                 var openFileDialog = new Microsoft.Win32.OpenFileDialog
                 {
                     Title = "マクロファイルを開く",
-                    Filter = "AutoTool マクロファイル (*.atmacro)|*.atmacro|JSON ファイル (*.json)|*.json|すべてのファイル (*.*)|*.*",
+                    Filter = "AutoTool マクロファイル (*.atmacro)|*.atmacro|すべてのファイル (*.*)|*.*",
                     DefaultExt = ".atmacro",
                     CheckFileExists = true,
                     CheckPathExists = true
@@ -172,7 +172,7 @@ namespace AutoTool.Services.MacroFile
                 var saveFileDialog = new Microsoft.Win32.SaveFileDialog
                 {
                     Title = "マクロファイルを保存",
-                    Filter = "AutoTool マクロファイル (*.atmacro)|*.atmacro|JSON ファイル (*.json)|*.json",
+                    Filter = "AutoTool マクロファイル (*.atmacro)|*.atmacro",
                     DefaultExt = ".atmacro",
                     FileName = currentFileName.EndsWith(".atmacro") ? currentFileName : $"{currentFileName}.atmacro",
                     AddExtension = true
@@ -258,7 +258,7 @@ namespace AutoTool.Services.MacroFile
         public bool IsSupportedFileFormat(string filePath)
         {
             var extension = Path.GetExtension(filePath).ToLowerInvariant();
-            return extension is ".atmacro" or ".json";
+            return extension is ".atmacro";
         }
 
         #region Private Methods

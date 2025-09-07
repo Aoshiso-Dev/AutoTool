@@ -1,5 +1,7 @@
-using System;
+ï»¿using System;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -12,16 +14,11 @@ using AutoTool.Services.ImageProcessing;
 using AutoTool.Services.Mouse;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Media;
 using YoloWinLib;
 
 namespace AutoTool.Command.Commands
 {
-    // ƒCƒ“ƒ^[ƒtƒF[ƒX’è‹`
+    // ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹å®šç¾©
     public interface IClickCommand : AutoTool.Command.Interface.ICommand 
     {
         int X { get; set; }
@@ -51,57 +48,68 @@ namespace AutoTool.Command.Commands
         int ClassID { get; set; }
         double ConfThreshold { get; set; }
         double IoUThreshold { get; set; }
+        int Timeout { get; set; }
+        int Interval { get; set; }
         MouseButton Button { get; set; }
         bool UseBackgroundClick { get; set; }
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
     }
 
-    // À‘•ƒNƒ‰ƒX
+    // å®Ÿè£…ã‚¯ãƒ©ã‚¹
     /// <summary>
-    /// ƒNƒŠƒbƒNƒRƒ}ƒ“ƒhiDI‘Î‰j
+    /// ã‚¯ãƒªãƒƒã‚¯ã‚³ãƒãƒ³ãƒ‰ï¼ˆDIå¯¾å¿œï¼‰
     /// </summary>
-    [DirectCommand(DirectCommandRegistry.CommandTypes.Click, "ƒNƒŠƒbƒN", "Mouse", "w’è‚µ‚½À•W‚ğƒNƒŠƒbƒN‚µ‚Ü‚·")]
+    [DirectCommand(DirectCommandRegistry.CommandTypes.Click, "ã‚¯ãƒªãƒƒã‚¯", "Mouse", "æŒ‡å®šã—ãŸåº§æ¨™ã‚’ã‚¯ãƒªãƒƒã‚¯ã—ã¾ã™")]
     public class ClickCommand : BaseCommand, IClickCommand
     {
         private readonly IMouseService _mouseService;
 
-        [SettingProperty("À•W", SettingControlType.CoordinatePicker,
-            description: "ƒNƒŠƒbƒN‚·‚éÀ•W",
-            category: "Šî–{İ’è",
+        [SettingProperty("åº§æ¨™", SettingControlType.CoordinatePicker,
+            description: "ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹åº§æ¨™",
+            category: "åŸºæœ¬è¨­å®š",
             isRequired: true,
             defaultValue: 0)]
         public int X { get; set; } = 0;
         public int Y { get; set; } = 0;
 
-        [SettingProperty("ƒ}ƒEƒXƒ{ƒ^ƒ“", SettingControlType.ComboBox,
-            description: "g—p‚·‚éƒ}ƒEƒXƒ{ƒ^ƒ“",
-            category: "Ú×",
+        [SettingProperty("ãƒã‚¦ã‚¹ãƒœã‚¿ãƒ³", SettingControlType.ComboBox,
+            description: "ä½¿ç”¨ã™ã‚‹ãƒã‚¦ã‚¹ãƒœã‚¿ãƒ³",
+            category: "è©³ç´°",
             sourceCollection: "MouseButtons",
             defaultValue: MouseButton.Left)]
         public MouseButton Button { get; set; } = MouseButton.Left;
 
-        [SettingProperty("ƒoƒbƒNƒOƒ‰ƒEƒ“ƒhƒNƒŠƒbƒN", SettingControlType.CheckBox,
-            description: "ƒoƒbƒNƒOƒ‰ƒEƒ“ƒh‚ÅƒNƒŠƒbƒN‚·‚é",
-            category: "Ú×",
+        [SettingProperty("ãƒãƒƒã‚¯ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚¯ãƒªãƒƒã‚¯", SettingControlType.CheckBox,
+            description: "ãƒãƒƒã‚¯ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã§ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹",
+            category: "è©³ç´°",
             defaultValue: false)]
-        public bool UseBackgroundClick { get; set; } = false;
+        public bool UseBackgroundClick { get; set; } = true;
 
-        [SettingProperty("ƒEƒBƒ“ƒhƒEƒ^ƒCƒgƒ‹", SettingControlType.WindowPicker,
-            description: "‘ÎÛƒEƒBƒ“ƒhƒE‚Ìƒ^ƒCƒgƒ‹",
-            category: "ƒEƒBƒ“ƒhƒE")]
+        [SettingProperty("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¿ã‚¤ãƒˆãƒ«", SettingControlType.WindowPicker,
+            description: "å¯¾è±¡ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¿ã‚¤ãƒˆãƒ«",
+            category: "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦")]
         public string WindowTitle { get; set; } = string.Empty;
 
-        [SettingProperty("ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX–¼", SettingControlType.TextBox,
-            description: "‘ÎÛƒEƒBƒ“ƒhƒE‚ÌƒNƒ‰ƒX–¼",
-            category: "ƒEƒBƒ“ƒhƒE")]
+        [SettingProperty("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹å", SettingControlType.TextBox,
+            description: "å¯¾è±¡ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¯ãƒ©ã‚¹å",
+            category: "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦")]
         public string WindowClassName { get; set; } = string.Empty;
 
         public ClickCommand(AutoTool.Command.Interface.ICommand? parent = null, IServiceProvider? serviceProvider = null)
             : base(parent, serviceProvider)
         {
-            Description = "ƒNƒŠƒbƒN";
-            _mouseService = serviceProvider?.GetService<IMouseService>() ?? throw new InvalidOperationException("IMouseService‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ");
+            Description = "ã‚¯ãƒªãƒƒã‚¯";
+            _mouseService = serviceProvider?.GetService<IMouseService>() ?? throw new InvalidOperationException("IMouseServiceãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“");
+        }
+
+        protected override void ValidateSettings()
+        {
+            // X,Yã¯è² ã§ãªã„ã“ã¨ã‚’æœ€ä½é™ãƒã‚§ãƒƒã‚¯
+            if (X < 0 || Y < 0)
+            {
+                throw new ArgumentException("åº§æ¨™ã¯0ä»¥ä¸Šã§æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
+            }
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
@@ -117,295 +125,418 @@ namespace AutoTool.Command.Commands
                 MouseButton.Middle => UseBackgroundClick
                     ? _mouseService.BackgroundMiddleClickAsync(X, Y, WindowTitle, WindowClassName)
                     : _mouseService.MiddleClickAsync(X, Y, WindowTitle, WindowClassName),
-                _ => throw new Exception("ƒ}ƒEƒXƒ{ƒ^ƒ“‚ª•s³‚Å‚·B"),
+                _ => throw new Exception("ãƒã‚¦ã‚¹ãƒœã‚¿ãƒ³ãŒä¸æ­£ã§ã™ã€‚"),
             });
 
-            var target = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
-                ? "ƒOƒ[ƒoƒ‹" : $"{WindowTitle}[{WindowClassName}]";
+            var targetDesc = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
+                ? "ã‚°ãƒ­ãƒ¼ãƒãƒ«" : $"{WindowTitle}[{WindowClassName}]";
             
-            LogMessage($"{target}‚Ì({X}, {Y})‚ğ{(UseBackgroundClick ? "ƒoƒbƒNƒOƒ‰ƒEƒ“ƒh‚Å" : "")}{Button}ƒNƒŠƒbƒN‚µ‚Ü‚µ‚½B");
+            LogMessage($"{targetDesc} ã® ({X}, {Y}) ã‚’ {(UseBackgroundClick ? "ãƒãƒƒã‚¯ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã§" : string.Empty)}{Button} ã‚¯ãƒªãƒƒã‚¯ã—ã¾ã—ãŸ");
 
             return true;
         }
     }
 
     /// <summary>
-    /// ‰æ‘œƒNƒŠƒbƒNƒRƒ}ƒ“ƒhiDI‘Î‰j
+    /// ç”»åƒã‚¯ãƒªãƒƒã‚¯ã‚³ãƒãƒ³ãƒ‰ï¼ˆDIå¯¾å¿œï¼‰
     /// </summary>
-    [DirectCommand(DirectCommandRegistry.CommandTypes.ClickImage, "‰æ‘œƒNƒŠƒbƒN", "Image", "w’è‚µ‚½‰æ‘œ‚ğŒŸõ‚µ‚ÄƒNƒŠƒbƒN‚µ‚Ü‚·")]
+    [DirectCommand(DirectCommandRegistry.CommandTypes.ClickImage, "ç”»åƒã‚¯ãƒªãƒƒã‚¯", "Image", "æŒ‡å®šã—ãŸç”»åƒã‚’æ¤œç´¢ã—ã¦ã‚¯ãƒªãƒƒã‚¯ã—ã¾ã™")]
     public class ClickImageCommand : BaseCommand, IClickImageCommand
     {
         private readonly IMouseService _mouseService;
         private readonly IImageProcessingService _imageProcessingService;
 
-        [SettingProperty("‰æ‘œƒtƒ@ƒCƒ‹", SettingControlType.FilePicker,
-            description: "ƒNƒŠƒbƒN‚·‚é‰æ‘œƒtƒ@ƒCƒ‹",
-            category: "Šî–{İ’è",
+        [SettingProperty("ç”»åƒãƒ•ã‚¡ã‚¤ãƒ«", SettingControlType.FilePicker,
+            description: "ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ç”»åƒãƒ•ã‚¡ã‚¤ãƒ«",
+            category: "åŸºæœ¬è¨­å®š",
             isRequired: true,
-            fileFilter: "‰æ‘œƒtƒ@ƒCƒ‹ (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp")]
+            fileFilter: "ç”»åƒãƒ•ã‚¡ã‚¤ãƒ« (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp")]
         public string ImagePath { get; set; } = string.Empty;
 
-        [SettingProperty("ƒ^ƒCƒ€ƒAƒEƒg", SettingControlType.NumberBox,
-            description: "ƒ^ƒCƒ€ƒAƒEƒgŠÔiƒ~ƒŠ•bj",
-            category: "Šî–{İ’è",
+        [SettingProperty("ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆ", SettingControlType.NumberBox,
+            description: "ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆæ™‚é–“ï¼ˆãƒŸãƒªç§’ï¼‰",
+            category: "åŸºæœ¬è¨­å®š",
             defaultValue: 5000)]
         public int Timeout { get; set; } = 5000;
 
-        [SettingProperty("ŒŸõŠÔŠu", SettingControlType.NumberBox,
-            description: "‰æ‘œŒŸõ‚ÌŠÔŠuiƒ~ƒŠ•bj",
-            category: "Šî–{İ’è",
+        [SettingProperty("æ¤œç´¢é–“éš”", SettingControlType.NumberBox,
+            description: "ç”»åƒæ¤œç´¢ã®é–“éš”ï¼ˆãƒŸãƒªç§’ï¼‰",
+            category: "åŸºæœ¬è¨­å®š",
             defaultValue: 500)]
         public int Interval { get; set; } = 500;
 
-        [SettingProperty("è‡’l", SettingControlType.Slider,
-            description: "‰æ‘œ”F¯‚Ìè‡’l",
-            category: "Ú×İ’è",
+        [SettingProperty("é–¾å€¤", SettingControlType.Slider,
+            description: "ç”»åƒèªè­˜ã®é–¾å€¤",
+            category: "è©³ç´°è¨­å®š",
             defaultValue: 0.8,
             minValue: 0.0,
             maxValue: 1.0)]
         public double Threshold { get; set; } = 0.8;
 
-        [SettingProperty("ƒ}ƒEƒXƒ{ƒ^ƒ“", SettingControlType.ComboBox,
-            description: "g—p‚·‚éƒ}ƒEƒXƒ{ƒ^ƒ“",
-            category: "Ú×",
+        [SettingProperty("ãƒã‚¦ã‚¹ãƒœã‚¿ãƒ³", SettingControlType.ComboBox,
+            description: "ä½¿ç”¨ã™ã‚‹ãƒã‚¦ã‚¹ãƒœã‚¿ãƒ³",
+            category: "è©³ç´°",
             sourceCollection: "MouseButtons",
             defaultValue: MouseButton.Left)]
         public MouseButton Button { get; set; } = MouseButton.Left;
 
-        [SettingProperty("ƒoƒbƒNƒOƒ‰ƒEƒ“ƒhƒNƒŠƒbƒN", SettingControlType.CheckBox,
-            description: "ƒoƒbƒNƒOƒ‰ƒEƒ“ƒh‚ÅƒNƒŠƒbƒN‚·‚é",
-            category: "Ú×",
+        [SettingProperty("ãƒãƒƒã‚¯ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚¯ãƒªãƒƒã‚¯", SettingControlType.CheckBox,
+            description: "ãƒãƒƒã‚¯ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã§ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹",
+            category: "è©³ç´°",
             defaultValue: false)]
-        public bool UseBackgroundClick { get; set; } = false;
+        public bool UseBackgroundClick { get; set; } = true;
 
-        [SettingProperty("ƒEƒBƒ“ƒhƒEƒ^ƒCƒgƒ‹", SettingControlType.WindowPicker,
-            description: "‘ÎÛƒEƒBƒ“ƒhƒE‚Ìƒ^ƒCƒgƒ‹",
-            category: "ƒEƒBƒ“ƒhƒE")]
+        [SettingProperty("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¿ã‚¤ãƒˆãƒ«", SettingControlType.WindowPicker,
+            description: "å¯¾è±¡ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¿ã‚¤ãƒˆãƒ«",
+            category: "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦")]
         public string WindowTitle { get; set; } = string.Empty;
 
-        [SettingProperty("ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX–¼", SettingControlType.TextBox,
-            description: "‘ÎÛƒEƒBƒ“ƒhƒE‚ÌƒNƒ‰ƒX–¼",
-            category: "ƒEƒBƒ“ƒhƒE")]
+        [SettingProperty("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹å", SettingControlType.TextBox,
+            description: "å¯¾è±¡ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¯ãƒ©ã‚¹å",
+            category: "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦")]
         public string WindowClassName { get; set; } = string.Empty;
 
-        [SettingProperty("ŒŸõF", SettingControlType.ColorPicker,
-            description: "“Á’è‚ÌF‚ÅŒŸõ‚·‚éê‡‚ÌF",
-            category: "Ú×İ’è")]
+        [SettingProperty("æ¤œç´¢è‰²", SettingControlType.ColorPicker,
+            description: "ç‰¹å®šã®è‰²ã§æ¤œç´¢ã™ã‚‹å ´åˆã®è‰²",
+            category: "è©³ç´°è¨­å®š")]
         public System.Windows.Media.Color? SearchColor { get; set; } = null;
 
         public ClickImageCommand(AutoTool.Command.Interface.ICommand? parent = null, IServiceProvider? serviceProvider = null)
             : base(parent, serviceProvider)
         {
-            Description = "‰æ‘œƒNƒŠƒbƒN";
-            _mouseService = serviceProvider?.GetService<IMouseService>() ?? throw new InvalidOperationException("IMouseService‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ");
-            _imageProcessingService = serviceProvider?.GetService<IImageProcessingService>() ?? throw new InvalidOperationException("IImageProcessingService‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ");
+            Description = "ç”»åƒã‚¯ãƒªãƒƒã‚¯";
+            _mouseService = serviceProvider?.GetService<IMouseService>() ?? throw new InvalidOperationException("IMouseServiceãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“");
+            _imageProcessingService = serviceProvider?.GetService<IImageProcessingService>() ?? throw new InvalidOperationException("IImageProcessingServiceãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“");
+        }
+
+        protected override void ValidateSettings()
+        {
+            if (Timeout <= 0) throw new ArgumentException("ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆã¯æ­£ã®å€¤ã§æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
+            if (Interval <= 0) throw new ArgumentException("æ¤œç´¢é–“éš”ã¯æ­£ã®å€¤ã§æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
+            if (Threshold < 0.0 || Threshold > 1.0) throw new ArgumentException("é–¾å€¤ã¯0.0ã€œ1.0ã®ç¯„å›²ã§æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
+            if (string.IsNullOrWhiteSpace(ImagePath)) throw new ArgumentException("ç”»åƒãƒ•ã‚¡ã‚¤ãƒ«ã‚’æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
         }
 
         protected override void ValidateFiles()
         {
             if (!string.IsNullOrEmpty(ImagePath))
             {
-                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePathŒŸØŠJn: {ImagePath}", ImagePath);
-                ValidateFileExists(ImagePath, "‰æ‘œƒtƒ@ƒCƒ‹");
-                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePathŒŸØ¬Œ÷: {ImagePath}", ImagePath);
+                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePathæ¤œè¨¼é–‹å§‹: {ImagePath}", ImagePath);
+                ValidateFileExists(ImagePath, "ç”»åƒãƒ•ã‚¡ã‚¤ãƒ«");
+                _logger?.LogDebug("[ValidateFiles] ClickImage ImagePathæ¤œè¨¼æˆåŠŸ: {ImagePath}", ImagePath);
             }
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(ImagePath)) return false;
+            var timeoutMs = Timeout <= 0 ? 0 : Timeout; // ms
+            var intervalMs = Interval <= 0 ? 500 : Interval; // å®‰å…¨ãªä¸‹é™
+            var stopwatch = Stopwatch.StartNew();
+            bool found = false;
 
-            // ‘Š‘ÎƒpƒX‚ğ‰ğŒˆ‚µ‚ÄÀÛ‚ÌŒŸõ‚Ég—p
+            // ç›¸å¯¾ãƒ‘ã‚¹ã‚’è§£æ±ºã—ã¦å®Ÿéš›ã®æ¤œç´¢ã«ä½¿ç”¨
             var resolvedImagePath = ResolvePath(ImagePath);
-            
-            System.Windows.Point? point = null;
+            _logger?.LogDebug("[DoExecuteAsync] ClickImage è§£æ±ºã•ã‚ŒãŸImagePath: {OriginalPath} -> {ResolvedPath}", ImagePath, resolvedImagePath);
 
-            if (SearchColor.HasValue)
+            if (timeoutMs == 0)
             {
-                // ƒJƒ‰[ƒtƒBƒ‹ƒ^[•t‚«‰æ‘œŒŸõ
-                var searchColorDrawing = System.Drawing.Color.FromArgb(
-                    SearchColor.Value.A,
-                    SearchColor.Value.R,
-                    SearchColor.Value.G,
-                    SearchColor.Value.B);
-
-                point = await _imageProcessingService.SearchImageWithColorFilterAsync(
-                    resolvedImagePath, searchColorDrawing, Threshold, WindowTitle, WindowClassName, cancellationToken);
-            }
-            else if (!string.IsNullOrEmpty(WindowTitle))
-            {
-                // ƒEƒBƒ“ƒhƒE“à‰æ‘œŒŸõ
-                point = await _imageProcessingService.SearchImageInWindowAsync(
-                    resolvedImagePath, WindowTitle, WindowClassName, Threshold, cancellationToken);
-            }
-            else
-            {
-                // ƒXƒNƒŠ[ƒ“‘S‘Ì‚Å‰æ‘œŒŸõ
-                point = await _imageProcessingService.SearchImageOnScreenAsync(
-                    resolvedImagePath, Threshold, cancellationToken);
-            }
-
-            if (point == null)
-            {
-                LogMessage("‰æ‘œ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½");
+                LogMessage("Timeout=0 ã®ãŸã‚å³çµ‚äº†(å¤±æ•—)");
+                ReportProgress(1, 1);
                 return false;
             }
 
-            LogMessage($"‰æ‘œ‚ªŒ©‚Â‚©‚è‚Ü‚µ‚½: ({point.Value.X}, {point.Value.Y})");
-
-            await (Button switch
+            while (stopwatch.ElapsedMilliseconds < timeoutMs && !cancellationToken.IsCancellationRequested)
             {
-                MouseButton.Left => UseBackgroundClick
-                    ? _mouseService.BackgroundClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName)
-                    : _mouseService.ClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName),
-                MouseButton.Right => UseBackgroundClick
-                    ? _mouseService.BackgroundRightClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName)
-                    : _mouseService.RightClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName),
-                MouseButton.Middle => UseBackgroundClick
-                    ? _mouseService.BackgroundMiddleClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName)
-                    : _mouseService.MiddleClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName),
-                _ => throw new Exception("ƒ}ƒEƒXƒ{ƒ^ƒ“‚ª•s³‚Å‚·B"),
-            });
+                System.Windows.Point? point = null;
 
-            LogMessage($"{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "ƒOƒ[ƒoƒ‹" : $"{WindowTitle}[{WindowClassName}]")}‚Ì({(int)point.Value.X}, {(int)point.Value.Y})‚ğ{(UseBackgroundClick ? "ƒoƒbƒNƒOƒ‰ƒEƒ“ƒh‚Å" : "")}{Button}ƒNƒŠƒbƒN‚µ‚Ü‚µ‚½B");
+                try
+                {
+                    if (SearchColor.HasValue)
+                    {
+                        var c = System.Drawing.Color.FromArgb(SearchColor.Value.A, SearchColor.Value.R, SearchColor.Value.G, SearchColor.Value.B);
+                        point = await _imageProcessingService.SearchImageWithColorFilterAsync(resolvedImagePath, c, Threshold, WindowTitle, WindowClassName, cancellationToken);
+                    }
+                    else if (!string.IsNullOrEmpty(WindowTitle))
+                    {
+                        point = await _imageProcessingService.SearchImageInWindowAsync(resolvedImagePath, WindowTitle, WindowClassName, Threshold, cancellationToken);
+                    }
+                    else
+                    {
+                        point = await _imageProcessingService.SearchImageOnScreenAsync(resolvedImagePath, Threshold, cancellationToken);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    LogMessage("ç”»åƒå¾…æ©ŸãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    LogMessage($"ç”»åƒæ¤œç´¢ä¸­ã‚¨ãƒ©ãƒ¼: {ex.Message}");
+                    throw;
+                }
 
-            return true;
+                if (point != null)
+                {
+                    found = true;
+                    LogMessage($"ç”»åƒãŒè¦‹ã¤ã‹ã‚Šã¾ã—ãŸ: ({point.Value.X}, {point.Value.Y})");
+                    await (Button switch
+                    {
+                        MouseButton.Left => UseBackgroundClick
+                            ? _mouseService.BackgroundClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName)
+                            : _mouseService.ClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName),
+                        MouseButton.Right => UseBackgroundClick
+                            ? _mouseService.BackgroundRightClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName)
+                            : _mouseService.RightClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName),
+                        MouseButton.Middle => UseBackgroundClick
+                            ? _mouseService.BackgroundMiddleClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName)
+                            : _mouseService.MiddleClickAsync((int)point.Value.X, (int)point.Value.Y, WindowTitle, WindowClassName),
+                        _ => throw new Exception("ãƒã‚¦ã‚¹ãƒœã‚¿ãƒ³ãŒä¸æ­£ã§ã™ã€‚"),
+                    });
+                    var targetDesc = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
+                        ? "ã‚°ãƒ­ãƒ¼ãƒãƒ«" : $"{WindowTitle}[{WindowClassName}]";
+                    LogMessage($"{targetDesc} ã® ({(int)point.Value.X}, {(int)point.Value.Y}) ã‚’ {(UseBackgroundClick ? "ãƒãƒƒã‚¯ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã§" : string.Empty)}{Button} ã‚¯ãƒªãƒƒã‚¯ã—ã¾ã—ãŸ");
+                    break;
+                }
+
+                // é€²æ—æ›´æ–°
+                var elapsed = stopwatch.ElapsedMilliseconds;
+                ReportProgress(elapsed, timeoutMs);
+
+                // Interval ã‚’å°Šé‡ã€‚ãŸã ã—UIåæ˜ ã‚’é˜»å®³ã—ãªã„ã‚ˆã†æœ€å¤§250msã«åˆ†å‰²
+                var slice = Math.Min(intervalMs, 250);
+                await Task.Delay(slice, cancellationToken);
+            }
+
+            if (!found)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    LogMessage("ç”»åƒå¾…æ©ŸãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
+                    return false;
+                }
+                LogMessage("ç”»åƒãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã§ã—ãŸ");
+                throw new TimeoutException("ç”»åƒãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã§ã—ãŸã€‚");
+            }
+
+            // æœ€çµ‚çŠ¶æ…‹ 100% ã‚’é€šçŸ¥ï¼ˆè¦‹ã¤ã‹ã£ãŸ / è¦‹ã¤ã‹ã‚‰ãªã‹ã£ãŸ åŒæ–¹ã§çµ±ä¸€ï¼‰
+            ReportProgress(timeoutMs, timeoutMs);
+            return found;
         }
     }
 
     /// <summary>
-    /// AI‰æ‘œƒNƒŠƒbƒNƒRƒ}ƒ“ƒhiDI‘Î‰j
+    /// AIç”»åƒã‚¯ãƒªãƒƒã‚¯ã‚³ãƒãƒ³ãƒ‰ï¼ˆDIå¯¾å¿œï¼‰
     /// </summary>
-    [DirectCommand(DirectCommandRegistry.CommandTypes.ClickImageAI, "AI‰æ‘œƒNƒŠƒbƒN", "AI", "AIŒŸo‚µ‚½‰æ‘œ‚ğƒNƒŠƒbƒN‚µ‚Ü‚·")]
+    [DirectCommand(DirectCommandRegistry.CommandTypes.ClickImageAI, "AIç”»åƒã‚¯ãƒªãƒƒã‚¯", "AI", "AIæ¤œå‡ºã—ãŸç”»åƒã‚’ã‚¯ãƒªãƒƒã‚¯ã—ã¾ã™")]
     public class ClickImageAICommand : BaseCommand, IClickImageAICommand
     {
         private readonly IMouseService _mouseService;
 
-        [SettingProperty("ONNXƒ‚ƒfƒ‹", SettingControlType.OnnxPicker,
-            description: "g—p‚·‚éONNXƒ‚ƒfƒ‹ƒtƒ@ƒCƒ‹",
-            category: "AIİ’è",
+        [SettingProperty("ONNXãƒ¢ãƒ‡ãƒ«", SettingControlType.OnnxPicker,
+            description: "ä½¿ç”¨ã™ã‚‹ONNXãƒ¢ãƒ‡ãƒ«ãƒ•ã‚¡ã‚¤ãƒ«",
+            category: "AIè¨­å®š",
             isRequired: true)]
         public string ModelPath { get; set; } = string.Empty;
 
-        [SettingProperty("ƒNƒ‰ƒXID", SettingControlType.NumberBox,
-            description: "ŒŸo‘ÎÛ‚ÌƒNƒ‰ƒXID",
-            category: "AIİ’è",
+        [SettingProperty("ã‚¯ãƒ©ã‚¹ID", SettingControlType.NumberBox,
+            description: "æ¤œå‡ºå¯¾è±¡ã®ã‚¯ãƒ©ã‚¹ID",
+            category: "AIè¨­å®š",
             isRequired: true,
             defaultValue: 0)]
         public int ClassID { get; set; } = 0;
 
-        [SettingProperty("M—Š“xè‡’l", SettingControlType.Slider,
-            description: "ŒŸo‚ÌM—Š“xè‡’l",
-            category: "AIİ’è",
+        [SettingProperty("ä¿¡é ¼åº¦é–¾å€¤", SettingControlType.Slider,
+            description: "æ¤œå‡ºã®ä¿¡é ¼åº¦é–¾å€¤",
+            category: "AIè¨­å®š",
             defaultValue: 0.5,
             minValue: 0.0,
             maxValue: 1.0)]
         public double ConfThreshold { get; set; } = 0.5;
 
-        [SettingProperty("IoUè‡’l", SettingControlType.Slider,
-            description: "IoUid•¡“xj‚Ìè‡’l",
-            category: "AIİ’è",
+        [SettingProperty("IoUé–¾å€¤", SettingControlType.Slider,
+            description: "IoUï¼ˆé‡è¤‡åº¦ï¼‰ã®é–¾å€¤",
+            category: "AIè¨­å®š",
             defaultValue: 0.4,
             minValue: 0.0,
             maxValue: 1.0)]
         public double IoUThreshold { get; set; } = 0.4;
 
-        [SettingProperty("ƒ}ƒEƒXƒ{ƒ^ƒ“", SettingControlType.ComboBox,
-            description: "g—p‚·‚éƒ}ƒEƒXƒ{ƒ^ƒ“",
-            category: "Ú×",
+        [SettingProperty("ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆ", SettingControlType.NumberBox,
+            description: "ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆæ™‚é–“ï¼ˆãƒŸãƒªç§’ï¼‰",
+            category: "åŸºæœ¬è¨­å®š",
+            defaultValue: 5000)]
+        public int Timeout { get; set; } = 5000;
+
+        [SettingProperty("æ¤œç´¢é–“éš”", SettingControlType.NumberBox,
+            description: "AIæ¤œå‡ºã®é–“éš”ï¼ˆãƒŸãƒªç§’ï¼‰",
+            category: "åŸºæœ¬è¨­å®š",
+            defaultValue: 500)]
+        public int Interval { get; set; } = 500;
+
+        [SettingProperty("ãƒã‚¦ã‚¹ãƒœã‚¿ãƒ³", SettingControlType.ComboBox,
+            description: "ä½¿ç”¨ã™ã‚‹ãƒã‚¦ã‚¹ãƒœã‚¿ãƒ³",
+            category: "è©³ç´°",
             sourceCollection: "MouseButtons",
             defaultValue: MouseButton.Left)]
         public MouseButton Button { get; set; } = MouseButton.Left;
 
-        [SettingProperty("ƒoƒbƒNƒOƒ‰ƒEƒ“ƒhƒNƒŠƒbƒN", SettingControlType.CheckBox,
-            description: "ƒoƒbƒNƒOƒ‰ƒEƒ“ƒh‚ÅƒNƒŠƒbƒN‚·‚é",
-            category: "Ú×",
+        [SettingProperty("ãƒãƒƒã‚¯ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã‚¯ãƒªãƒƒã‚¯", SettingControlType.CheckBox,
+            description: "ãƒãƒƒã‚¯ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã§ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹",
+            category: "è©³ç´°",
             defaultValue: false)]
-        public bool UseBackgroundClick { get; set; } = false;
+        public bool UseBackgroundClick { get; set; } = true;
 
-        [SettingProperty("ƒEƒBƒ“ƒhƒEƒ^ƒCƒgƒ‹", SettingControlType.WindowPicker,
-            description: "‘ÎÛƒEƒBƒ“ƒhƒE‚Ìƒ^ƒCƒgƒ‹",
-            category: "ƒEƒBƒ“ƒhƒE")]
+        [SettingProperty("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¿ã‚¤ãƒˆãƒ«", SettingControlType.WindowPicker,
+            description: "å¯¾è±¡ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¿ã‚¤ãƒˆãƒ«",
+            category: "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦")]
         public string WindowTitle { get; set; } = string.Empty;
 
-        [SettingProperty("ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX–¼", SettingControlType.TextBox,
-            description: "‘ÎÛƒEƒBƒ“ƒhƒE‚ÌƒNƒ‰ƒX–¼",
-            category: "ƒEƒBƒ“ƒhƒE")]
+        [SettingProperty("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹å", SettingControlType.TextBox,
+            description: "å¯¾è±¡ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¯ãƒ©ã‚¹å",
+            category: "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦")]
         public string WindowClassName { get; set; } = string.Empty;
 
         public ClickImageAICommand(AutoTool.Command.Interface.ICommand? parent = null, IServiceProvider? serviceProvider = null)
             : base(parent, serviceProvider)
         {
-            Description = "AI‰æ‘œƒNƒŠƒbƒN";
-            _mouseService = serviceProvider?.GetService<IMouseService>() ?? throw new InvalidOperationException("IMouseService‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ");
+            Description = "AIç”»åƒã‚¯ãƒªãƒƒã‚¯";
+            _mouseService = serviceProvider?.GetService<IMouseService>() ?? throw new InvalidOperationException("IMouseServiceãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“");
+        }
+
+        protected override void ValidateSettings()
+        {
+            if (string.IsNullOrWhiteSpace(ModelPath)) throw new ArgumentException("ONNXãƒ¢ãƒ‡ãƒ«ãƒ•ã‚¡ã‚¤ãƒ«ã‚’æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
+            if (ClassID < 0) throw new ArgumentException("ClassIDã¯0ä»¥ä¸Šã§æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
+            if (ConfThreshold < 0.0 || ConfThreshold > 1.0) throw new ArgumentException("ä¿¡é ¼åº¦é–¾å€¤ã¯0.0ã€œ1.0ã®ç¯„å›²ã§æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
+            if (IoUThreshold < 0.0 || IoUThreshold > 1.0) throw new ArgumentException("IoUé–¾å€¤ã¯0.0ã€œ1.0ã®ç¯„å›²ã§æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
+            if (Timeout <= 0) throw new ArgumentException("ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆã¯æ­£ã®å€¤ã§æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
+            if (Interval <= 0) throw new ArgumentException("æ¤œç´¢é–“éš”ã¯æ­£ã®å€¤ã§æŒ‡å®šã—ã¦ãã ã•ã„ã€‚");
         }
 
         protected override void ValidateFiles()
         {
             if (!string.IsNullOrEmpty(ModelPath))
             {
-                ValidateFileExists(ModelPath, "ONNXƒ‚ƒfƒ‹ƒtƒ@ƒCƒ‹");
+                _logger?.LogDebug("[ValidateFiles] ClickImageAI ModelPathæ¤œè¨¼é–‹å§‹: {ModelPath}", ModelPath);
+                ValidateFileExists(ModelPath, "ONNXãƒ¢ãƒ‡ãƒ«ãƒ•ã‚¡ã‚¤ãƒ«");
+                _logger?.LogDebug("[ValidateFiles] ClickImageAI ModelPathæ¤œè¨¼æˆåŠŸ: {ModelPath}", ModelPath);
             }
         }
 
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            // ‘Š‘ÎƒpƒX‚ğ‰ğŒˆ‚µ‚ÄÀÛ‚Ìƒ‚ƒfƒ‹“Ç‚İ‚İ‚Ég—p
-            var resolvedModelPath = ResolvePath(ModelPath);
-            _logger?.LogDebug("[DoExecuteAsync] ClickImageAI ‰ğŒˆ‚³‚ê‚½ModelPath: {OriginalPath} -> {ResolvedPath}", ModelPath, resolvedModelPath);
+            var timeoutMs = Timeout <= 0 ? 0 : Timeout;
+            var intervalMs = Interval <= 0 ? 500 : Interval;
+            var stopwatch = Stopwatch.StartNew();
+            bool found = false;
 
-            LogMessage($"AI‰æ‘œŒŸoŠJn: ClassID {ClassID}");
+            // ç›¸å¯¾ãƒ‘ã‚¹ã‚’è§£æ±ºã—ã¦å®Ÿéš›ã®ãƒ¢ãƒ‡ãƒ«èª­ã¿è¾¼ã¿ã«ä½¿ç”¨
+            var resolvedModelPath = ResolvePath(ModelPath);
+            _logger?.LogDebug("[DoExecuteAsync] ClickImageAI è§£æ±ºã•ã‚ŒãŸModelPath: {OriginalPath} -> {ResolvedPath}", ModelPath, resolvedModelPath);
+
+            LogMessage($"AIç”»åƒæ¤œå‡ºé–‹å§‹: ClassID {ClassID} Model={Path.GetFileName(resolvedModelPath)}");
+
+            if (timeoutMs == 0)
+            {
+                LogMessage("Timeout=0 ã®ãŸã‚å³çµ‚äº†(å¤±æ•—)");
+                ReportProgress(1, 1);
+                return false;
+            }
 
             try
             {
+                // ãƒ¢ãƒ‡ãƒ«åˆæœŸåŒ–
                 YoloWin.Init(resolvedModelPath, 640, true);
 
-                var det = YoloWin.DetectFromWindowTitle(WindowTitle, (float)ConfThreshold, (float)IoUThreshold).Detections;
-
-                if (det.Count > 0)
+                while (stopwatch.ElapsedMilliseconds < timeoutMs && !cancellationToken.IsCancellationRequested)
                 {
-                    var target = det.FirstOrDefault(d => d.ClassId == ClassID);
-
-                    if (target != null)
+                    try
                     {
-                        var centerX = target.Rect.X + target.Rect.Width / 2;
-                        var centerY = target.Rect.Y + target.Rect.Height / 2;
+                        var det = YoloWin.DetectFromWindowTitle(WindowTitle, (float)ConfThreshold, (float)IoUThreshold).Detections;
 
-                        LogMessage($"AI‰æ‘œ‚ªŒ©‚Â‚©‚è‚Ü‚µ‚½: ({centerX}, {centerY}) ClassId: {target.ClassId}");
-
-                        // ƒ}ƒEƒXƒNƒŠƒbƒNÀs
-                        if (_mouseService != null)
+                        if (det.Count > 0)
                         {
-                            await (Button switch
+                            var detected = det.FirstOrDefault(d => d.ClassId == ClassID);
+                            if (detected != null)
                             {
-                                MouseButton.Left => UseBackgroundClick
-                                    ? _mouseService.BackgroundClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName)
-                                    : _mouseService.ClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName),
-                                MouseButton.Right => UseBackgroundClick
-                                    ? _mouseService.BackgroundRightClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName)
-                                    : _mouseService.RightClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName),
-                                MouseButton.Middle => UseBackgroundClick
-                                    ? _mouseService.BackgroundMiddleClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName)
-                                    : _mouseService.MiddleClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName),
-                                _ => throw new Exception("ƒ}ƒEƒXƒ{ƒ^ƒ“‚ª•s³‚Å‚·B"),
-                            });
+                                var centerX = detected.Rect.X + detected.Rect.Width / 2;
+                                var centerY = detected.Rect.Y + detected.Rect.Height / 2;
 
-                            LogMessage($"{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "ƒOƒ[ƒoƒ‹" : $"{WindowTitle}[{WindowClassName}]")}‚Ì({(int)centerX}, {(int)centerY})‚ğ{(UseBackgroundClick ? "ƒoƒbƒNƒOƒ‰ƒEƒ“ƒh‚Å" : "")}{Button}ƒNƒŠƒbƒN‚µ‚Ü‚µ‚½B");
+                                LogMessage($"AIç”»åƒãŒè¦‹ã¤ã‹ã‚Šã¾ã—ãŸ: ({centerX}, {centerY}) ClassId: {detected.ClassId}");
+
+                                // ãƒã‚¦ã‚¹ã‚¯ãƒªãƒƒã‚¯å®Ÿè¡Œ
+                                await (Button switch
+                                {
+                                    MouseButton.Left => UseBackgroundClick
+                                        ? _mouseService.BackgroundClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName)
+                                        : _mouseService.ClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName),
+                                    MouseButton.Right => UseBackgroundClick
+                                        ? _mouseService.BackgroundRightClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName)
+                                        : _mouseService.RightClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName),
+                                    MouseButton.Middle => UseBackgroundClick
+                                        ? _mouseService.BackgroundMiddleClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName)
+                                        : _mouseService.MiddleClickAsync((int)centerX, (int)centerY, WindowTitle, WindowClassName),
+                                    _ => throw new Exception("ãƒã‚¦ã‚¹ãƒœã‚¿ãƒ³ãŒä¸æ­£ã§ã™ã€‚"),
+                                });
+
+                                var targetDesc = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
+                                    ? "ã‚°ãƒ­ãƒ¼ãƒãƒ«" : $"{WindowTitle}[{WindowClassName}]";
+
+                                LogMessage($"{targetDesc} ã® ({(int)centerX}, {(int)centerY}) ã‚’ {(UseBackgroundClick ? "ãƒãƒƒã‚¯ã‚°ãƒ©ã‚¦ãƒ³ãƒ‰ã§" : string.Empty)}{Button} ã‚¯ãƒªãƒƒã‚¯ã—ã¾ã—ãŸ");
+
+                                found = true;
+                                break;
+                            }
                         }
-
-                        return true;
                     }
-                }
+                    catch (OperationCanceledException)
+                    {
+                        LogMessage("AIç”»åƒæ¤œå‡ºãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage($"AIç”»åƒæ¤œå‡ºä¸­ã‚¨ãƒ©ãƒ¼: {ex.Message}");
+                        throw;
+                    }
 
-                LogMessage("AI‰æ‘œ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½");
-                return false;
+                    // é€²æ—æ›´æ–°
+                    var elapsed = stopwatch.ElapsedMilliseconds;
+                    ReportProgress(elapsed, timeoutMs);
+
+                    // Interval ã‚’å°Šé‡ã€‚ãŸã ã—UIåæ˜ ã‚’é˜»å®³ã—ãªã„ã‚ˆã†æœ€å¤§250msã«åˆ†å‰²
+                    var slice = Math.Min(intervalMs, 250);
+                    await Task.Delay(slice, cancellationToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                LogMessage("AIç”»åƒæ¤œå‡ºãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
+                throw;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "[DoExecuteAsync] AI‰æ‘œŒŸoƒGƒ‰[: ModelPath={ModelPath}, ClassID={ClassID}", resolvedModelPath, ClassID);
-                LogMessage($"AI‰æ‘œŒŸoƒGƒ‰[: {ex.Message}");
-                return false;
+                _logger?.LogError(ex, "[DoExecuteAsync] AIç”»åƒæ¤œå‡ºã‚¨ãƒ©ãƒ¼: ModelPath={ModelPath}, ClassID={ClassID}", resolvedModelPath, ClassID);
+                LogMessage($"AIç”»åƒæ¤œå‡ºã‚¨ãƒ©ãƒ¼: {ex.Message}");
+                throw;
             }
+
+            if (!found)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    LogMessage("AIç”»åƒæ¤œå‡ºãŒã‚­ãƒ£ãƒ³ã‚»ãƒ«ã•ã‚Œã¾ã—ãŸ");
+                    return false;
+                }
+
+                LogMessage("AIç”»åƒãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã§ã—ãŸ");
+                throw new TimeoutException("AIç”»åƒãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã§ã—ãŸã€‚");
+            }
+
+            // æœ€çµ‚çŠ¶æ…‹ 100% ã‚’é€šçŸ¥
+            ReportProgress(timeoutMs, timeoutMs);
+            return true;
         }
     }
 }

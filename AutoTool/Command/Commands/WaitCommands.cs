@@ -53,6 +53,11 @@ namespace AutoTool.Command.Commands
             Description = "待機";
         }
 
+        protected override void ValidateSettings()
+        {
+            if (Wait < 0) throw new ArgumentException("待機時間は0以上で指定してください。");
+        }
+
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             // 0以下は即完了
@@ -67,7 +72,7 @@ namespace AutoTool.Command.Commands
             var totalWaitMs = Wait;
             int lastReported = -1;
 
-            LogMessage($"待機開始 ({totalWaitMs}ms)");
+            LogMessage($"待機開始: {totalWaitMs}ms");
 
             while (true)
             {
@@ -93,7 +98,7 @@ namespace AutoTool.Command.Commands
                     lastReported = progress;
 
                     var remaining = Math.Max(0, totalWaitMs - elapsed);
-                    LogMessage($"待機中... {progress}% (残り約{remaining}ms)");
+                    LogMessage($"待機中: {progress}% (残り約{remaining}ms)");
                 }
 
                 // 残りが100ms未満ならその分だけ待機して正確に終了
@@ -160,6 +165,13 @@ namespace AutoTool.Command.Commands
             _imageProcessingService = GetService<IImageProcessingService>();
         }
 
+        protected override void ValidateSettings()
+        {
+            if (Timeout <= 0) throw new ArgumentException("タイムアウトは正の値で指定してください。");
+            if (Interval <= 0) throw new ArgumentException("検索間隔は正の値で指定してください。");
+            if (Threshold < 0.0 || Threshold > 1.0) throw new ArgumentException("閾値は0.0?1.0の範囲で指定してください。");
+        }
+
         protected override void ValidateFiles()
         {
             if (!string.IsNullOrEmpty(ImagePath))
@@ -179,11 +191,11 @@ namespace AutoTool.Command.Commands
             var stopwatch = Stopwatch.StartNew();
             bool found = false;
 
-            LogMessage($"画像待機開始 Timeout={timeoutMs}ms Interval={intervalMs}ms Image={ImagePath}");
+            LogMessage($"画像待機開始: Timeout={timeoutMs}ms Interval={intervalMs}ms Image={ImagePath}");
 
             if (timeoutMs == 0)
             {
-                LogMessage("Timeout=0 のため即終了(失敗)" );
+                LogMessage("Timeout=0 のため即終了(失敗)");
                 ReportProgress(1, 1);
                 return false;
             }

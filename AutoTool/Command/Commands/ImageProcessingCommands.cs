@@ -52,6 +52,11 @@ namespace AutoTool.Command.Commands
             _imageProcessingService = GetService<IImageProcessingService>();
         }
 
+        protected override void ValidateSettings()
+        {
+            if (Threshold < 0.0 || Threshold > 1.0) throw new ArgumentException("閾値は0.0?1.0の範囲で指定してください。");
+        }
+
         protected override void ValidateFiles()
         {
             if (!string.IsNullOrEmpty(ImagePath))
@@ -149,6 +154,11 @@ namespace AutoTool.Command.Commands
             _imageProcessingService = GetService<IImageProcessingService>();
         }
 
+        protected override void ValidateSettings()
+        {
+            if (Tolerance < 0) throw new ArgumentException("許容値は0以上で指定してください。");
+        }
+
         protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
             if (_imageProcessingService == null)
@@ -230,6 +240,11 @@ namespace AutoTool.Command.Commands
         {
             Description = "色フィルタ画像検索";
             _imageProcessingService = GetService<IImageProcessingService>();
+        }
+
+        protected override void ValidateSettings()
+        {
+            if (MatchThreshold < 0.0 || MatchThreshold > 1.0) throw new ArgumentException("閾値は0.0?1.0の範囲で指定してください。");
         }
 
         protected override void ValidateFiles()

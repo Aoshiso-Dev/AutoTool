@@ -313,7 +313,7 @@ namespace AutoTool.Services.Mouse
         /// <summary>
         /// îwåiç∂ÉNÉäÉbÉN
         /// </summary>
-        public async Task BackgroundClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", IMouseService.BackgroundClickMethod method = IMouseService.BackgroundClickMethod.SendMessage)
+        public async Task BackgroundClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", IMouseService.BackgroundClickMethod method = IMouseService.BackgroundClickMethod.AutoDetectChild)
         {
             await PerformBackgroundClickAsync(x, y, WM_LBUTTONDOWN, WM_LBUTTONUP, method, windowTitle, windowClassName);
         }
@@ -321,7 +321,7 @@ namespace AutoTool.Services.Mouse
         /// <summary>
         /// îwåiâEÉNÉäÉbÉN
         /// </summary>
-        public async Task BackgroundRightClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", IMouseService.BackgroundClickMethod method = IMouseService.BackgroundClickMethod.SendMessage)
+        public async Task BackgroundRightClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", IMouseService.BackgroundClickMethod method = IMouseService.BackgroundClickMethod.AutoDetectChild)
         {
             await PerformBackgroundClickAsync(x, y, WM_RBUTTONDOWN, WM_RBUTTONUP, method, windowTitle, windowClassName);
         }
@@ -329,7 +329,7 @@ namespace AutoTool.Services.Mouse
         /// <summary>
         /// îwåiíÜÉNÉäÉbÉN
         /// </summary>
-        public async Task BackgroundMiddleClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", IMouseService.BackgroundClickMethod method = IMouseService.BackgroundClickMethod.SendMessage)
+        public async Task BackgroundMiddleClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", IMouseService.BackgroundClickMethod method = IMouseService.BackgroundClickMethod.AutoDetectChild)
         {
             await PerformBackgroundClickAsync(x, y, WM_MBUTTONDOWN, WM_MBUTTONUP, method, windowTitle, windowClassName);
         }

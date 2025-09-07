@@ -227,39 +227,6 @@ namespace AutoTool.Command.Base
         }
 
         /// <summary>
-        /// コマンドが実行可能かチェック
-        /// </summary>
-        public virtual bool CanExecute()
-        {
-            _logger?.LogDebug("[CanExecute] チェック開始: {Description} (Line: {LineNumber})", Description, LineNumber);
-            
-            if (!IsEnabled) 
-            {
-                _logger?.LogDebug("[CanExecute] IsEnabled=false: {Description}", Description);
-                return false;
-            }
-            
-            try
-            {
-                _logger?.LogDebug("[CanExecute] ValidateFiles開始: {Description}", Description);
-                ValidateFiles();
-                _logger?.LogDebug("[CanExecute] ValidateFiles成功: {Description}", Description);
-                
-                _logger?.LogDebug("[CanExecute] ValidateSettings開始: {Description}", Description);
-                ValidateSettings();
-                _logger?.LogDebug("[CanExecute] ValidateSettings成功: {Description}", Description);
-                
-                _logger?.LogDebug("[CanExecute] チェック成功: {Description}", Description);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(ex, "[CanExecute] 検証失敗: {Description} - {Message}", Description, ex.Message);
-                return false;
-            }
-        }
-
-        /// <summary>
         /// 設定の検証（派生クラスでオーバーライド）
         /// </summary>
         protected virtual void ValidateSettings()
@@ -324,7 +291,7 @@ namespace AutoTool.Command.Base
                 }
                 errorMessage += $"\nマクロファイルベースパス: {_macroFileBasePath}";
                 
-                _logger?.LogError("[ValidateDirectoryExists] ディレクトリ不存在: {ErrorMessage}", errorMessage);
+                _logger?.LogError("[ValidateDirectoryExists] ディレクトリ存在しません: {ErrorMessage}", errorMessage);
                 throw new DirectoryNotFoundException(errorMessage);
             }
             
@@ -372,13 +339,6 @@ namespace AutoTool.Command.Base
             {
                 _logger?.LogDebug("[Execute] 実行開始: {Description} (Line: {LineNumber}, Type: {Type})", Description, LineNumber, GetType().Name);
 
-                // 実行前の検証（IsRunning=falseの状態でチェック）
-                if (!CanExecute())
-                {
-                    _logger?.LogWarning("[Execute] CanExecute() が false を返しました: {Description}", Description);
-                    return false;
-                }
-
                 // 実行前検証を実行
                 _logger?.LogDebug("[Execute] 実行前検証開始: {Description}", Description);
                 ValidateSettings();
@@ -424,7 +384,59 @@ namespace AutoTool.Command.Base
                 _logger?.LogError(ex, "[Execute] コマンド実行中にエラーが発生しました: {Description}", Description);
                 ExecutionStats.ExecutedCommands++;
                 ExecutionStats.FailedCommands++;
-                WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+
+                // エラーハンドラを呼び出して、UI側に CommandErrorMessage を送出する
+                var errorHandler = OnErrorCommand;
+
+                _logger?.LogDebug("[Execute] CommandErrorMessage を送信前: Line={Line}, CommandType={Type}, Exception={ExceptionType}",
+                    LineNumber, GetType().Name, ex.GetType().Name);
+
+                if (errorHandler != null)
+                {
+                    try
+                    {
+                        // 単一呼び出しに修正
+                        errorHandler.Invoke(this, ex);
+                    }
+                    catch (Exception handlerEx)
+                    {
+                        _logger?.LogWarning(handlerEx, "[Execute] OnErrorCommand 呼び出し中に例外が発生しました");
+
+                        // フォールバックでメッセージを直接送信
+                        try
+                        {
+                            WeakReferenceMessenger.Default.Send(new CommandErrorMessage(this, ex));
+                        }
+                        catch (Exception sendEx)
+                        {
+                            _logger?.LogWarning(sendEx, "[Execute] CommandErrorMessage 直接送信中に例外が発生しました");
+                        }
+                    }
+                }
+                else
+                {
+                    // ハンドラが存在しない場合はメッセージを直接送信
+                    try
+                    {
+                        WeakReferenceMessenger.Default.Send(new CommandErrorMessage(this, ex));
+                    }
+                    catch (Exception sendEx)
+                    {
+                        _logger?.LogWarning(sendEx, "[Execute] CommandErrorMessage 直接送信中に例外が発生しました");
+                    }
+                }
+
+                // 完了メッセージは必ず送る（UIの状態を確実にクリアするため）
+                try
+                {
+                    WeakReferenceMessenger.Default.Send(new FinishCommandMessage(this));
+                }
+                catch (Exception sendEx)
+                {
+                    _logger?.LogWarning(sendEx, "[Execute] FinishCommandMessage 送信中に例外が発生しました");
+                }
+
+                // 例外は上位へ再送出（MacroExecutionService 等で捕捉される）
                 throw;
             }
             finally
@@ -502,7 +514,7 @@ namespace AutoTool.Command.Base
             _logger?.LogInformation(message);
             
             // DoingCommandMessageを送信してUIに実行中状態を通知
-            WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, message));
+            //WeakReferenceMessenger.Default.Send(new DoingCommandMessage(this, message));
         }
 
         /// <summary>
