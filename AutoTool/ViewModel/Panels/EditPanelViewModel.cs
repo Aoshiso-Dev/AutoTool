@@ -637,6 +637,15 @@ namespace AutoTool.ViewModel.Panels
                 if (property != null)
                 {
                     var value = property.GetValue(SelectedItem);
+
+                    // 追加: string プロパティに誤って bool 値(false)が入っている場合を補正
+                    if (typeof(T) == typeof(string) && value is bool)
+                    {
+                        _logger.LogDebug("文字列プロパティにbool値を検出し補正: {Property} = false -> ''", propertyName);
+                        property.SetValue(SelectedItem, string.Empty);
+                        return (T)(object)string.Empty;
+                    }
+
                     if (value is T tValue)
                         return tValue;
                     if (value != null && typeof(T).IsAssignableFrom(value.GetType()))
@@ -1819,10 +1828,6 @@ namespace AutoTool.ViewModel.Panels
                 _logger.LogDebug("動的設定値初期化開始");
                 InitializeDynamicValues(universalItem, definitions);
                 
-                // 現在値を設定定義に同期
-                _logger.LogDebug("現在値を設定定義に同期開始");
-                SyncCurrentValuesToDefinitions(universalItem, definitions);
-                
                 // カテゴリごとにグループ化
                 var groups = definitions
                     .GroupBy(d => d.Category ?? "基本設定")
@@ -1871,24 +1876,43 @@ namespace AutoTool.ViewModel.Panels
         private void InitializeDynamicValues(UniversalCommandItem universalItem, List<SettingDefinition> definitions)
         {
             DynamicValues.Clear();
-            
             foreach (var definition in definitions)
             {
-                var currentValue = universalItem.GetSetting<object>(definition.PropertyName);
-                if (currentValue != null)
+                object? raw = universalItem.GetSetting<object>(definition.PropertyName);
+
+                // 文字列プロパティの誤った bool 初期値(false)や null を空文字に統一
+                if (definition.PropertyType == typeof(string))
                 {
-                    DynamicValues[definition.PropertyName] = currentValue;
+                    if (raw is bool)
+                    {
+                        _logger.LogDebug("文字列プロパティ補正(bool→''): {Property}", definition.PropertyName);
+                        raw = string.Empty;
+                    }
+                    else if (raw == null)
+                    {
+                        raw = string.Empty;
+                    }
                 }
-                else if (definition.DefaultValue != null)
+
+                // DefaultValue 適用（上記補正後 still null の場合）
+                if (raw == null && definition.DefaultValue != null)
                 {
-                    DynamicValues[definition.PropertyName] = definition.DefaultValue;
-                    universalItem.SetSetting(definition.PropertyName, definition.DefaultValue);
+                    raw = definition.DefaultValue;
                 }
-                
-                _logger.LogTrace("動的値初期化: {PropertyName} = {Value}", 
-                    definition.PropertyName, DynamicValues.GetValueOrDefault(definition.PropertyName));
+
+                // UniversalCommandItem 側へ反映（値が変わった場合）
+                var currentUnderlying = universalItem.GetSetting<object>(definition.PropertyName);
+                if (!Equals(currentUnderlying, raw))
+                {
+                    universalItem.SetSetting(definition.PropertyName, raw);
+                }
+
+                // 保持辞書とSettingDefinitionへ反映
+                DynamicValues[definition.PropertyName] = raw;
+                definition.CurrentValue = raw;
+
+                _logger.LogTrace("動的値初期化: {PropertyName} = {Value}", definition.PropertyName, raw ?? "null");
             }
-            
             OnPropertyChanged(nameof(DynamicValues));
         }
 
@@ -1942,78 +1966,49 @@ namespace AutoTool.ViewModel.Panels
         {
             if (SelectedItem is UniversalCommandItem universalItem)
             {
-                return universalItem.GetSetting<object>(propertyName);
-            }
-            else if (DynamicValues.TryGetValue(propertyName, out var value))
-            {
+                var value = universalItem.GetSetting<object>(propertyName);
+                if (value is bool && (propertyName == "WindowTitle" || propertyName == "WindowClassName" ||
+                    SettingDefinitions.FirstOrDefault(d => d.PropertyName == propertyName)?.PropertyType == typeof(string)))
+                {
+                    _logger.LogDebug("動的取得補正: {Property} bool(false) -> ''", propertyName);
+                    universalItem.SetSetting(propertyName, string.Empty);
+                    DynamicValues[propertyName] = string.Empty;
+                    var def = SettingDefinitions.FirstOrDefault(d => d.PropertyName == propertyName);
+                    if (def != null) def.CurrentValue = string.Empty;
+                    return string.Empty;
+                }
                 return value;
+            }
+            else if (DynamicValues.TryGetValue(propertyName, out var v))
+            {
+                if (v is bool && (propertyName == "WindowTitle" || propertyName == "WindowClassName"))
+                {
+                    _logger.LogDebug("動的取得補正(Dictionary): {Property} bool(false) -> ''", propertyName);
+                    DynamicValues[propertyName] = string.Empty;
+                    return string.Empty;
+                }
+                return v;
             }
             return null;
         }
 
-        // 追加: 動的プロパティが数値型か判定
-        public bool IsNumericDynamicProperty(string propertyName)
-        {
-            try
-            {
-                var def = SettingDefinitions.FirstOrDefault(d => d.PropertyName == propertyName);
-                if (def != null && def.PropertyType != null)
-                {
-                    var t = def.PropertyType;
-                    t = Nullable.GetUnderlyingType(t) ?? t;
-                    if (t == typeof(decimal) || t == typeof(double) || t == typeof(float) ||
-                        t == typeof(int) || t == typeof(long) || t == typeof(short) || t == typeof(byte))
-                        return true;
-                    return false;
-                }
-                if (DynamicValues.TryGetValue(propertyName, out var v) && v != null)
-                {
-                    var t = v.GetType();
-                    t = Nullable.GetUnderlyingType(t) ?? t;
-                    if (t == typeof(decimal) || t == typeof(double) || t == typeof(float) ||
-                        t == typeof(int) || t == typeof(long) || t == typeof(short) || t == typeof(byte))
-                        return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "IsNumericDynamicProperty判定中エラー: {Property}", propertyName);
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// 動的プロパティ設定
-        /// </summary>
         public void SetDynamicProperty(string propertyName, object? value)
         {
             if (SelectedItem is UniversalCommandItem universalItem)
             {
                 try
                 {
-                    // Guard: MousePosition must be Point. Ignore invalid primitive updates coming from NumberBox etc.
                     if (propertyName == "MousePosition" && value is not System.Windows.Point && value is not null)
                     {
-                        _logger.LogTrace("Skip non-Point assignment to MousePosition (Type={Type}, Value={Value})", value.GetType().Name, value);
+                        _logger.LogTrace("Skip non-Point assignment to MousePosition (Type={Type})", value.GetType().Name);
                         return;
                     }
-
                     universalItem.SetSetting(propertyName, value);
                     DynamicValues[propertyName] = value;
-
-                    // 設定定義の現在値を更新
                     var settingDefinition = SettingDefinitions.FirstOrDefault(s => s.PropertyName == propertyName);
-                    if (settingDefinition != null)
-                    {
-                        settingDefinition.CurrentValue = value;
-                        _logger.LogTrace("設定定義の現在値更新: {PropertyName} = {Value}", propertyName, value);
-                    }
-
-                    // 座標同期処理
+                    if (settingDefinition != null) settingDefinition.CurrentValue = value;
                     SyncCoordinateDynamicProperties(propertyName, value);
-
                     OnPropertyChanged(nameof(DynamicValues));
-                    _logger.LogTrace("動的プロパティ設定: {PropertyName} = {Value}", propertyName, value);
                 }
                 catch (Exception ex)
                 {
@@ -2139,17 +2134,10 @@ namespace AutoTool.ViewModel.Panels
                 };
                 var current = GetDynamicProperty(setting.PropertyName)?.ToString() ?? string.Empty;
                 var resolved = ResolvePath(current);
-                if (!string.IsNullOrEmpty(resolved))
+                if (!string.IsNullOrEmpty(resolved) && File.Exists(resolved))
                 {
-                    if (File.Exists(resolved))
-                    {
-                        dlg.InitialDirectory = Path.GetDirectoryName(resolved);
-                        dlg.FileName = Path.GetFileName(resolved);
-                    }
-                    else if (Directory.Exists(resolved))
-                    {
-                        dlg.InitialDirectory = resolved;
-                    }
+                    dlg.InitialDirectory = Path.GetDirectoryName(resolved);
+                    dlg.FileName = Path.GetFileName(resolved);
                 }
                 else if (!string.IsNullOrEmpty(_macroFileBasePath))
                 {
