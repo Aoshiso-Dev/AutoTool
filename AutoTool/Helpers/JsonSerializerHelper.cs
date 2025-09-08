@@ -344,7 +344,7 @@ namespace AutoTool.Helpers
                 : "";
 
             // UniversalCommandItem‚ğì¬
-            var item = DirectCommandRegistry.CreateUniversalItem(itemType);
+            var item = AutoToolCommandRegistry.CreateUniversalItem(itemType);
             if (item == null)
             {
                 item = new UniversalCommandItem { ItemType = itemType };

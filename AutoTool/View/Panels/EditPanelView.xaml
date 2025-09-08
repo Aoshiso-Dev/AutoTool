@@ -1,526 +1,114 @@
 <UserControl x:Class="AutoTool.View.Panels.EditPanelView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:local="clr-namespace:AutoTool.View.Panels"
-             xmlns:converters="clr-namespace:AutoTool.View.Converters"
-             xmlns:system="clr-namespace:System;assembly=mscorlib"
-             mc:Ignorable="d"
-             FontFamily="Segoe UI, Segoe UI Emoji, Segoe UI Symbol">
+             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+             xmlns:pg="http://schemas.xceed.com/wpf/xaml/toolkit">
+
+    <!-- DataContext: VM などが SelectedCommand を持つ想定 -->
     <UserControl.Resources>
-        <converters:InvertBooleanConverter x:Key="InvertBooleanConverter" />
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <converters:MultiBoolToVisibilityConverter x:Key="MultiBoolToVisibilityConverter" />
-        <converters:ColorToBrushConverter x:Key="ColorToBrushConverter" />
-        <converters:ColorToHexConverter x:Key="ColorToHexConverter" />
-        <converters:PointAxisConverter x:Key="PointAxisConverter" />
+
+        <!-- 参照ボタンのスタイル -->
+        <Style TargetType="Button" x:Key="BrowseButton">
+            <Setter Property="Margin" Value="3,0,0,0"/>
+            <Setter Property="Width" Value="40"/>
+        </Style>
+        
+        <!-- テキストボックス1つのスタイル -->
+        <Style TargetType="TextBox" x:Key="OneTextBox">
+            <Setter Property="Width" Value="160"/>
+        </Style>
+
+        <!-- 画像ファイルのテンプレ（TextBox + 参照ボタン） -->
+        <DataTemplate x:Key="FilePathEditorTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource OneTextBox}"/>
+                <Button Content="参照" Click="OnBrowseImagePath_Click" Style="{StaticResource BrowseButton}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- ONNXモデルのテンプレ -->
+        <DataTemplate x:Key="OnnxPathEditorTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource OneTextBox}"/>
+                <Button Content="参照" Click="OnBrowseOnnxPath_Click" Style="{StaticResource BrowseButton}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- Point のテンプレ（X/Y + 取得ボタン） -->
+        <DataTemplate x:Key="PointEditorTemplate">
+            <StackPanel Orientation="Horizontal">
+                <xctk:IntegerUpDown Width="80" Minimum="0" Maximum="20000"
+                            Value="{Binding Value.X, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <xctk:IntegerUpDown Width="80" Minimum="0" Maximum="20000"
+                            Value="{Binding Value.Y, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Content="取得" Click="OnPickPoint_Click" Style="{StaticResource BrowseButton}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- ウィンドウタイトルのテンプレ（TextBox + 選択ボタン） -->
+        <DataTemplate x:Key="WindowTitlePickerTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource OneTextBox}"/>
+                <Button Content="取得" Click="OnPickWindowTitle_Click" Style="{StaticResource BrowseButton}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- ウィンドウクラス名のテンプレ（TextBox + 選択ボタン） -->
+        <DataTemplate x:Key="WindowClassNamePickerTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource OneTextBox}"/>
+                <Button Content="取得" Click="OnPickWindowClassName_Click" Style="{StaticResource BrowseButton}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- 0〜1 のスライダ用テンプレ -->
+        <DataTemplate x:Key="Slider01Template">
+            <StackPanel>
+                <Slider Minimum="0" Maximum="1"
+                Value="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Foreground="Gray" FontSize="11"
+                   Text="{Binding Value, StringFormat=0.00}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- 色選択（ColorPicker） -->
+        <DataTemplate x:Key="ColorPickerTemplate">
+            <xctk:ColorPicker UsingAlphaChannel="True"
+                        SelectedColor="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </DataTemplate>
+
     </UserControl.Resources>
-    
-    <!-- Edit Panel Content -->
-    <Grid IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}" Background="White">
-        <Border BorderBrush="LightGray" BorderThickness="1" Margin="5">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" 
-                          Margin="10" Padding="5" Background="White">
-                <StackPanel Background="White">
-                    <!-- Right click wait info panel -->
-                    <Border Background="#FFFDF5CC" BorderBrush="#FFE5C200" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,0,8"
-                            Visibility="{Binding IsWaitingForRightClick, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="🖱" FontSize="16" Margin="0,0,4,0"/>
-                            <TextBlock Text="{Binding MouseWaitMessage}" FontSize="12" Foreground="#7A6000"/>
-                        </StackPanel>
-                    </Border>
 
-                    <!-- No items message -->
-                    <StackPanel Visibility="{Binding IsListEmpty, Converter={StaticResource BoolToVisibilityConverter}}" 
-                                Margin="0,20">
-                        <TextBlock Text="リストにコマンドを追加してください" 
-                                   FontSize="14" Foreground="DarkGray" TextWrapping="Wrap"/>
-                        <TextBlock Text="上部の「追加」ボタンや「テストコマンド追加」ボタンでコマンドを追加できます" 
-                                   FontSize="11" Foreground="DarkGray" Margin="0,5,0,0" TextWrapping="Wrap"/>
-                    </StackPanel>
+    <Grid>
+        <xctk:PropertyGrid x:Name="Grid"
+                       SelectedObject="{Binding SelectedCommand}"
+                       AutoGenerateProperties="True"
+                       IsCategorized="True"
+                       NameColumnWidth="220"
+                       ShowSearchBox="True">
 
-                    <StackPanel Visibility="{Binding IsListNotEmptyButNoSelection, Converter={StaticResource BoolToVisibilityConverter}}" 
-                                Margin="0,20">
-                        <TextBlock Text="リストからコマンドを選択してください" 
-                                   FontSize="14" Foreground="DarkGray" TextWrapping="Wrap"/>
-                        <TextBlock Text="選択すると設定項目が表示されます" 
-                                   FontSize="11" Foreground="DarkGray" Margin="0,5,0,0" TextWrapping="Wrap"/>
-                    </StackPanel>
+            <!-- ★ プロパティ名でテンプレを割り当てる -->
+            <xctk:PropertyGrid.EditorDefinitions>
+                
+                <!-- スライダ（複数プロパティ名をカンマ区切り） -->
+                <pg:EditorTemplateDefinition TargetProperties="Threshold,ConfThreshold,IoUThreshold"
+                                     EditingTemplate="{StaticResource Slider01Template}"/>
 
-                    <!-- Settings (shown when item is selected) -->
-                    <StackPanel Visibility="{Binding IsNotNullItem, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <!-- 動的設定UI -->
-                        <StackPanel Visibility="{Binding IsNotNullItem, Converter={StaticResource BoolToVisibilityConverter}}" 
-                                    Margin="0,10">
+                <!-- ファイル/ONNX/座標/ウィンドウ/色 -->
+                <pg:EditorTemplateDefinition TargetProperties="ImagePath"
+                                     EditingTemplate="{StaticResource FilePathEditorTemplate}"/>
+                <pg:EditorTemplateDefinition TargetProperties="ModelPath"
+                                     EditingTemplate="{StaticResource OnnxPathEditorTemplate}"/>
+                <pg:EditorTemplateDefinition TargetProperties="MousePosition"
+                                     EditingTemplate="{StaticResource PointEditorTemplate}"/>
+                <pg:EditorTemplateDefinition TargetProperties="WindowTitle"
+                                     EditingTemplate="{StaticResource WindowTitlePickerTemplate}"/>
+                <pg:EditorTemplateDefinition TargetProperties="WindowClassName"
+                                     EditingTemplate="{StaticResource WindowClassNamePickerTemplate}"/>
+                <pg:EditorTemplateDefinition TargetProperties="SearchColor"
+                                     EditingTemplate="{StaticResource ColorPickerTemplate}"/>
 
-                            <StackPanel>
-                                <TextBlock Text="📋 設定" FontWeight="Bold" FontSize="16" 
-                                               Foreground="DarkBlue" Margin="0,0,0,10"/>
-                                <!-- 実際の設定コントロール -->
-                                <ScrollViewer MaxHeight="500" VerticalScrollBarVisibility="Auto" 
-                                                  BorderBrush="LightGray" BorderThickness="1" Margin="0,10">
-                                    <ItemsControl ItemsSource="{Binding SettingGroups}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Margin="5">
-                                                    <!-- 設定項目リスト -->
-                                                    <StackPanel Margin="20,5">
-                                                        <ItemsControl ItemsSource="{Binding Settings}">
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate>
-                                                                    <Border Background="White" BorderBrush="#E0E0E0" 
-                                                                                    BorderThickness="1" CornerRadius="3" Padding="10" Margin="0,3">
-                                                                        <Grid>
-                                                                            <Grid.RowDefinitions>
-                                                                                <RowDefinition Height="Auto"/>
-                                                                                <RowDefinition Height="Auto"/>
-                                                                                <RowDefinition Height="Auto"/>
-                                                                            </Grid.RowDefinitions>
-
-                                                                            <!-- ラベル行 -->
-                                                                            <Grid Grid.Row="0" Margin="0,0,0,5">
-                                                                                <Grid.ColumnDefinitions>
-                                                                                    <ColumnDefinition Width="*"/>
-                                                                                    <ColumnDefinition Width="Auto"/>
-                                                                                </Grid.ColumnDefinitions>
-                                                                                <StackPanel Grid.Column="0">
-                                                                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" 
-                                                                                                       FontSize="12" Foreground="DarkBlue"/>
-                                                                                    <TextBlock Text="{Binding Description}" FontSize="10" 
-                                                                                                       Foreground="Gray" TextWrapping="Wrap" 
-                                                                                                       Visibility="{Binding Description, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                                                </StackPanel>
-                                                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                                                    <TextBlock Text="{Binding ControlType}" FontSize="9" 
-                                                                                                       Foreground="DarkGreen" VerticalAlignment="Center" 
-                                                                                                       Padding="3" Background="#E6FFE6" 
-                                                                                                       Margin="5,0"/>
-                                                                                    <TextBlock Text="*" FontSize="12" Foreground="Red" 
-                                                                                                       VerticalAlignment="Center" Margin="2,0"
-                                                                                                       Visibility="{Binding IsRequired, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                                                </StackPanel>
-                                                                            </Grid>
-
-                                                                            <!-- 動的コントロール生成 -->
-                                                                            <StackPanel Grid.Row="1" Margin="0,5">
-                                                                                <!-- TextBox コントロール -->
-                                                                                <TextBox x:Name="DynamicTextBox" 
-                                                                                                 Tag="{Binding PropertyName}"
-                                                                                                 Width="300" Height="25" 
-                                                                                                 HorizontalAlignment="Left"
-                                                                                                 Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}">
-                                                                                    <TextBox.Style>
-                                                                                        <Style TargetType="TextBox">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="TextBox">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </TextBox.Style>
-                                                                                </TextBox>
-
-                                                                                <!-- PasswordBox コントロール -->
-                                                                                <PasswordBox x:Name="DynamicPasswordBox" 
-                                                                                                     Tag="{Binding PropertyName}"
-                                                                                                     Width="300" Height="25" 
-                                                                                                     HorizontalAlignment="Left"
-                                                                                                     Loaded="DynamicPasswordBox_Loaded"
-                                                                                                     PasswordChanged="DynamicPasswordBox_Changed">
-                                                                                    <PasswordBox.Style>
-                                                                                        <Style TargetType="PasswordBox">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="PasswordBox">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </PasswordBox.Style>
-                                                                                </PasswordBox>
-
-                                                                                <!-- NumberBox コントロール -->
-                                                                                <StackPanel Orientation="Horizontal">
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="NumberBox">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <TextBox x:Name="DynamicNumberBox" 
-                                                                                                     Tag="{Binding PropertyName}"
-                                                                                                     Width="150" Height="25" 
-                                                                                                     Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                                                     TextChanged="DynamicNumberBox_TextChanged"/>
-                                                                                    <TextBlock Text="{Binding Unit}" Margin="5,0" VerticalAlignment="Center" 
-                                                                                                       Foreground="Gray" FontSize="10"
-                                                                                                       Visibility="{Binding Unit, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                                                    <TextBlock Text="{Binding MinValue, StringFormat='(最小: {0})'}" 
-                                                                                                       Margin="5,0" VerticalAlignment="Center" 
-                                                                                                       Foreground="Gray" FontSize="9"
-                                                                                                       Visibility="{Binding MinValue, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                                                    <TextBlock Text="{Binding MaxValue, StringFormat='(最大: {0})'}" 
-                                                                                                       Margin="5,0" VerticalAlignment="Center" 
-                                                                                                       Foreground="Gray" FontSize="9"
-                                                                                                       Visibility="{Binding MaxValue, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                                                </StackPanel>
-
-                                                                                <!-- CheckBox コントロール -->
-                                                                                <CheckBox x:Name="DynamicCheckBox" 
-                                                                                                  Tag="{Binding PropertyName}"
-                                                                                                  Content="{Binding DisplayName}" 
-                                                                                                  VerticalAlignment="Center"
-                                                                                                  IsChecked="{Binding CurrentValue, Mode=OneWay}"
-                                                                                                  Loaded="DynamicCheckBox_Loaded"
-                                                                                                  Checked="DynamicCheckBox_Changed"
-                                                                                                  Unchecked="DynamicCheckBox_Changed">
-                                                                                    <CheckBox.Style>
-                                                                                        <Style TargetType="CheckBox">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="CheckBox">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </CheckBox.Style>
-                                                                                </CheckBox>
-
-                                                                                <!-- ComboBox コントロール -->
-                                                                                <ComboBox x:Name="DynamicComboBox" 
-                                                                                                  Tag="{Binding PropertyName}"
-                                                                                                  Width="300" Height="25" 
-                                                                                                  HorizontalAlignment="Left"
-                                                                                                  ItemsSource="{Binding SourceItems}"
-                                                                                                  SelectedItem="{Binding CurrentValue, Mode=OneWay}"
-                                                                                                  Loaded="DynamicComboBox_Loaded"
-                                                                                                  SelectionChanged="DynamicComboBox_SelectionChanged">
-                                                                                    <ComboBox.Style>
-                                                                                        <Style TargetType="ComboBox">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="ComboBox">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </ComboBox.Style>
-                                                                                </ComboBox>
-
-                                                                                <!-- Slider コントロール -->
-                                                                                <StackPanel Orientation="Horizontal">
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="Slider">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <Slider x:Name="DynamicSlider" 
-                                                                                                    Tag="{Binding PropertyName}"
-                                                                                                    Width="200" VerticalAlignment="Center"
-                                                                                                    Minimum="{Binding MinValue}" Maximum="{Binding MaxValue}"
-                                                                                                    SmallChange="0.01" LargeChange="0.1"
-                                                                                                    Value="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                                                    Loaded="DynamicSlider_Loaded"
-                                                                                                    ValueChanged="DynamicSlider_ValueChanged"/>
-                                                                                    <TextBlock Text="{Binding ElementName=DynamicSlider, Path=Value, StringFormat=F3}" 
-                                                                                                       Margin="10,0" VerticalAlignment="Center" 
-                                                                                                       MinWidth="50" FontWeight="Bold" Foreground="DarkBlue"/>
-                                                                                </StackPanel>
-
-                                                                                <!-- FilePicker コントロール -->
-                                                                                <StackPanel>
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="FilePicker">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <StackPanel Orientation="Horizontal">
-                                                                                        <TextBox x:Name="DynamicFilePathBox" 
-                                                                                                         Tag="{Binding PropertyName}"
-                                                                                                         Width="250" Height="25" IsReadOnly="True" 
-                                                                                                         Background="#F5F5F5"
-                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                                                                        <Button Content="📁" Width="30" Height="25" FontSize="12" 
-                                                                                                        Click="DynamicBrowseFile_Click" Tag="{Binding}" Margin="5,0"/>
-                                                                                        <Button Content="🗑" Width="30" Height="25" FontSize="12" 
-                                                                                                        Click="DynamicClearFile_Click" Tag="{Binding}"/>
-                                                                                    </StackPanel>
-                                                                                    <TextBlock Text="{Binding FileFilter}" FontSize="9" 
-                                                                                                       Foreground="Gray" Margin="0,2"
-                                                                                                       Visibility="{Binding FileFilter, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                                                </StackPanel>
-
-                                                                                <!-- FolderPicker コントロール -->
-                                                                                <StackPanel>
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="FolderPicker">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <StackPanel Orientation="Horizontal">
-                                                                                        <TextBox x:Name="DynamicFolderPathBox" 
-                                                                                                         Tag="{Binding PropertyName}"
-                                                                                                         Width="250" Height="25" IsReadOnly="True" 
-                                                                                                         Background="#F5F5F5"
-                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                                                                        <Button Content="📂" Width="30" Height="25" FontSize="12" 
-                                                                                                        Click="DynamicBrowseFolder_Click" Tag="{Binding}" Margin="5,0"/>
-                                                                                        <Button Content="🗑" Width="30" Height="25" FontSize="12" 
-                                                                                                        Click="DynamicClearFolder_Click" Tag="{Binding}"/>
-                                                                                    </StackPanel>
-                                                                                </StackPanel>
-
-                                                                                <!-- OnnxPicker コントロール -->
-                                                                                <StackPanel>
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="OnnxPicker">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <StackPanel Orientation="Horizontal">
-                                                                                        <TextBox x:Name="DynamicOnnxPathBox" 
-                                                                                                         Tag="{Binding PropertyName}"
-                                                                                                         Width="250" Height="25" IsReadOnly="True" 
-                                                                                                         Background="#F5F5F5"
-                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                                                                        <Button Content="🧠" Width="30" Height="25" FontSize="12" 
-                                                                                                        Click="DynamicBrowseOnnx_Click" Tag="{Binding}" Margin="5,0"/>
-                                                                                        <Button Content="🗑" Width="30" Height="25" FontSize="12" 
-                                                                                                        Click="DynamicClearOnnx_Click" Tag="{Binding}"/>
-                                                                                    </StackPanel>
-                                                                                    <TextBlock Text="ONNXモデルファイル (*.onnx)" FontSize="9" 
-                                                                                                       Foreground="Gray" Margin="0,2"/>
-                                                                                </StackPanel>
-
-                                                                                <!-- ColorPicker コントロール -->
-                                                                                <StackPanel Orientation="Horizontal">
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="ColorPicker">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <Border x:Name="DynamicColorDisplay" 
-                                                                                                    Width="30" Height="25" BorderBrush="Black" BorderThickness="1"
-                                                                                                    Tag="{Binding PropertyName}"
-                                                                                                    Background="{Binding CurrentValue, Converter={StaticResource ColorToBrushConverter}}"/>
-                                                                                    <TextBox x:Name="DynamicColorTextBox" 
-                                                                                                     Tag="{Binding PropertyName}"
-                                                                                                     Width="80" Height="25" Margin="5,0"
-                                                                                                     Text="{Binding CurrentValue, Converter={StaticResource ColorToHexConverter}, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                                                     TextChanged="DynamicColorText_Changed"/>
-                                                                                    <Button Content="🎨" Width="30" Height="25" FontSize="12" 
-                                                                                                    Click="DynamicPickColor_Click" Tag="{Binding}" Margin="5,0"/>
-                                                                                    <Button Content="📸" Width="30" Height="25" FontSize="12" 
-                                                                                                    Click="DynamicCaptureColor_Click" Tag="{Binding}" Margin="2,0"/>
-                                                                                </StackPanel>
-
-                                                                                <!-- DatePicker コントロール -->
-                                                                                <DatePicker x:Name="DynamicDatePicker" 
-                                                                                                    Tag="{Binding PropertyName}"
-                                                                                                    Width="200" Height="25" 
-                                                                                                    HorizontalAlignment="Left"
-                                                                                                    SelectedDate="{Binding CurrentValue, Mode=OneWay}" 
-                                                                                                    SelectedDateChanged="DynamicDatePicker_Changed">
-                                                                                    <DatePicker.Style>
-                                                                                        <Style TargetType="DatePicker">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="DatePicker">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </DatePicker.Style>
-                                                                                </DatePicker>
-
-                                                                                <!-- TimePicker コントロール -->
-                                                                                <StackPanel Orientation="Horizontal">
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="TimePicker">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <ComboBox x:Name="DynamicHourCombo" Tag="Hour"
-                                                                                                      Width="60" Height="25" Margin="0,0,5,0"
-                                                                                                      Loaded="DynamicTimePicker_Loaded"
-                                                                                                      SelectionChanged="DynamicTimePicker_Changed"/>
-                                                                                    <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                                                                    <ComboBox x:Name="DynamicMinuteCombo" Tag="Minute"
-                                                                                                      Width="60" Height="25"
-                                                                                                      Loaded="DynamicTimePicker_Loaded"
-                                                                                                      SelectionChanged="DynamicTimePicker_Changed"/>
-                                                                                </StackPanel>
-
-                                                                                <!-- KeyPicker コントロール -->
-                                                                                <StackPanel Orientation="Horizontal">
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="KeyPicker">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <TextBox x:Name="DynamicKeyTextBox" 
-                                                                                                     Tag="{Binding PropertyName}"
-                                                                                                     Width="150" Height="25" IsReadOnly="True"
-                                                                                                     Background="#F5F5F5"
-                                                                                                     Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                                                                    <Button Content="⌨️" Width="30" Height="25" FontSize="12" 
-                                                                                                    Click="DynamicCaptureKey_Click" Tag="{Binding}" Margin="5,0"/>
-                                                                                    <Button Content="🗑" Width="30" Height="25" FontSize="12" 
-                                                                                                    Click="DynamicClearKey_Click" Tag="{Binding}"/>
-                                                                                </StackPanel>
-
-                                                                                <!-- CoordinatePicker コントロール -->
-                                                                                <StackPanel>
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="CoordinatePicker">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                                                                                        <TextBlock Text="X:" Margin="0,0,5,0" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                                                                        <TextBox x:Name="DynamicXBox" 
-                                                                                                         Tag="X"
-                                                                                                         Width="60" Height="25" 
-                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, Converter={StaticResource PointAxisConverter}, ConverterParameter=X}" 
-                                                                                                         TextChanged="DynamicCoordinate_TextChanged"/>
-                                                                                        <TextBlock Text="Y:" Margin="15,0,5,0" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                                                                        <TextBox x:Name="DynamicYBox" 
-                                                                                                         Tag="Y"
-                                                                                                         Width="60" Height="25" 
-                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, Converter={StaticResource PointAxisConverter}, ConverterParameter=Y}"
-                                                                                                         TextChanged="DynamicCoordinate_TextChanged"/>
-                                                                                    </StackPanel>
-                                                                                    <StackPanel Orientation="Horizontal">
-                                                                                        <Button Content="🎯 マウス位置取得" Width="120" Height="22" FontSize="10" 
-                                                                                                        Click="DynamicGetMousePosition_Click" Tag="{Binding}"/>
-                                                                                        <Button Content="📍 現在位置" Width="80" Height="22" FontSize="10" 
-                                                                                                        Margin="5,0,0,0" Click="DynamicGetCurrentPosition_Click" Tag="{Binding}"/>
-                                                                                        <Button Content="🗑 クリア" Width="60" Height="22" FontSize="10" 
-                                                                                                        Margin="5,0,0,0" Click="DynamicClearCoordinate_Click" Tag="{Binding}"/>
-                                                                                    </StackPanel>
-                                                                                </StackPanel>
-
-                                                                                <!-- WindowPicker コントロール -->
-                                                                                <StackPanel>
-                                                                                    <StackPanel.Style>
-                                                                                        <Style TargetType="StackPanel">
-                                                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding ControlType}" Value="WindowPicker">
-                                                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </StackPanel.Style>
-                                                                                    <StackPanel Orientation="Horizontal">
-                                                                                        <TextBox x:Name="DynamicWindowTitleBox" 
-                                                                                                         Tag="{Binding PropertyName}"
-                                                                                                         Width="200" Height="25" IsReadOnly="True" 
-                                                                                                         Background="#F5F5F5"
-                                                                                                         Text="{Binding CurrentValue, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                                                                        <Button Content="🪟" Width="30" Height="25" FontSize="12" 
-                                                                                                        Click="DynamicGetWindowInfo_Click" Tag="{Binding}" Margin="5,0"/>
-                                                                                        <Button Content="📋" Width="30" Height="25" FontSize="12" 
-                                                                                                        Click="DynamicListWindows_Click" Tag="{Binding}" Margin="2,0"/>
-                                                                                        <Button Content="🗑" Width="30" Height="25" FontSize="12" 
-                                                                                                        Click="DynamicClearWindow_Click" Tag="{Binding}"/>
-                                                                                    </StackPanel>
-                                                                                </StackPanel>
-                                                                            </StackPanel>
-
-                                                                            <!-- 現在値表示 -->
-                                                                            <StackPanel Grid.Row="2" Margin="0,5,0,0" 
-                                                                                                Visibility="{Binding ShowCurrentValue, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                                                <Border Background="#F0F8FF" BorderBrush="#B0E0E6" BorderThickness="1" 
-                                                                                                CornerRadius="2" Padding="5">
-                                                                                    <StackPanel Orientation="Horizontal">
-                                                                                        <TextBlock Text="💡 現在値: " FontSize="9" Foreground="DarkBlue"/>
-                                                                                        <TextBlock x:Name="DynamicCurrentValueDisplay"
-                                                                                                           Tag="{Binding PropertyName}"
-                                                                                                           Text="{Binding CurrentValue}" 
-                                                                                                           FontSize="9" Foreground="DarkBlue" FontWeight="Bold"/>
-                                                                                    </StackPanel>
-                                                                                </Border>
-                                                                            </StackPanel>
-                                                                        </Grid>
-                                                                    </Border>
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
-                                                    </StackPanel>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </ScrollViewer>
-
-                                <!-- 操作ボタン -->
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="💾 設定を保存" Width="100" Height="30" 
-                                                    Click="SaveDynamicSettings_Click" Background="#90EE90" FontWeight="Bold"/>
-                                    <Button Content="🔄 デフォルトに戻す" Width="120" Height="30" 
-                                                    Margin="10,0,0,0" Click="ResetDynamicSettings_Click"/>
-                                    <!--
-                                        <Button Content="🔍 詳細診断" Width="100" Height="30" 
-                                                    Margin="10,0,0,0" Click="DiagnoseDynamicSettings_Click"/>
-                                        <Button Content="📋 値をコピー" Width="100" Height="30" 
-                                                    Margin="10,0,0,0" Click="CopyDynamicValues_Click"/>
-                                        <Button Content="🧪 設定テスト" Width="100" Height="30" 
-                                                    Margin="10,0,0,0" Click="TestDynamicSettings_Click"/>
-                                        -->
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
+            </xctk:PropertyGrid.EditorDefinitions>
+        </xctk:PropertyGrid>
     </Grid>
 </UserControl>

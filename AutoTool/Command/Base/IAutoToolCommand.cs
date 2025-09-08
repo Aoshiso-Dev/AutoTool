@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace AutoTool.Command.Interface
+namespace AutoTool.Command.Base
 {
     /// <summary>
     /// コマンドの基底インターフェース
     /// </summary>
-    public interface ICommand
+    public interface IAutoToolCommand
     {
         /// <summary>
         /// 行番号
@@ -18,12 +18,12 @@ namespace AutoTool.Command.Interface
         /// <summary>
         /// 親コマンド
         /// </summary>
-        ICommand? Parent { get; }
+        IAutoToolCommand? Parent { get; }
 
         /// <summary>
         /// 子コマンド
         /// </summary>
-        IEnumerable<ICommand> Children { get; }
+        IEnumerable<IAutoToolCommand> Children { get; }
 
         /// <summary>
         /// ネストレベル
@@ -48,17 +48,17 @@ namespace AutoTool.Command.Interface
         /// <summary>
         /// 子コマンドを追加
         /// </summary>
-        void AddChild(ICommand child);
+        void AddChild(IAutoToolCommand child);
 
         /// <summary>
         /// 子コマンドを削除
         /// </summary>
-        void RemoveChild(ICommand child);
+        void RemoveChild(IAutoToolCommand child);
 
         /// <summary>
         /// 子コマンドを取得
         /// </summary>
-        IEnumerable<ICommand> GetChildren();
+        IEnumerable<IAutoToolCommand> GetChildren();
 
         /// <summary>
         /// コマンド開始時のイベント
@@ -67,6 +67,6 @@ namespace AutoTool.Command.Interface
     }
 
     // 基本的なマーカーインターフェース
-    public interface IRootCommand : ICommand { }
-    public interface IIfCommand : ICommand { }
+    public interface IRootCommand : IAutoToolCommand { }
+    public interface IIfCommand : IAutoToolCommand { }
 }

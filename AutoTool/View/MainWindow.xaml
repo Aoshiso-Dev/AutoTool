@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AutoTool"
-        xmlns:view="clr-namespace:AutoTool.View"
         xmlns:panels="clr-namespace:AutoTool.View.Panels"
         xmlns:converters="clr-namespace:AutoTool.View.Converters"
         mc:Ignorable="d"

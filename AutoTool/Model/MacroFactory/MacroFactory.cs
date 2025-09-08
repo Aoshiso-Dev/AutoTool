@@ -1,5 +1,4 @@
 using AutoTool.Services.Plugin;
-using AutoTool.Command.Interface;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -45,7 +44,7 @@ namespace AutoTool.Model.MacroFactory
         /// <summary>
         /// コマンドリストからマクロを作成
         /// </summary>
-        public static AutoTool.Command.Interface.ICommand CreateMacro(IEnumerable<UniversalCommandItem> items)
+        public static IAutoToolCommand CreateMacro(IEnumerable<UniversalCommandItem> items)
         {
             var sessionId = Interlocked.Increment(ref _buildSessionId);
             var swTotal = Stopwatch.StartNew();
@@ -102,8 +101,8 @@ namespace AutoTool.Model.MacroFactory
         /// <summary>
         /// 子コマンドを作成
         /// </summary>
-        private static IEnumerable<AutoTool.Command.Interface.ICommand> CreateChildCommands(
-            AutoTool.Command.Interface.ICommand parent, 
+        private static IEnumerable<IAutoToolCommand> CreateChildCommands(
+            IAutoToolCommand parent, 
             IList<UniversalCommandItem> listItems, 
             int depth, 
             int sessionId)
@@ -113,7 +112,7 @@ namespace AutoTool.Model.MacroFactory
                 throw new InvalidOperationException($"ネストレベルが過剰 (>{MaxRecursionDepth}) Line={parent.LineNumber}");
             }
 
-            var commands = new List<AutoTool.Command.Interface.ICommand>();
+            var commands = new List<IAutoToolCommand>();
             var swPerItem = new Stopwatch();
 
             for (int i = 0; i < listItems.Count; i++)
@@ -151,8 +150,8 @@ namespace AutoTool.Model.MacroFactory
         /// <summary>
         /// アイテムからコマンドを作成（DirectCommandRegistry統合版）
         /// </summary>
-        private static AutoTool.Command.Interface.ICommand? CreateCommandFromItem(
-            AutoTool.Command.Interface.ICommand parent,
+        private static IAutoToolCommand? CreateCommandFromItem(
+            IAutoToolCommand parent,
             UniversalCommandItem listItem, 
             IList<UniversalCommandItem> listItems, 
             ref int index, 
@@ -170,7 +169,7 @@ namespace AutoTool.Model.MacroFactory
                         var pluginId = parts[0];
                         var commandId = parts[1];
                         var pluginCommand = _pluginService.CreatePluginCommand(pluginId, commandId, parent, _serviceProvider);
-                        if (pluginCommand is AutoTool.Command.Interface.ICommand autoToolCommand)
+                        if (pluginCommand is IAutoToolCommand autoToolCommand)
                         {
                             autoToolCommand.LineNumber = listItem.LineNumber;
                             _logger?.LogDebug("[MacroFactory:{Session}] プラグインコマンド生成: {PluginId}.{CommandId} line={Line}", 
@@ -182,7 +181,7 @@ namespace AutoTool.Model.MacroFactory
 
 
                 // 3. DirectCommandRegistryでコマンド作成
-                var command = DirectCommandRegistry.CreateCommand(listItem.ItemType, parent, listItem, _serviceProvider!);
+                var command = AutoToolCommandRegistry.CreateCommand(listItem.ItemType, parent, listItem, _serviceProvider!);
                 if (command != null)
                 {
                     command.LineNumber = listItem.LineNumber;
@@ -234,7 +233,7 @@ namespace AutoTool.Model.MacroFactory
         /// 複雑なコマンドの子要素処理
         /// </summary>
         private static void ProcessComplexCommand(
-            AutoTool.Command.Interface.ICommand command, 
+            IAutoToolCommand command, 
             UniversalCommandItem item, 
             IList<UniversalCommandItem> listItems, 
             ref int index, 
@@ -391,11 +390,11 @@ namespace AutoTool.Model.MacroFactory
         /// <summary>
         /// 作成されたコマンドのLineNumberを検証（デバッグ用）
         /// </summary>
-        private static void ValidateCommandLineNumbers(AutoTool.Command.Interface.ICommand root, int sessionId)
+        private static void ValidateCommandLineNumbers(IAutoToolCommand root, int sessionId)
         {
             try
             {
-                var commands = new List<AutoTool.Command.Interface.ICommand>();
+                var commands = new List<IAutoToolCommand>();
                 CollectAllCommands(root, commands);
                 
                 var invalidCommands = commands.Where(c => c.LineNumber <= 0 && c != root).ToList();
@@ -421,7 +420,7 @@ namespace AutoTool.Model.MacroFactory
         /// <summary>
         /// すべてのコマンドを再帰的に収集
         /// </summary>
-        private static void CollectAllCommands(AutoTool.Command.Interface.ICommand command, List<AutoTool.Command.Interface.ICommand> commands)
+        private static void CollectAllCommands(IAutoToolCommand command, List<IAutoToolCommand> commands)
         {
             commands.Add(command);
             foreach (var child in command.Children)

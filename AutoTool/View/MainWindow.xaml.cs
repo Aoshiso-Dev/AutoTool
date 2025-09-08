@@ -177,19 +177,6 @@ namespace AutoTool
                         stats.TotalTypes, stats.RecentCount, stats.FavoriteCount);
                 }
 
-                // EditPanel的状態確認
-                if (EditPanelViewControl.DataContext is EditPanelViewModel editViewModel)
-                {
-                    _logger?.LogInformation("EditPanelViewModel状況:");
-                    _logger?.LogInformation("  SelectedItem: {SelectedItem}", editViewModel.SelectedItem?.ItemType ?? "null");
-                    _logger?.LogInformation("  IsDynamicItem: {IsDynamicItem}", editViewModel.IsDynamicItem);
-                    _logger?.LogInformation("  IsLegacyItem: {IsLegacyItem}", editViewModel.IsLegacyItem);
-                    _logger?.LogInformation("  SettingGroups.Count: {Count}", editViewModel.SettingGroups.Count);
-                    
-                    // 詳細診断実行
-                    editViewModel.DiagnosticProperties();
-                }
-
                 // ListPanel的状態確認
                 if (CommandListPanel.DataContext is ListPanelViewModel listViewModel)
                 {

@@ -29,7 +29,7 @@ namespace AutoTool.View.Converters
                         prefix += "│   "; // その後のレベルは│とスペース
                 }
                 
-                var displayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(item.ItemType) ?? item.ItemType;
+                var displayName = AutoToolCommandRegistry.DisplayOrder.GetDisplayName(item.ItemType) ?? item.ItemType;
                 
                 // 終了コマンドは特別な表記
                 if (item.ItemType == "Loop_End" || item.ItemType == "IfEnd")

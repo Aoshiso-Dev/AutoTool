@@ -1,18 +1,18 @@
-using AutoTool.Command.Interface;
+using AutoTool.Command.Definition;
 using AutoTool.Message;
+using AutoTool.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoTool.Command.Definition;
-using System.Collections.Concurrent;
-using AutoTool.Services;
 
 namespace AutoTool.Command.Base
 {
@@ -80,10 +80,10 @@ namespace AutoTool.Command.Base
     /// <summary>
     /// コマンドの基底クラス（DI対応・拡張版）
     /// </summary>
-    public abstract class BaseCommand : AutoTool.Command.Interface.ICommand
+    public abstract class BaseCommand : IAutoToolCommand
     {
         // プライベートフィールド
-        private readonly List<AutoTool.Command.Interface.ICommand> _children = new();
+        private readonly List<IAutoToolCommand> _children = new();
         protected readonly ILogger? _logger;
         protected readonly IServiceProvider? _serviceProvider;
         protected CommandExecutionContext? _executionContext;
@@ -92,15 +92,21 @@ namespace AutoTool.Command.Base
         private static string _macroFileBasePath = string.Empty;
 
         // ICommandインターフェースの実装
+        [Browsable(false)]
         public int LineNumber { get; set; }
+        [Browsable(false)]
         public bool IsEnabled { get; set; } = true;
-        public AutoTool.Command.Interface.ICommand? Parent { get; private set; }
-        public IEnumerable<AutoTool.Command.Interface.ICommand> Children => _children;
+        [Browsable(false)]
+        public IAutoToolCommand? Parent { get; private set; }
+        [Browsable(false)]
+        public IEnumerable<IAutoToolCommand> Children => _children;
+        [Browsable(false)]
         public int NestLevel { get; set; }
+        [Browsable(false)]
         public string Description { get; protected set; } = string.Empty;
-
-        // 実行状態管理
+        [Browsable(false)]
         public bool IsRunning { get; private set; }
+        [Browsable(false)]
         public CommandExecutionStats ExecutionStats { get; } = new();
 
         // イベント
@@ -182,7 +188,7 @@ namespace AutoTool.Command.Base
             }
         }
 
-        protected BaseCommand(AutoTool.Command.Interface.ICommand? parent = null, IServiceProvider? serviceProvider = null)
+        protected BaseCommand(IAutoToolCommand? parent = null, IServiceProvider? serviceProvider = null)
         {
             Parent = parent;
             NestLevel = parent?.NestLevel + 1 ?? 0;
@@ -196,17 +202,17 @@ namespace AutoTool.Command.Base
             OnErrorCommand += (sender, ex) => WeakReferenceMessenger.Default.Send(new CommandErrorMessage(this, ex));
         }
 
-        public virtual void AddChild(AutoTool.Command.Interface.ICommand child)
+        public virtual void AddChild(IAutoToolCommand child)
         {
             _children.Add(child);
         }
 
-        public virtual void RemoveChild(AutoTool.Command.Interface.ICommand child)
+        public virtual void RemoveChild(IAutoToolCommand child)
         {
             _children.Remove(child);
         }
 
-        public virtual IEnumerable<AutoTool.Command.Interface.ICommand> GetChildren()
+        public virtual IEnumerable<IAutoToolCommand> GetChildren()
         {
             return _children;
         }
@@ -557,7 +563,7 @@ namespace AutoTool.Command.Base
         /// <summary>
         /// コマンドを複製
         /// </summary>
-        public virtual AutoTool.Command.Interface.ICommand Clone()
+        public virtual IAutoToolCommand Clone()
         {
             var clonedType = GetType();
             var cloned = Activator.CreateInstance(clonedType, Parent, _serviceProvider) as BaseCommand;
@@ -588,7 +594,7 @@ namespace AutoTool.Command.Base
     /// </summary>
     public abstract class IfCommand : BaseCommand
     {
-        protected IfCommand(AutoTool.Command.Interface.ICommand? parent = null, IServiceProvider? serviceProvider = null)
+        protected IfCommand(IAutoToolCommand? parent = null, IServiceProvider? serviceProvider = null)
             : base(parent, serviceProvider)
         {
         }

@@ -120,9 +120,9 @@ namespace AutoTool.ViewModel.Panels
                 _logger.LogDebug("アイテムタイプの初期化を開始します");
 
                 // DirectCommandRegistryの初期化 - serviceProviderがnullでも基本コマンドタイプは取得可能
-                DirectCommandRegistry.Initialize(null); // 明示的に初期化を呼び出す
+                AutoToolCommandRegistry.Initialize(null); // 明示的に初期化を呼び出す
 
-                var orderedTypeNames = DirectCommandRegistry.GetOrderedTypeNames();
+                var orderedTypeNames = AutoToolCommandRegistry.GetOrderedTypeNames();
                 _logger.LogDebug("GetOrderedTypeNames()で取得したタイプ数: {Count}", orderedTypeNames?.Count() ?? 0);
 
                 if (orderedTypeNames != null)
@@ -137,8 +137,8 @@ namespace AutoTool.ViewModel.Panels
                     .Select(typeName => new CommandDisplayItem
                     {
                         TypeName = typeName,
-                        DisplayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(typeName),
-                        Category = DirectCommandRegistry.DisplayOrder.GetCategoryName(typeName)
+                        DisplayName = AutoToolCommandRegistry.DisplayOrder.GetDisplayName(typeName),
+                        Category = AutoToolCommandRegistry.DisplayOrder.GetCategoryName(typeName)
                     })
                     .ToList() ?? new List<CommandDisplayItem>();
 

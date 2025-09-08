@@ -10,7 +10,6 @@ using System.Windows.Media;
 using System.IO;
 using System.Text.Json;
 using Microsoft.Win32;
-using AutoTool.Command.Interface;
 using AutoTool.Services;
 using AutoTool.Services.Execution;
 using AutoTool.Services.MacroFile;
@@ -22,6 +21,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using AutoTool.Command.Definition;
+using AutoTool.Command.Base;
 
 namespace AutoTool.ViewModel.Panels
 {
@@ -45,7 +45,7 @@ namespace AutoTool.ViewModel.Panels
         private readonly IMacroExecutionService _macroExecutionService;
         private readonly IMacroFileService _macroFileService;
 
-        private ICommand? _currentExecutingCommand;
+        private IAutoToolCommand? _currentExecutingCommand;
         private CancellationTokenSource? _cancellationTokenSource;
         
         // ファイル操作用セマフォ
@@ -285,7 +285,7 @@ namespace AutoTool.ViewModel.Panels
         {
             if (value != null)
             {
-                var displayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(CurrentExecutingItem.ItemType) ?? CurrentExecutingItem.ItemType;
+                var displayName = AutoToolCommandRegistry.DisplayOrder.GetDisplayName(CurrentExecutingItem.ItemType) ?? CurrentExecutingItem.ItemType;
                 CurrentCommandDescription = $"実行中: {displayName} (行 {value.LineNumber})";
             }
             else
@@ -316,7 +316,7 @@ namespace AutoTool.ViewModel.Panels
                         item.IsSelected = (item == value);
                     }
 
-                    StatusMessage = $"選択: {DirectCommandRegistry.DisplayOrder.GetDisplayName(value.ItemType)} (行 {value.LineNumber})";
+                    StatusMessage = $"選択: {AutoToolCommandRegistry.DisplayOrder.GetDisplayName(value.ItemType)} (行 {value.LineNumber})";
                 }
                 else
                 {
@@ -351,14 +351,14 @@ namespace AutoTool.ViewModel.Panels
                 // 1. UniversalCommandItemとして追加を試行（DirectCommandRegistry使用）
                 try
                 {
-                    var universalItem = DirectCommandRegistry.CreateUniversalItem(itemType);
+                    var universalItem = AutoToolCommandRegistry.CreateUniversalItem(itemType);
                     if (universalItem != null)
                     {
                         // Sanitize window-related settings to avoid boolean false being shown
                         SanitizeWindowSettings(universalItem);
 
                         universalItem.LineNumber = GetNextLineNumber();
-                        universalItem.Comment = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}の説明";
+                        universalItem.Comment = $"{AutoToolCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}の説明";
 
                         var insertIndex = SelectedIndex >= 0 && SelectedIndex < Items.Count ? SelectedIndex + 1 : Items.Count;
                         Items.Insert(insertIndex, universalItem);
@@ -371,7 +371,7 @@ namespace AutoTool.ViewModel.Panels
 
                         _logger.LogInformation("✅ UniversalCommandItemとして追加成功: {ItemType} (行番号: {LineNumber}, 挿入位置: {Index})",
                             itemType, universalItem.LineNumber, insertIndex);
-                        StatusMessage = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType)}を追加しました";
+                        StatusMessage = $"{AutoToolCommandRegistry.DisplayOrder.GetDisplayName(itemType)}を追加しました";
                         return;
                     }
                 }
@@ -391,7 +391,7 @@ namespace AutoTool.ViewModel.Panels
                     }
 
                     newItem.LineNumber = GetNextLineNumber();
-                    newItem.Comment = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}の説明";
+                    newItem.Comment = $"{AutoToolCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}の説明";
 
                     var insertIndex = SelectedIndex >= 0 && SelectedIndex < Items.Count ? SelectedIndex + 1 : Items.Count;
                     Items.Insert(insertIndex, newItem);
@@ -404,7 +404,7 @@ namespace AutoTool.ViewModel.Panels
 
                     _logger.LogInformation("✅ CommandListItemFactoryで追加成功: {ItemType} (行番号: {LineNumber}, 挿入位置: {Index})",
                         itemType, newItem.LineNumber, insertIndex);
-                    StatusMessage = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType)}を追加しました";
+                    StatusMessage = $"{AutoToolCommandRegistry.DisplayOrder.GetDisplayName(itemType)}を追加しました";
                 }
                 else
                 {
@@ -416,7 +416,7 @@ namespace AutoTool.ViewModel.Panels
                             ItemType = itemType,
                             LineNumber = GetNextLineNumber(),
                             IsEnable = true,
-                            Comment = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}の説明"
+                            Comment = $"{AutoToolCommandRegistry.DisplayOrder.GetDisplayName(itemType) ?? itemType}の説明"
                         };
 
                         // Ensure window settings are empty strings instead of boolean false
@@ -433,7 +433,7 @@ namespace AutoTool.ViewModel.Panels
 
                         _logger.LogWarning("⚠️ UniversalCommandItemとしてフォールバック追加: {ItemType} (行番号: {LineNumber}, 挿入位置: {Index})",
                             itemType, fallbackItem.LineNumber, insertIndex);
-                        StatusMessage = $"{DirectCommandRegistry.DisplayOrder.GetDisplayName(itemType)}を追加しました（汎用モード）";
+                        StatusMessage = $"{AutoToolCommandRegistry.DisplayOrder.GetDisplayName(itemType)}を追加しました（汎用モード）";
                     }
                     catch (Exception ex)
                     {
@@ -873,7 +873,7 @@ namespace AutoTool.ViewModel.Panels
         }
 
         // 短い原因説明を返す補助メソッド（コマンド種別や例外内容に基づく）
-        private string GetShortErrorReason(Exception ex, ICommand? command)
+        private string GetShortErrorReason(Exception ex, IAutoToolCommand? command)
         {
             if (ex is System.IO.FileNotFoundException)
             {

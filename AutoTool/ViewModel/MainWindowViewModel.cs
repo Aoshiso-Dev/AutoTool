@@ -676,12 +676,12 @@ namespace AutoTool.ViewModel
             {
                 _logger.LogDebug("利用可能なコマンドの読み込み開始");
                 
-                var displayItems = DirectCommandRegistry.GetOrderedTypeNames()
+                var displayItems = AutoToolCommandRegistry.GetOrderedTypeNames()
                     .Select(typeName => new CommandDisplayItem
                     {
                         TypeName = typeName,
-                        DisplayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(typeName),
-                        Category = DirectCommandRegistry.DisplayOrder.GetCategoryName(typeName)
+                        DisplayName = AutoToolCommandRegistry.DisplayOrder.GetDisplayName(typeName),
+                        Category = AutoToolCommandRegistry.DisplayOrder.GetCategoryName(typeName)
                     })
                     .ToList();
 

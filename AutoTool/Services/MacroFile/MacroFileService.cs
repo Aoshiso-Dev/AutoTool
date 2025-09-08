@@ -384,7 +384,7 @@ namespace AutoTool.Services.MacroFile
                     return null;
 
                 // DirectCommandRegistryを使用してアイテムを作成
-                var item = DirectCommandRegistry.CreateUniversalItem(itemType);
+                var item = AutoToolCommandRegistry.CreateUniversalItem(itemType);
 
                 if (item == null)
                 {
@@ -506,7 +506,7 @@ namespace AutoTool.Services.MacroFile
                 if (string.IsNullOrEmpty(itemType))
                     return null;
 
-                var item = DirectCommandRegistry.CreateUniversalItem(itemType) ?? new UniversalCommandItem
+                var item = AutoToolCommandRegistry.CreateUniversalItem(itemType) ?? new UniversalCommandItem
                 {
                     ItemType = itemType
                 };
@@ -570,7 +570,7 @@ namespace AutoTool.Services.MacroFile
             try
             {
                 // DirectCommandRegistryから設定定義を取得
-                var settingDefinitions = DirectCommandRegistry.GetSettingDefinitions(item.ItemType);
+                var settingDefinitions = AutoToolCommandRegistry.GetSettingDefinitions(item.ItemType);
                 var definitionDict = settingDefinitions.ToDictionary(d => d.PropertyName, d => d);
 
                 foreach (var property in settingsElement.EnumerateObject())
@@ -802,7 +802,7 @@ namespace AutoTool.Services.MacroFile
             try
             {
                 // DirectCommandRegistryから設定定義を取得
-                var settingDefinitions = DirectCommandRegistry.GetSettingDefinitions(item.ItemType);
+                var settingDefinitions = AutoToolCommandRegistry.GetSettingDefinitions(item.ItemType);
 
                 foreach (var definition in settingDefinitions)
                 {

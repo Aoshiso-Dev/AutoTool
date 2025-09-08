@@ -151,7 +151,7 @@ namespace AutoTool.Services
                 var item = _items[i];
 
                 // 終了コマンドの場合、先にネストレベルを下げる
-                if (DirectCommandRegistry.IsEndCommand(item.ItemType))
+                if (AutoToolCommandRegistry.IsEndCommand(item.ItemType))
                 {
                     currentNestLevel = Math.Max(0, currentNestLevel - 1);
                 }
@@ -159,7 +159,7 @@ namespace AutoTool.Services
                 item.NestLevel = currentNestLevel;
 
                 // 開始コマンドの場合、次のアイテムからネストレベルを上げる
-                if (DirectCommandRegistry.IsStartCommand(item.ItemType))
+                if (AutoToolCommandRegistry.IsStartCommand(item.ItemType))
                 {
                     currentNestLevel++;
                 }
@@ -174,8 +174,8 @@ namespace AutoTool.Services
             try
             {
                 PairItemsByType(
-                    x => DirectCommandRegistry.IsIfCommand(x.ItemType),
-                    x => x.ItemType == DirectCommandRegistry.CommandTypes.IfEnd
+                    x => AutoToolCommandRegistry.IsIfCommand(x.ItemType),
+                    x => x.ItemType == AutoToolCommandRegistry.CommandTypes.IfEnd
                 );
                 _logger.LogTrace("If系アイテムのペアリング完了");
             }
@@ -194,8 +194,8 @@ namespace AutoTool.Services
             try
             {
                 PairItemsByType(
-                    x => DirectCommandRegistry.IsLoopCommand(x.ItemType),
-                    x => x.ItemType == DirectCommandRegistry.CommandTypes.LoopEnd
+                    x => AutoToolCommandRegistry.IsLoopCommand(x.ItemType),
+                    x => x.ItemType == AutoToolCommandRegistry.CommandTypes.LoopEnd
                 );
                 _logger.LogTrace("Loop系アイテムのペアリング完了");
             }

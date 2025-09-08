@@ -36,7 +36,7 @@ namespace AutoTool.Bootstrap
                 await _host.StartAsync();
 
                 // DirectCommandRegistry ‚Ì‰Šú‰»
-                DirectCommandRegistry.Initialize(_host.Services);
+                AutoToolCommandRegistry.Initialize(_host.Services);
                 _logger.LogInformation("DirectCommandRegistry ‰Šú‰»Š®—¹");
 
                 _logger.LogInformation("ApplicationBootstrapper ‰Šú‰»Š®—¹");

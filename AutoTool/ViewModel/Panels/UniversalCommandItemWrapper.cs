@@ -100,7 +100,7 @@ namespace AutoTool.ViewModel.Panels
         {
             get
             {
-                var displayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(ItemType) ?? ItemType;
+                var displayName = AutoToolCommandRegistry.DisplayOrder.GetDisplayName(ItemType) ?? ItemType;
                 return !string.IsNullOrEmpty(Comment) ? $"{displayName} - {Comment}" : displayName;
             }
         }
@@ -113,7 +113,7 @@ namespace AutoTool.ViewModel.Panels
         {
             get
             {
-                var displayName = DirectCommandRegistry.DisplayOrder.GetDisplayName(ItemType) ?? ItemType;
+                var displayName = AutoToolCommandRegistry.DisplayOrder.GetDisplayName(ItemType) ?? ItemType;
                 var description = string.IsNullOrEmpty(Comment) ? "" : $" - {Comment}";
                 return $"{LineNumber:D3}: {displayName}{description}";
             }
@@ -148,7 +148,7 @@ namespace AutoTool.ViewModel.Panels
         /// <summary>
         /// ê›íËíËã`ÉäÉXÉg
         /// </summary>
-        public List<SettingDefinition>? SettingDefinitions => _innerItem.SettingDefinitions;
+        //public List<SettingDefinition>? SettingDefinitions => _innerItem.SettingDefinitions;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 

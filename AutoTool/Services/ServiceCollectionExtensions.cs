@@ -618,7 +618,7 @@ namespace AutoTool.Services
                 // DirectCommandRegistry‚ğg—p‚µ‚ÄUniversalCommandItem ‚ğì¬
                 try
                 {
-                    var universalItem = DirectCommandRegistry.CreateUniversalItem(itemType);
+                    var universalItem = AutoToolCommandRegistry.CreateUniversalItem(itemType);
                     if (universalItem != null)
                     {
                         _logger.LogDebug("DirectCommandRegistry‚ÅUniversalCommandItemì¬¬Œ÷: {ItemType}", itemType);

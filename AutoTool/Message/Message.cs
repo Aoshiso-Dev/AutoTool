@@ -1,4 +1,4 @@
-using AutoTool.Command.Interface;
+using AutoTool.Command.Base;
 using AutoTool.ViewModel.Shared;
 using System;
 
@@ -148,12 +148,12 @@ namespace AutoTool.Message
     // コマンド実行関連メッセージ（修正版）
     public class StartCommandMessage
     {
-        public ICommand Command { get; }
+        public IAutoToolCommand Command { get; }
         public int LineNumber { get; }
         public string ItemType { get; }
         public DateTime Timestamp { get; } = DateTime.Now;
 
-        public StartCommandMessage(ICommand command)
+        public StartCommandMessage(IAutoToolCommand command)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
             LineNumber = command.LineNumber;
@@ -163,7 +163,7 @@ namespace AutoTool.Message
         /// <summary>
         /// コマンドからItemTypeを正確に取得
         /// </summary>
-        private static string GetItemTypeFromCommand(ICommand command)
+        private static string GetItemTypeFromCommand(IAutoToolCommand command)
         {
             return command.GetType().Name switch
             {
@@ -193,12 +193,12 @@ namespace AutoTool.Message
 
     public class FinishCommandMessage
     {
-        public ICommand Command { get; }
+        public IAutoToolCommand Command { get; }
         public int LineNumber { get; }
         public string ItemType { get; } = string.Empty;
         public DateTime Timestamp { get; } = DateTime.Now;
 
-        public FinishCommandMessage(ICommand command)
+        public FinishCommandMessage(IAutoToolCommand command)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
             LineNumber = command.LineNumber;
@@ -208,7 +208,7 @@ namespace AutoTool.Message
         /// <summary>
         /// コマンドからItemTypeを正確に取得
         /// </summary>
-        private static string GetItemTypeFromCommand(ICommand command)
+        private static string GetItemTypeFromCommand(IAutoToolCommand command)
         {
             return command.GetType().Name switch
             {
@@ -238,13 +238,13 @@ namespace AutoTool.Message
 
     public class DoingCommandMessage
     {
-        public ICommand Command { get; }
+        public IAutoToolCommand Command { get; }
         public string Detail { get; }
         public int LineNumber { get; }
         public string ItemType { get; }        
         public DateTime Timestamp { get; } = DateTime.Now;
 
-        public DoingCommandMessage(ICommand command, string detail)
+        public DoingCommandMessage(IAutoToolCommand command, string detail)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
             Detail = detail ?? string.Empty;
@@ -255,7 +255,7 @@ namespace AutoTool.Message
         /// <summary>
         /// コマンドからItemTypeを正確に取得
         /// </summary>
-        private static string GetItemTypeFromCommand(ICommand command)
+        private static string GetItemTypeFromCommand(IAutoToolCommand command)
         {
             return command.GetType().Name switch
             {
@@ -286,11 +286,11 @@ namespace AutoTool.Message
     // コマンドエラーメッセージ
     public class CommandErrorMessage
     {
-        public ICommand Command { get; }
+        public IAutoToolCommand Command { get; }
         public Exception Exception { get; }
         public DateTime Timestamp { get; } = DateTime.Now;
 
-        public CommandErrorMessage(ICommand command, Exception exception)
+        public CommandErrorMessage(IAutoToolCommand command, Exception exception)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
             Exception = exception ?? throw new ArgumentNullException(nameof(exception));
@@ -302,13 +302,13 @@ namespace AutoTool.Message
     /// </summary>
     public class UpdateProgressMessage
     {
-        public ICommand Command { get; }
+        public IAutoToolCommand Command { get; }
         public int Progress { get; }
         public int LineNumber { get; }
         public string ItemType { get; }        
         public DateTime Timestamp { get; } = DateTime.Now;
 
-        public UpdateProgressMessage(ICommand command, int progress)
+        public UpdateProgressMessage(IAutoToolCommand command, int progress)
         {
             Command = command ?? throw new ArgumentNullException(nameof(command));
             Progress = Math.Max(0, Math.Min(100, progress));
@@ -319,7 +319,7 @@ namespace AutoTool.Message
         /// <summary>
         /// コマンドからItemTypeを正確に取得
         /// </summary>
-        private static string GetItemTypeFromCommand(ICommand command)
+        private static string GetItemTypeFromCommand(IAutoToolCommand command)
         {
             return command.GetType().Name switch
             {

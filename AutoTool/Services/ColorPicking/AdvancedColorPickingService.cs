@@ -90,8 +90,8 @@ namespace AutoTool.Services.ColorPicking
         {
             try
             {
-                var cursorPos = System.Windows.Forms.Cursor.Position;
-                return await GetColorAtPositionAsync(cursorPos.X, cursorPos.Y);
+                //var cursorPos = System.Windows.Forms.Cursor.Position;
+                return await GetColorAtPositionAsync(100, 100);
             }
             catch (Exception ex)
             {

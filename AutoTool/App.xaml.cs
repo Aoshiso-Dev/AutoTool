@@ -50,7 +50,7 @@ namespace AutoTool
                 _logger.LogInformation("AutoTool アプリケーション開始");
 
                 // DirectCommandRegistryの初期化を追加
-                DirectCommandRegistry.Initialize(_bootstrapper.Host.Services);
+                AutoToolCommandRegistry.Initialize(_bootstrapper.Host.Services);
                 _logger.LogInformation("DirectCommandRegistry初期化完了");
 
                 // メインウィンドウの作成と表示

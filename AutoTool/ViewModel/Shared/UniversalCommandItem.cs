@@ -103,8 +103,8 @@ namespace AutoTool.ViewModel.Shared
         /// <summary>
         /// 設定定義（キャッシュ用）
         /// </summary>
-        [JsonIgnore]
-        public List<SettingDefinition>? SettingDefinitions { get; set; }
+        //[JsonIgnore]
+        //public List<SettingDefinition>? SettingDefinitions { get; set; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -180,7 +180,7 @@ namespace AutoTool.ViewModel.Shared
         {
             try
             {
-                SettingDefinitions = DirectCommandRegistry.GetSettingDefinitions(ItemType);
+                SettingDefinitions = AutoToolCommandRegistry.GetSettingDefinitions(ItemType);
                 System.Diagnostics.Debug.WriteLine($"[UniversalCommandItem] InitializeSettingDefinitions: {ItemType} -> {SettingDefinitions?.Count ?? 0}個の設定項目");
             }
             catch (Exception ex)
