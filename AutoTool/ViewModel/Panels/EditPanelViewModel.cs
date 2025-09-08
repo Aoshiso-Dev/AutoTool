@@ -42,6 +42,9 @@ namespace AutoTool.ViewModel.Panels
         // インスタンスID
         private readonly Guid _instanceId = Guid.NewGuid();
 
+        // 設定値の静的キャッシュ（アイテムごと）
+        private static readonly Dictionary<string, Dictionary<string, object?>> _settingsCache = new();
+
         [ObservableProperty]
         private UniversalCommandItem? _selectedItem;
 
@@ -421,6 +424,13 @@ namespace AutoTool.ViewModel.Panels
                 _logger.LogDebug("新しいアイテム: {ItemType} (ActualType: {ActualType})", 
                     value?.ItemType ?? "null", value?.GetType().Name ?? "null");
 
+                // 前のアイテムがある場合は設定を保存
+                if (SelectedItem != null && SelectedItem != value)
+                {
+                    _logger.LogDebug("前のアイテムの設定を保存: {ItemType}", SelectedItem.ItemType);
+                    SaveCurrentSettings();
+                }
+
                 if (value != null)
                 {
                     // UniversalCommandItem が選択された場合
@@ -483,6 +493,59 @@ namespace AutoTool.ViewModel.Panels
             {
                 _isUpdating = false;
             }
+        }
+
+        /// <summary>
+        /// 現在の設定をUniversalCommandItemに保存
+        /// </summary>
+        private void SaveCurrentSettings()
+        {
+            try
+            {
+                if (SelectedItem is UniversalCommandItem universalItem && DynamicValues.Count > 0)
+                {
+                    // UniversalCommandItemに設定を保存
+                    foreach (var kvp in DynamicValues)
+                    {
+                        universalItem.SetSetting(kvp.Key, kvp.Value);
+                        _logger.LogTrace("設定保存: {PropertyName} = {Value}", kvp.Key, kvp.Value ?? "null");
+                    }
+                    
+                    // 静的キャッシュにも保存（アイテムの識別にはItemTypeとLineNumberを使用）
+                    var cacheKey = $"{universalItem.ItemType}_{universalItem.LineNumber}";
+                    _settingsCache[cacheKey] = new Dictionary<string, object?>(DynamicValues);
+                    
+                    _logger.LogDebug("設定保存完了: {ItemType} ({Count}項目) CacheKey={CacheKey}", 
+                        universalItem.ItemType, DynamicValues.Count, cacheKey);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "設定保存中にエラー");
+            }
+        }
+
+        /// <summary>
+        /// キャッシュから設定値を復元
+        /// </summary>
+        private Dictionary<string, object?> LoadCachedSettings(UniversalCommandItem universalItem)
+        {
+            try
+            {
+                var cacheKey = $"{universalItem.ItemType}_{universalItem.LineNumber}";
+                if (_settingsCache.TryGetValue(cacheKey, out var cachedSettings))
+                {
+                    _logger.LogDebug("キャッシュから設定復元: {ItemType} ({Count}項目) CacheKey={CacheKey}", 
+                        universalItem.ItemType, cachedSettings.Count, cacheKey);
+                    return new Dictionary<string, object?>(cachedSettings);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "キャッシュ設定読み込み中にエラー");
+            }
+            
+            return new Dictionary<string, object?>();
         }
 
         private void OnSelectedItemTypeObjChanged(CommandDisplayItem? value)
@@ -638,7 +701,7 @@ namespace AutoTool.ViewModel.Panels
                 {
                     var value = property.GetValue(SelectedItem);
 
-                    // 追加: string プロパティに誤って bool 値(false)が入っている場合を補正
+                    // 追加: string プロパティに誤って bool 值(false)が入っている場合を補正
                     if (typeof(T) == typeof(string) && value is bool)
                     {
                         _logger.LogDebug("文字列プロパティにbool値を検出し補正: {Property} = false -> ''", propertyName);
@@ -1875,10 +1938,34 @@ namespace AutoTool.ViewModel.Panels
         /// </summary>
         private void InitializeDynamicValues(UniversalCommandItem universalItem, List<SettingDefinition> definitions)
         {
+            // 既存の設定値を保存
+            var existingValues = new Dictionary<string, object?>(DynamicValues);
+            
+            // キャッシュから設定値を取得
+            var cachedSettings = LoadCachedSettings(universalItem);
+            
             DynamicValues.Clear();
             foreach (var definition in definitions)
             {
-                object? raw = universalItem.GetSetting<object>(definition.PropertyName);
+                object? raw = null;
+                
+                // 優先順位：既存値 > キャッシュ値 > UniversalCommandItem > デフォルト値
+                if (existingValues.TryGetValue(definition.PropertyName, out var existingValue))
+                {
+                    raw = existingValue;
+                    _logger.LogTrace("既存値を使用: {PropertyName} = {Value}", definition.PropertyName, raw ?? "null");
+                }
+                else if (cachedSettings.TryGetValue(definition.PropertyName, out var cachedValue))
+                {
+                    raw = cachedValue;
+                    _logger.LogTrace("キャッシュ値を使用: {PropertyName} = {Value}", definition.PropertyName, raw ?? "null");
+                }
+                else
+                {
+                    // UniversalCommandItemから取得
+                    raw = universalItem.GetSetting<object>(definition.PropertyName);
+                    _logger.LogTrace("UniversalCommandItemから取得: {PropertyName} = {Value}", definition.PropertyName, raw ?? "null");
+                }
 
                 // 文字列プロパティの誤った bool 初期値(false)や null を空文字に統一
                 if (definition.PropertyType == typeof(string))
@@ -1898,6 +1985,7 @@ namespace AutoTool.ViewModel.Panels
                 if (raw == null && definition.DefaultValue != null)
                 {
                     raw = definition.DefaultValue;
+                    _logger.LogTrace("デフォルト値を適用: {PropertyName} = {Value}", definition.PropertyName, raw ?? "null");
                 }
 
                 // UniversalCommandItem 側へ反映（値が変わった場合）
@@ -1916,19 +2004,16 @@ namespace AutoTool.ViewModel.Panels
             OnPropertyChanged(nameof(DynamicValues));
         }
 
-        /// <summary>
-        /// 現在値を設定定義に同期
-        /// </summary>
         private void SyncCurrentValuesToDefinitions(UniversalCommandItem universalItem, List<SettingDefinition> definitions)
         {
             foreach (var definition in definitions)
             {
                 var currentValue = DynamicValues.GetValueOrDefault(definition.PropertyName) ?? 
-                                   universalItem.GetSetting<object>(definition.PropertyName) ??
+                                   universalItem.GetSetting<object>(definition.PropertyName) ?? 
                                    definition.DefaultValue;
-                
+
                 definition.CurrentValue = currentValue;
-                
+
                 _logger.LogTrace("現在値同期: {PropertyName} = {CurrentValue}", 
                     definition.PropertyName, currentValue);
             }
@@ -2003,12 +2088,26 @@ namespace AutoTool.ViewModel.Panels
                         _logger.LogTrace("Skip non-Point assignment to MousePosition (Type={Type})", value.GetType().Name);
                         return;
                     }
+                    
+                    // UniversalCommandItemに設定を保存
                     universalItem.SetSetting(propertyName, value);
+                    
+                    // DynamicValuesも更新
                     DynamicValues[propertyName] = value;
+                    
+                    // SettingDefinitionの現在値も更新
                     var settingDefinition = SettingDefinitions.FirstOrDefault(s => s.PropertyName == propertyName);
-                    if (settingDefinition != null) settingDefinition.CurrentValue = value;
+                    if (settingDefinition != null) 
+                    {
+                        settingDefinition.CurrentValue = value;
+                    }
+                    
+                    // 座標の同期処理
                     SyncCoordinateDynamicProperties(propertyName, value);
+                    
                     OnPropertyChanged(nameof(DynamicValues));
+                    
+                    _logger.LogTrace("動的プロパティ設定: {PropertyName} = {Value}", propertyName, value ?? "null");
                 }
                 catch (Exception ex)
                 {
