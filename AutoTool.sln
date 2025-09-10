@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.11.35222.181
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11005.162 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoTool", "AutoTool\AutoTool.csproj", "{3B0A3930-7C70-4914-9B8F-AB8DB16CB0B9}"
 EndProject
@@ -9,6 +9,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Helpers", "Helpers", "{238114D9-D19B-492F-B181-DD5A6BAD00B2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YoLoWinLib", "YoloV8DetectHelper\YoLoWinLib.csproj", "{D8BC19B1-5ABD-4660-8E73-E85848BF169F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoTool.Core", "AutoTool.Core\AutoTool.Core.csproj", "{73FD0DB2-B247-41B2-86D7-718A90A57247}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoTool.Commands", "AutoTool.Commands\AutoTool.Commands.csproj", "{984070C1-05E6-4F17-9D1A-1875DC5FA417}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoTool.Desktop", "AutoTool.Desktop\AutoTool.Desktop.csproj", "{E2EA430B-C7E9-4159-AA04-751D12A9BE8A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,6 +34,18 @@ Global
 		{D8BC19B1-5ABD-4660-8E73-E85848BF169F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D8BC19B1-5ABD-4660-8E73-E85848BF169F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D8BC19B1-5ABD-4660-8E73-E85848BF169F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73FD0DB2-B247-41B2-86D7-718A90A57247}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73FD0DB2-B247-41B2-86D7-718A90A57247}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73FD0DB2-B247-41B2-86D7-718A90A57247}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73FD0DB2-B247-41B2-86D7-718A90A57247}.Release|Any CPU.Build.0 = Release|Any CPU
+		{984070C1-05E6-4F17-9D1A-1875DC5FA417}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{984070C1-05E6-4F17-9D1A-1875DC5FA417}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{984070C1-05E6-4F17-9D1A-1875DC5FA417}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{984070C1-05E6-4F17-9D1A-1875DC5FA417}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2EA430B-C7E9-4159-AA04-751D12A9BE8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2EA430B-C7E9-4159-AA04-751D12A9BE8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2EA430B-C7E9-4159-AA04-751D12A9BE8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2EA430B-C7E9-4159-AA04-751D12A9BE8A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
