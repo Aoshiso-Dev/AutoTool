@@ -9,7 +9,7 @@ namespace AutoTool.Commands.Flow.If;
 public sealed class IfDescriptor : ICommandDescriptor
 {
     public string Type => "if";
-    public string DisplayName => "If";
+    public string DisplayName => "条件分岐";
     public string? IconKey => "mdi:code-braces";
 
 

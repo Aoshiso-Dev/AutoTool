@@ -11,7 +11,7 @@ namespace AutoTool.Commands.Flow.Wait
     public sealed class WaitDescriptor : ICommandDescriptor
     {
         public string Type => "wait";
-        public string DisplayName => "Wait";
+        public string DisplayName => "‘Ò‹@";
         public string? IconKey => "mdi:timer";
 
         public Type SettingsType => typeof(WaitSettings);

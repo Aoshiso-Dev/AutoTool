@@ -11,7 +11,7 @@ namespace AutoTool.Commands.Input.KeyInput
     public sealed class KeyInputDescriptor : ICommandDescriptor
     {
         public string Type => "keyinput";
-        public string DisplayName => "Key Input";
+        public string DisplayName => "キー入力";
         public string? IconKey => "mdi:keyboard";
 
         public Type SettingsType => typeof(KeyInputSettings);
@@ -25,7 +25,7 @@ namespace AutoTool.Commands.Input.KeyInput
             Ctrl = false,
             Alt = false,
             Shift = false,
-            Description = "Enterキーを押下"
+            Description = "Enterキー入力"
         };
 
         public AutoToolCommandSettings MigrateToLatest(AutoToolCommandSettings settings)

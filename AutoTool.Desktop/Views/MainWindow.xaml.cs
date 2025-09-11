@@ -1,13 +1,6 @@
-﻿using System.Text;
+﻿using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using AutoTool.Desktop.ViewModels;
 
 namespace AutoTool.Desktop.Views
 {
@@ -16,9 +9,31 @@ namespace AutoTool.Desktop.Views
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        public MainWindow(
+            MainViewModel mainViewModel,
+            ButtonPanelViewModel buttonPanelViewModel,
+            EditPanelViewModel editPanelViewModel)
         {
             InitializeComponent();
+
+            try
+            {
+                // ViewModelを設定
+                DataContext = mainViewModel;
+                ButtonPanel.DataContext = buttonPanelViewModel;
+                EditPanel.DataContext = editPanelViewModel;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"MainWindow initialization error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
+        }
+
+        // パラメータなしのコンストラクタ（デザイナー用）
+        public MainWindow() : this(null!, null!, null!)
+        {
+            // デザイナー専用
         }
     }
 }

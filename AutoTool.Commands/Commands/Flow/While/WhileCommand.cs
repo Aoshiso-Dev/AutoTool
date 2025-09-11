@@ -1,4 +1,5 @@
 ﻿using AutoTool.Core.Abstractions;
+using AutoTool.Core.Attributes;
 using AutoTool.Core.Commands;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace AutoTool.Commands.Flow.While
 {
+    [Command("while", "繰り返し", IconKey = "mdi:loop", Category = "フロー制御", Description = "条件が真である間、処理を繰り返します", Order = 40)]
     public sealed class WhileCommand :
     IAutoToolCommand,
     IHasSettings<WhileSettings>,
@@ -15,7 +17,7 @@ namespace AutoTool.Commands.Flow.While
     {
         public Guid Id { get; } = Guid.NewGuid();
         public string Type => "while";
-        public string DisplayName => "While";
+        public string DisplayName => "繰り返し";
         public bool IsEnabled { get; set; } = true;
 
         public WhileSettings Settings { get; private set; }

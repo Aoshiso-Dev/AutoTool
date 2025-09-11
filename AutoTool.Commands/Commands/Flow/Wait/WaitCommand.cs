@@ -1,4 +1,5 @@
 using AutoTool.Core.Abstractions;
+using AutoTool.Core.Attributes;
 using AutoTool.Core.Commands;
 using AutoTool.Core.Diagnostics;
 using AutoTool.Core.Utilities;
@@ -12,6 +13,7 @@ namespace AutoTool.Commands.Flow.Wait
     /// <summary>
     /// 指定した時間だけ待機するコマンド
     /// </summary>
+    [Command("wait", "待機", IconKey = "mdi:timer", Category = "フロー制御", Description = "指定した時間だけ処理を待機します", Order = 10)]
     public sealed class WaitCommand :
         IAutoToolCommand,
         IHasSettings<WaitSettings>,
@@ -20,7 +22,7 @@ namespace AutoTool.Commands.Flow.Wait
     {
         public Guid Id { get; } = Guid.NewGuid();
         public string Type => "wait";
-        public string DisplayName => "Wait";
+        public string DisplayName => "待機";
         public bool IsEnabled { get; set; } = true;
 
         public WaitSettings Settings { get; private set; }

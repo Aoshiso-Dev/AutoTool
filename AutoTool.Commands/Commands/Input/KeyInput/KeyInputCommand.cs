@@ -1,4 +1,5 @@
 using AutoTool.Core.Abstractions;
+using AutoTool.Core.Attributes;
 using AutoTool.Core.Commands;
 using AutoTool.Core.Diagnostics;
 using AutoTool.Core.Utilities;
@@ -14,6 +15,7 @@ namespace AutoTool.Commands.Input.KeyInput
     /// <summary>
     /// 指定したキーを押下するコマンド
     /// </summary>
+    [Command("keyinput", "キー入力", IconKey = "mdi:keyboard", Category = "キーボード操作", Description = "指定したキーを押下します", Order = 25)]
     public sealed class KeyInputCommand :
         IAutoToolCommand,
         IHasSettings<KeyInputSettings>,
@@ -22,7 +24,7 @@ namespace AutoTool.Commands.Input.KeyInput
     {
         public Guid Id { get; } = Guid.NewGuid();
         public string Type => "keyinput";
-        public string DisplayName => "Key Input";
+        public string DisplayName => "キー入力";
         public bool IsEnabled { get; set; } = true;
 
         public KeyInputSettings Settings { get; private set; }

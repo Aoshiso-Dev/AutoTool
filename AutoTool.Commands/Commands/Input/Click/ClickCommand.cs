@@ -1,4 +1,5 @@
 using AutoTool.Core.Abstractions;
+using AutoTool.Core.Attributes;
 using AutoTool.Core.Commands;
 using AutoTool.Core.Diagnostics;
 using AutoTool.Core.Utilities;
@@ -13,6 +14,7 @@ namespace AutoTool.Commands.Input.Click
     /// <summary>
     /// 指定した座標でマウスクリックを実行するコマンド
     /// </summary>
+    [Command("click", "クリック", IconKey = "mdi:cursor-default-click", Category = "マウス操作", Description = "指定した座標でマウスクリックを実行します", Order = 20)]
     public sealed class ClickCommand :
         IAutoToolCommand,
         IHasSettings<ClickSettings>,
@@ -21,7 +23,7 @@ namespace AutoTool.Commands.Input.Click
     {
         public Guid Id { get; } = Guid.NewGuid();
         public string Type => "click";
-        public string DisplayName => "Click";
+        public string DisplayName => "クリック";
         public bool IsEnabled { get; set; } = true;
 
         public ClickSettings Settings { get; private set; }

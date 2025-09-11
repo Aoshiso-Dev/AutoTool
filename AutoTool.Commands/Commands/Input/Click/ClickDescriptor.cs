@@ -10,7 +10,7 @@ namespace AutoTool.Commands.Input.Click
     public sealed class ClickDescriptor : ICommandDescriptor
     {
         public string Type => "click";
-        public string DisplayName => "Click";
+        public string DisplayName => "ƒNƒŠƒbƒN";
         public string? IconKey => "mdi:cursor-default-click";
 
         public Type SettingsType => typeof(ClickSettings);

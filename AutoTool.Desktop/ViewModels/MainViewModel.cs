@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using AutoTool.Core.Abstractions;
 using AutoTool.Core.Commands;
 using AutoTool.Core.Descriptors;
@@ -34,6 +35,16 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private object? selectedEditor; // ここは後で本物のEditor VMに差し替え
     [ObservableProperty] private string searchText = string.Empty;
 
+    /// <summary>
+    /// ButtonPanelから参照するためのServiceProvider
+    /// </summary>
+    public IServiceProvider ServiceProvider => _services;
+
+    /// <summary>
+    /// ButtonPanelから参照するためのCommandRegistry
+    /// </summary>
+    public ICommandRegistry CommandRegistry => _registry;
+
     public MainViewModel(
         ICommandRunner runner,
         ICommandRegistry registry,
@@ -50,8 +61,30 @@ public partial class MainViewModel : ObservableObject
 
         _logger.LogInformation("MainViewModel を初期化しています");
 
+        // ButtonPanelからのメッセージを登録
+        RegisterMessages();
+
         // 初期ノード（必要なら）
         TryAddSample();
+    }
+
+    private void RegisterMessages()
+    {
+        WeakReferenceMessenger.Default.Register<NewFileMessage>(this, (r, m) => NewCommand.Execute(null));
+        WeakReferenceMessenger.Default.Register<LoadFileMessage>(this, async (r, m) => await LoadCommand.ExecuteAsync(null));
+        WeakReferenceMessenger.Default.Register<SaveFileMessage>(this, async (r, m) => await SaveCommand.ExecuteAsync(null));
+        WeakReferenceMessenger.Default.Register<AddCommandMessage>(this, (r, m) => 
+        {
+            if (m.Command is IAutoToolCommand cmd)
+            {
+                InsertCommandAtSelection(cmd);
+            }
+        });
+        WeakReferenceMessenger.Default.Register<RemoveCommandMessage>(this, (r, m) => RemoveCommand.Execute(null));
+        WeakReferenceMessenger.Default.Register<MoveUpCommandMessage>(this, (r, m) => MoveUpCommand.Execute(null));
+        WeakReferenceMessenger.Default.Register<MoveDownCommandMessage>(this, (r, m) => MoveDownCommand.Execute(null));
+        WeakReferenceMessenger.Default.Register<RunMacroMessage>(this, async (r, m) => await RunCommand.ExecuteAsync(null));
+        WeakReferenceMessenger.Default.Register<StopMacroMessage>(this, (r, m) => StopCommand.Execute(null));
     }
 
     // ===== File =====
@@ -177,7 +210,11 @@ public partial class MainViewModel : ObservableObject
     private void SelectNode(object? node)
     {
         SelectedNode = node;
-        // TODO: SelectedEditor = EditorFactory.From(node); // 実装にあわせて
+        
+        // EditPanelに選択変更を通知
+        WeakReferenceMessenger.Default.Send(new SelectNodeMessage(node));
+        
+        _logger.LogInformation("ノード選択: {NodeType}", node?.GetType().Name ?? "null");
     }
 
     // ===== Run =====
@@ -207,53 +244,46 @@ public partial class MainViewModel : ObservableObject
 
     // ===== Helpers =====
 
-    private void InsertCommandAtSelection(IAutoToolCommand cmd)
+    public void InsertCommandAtSelection(IAutoToolCommand cmd)
     {
-        if (SelectedNode is CommandBlock block)
-        {
-            block.Children.Add(cmd);
-        }
-        else
-        {
-            // ルートに追加
-            Root.Add(cmd);
-        }
+        // 現在はルートにのみ追加（ブロック機能は後で実装）
+        Root.Add(cmd);
         SelectedNode = cmd;
     }
 
-    private static bool TryFindParent(ObservableCollection<IAutoToolCommand> current,
-                                      IAutoToolCommand target,
-                                      out ObservableCollection<IAutoToolCommand> parent)
+    /// <summary>
+    /// 指定したタイプのコマンドを追加
+    /// </summary>
+    /// <param name="commandType">追加するコマンドタイプ</param>
+    public void AddCommandByType(string commandType)
     {
-        // 1) 直下
-        if (current.Contains(target))
+        try
         {
-            parent = current;
-            return true;
-        }
-
-        // 2) 再帰的にブロックを探索
-        foreach (var cmd in current)
-        {
-            if (cmd is IHasBlocks hb)
+            if (_registry.TryGet(commandType, out var desc) && desc != null)
             {
-                foreach (var block in hb.Blocks)
-                {
-                    // ブロック直下
-                    if (block.Children.Contains(target))
-                    {
-                        parent = block.Children;
-                        return true;
-                    }
-                    // 更に深掘り
-                    if (TryFindParent(block.Children, target, out parent))
-                        return true;
-                }
+                var settings = desc.CreateDefaultSettings();
+                var cmd = desc.CreateCommand(settings, _services);
+                InsertCommandAtSelection(cmd);
+                
+                _logger.LogInformation("コマンドを追加しました: {CommandType}", commandType);
+            }
+            else
+            {
+                _logger.LogWarning("指定されたコマンドタイプが見つかりません: {CommandType}", commandType);
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "コマンド追加中にエラーが発生しました: {CommandType}", commandType);
+        }
+    }
 
-        parent = null!;
-        return false;
+    /// <summary>
+    /// 利用可能な全コマンドタイプを取得
+    /// </summary>
+    public IEnumerable<ICommandDescriptor> GetAvailableCommands()
+    {
+        return _registry.All;
     }
 
     // デモ用（任意）
@@ -307,5 +337,20 @@ public partial class MainViewModel : ObservableObject
         {
             _logger.LogError(ex, "サンプルコマンド追加中にエラーが発生しました");
         }
+    }
+
+    private static bool TryFindParent(ObservableCollection<IAutoToolCommand> current,
+                                      IAutoToolCommand target,
+                                      out ObservableCollection<IAutoToolCommand> parent)
+    {
+        // シンプル実装：直下のみ検索
+        if (current.Contains(target))
+        {
+            parent = current;
+            return true;
+        }
+
+        parent = null!;
+        return false;
     }
 }

@@ -9,7 +9,7 @@ namespace AutoTool.Commands.Flow.While;
 public sealed class WhileDescriptor : ICommandDescriptor
 {
     public string Type => "while";
-    public string DisplayName => "While";
+    public string DisplayName => "繰り返し";
     public string? IconKey => "mdi:loop";
 
 

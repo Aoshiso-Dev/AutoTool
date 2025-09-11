@@ -4,6 +4,7 @@ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+xmlns:corecmd="clr-namespace:AutoTool.Core.Commands;assembly=AutoTool.Core"
 mc:Ignorable="d">
     <Grid>
         <Grid.RowDefinitions>
@@ -11,39 +12,25 @@ mc:Ignorable="d">
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Commands" FontSize="14" FontWeight="SemiBold" Margin="8,8,8,4"/>
+        <TextBlock Text="コマンド一覧" FontSize="14" FontWeight="SemiBold" Margin="8,8,8,4"/>
 
         <Border Grid.Row="1" Margin="8" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8">
             <ScrollViewer>
-                <ListView x:Name="CommandList"
-                         ItemsSource="{Binding Items}"
-                         SelectedItem="{Binding SelectedItem}"
-                         SelectedIndex="{Binding SelectedIndex}">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
+                <TreeView x:Name="CommandTree"
+                         ItemsSource="{Binding Root}">
+                    <TreeView.Resources>
+                        <!-- Command Node: show DisplayName -->
+                        <HierarchicalDataTemplate DataType="{x:Type corecmd:IAutoToolCommand}" ItemsSource="{Binding Blocks}">
                             <StackPanel Orientation="Horizontal" Margin="4">
                                 <Ellipse Width="8" Height="8" Fill="#9CA3AF" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="{Binding LineNumber}" FontWeight="Bold" Margin="0,0,4,0" MinWidth="25"/>
-                                <TextBlock Text="{Binding ItemType}" FontWeight="SemiBold" Margin="0,0,8,0"/>
-                                <TextBlock Text="{Binding Comment}" Foreground="#6B7280"/>
-                                <TextBlock Text=" (実行中)" Foreground="#10B981" FontWeight="Bold">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Type}" Foreground="#6B7280" Margin="8,0,0,0"/>
                                 <TextBlock Text=" (無効)" Foreground="#9CA3AF">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnable}" Value="False">
+                                                <DataTrigger Binding="{Binding IsEnabled}" Value="False">
                                                     <Setter Property="Visibility" Value="Visible"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -51,9 +38,24 @@ mc:Ignorable="d">
                                     </TextBlock.Style>
                                 </TextBlock>
                             </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                        </HierarchicalDataTemplate>
+
+                        <!-- Block: show name and children -->
+                        <HierarchicalDataTemplate DataType="{x:Type corecmd:CommandBlock}" ItemsSource="{Binding Children}">
+                            <StackPanel Orientation="Horizontal" Margin="4">
+                                <TextBlock Text="{Binding Name}" FontStyle="Italic" Foreground="#6B7280"/>
+                            </StackPanel>
+                        </HierarchicalDataTemplate>
+                    </TreeView.Resources>
+
+                    <!-- Selection relay to VM command -->
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="SelectedItemChanged">
+                            <i:InvokeCommandAction Command="{Binding SelectNodeCommand}"
+                                                    CommandParameter="{Binding SelectedItem, ElementName=CommandTree}"/>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </TreeView>
             </ScrollViewer>
         </Border>
     </Grid>

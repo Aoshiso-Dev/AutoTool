@@ -1,4 +1,5 @@
 ﻿using AutoTool.Core.Abstractions;
+using AutoTool.Core.Attributes;
 using AutoTool.Core.Commands;
 using AutoTool.Core.Diagnostics;
 using AutoTool.Core.Utilities;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace AutoTool.Commands.Flow.If
 {
+    [Command("if", "条件分岐", IconKey = "mdi:code-braces", Category = "フロー制御", Description = "条件に応じて処理を分岐します", Order = 30)]
     public sealed class IfCommand :
     IAutoToolCommand,
     IHasSettings<IfSettings>,
@@ -19,7 +21,7 @@ namespace AutoTool.Commands.Flow.If
     {
         public Guid Id { get; } = Guid.NewGuid();
         public string Type => "if";
-        public string DisplayName => "If";
+        public string DisplayName => "条件分岐";
         public bool IsEnabled { get; set; } = true;
 
         public IfSettings Settings { get; private set; }

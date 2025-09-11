@@ -3,40 +3,79 @@
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:vm="clr-namespace:AutoTool.Desktop.ViewModels"
+            xmlns:conv="clr-namespace:AutoTool.Desktop.Converters"
             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-            xmlns:ifcmd="clr-namespace:AutoTool.Commands.Flow.If;assembly=AutoTool.Commands"
-            xmlns:whilecmd="clr-namespace:AutoTool.Commands.Flow.While;assembly=AutoTool.Commands"
-            mc:Ignorable="d">
+            mc:Ignorable="d"
+            d:DataContext="{d:DesignInstance Type=vm:EditPanelViewModel}">
+    <UserControl.Resources>
+        <!-- WPF標準のBooleanToVisibilityConverter -->
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <!-- カスタムの逆変換コンバーター -->
+        <conv:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+    
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#FAFAFB" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Padding="8">
+            <StackPanel>
+                <TextBlock Text="プロパティ" FontSize="14" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding SelectedCommandDisplayName}" 
+                           FontSize="12" Foreground="#6B7280" 
+                           Visibility="{Binding HasSelection, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            </StackPanel>
+        </Border>
 
-        <TextBlock Text="Editor" FontSize="14" FontWeight="SemiBold" Margin="8,8,8,4"/>
-
-
-        <Border Grid.Row="1" Margin="8" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="8">
+        <!-- Content Area -->
+        <Border Grid.Row="1" Margin="8" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+                <!-- PropertyGrid when command is selected -->
+                <xctk:PropertyGrid Name="PropertyGrid"
+                                   SelectedObject="{Binding SelectedEditor}"
+                                   AutoGenerateProperties="True"
+                                   ShowSortOptions="False"
+                                   ShowSearchBox="True"
+                                   ShowAdvancedOptions="False"
+                                   ShowTitle="False"
+                                   Visibility="{Binding HasSelection, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                   Margin="8"/>
+                
+                <!-- No Selection Message -->
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{Binding HasSelection, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=Invert}">
+                    <TextBlock Text="📄" FontSize="48" HorizontalAlignment="Center" Opacity="0.3"/>
+                    <TextBlock Text="コマンドを選択してください" 
+                               FontSize="14" HorizontalAlignment="Center" 
+                               Foreground="#9CA3AF" Margin="0,8,0,0"/>
+                    <TextBlock Text="左側のリストからコマンドを選択すると、ここに設定項目が表示されます" 
+                               FontSize="12" HorizontalAlignment="Center" 
+                               Foreground="#9CA3AF" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Grid>
+        </Border>
 
-
-                <!-- 汎用：PropertyGrid に EditorVM を束ねる（SelectedEditor は VM 側で用意） -->
-                <xctk:PropertyGrid Grid.Row="0"
-                                    Name="PropertyGrid"
-                                    SelectedObject="{Binding SelectedEditor}"
-                                    AutoGenerateProperties="True"/>
-
-
-                <!-- 適用/リセット（EditorVMが ICommand を提供する前提） -->
-                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Revert" Command="{Binding SelectedEditor.RevertCommand}"/>
-                    <Button Content="Apply" Background="{StaticResource AccentBrush}" Foreground="White"
-                            Command="{Binding SelectedEditor.ApplyCommand}"/>
+        <!-- Footer with Status and Actions -->
+        <Border Grid.Row="2" Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" 
+                           VerticalAlignment="Center" Foreground="#6B7280"/>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal" 
+                            Visibility="{Binding HasSelection, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Button Content="元に戻す" Command="{Binding RevertCommand}" Margin="0,0,4,0"/>
+                    <Button Content="適用" Background="#10B981" Foreground="White" 
+                            Command="{Binding ApplyCommand}"/>
                 </StackPanel>
             </Grid>
         </Border>
