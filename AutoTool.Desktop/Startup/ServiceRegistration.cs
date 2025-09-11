@@ -70,18 +70,28 @@ public static class ServiceRegistration
             // Core Services - 基本的な実装のみ
             services.AddLogging();
 
-            // Traditional Descriptors (確実に動作するもののみ)
-            services.AddSingleton<ICommandDescriptor, IfDescriptor>();
-            services.AddSingleton<ICommandDescriptor, WhileDescriptor>();
-            services.AddSingleton<ICommandDescriptor, WaitDescriptor>();
-            services.AddSingleton<ICommandDescriptor, ClickDescriptor>();
-            services.AddSingleton<ICommandDescriptor, KeyInputDescriptor>();
+            // Attribute-based Command Registration System (新システム)
+            services.AddSingleton<AttributeCommandRegistrationService>();
 
-            // Basic Command Registry 
+            // Dynamic Command Registry (Attributeベースのみ) 
             services.AddSingleton<ICommandRegistry>(serviceProvider =>
             {
-                var descriptors = serviceProvider.GetServices<ICommandDescriptor>();
-                return new CommandRegistry(descriptors);
+                var logger = serviceProvider.GetService<ILogger<DynamicCommandRegistry>>();
+                var registry = new DynamicCommandRegistry(null, logger);
+
+                // Attribute-based Commandsを自動登録
+                try
+                {
+                    var registrationService = serviceProvider.GetRequiredService<AttributeCommandRegistrationService>();
+                    var count = registrationService.RegisterCommandsFromCurrentDomain(registry);
+                    logger?.LogInformation("✅ Attribute-based commands registered: {Count}", count);
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogWarning(ex, "⚠️ Failed to register attribute-based commands");
+                }
+
+                return registry;
             });
 
             services.AddSingleton<ICommandRunner, CommandRunner>();
@@ -115,8 +125,6 @@ public static class ServiceRegistration
             // WPF Application Service
             services.AddHostedService<WpfApplicationService>();
 
-            // Attribute-based Command Registration (オプション)
-            TryAddAttributeBasedCommandRegistration(services);
         }
         catch (Exception ex)
         {
@@ -134,45 +142,6 @@ public static class ServiceRegistration
     }
 
     /// <summary>
-    /// Attribute-based Command Registrationを安全に追加
-    /// </summary>
-    private static void TryAddAttributeBasedCommandRegistration(IServiceCollection services)
-    {
-        try
-        {
-            services.AddSingleton<AttributeCommandRegistrationService>();
-            
-            // DynamicCommandRegistryを試行
-            services.AddSingleton<IDynamicCommandRegistry>(serviceProvider =>
-            {
-                var logger = serviceProvider.GetService<ILogger<DynamicCommandRegistry>>();
-                var registry = new DynamicCommandRegistry(null, logger);
-                
-                // 自動登録を試行
-                try
-                {
-                    var registrationService = serviceProvider.GetService<AttributeCommandRegistrationService>();
-                    if (registrationService != null)
-                    {
-                        var count = registrationService.RegisterCommandsFromCurrentDomain(registry);
-                        logger?.LogInformation("Attribute-based commands registered: {Count}", count);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger?.LogWarning(ex, "Failed to register attribute-based commands");
-                }
-                
-                return registry;
-            });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Attribute-based command registration failed: {ex.Message}");
-        }
-    }
-
-    /// <summary>
     /// 従来のServiceProvider方式との後方互換性のためのメソッド
     /// </summary>
     [Obsolete("Use BuildHost() instead. This method is provided for backward compatibility.")]
@@ -183,14 +152,25 @@ public static class ServiceRegistration
         // 基本的なサービスのみ登録
         services.AddLogging(builder => builder.AddConsole().AddDebug());
 
-        // Traditional Descriptors
-        services.AddSingleton<ICommandDescriptor, WaitDescriptor>();
-        services.AddSingleton<ICommandDescriptor, ClickDescriptor>();
-
+        // Attribute-based Command Registry
+        services.AddSingleton<AttributeCommandRegistrationService>();
         services.AddSingleton<ICommandRegistry>(sp =>
         {
-            var descriptors = sp.GetServices<ICommandDescriptor>();
-            return new CommandRegistry(descriptors);
+            var logger = sp.GetService<ILogger<DynamicCommandRegistry>>();
+            var registry = new DynamicCommandRegistry(null, logger);
+            
+            // 自動登録を試行
+            try
+            {
+                var registrationService = sp.GetService<AttributeCommandRegistrationService>();
+                registrationService?.RegisterCommandsFromCurrentDomain(registry);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Auto-registration failed: {ex.Message}");
+            }
+            
+            return registry;
         });
 
         services.AddSingleton<ICommandRunner, CommandRunner>();
