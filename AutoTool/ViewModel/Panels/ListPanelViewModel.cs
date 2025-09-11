@@ -222,6 +222,29 @@ namespace AutoTool.ViewModel.Panels
                 // MainWindowViewModelにコマンド数変更を通知
                 WeakReferenceMessenger.Default.Send(new CommandCountChangedMessage(Items.Count));
             };
+
+            // 初期サンプルコマンドを追加
+            TryAddSampleCommand();
+        }
+
+        /// <summary>
+        /// サンプルWaitコマンドを追加（デモ用）
+        /// </summary>
+        private void TryAddSampleCommand()
+        {
+            try
+            {
+                _logger.LogDebug("サンプルコマンドの追加を試行します（ListPanelViewModel）");
+                
+                // Waitコマンドを追加
+                AddItem("wait");
+                
+                _logger.LogInformation("サンプルWaitコマンドをListPanelに追加しました");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "サンプルコマンド追加中にエラーが発生しました（ListPanelViewModel）");
+            }
         }
 
         public void Receive(AddMessage message)
@@ -1094,6 +1117,30 @@ namespace AutoTool.ViewModel.Panels
                 _logger.LogError(ex, "ファイル保存中にエラー");
                 StatusMessage = errorMsg;
                 ExecutionLog.Add($"[{DateTime.Now:HH:mm:ss}] エラー: {errorMsg}");
+            }
+        }
+
+        [RelayCommand]
+        private void SelectNode(object? node)
+        {
+            try 
+            {
+                if (node is UniversalCommandItem item)
+                {
+                    SelectedItem = item;
+                    SelectedIndex = Items.IndexOf(item);
+                    _logger.LogDebug("ノード選択: {ItemType} (行 {LineNumber})", item.ItemType, item.LineNumber);
+                }
+                else
+                {
+                    SelectedItem = null;
+                    SelectedIndex = -1;
+                    _logger.LogDebug("ノード選択解除");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ノード選択中にエラー");
             }
         }
     }

@@ -15,6 +15,7 @@ using AutoTool.Core.Descriptors;
 using AutoTool.Core.Runtime;
 using AutoTool.Core.Serialization;
 using Microsoft.Win32;
+using Microsoft.Extensions.Logging;
 
 namespace AutoTool.Desktop.ViewModels;
 
@@ -24,6 +25,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ICommandRegistry _registry;
     private readonly IServiceProvider _services;
     private readonly IExecutionContext _executionContext;
+    private readonly ILogger<MainViewModel> _logger;
     private readonly JsonSerializerOptions _json;
 
     public ObservableCollection<IAutoToolCommand> Root { get; } = new();
@@ -36,16 +38,20 @@ public partial class MainViewModel : ObservableObject
         ICommandRunner runner,
         ICommandRegistry registry,
         IServiceProvider services,
-        IExecutionContext executionContext)
+        IExecutionContext executionContext,
+        ILogger<MainViewModel> logger)
     {
         _runner = runner;
         _registry = registry;
         _services = services;
         _executionContext = executionContext;
+        _logger = logger;
         _json = JsonOptions.Create();
 
+        _logger.LogInformation("MainViewModel を初期化しています");
+
         // 初期ノード（必要なら）
-        // TryAddSample();
+        TryAddSample();
     }
 
     // ===== File =====
@@ -55,6 +61,7 @@ public partial class MainViewModel : ObservableObject
     {
         Root.Clear();
         SelectedNode = null;
+        _logger.LogDebug("新規プロジェクトを作成しました");
     }
 
     [RelayCommand]
@@ -68,10 +75,19 @@ public partial class MainViewModel : ObservableObject
         };
         if (dlg.ShowDialog() != true) return;
 
-        await using var fs = File.OpenRead(dlg.FileName);
-        var nodes = await CommandSerializer.LoadAsync(fs, _services, _registry, _json);
-        Root.Clear();
-        foreach (var n in nodes) Root.Add(n);
+        try
+        {
+            _logger.LogInformation("ファイルを読み込み中: {FilePath}", dlg.FileName);
+            await using var fs = File.OpenRead(dlg.FileName);
+            var nodes = await CommandSerializer.LoadAsync(fs, _services, _registry, _json);
+            Root.Clear();
+            foreach (var n in nodes) Root.Add(n);
+            _logger.LogInformation("ファイル読み込み完了: {Count} コマンド", nodes.Count());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ファイル読み込み中にエラーが発生しました: {FilePath}", dlg.FileName);
+        }
     }
 
     [RelayCommand]
@@ -86,8 +102,17 @@ public partial class MainViewModel : ObservableObject
         };
         if (dlg.ShowDialog() != true) return;
 
-        await using var fs = File.Create(dlg.FileName);
-        await CommandSerializer.SaveAsync(Root, fs, _registry, _json);
+        try
+        {
+            _logger.LogInformation("ファイルを保存中: {FilePath}", dlg.FileName);
+            await using var fs = File.Create(dlg.FileName);
+            await CommandSerializer.SaveAsync(Root, fs, _registry, _json);
+            _logger.LogInformation("ファイル保存完了: {Count} コマンド", Root.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ファイル保存中にエラーが発生しました: {FilePath}", dlg.FileName);
+        }
     }
 
     // ===== Edit =====
@@ -97,10 +122,22 @@ public partial class MainViewModel : ObservableObject
     {
         // 簡易追加：最初のDescriptorでデフォルトコマンドを作成
         var desc = _registry.All.FirstOrDefault();
-        if (desc is null) return;
+        if (desc is null) 
+        {
+            _logger.LogWarning("利用可能なコマンドDescriptorがありません");
+            return;
+        }
 
-        var cmd = desc.CreateCommand(desc.CreateDefaultSettings(), _services);
-        InsertCommandAtSelection(cmd);
+        try
+        {
+            var cmd = desc.CreateCommand(desc.CreateDefaultSettings(), _services);
+            InsertCommandAtSelection(cmd);
+            _logger.LogDebug("コマンドを追加しました: {CommandType}", desc.Type);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "コマンド追加中にエラーが発生しました: {CommandType}", desc.Type);
+        }
     }
 
     [RelayCommand]
@@ -112,6 +149,7 @@ public partial class MainViewModel : ObservableObject
         {
             parent.Remove(cmd);
             if (ReferenceEquals(SelectedNode, cmd)) SelectedNode = null;
+            _logger.LogDebug("コマンドを削除しました: {CommandType}", cmd.Type);
         }
     }
 
@@ -147,7 +185,16 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task Run(CancellationToken ct)
     {
-        await _runner.RunAsync(Root, _executionContext, ct);
+        try
+        {
+            _logger.LogInformation("マクロ実行を開始します: {Count} コマンド", Root.Count);
+            await _runner.RunAsync(Root, _executionContext, ct);
+            _logger.LogInformation("マクロ実行が完了しました");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "マクロ実行中にエラーが発生しました");
+        }
     }
 
     [RelayCommand]
@@ -155,6 +202,7 @@ public partial class MainViewModel : ObservableObject
     {
         // Run は IAsyncRelayCommand になるので Cancel が使える
         RunCommand.Cancel();
+        _logger.LogInformation("マクロ実行を停止しました");
     }
 
     // ===== Helpers =====
@@ -209,10 +257,55 @@ public partial class MainViewModel : ObservableObject
     }
 
     // デモ用（任意）
-    // private void TryAddSample()
-    // {
-    //     var desc = _registry.Get("if");
-    //     var cmd = desc.CreateCommand(desc.CreateDefaultSettings(), _services);
-    //     Root.Add(cmd);
-    // }
+    private void TryAddSample()
+    {
+        try
+        {
+            _logger.LogDebug("サンプルコマンドの追加を試行します");
+            
+            // CommandRegistryに登録されているDescriptorを確認
+            var allDescriptors = _registry.All.ToList();
+            _logger.LogDebug("登録されているDescriptor数: {Count}", allDescriptors.Count);
+            
+            foreach (var descriptor in allDescriptors)
+            {
+                _logger.LogDebug("登録済みDescriptor: {Type} ({DisplayName})", descriptor.Type, descriptor.DisplayName);
+            }
+
+            // waitコマンドを探す
+            if (_registry.TryGet("wait", out var desc) && desc != null)
+            {
+                _logger.LogDebug("WaitDescriptorが見つかりました: {DisplayName}", desc.DisplayName);
+                
+                var settings = desc.CreateDefaultSettings();
+                var cmd = desc.CreateCommand(settings, _services);
+                Root.Add(cmd);
+                
+                _logger.LogInformation("サンプルWaitコマンドを追加しました");
+            }
+            else
+            {
+                _logger.LogWarning("WaitDescriptorが見つかりません。利用可能なタイプ: {Types}", 
+                    string.Join(", ", allDescriptors.Select(d => d.Type)));
+
+                // 代替として最初のDescriptorを使用
+                var firstDesc = allDescriptors.FirstOrDefault();
+                if (firstDesc != null)
+                {
+                    _logger.LogInformation("代替として {Type} コマンドを追加します", firstDesc.Type);
+                    var settings = firstDesc.CreateDefaultSettings();
+                    var cmd = firstDesc.CreateCommand(settings, _services);
+                    Root.Add(cmd);
+                }
+                else
+                {
+                    _logger.LogError("利用可能なDescriptorが一つもありません");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "サンプルコマンド追加中にエラーが発生しました");
+        }
+    }
 }

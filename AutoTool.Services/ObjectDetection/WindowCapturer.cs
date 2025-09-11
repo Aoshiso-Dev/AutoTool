@@ -1,16 +1,14 @@
-ï»¿using System.Drawing;
+using System.Drawing;
 using System.Runtime.InteropServices;
-using static System.Net.Mime.MediaTypeNames;
-using Image = System.Drawing.Image;
 
+namespace AutoTool.Services.ObjectDetection;
 
-namespace YoloWinLib;
-
-
+/// <summary>
+/// ƒEƒBƒ“ƒhƒEƒLƒƒƒvƒ`ƒƒƒ†[ƒeƒBƒŠƒeƒB
+/// </summary>
 internal static class WindowCapturer
 {
     private const int SRCCOPY = 0x00CC0020;
-
 
     public static Bitmap? CaptureByTitle(string windowTitle)
     {
@@ -21,13 +19,11 @@ internal static class WindowCapturer
         int height = rect.Bottom - rect.Top;
         if (width <= 0 || height <= 0) return null;
 
-
         IntPtr hWndDC = Native.GetWindowDC(hWnd);
         if (hWndDC == IntPtr.Zero) hWndDC = Native.GetDC(IntPtr.Zero);
         IntPtr memDC = Native.CreateCompatibleDC(hWndDC);
         IntPtr hBmp = Native.CreateCompatibleBitmap(hWndDC, width, height);
         IntPtr old = Native.SelectObject(memDC, hBmp);
-
 
         bool ok = false;
         try
@@ -43,14 +39,15 @@ internal static class WindowCapturer
         }
         if (!ok) { Native.DeleteObject(hBmp); return null; }
 
-
         var bmp = Image.FromHbitmap(hBmp);
         Native.DeleteObject(hBmp);
         return bmp;
     }
 }
 
-
+/// <summary>
+/// DPI‘Î‰ƒ†[ƒeƒBƒŠƒeƒB
+/// </summary>
 internal static class DpiUtil
 {
     public static void TryEnablePerMonitorDpi()
@@ -59,20 +56,19 @@ internal static class DpiUtil
     }
 }
 
-
+/// <summary>
+/// Windows APIŒÄ‚Ño‚µ
+/// </summary>
 internal static class Native
 {
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
 
-
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
 
-
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-
 
     [DllImport("user32.dll")] public static extern IntPtr GetWindowDC(IntPtr hWnd);
     [DllImport("user32.dll")] public static extern IntPtr GetDC(IntPtr hWnd);

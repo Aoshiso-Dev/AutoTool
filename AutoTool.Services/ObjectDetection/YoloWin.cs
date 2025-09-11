@@ -1,46 +1,39 @@
-ï»¿using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
-//using OpenCvSharp.Extensions;
-using System;
 using System.Drawing;
 
-
-namespace YoloWinLib;
-
+namespace AutoTool.Services.ObjectDetection;
 
 /// <summary>
-/// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚­ãƒ£ãƒ—ãƒãƒ£ + YOLOv8 ç‰©ä½“æ¤œå‡ºã®ç°¡æ˜“é™çš„ãƒ•ã‚¡ã‚µãƒ¼ãƒ‰ã€‚
-/// 1) <see cref="Init"/> ã§ãƒ¢ãƒ‡ãƒ«ã‚’ãƒ­ãƒ¼ãƒ‰ã€‚
-/// 2) <see cref="DetectFromWindowTitle"/> / <see cref="DetectFromBitmap"/> / <see cref="DetectFromMat"/> ã§æ¨è«–ã€‚
+/// ƒEƒBƒ“ƒhƒEƒLƒƒƒvƒ`ƒƒ + YOLOv8 •¨‘ÌŒŸo‚ÌŠÈˆÕÃ“Iƒtƒ@ƒT[ƒhB
+/// 1) <see cref="Init"/> ‚Åƒ‚ƒfƒ‹‚ğƒ[ƒhB
+/// 2) <see cref="DetectFromWindowTitle"/> / <see cref="DetectFromBitmap"/> / <see cref="DetectFromMat"/> ‚Å„˜_B
 /// </summary>
 public static class YoloWin
 {
     private static YoloV8Detector? _detector;
 
-
-    /// <summary>YOLOv8 ãƒ¢ãƒ‡ãƒ«ã‚’ãƒ­ãƒ¼ãƒ‰ã—ã¾ã™ã€‚è¤‡æ•°å›å‘¼ã¶ã¨å‰ã®ã‚»ãƒƒã‚·ãƒ§ãƒ³ã¯ç ´æ£„ã•ã‚Œã¾ã™ã€‚</summary>
+    /// <summary>YOLOv8 ƒ‚ƒfƒ‹‚ğƒ[ƒh‚µ‚Ü‚·B•¡”‰ñŒÄ‚Ô‚Æ‘O‚ÌƒZƒbƒVƒ‡ƒ“‚Í”jŠü‚³‚ê‚Ü‚·B</summary>
     public static void Init(string onnxPath, int inputSize = 640, bool useDirectML = false, string[]? labels = null)
     {
         _detector?.Dispose();
         _detector = new YoloV8Detector(onnxPath, inputSize, useDirectML) { Labels = labels };
     }
 
-
     /// <summary>
-    /// æŒ‡å®šã‚¿ã‚¤ãƒˆãƒ«ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ã‚­ãƒ£ãƒ—ãƒãƒ£ã—ã¦æ¤œå‡ºã—ã¾ã™ã€‚
+    /// w’èƒ^ƒCƒgƒ‹‚ÌƒEƒBƒ“ƒhƒE‚ğƒLƒƒƒvƒ`ƒƒ‚µ‚ÄŒŸo‚µ‚Ü‚·B
     /// </summary>
     public static DetectionResult DetectFromWindowTitle(string windowTitle, float confTh = 0.45f, float iouTh = 0.15f, bool draw = true)
     {
         EnsureReady();
         DpiUtil.TryEnablePerMonitorDpi();
         using var bmp = WindowCapturer.CaptureByTitle(windowTitle)
-        ?? throw new InvalidOperationException("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚­ãƒ£ãƒ—ãƒãƒ£ã«å¤±æ•—ã—ã¾ã—ãŸ");
+        ?? throw new InvalidOperationException("ƒEƒBƒ“ƒhƒE‚ÌƒLƒƒƒvƒ`ƒƒ‚É¸”s‚µ‚Ü‚µ‚½");
         using var mat = BitmapConverter.ToMat(bmp);
         return DetectFromMat(mat, confTh, iouTh, draw);
     }
 
-
-    /// <summary>Bitmap ã‹ã‚‰æ¤œå‡ºã—ã¾ã™ã€‚</summary>
+    /// <summary>Bitmap ‚©‚çŒŸo‚µ‚Ü‚·B</summary>
     public static DetectionResult DetectFromBitmap(Bitmap bitmap, float confTh = 0.25f, float iouTh = 0.45f, bool draw = true)
     {
         EnsureReady();
@@ -48,8 +41,7 @@ public static class YoloWin
         return DetectFromMat(mat, confTh, iouTh, draw);
     }
 
-
-    /// <summary>OpenCvSharp ã® Mat ã‹ã‚‰æ¤œå‡ºã—ã¾ã™ã€‚</summary>
+    /// <summary>OpenCvSharp ‚Ì Mat ‚©‚çŒŸo‚µ‚Ü‚·B</summary>
     public static DetectionResult DetectFromMat(Mat bgr, float confTh = 0.25f, float iouTh = 0.45f, bool draw = true)
     {
         EnsureReady();
@@ -63,22 +55,22 @@ public static class YoloWin
         return new DetectionResult(dets, annotated);
     }
 
-
     private static void EnsureReady()
     {
-        if (_detector is null) throw new InvalidOperationException("YoloWin.Init() ã‚’å…ˆã«å‘¼ã‚“ã§ãã ã•ã„");
+        if (_detector is null) throw new InvalidOperationException("YoloWin.Init() ‚ğæ‚ÉŒÄ‚ñ‚Å‚­‚¾‚³‚¢");
     }
 }
 
-// ã‚‚ã— BitmapConverter ãŒä½¿ãˆãªã„å ´åˆã¯ã€ä»¥ä¸‹ã®ã‚ˆã†ãªå¤‰æ›ãƒ¡ã‚½ãƒƒãƒ‰ã‚’è¿½åŠ ã—ã¦ãã ã•ã„ã€‚
-
+/// <summary>
+/// Bitmap ‚©‚ç OpenCvSharp.Mat ‚Ö‚Ì•ÏŠ·ƒ†[ƒeƒBƒŠƒeƒB
+/// </summary>
 public static class BitmapConverter
 {
     public static Mat ToMat(System.Drawing.Bitmap bitmap)
     {
-        // Windows APIä¾å­˜ã®ãŸã‚ã€ãƒ—ãƒ©ãƒƒãƒˆãƒ•ã‚©ãƒ¼ãƒ ãƒã‚§ãƒƒã‚¯ã‚’è¿½åŠ 
+        // Windows APIˆË‘¶‚Ì‚½‚ßAƒvƒ‰ƒbƒgƒtƒH[ƒ€ƒ`ƒFƒbƒN‚ğ’Ç‰Á
         if (!OperatingSystem.IsWindows())
-            throw new PlatformNotSupportedException("Bitmapã‹ã‚‰Matã¸ã®å¤‰æ›ã¯Windowsã®ã¿ã‚µãƒãƒ¼ãƒˆã•ã‚Œã¦ã„ã¾ã™ã€‚");
+            throw new PlatformNotSupportedException("Bitmap‚©‚çMat‚Ö‚Ì•ÏŠ·‚ÍWindows‚Ì‚İƒTƒ|[ƒg‚³‚ê‚Ä‚¢‚Ü‚·B");
 
         var rect = new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height);
         var bmpData = bitmap.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, bitmap.PixelFormat);
@@ -87,9 +79,9 @@ public static class BitmapConverter
             var matType = bitmap.PixelFormat == System.Drawing.Imaging.PixelFormat.Format24bppRgb
                 ? MatType.CV_8UC3
                 : MatType.CV_8UC4;
-            // éæ¨å¥¨ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿ã®ä»£ã‚ã‚Šã« FromPixelData ã‚’ä½¿ç”¨
+            // ”ñ„§ƒRƒ“ƒXƒgƒ‰ƒNƒ^‚Ì‘ã‚í‚è‚É FromPixelData ‚ğg—p
             var mat = Mat.FromPixelData(bitmap.Height, bitmap.Width, matType, bmpData.Scan0, bmpData.Stride);
-            return mat.Clone(); // ãƒ¡ãƒ¢ãƒªè§£æ”¾ã®ãŸã‚ Clone
+            return mat.Clone(); // ƒƒ‚ƒŠ‰ğ•ú‚Ì‚½‚ß Clone
         }
         finally
         {
@@ -98,13 +90,13 @@ public static class BitmapConverter
     }
 }
 
-/// <summary>æ¤œå‡ºçµæœ + (ä»»æ„) æç”»æ¸ˆã¿ç”»åƒã€‚</summary>
+/// <summary>ŒŸoŒ‹‰Ê + (”CˆÓ) •`‰æÏ‚İ‰æ‘œB</summary>
 public sealed record DetectionResult(IReadOnlyList<Detection> Detections, Mat? AnnotatedBgr)
 {
-    /// <summary>æç”»æ¸ˆã¿ç”»åƒã‚’ä¿å­˜ã—ã¾ã™ï¼ˆ<paramref name="path"/> ãŒ .png / .jpg ãªã©ï¼‰ã€‚</summary>
+    /// <summary>•`‰æÏ‚İ‰æ‘œ‚ğ•Û‘¶‚µ‚Ü‚·i<paramref name="path"/> ‚ª .png / .jpg ‚È‚ÇjB</summary>
     public void SaveAnnotated(string path)
     {
-        if (AnnotatedBgr is null) throw new InvalidOperationException("draw=false ã§å‘¼ã³å‡ºã•ã‚Œã¦ã„ã¾ã™");
+        if (AnnotatedBgr is null) throw new InvalidOperationException("draw=false ‚ÅŒÄ‚Ño‚³‚ê‚Ä‚¢‚Ü‚·");
         Cv2.ImWrite(path, AnnotatedBgr);
     }
 }

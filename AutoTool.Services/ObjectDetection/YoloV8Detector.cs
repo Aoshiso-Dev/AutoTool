@@ -1,19 +1,20 @@
-ï»¿using Microsoft.ML.OnnxRuntime;
+using System.IO;
+using System.Runtime.InteropServices;
+using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
-using System.Runtime.InteropServices;
 
-namespace YoloWinLib;
+namespace AutoTool.Services.ObjectDetection;
 
 public sealed class YoloV8Detector : IDisposable
 {
     private readonly InferenceSession _session;
     private readonly string _inputName;
     private readonly string _outputName;
-    private readonly int _inputSize; // æ—¢å®š 640
+    private readonly int _inputSize; // Šù’è 640
 
-    /// <summary>ã‚¯ãƒ©ã‚¹åãƒ©ãƒ™ãƒ«ï¼ˆä»»æ„ï¼‰ã€‚COCO80 ãªã©ã‚’ã‚»ãƒƒãƒˆã€‚</summary>
+    /// <summary>ƒNƒ‰ƒX–¼ƒ‰ƒxƒ‹i”CˆÓjBCOCO80 ‚È‚Ç‚ğƒZƒbƒgB</summary>
     public string[]? Labels { get; init; }
 
     public YoloV8Detector(string onnxPath, int inputSize = 640, bool useDirectML = false)
@@ -23,9 +24,9 @@ public sealed class YoloV8Detector : IDisposable
         var resolved = ResolveModelPath(onnxPath);
         if (!File.Exists(resolved))
         {
-            var msg = $"ONNX ãƒ•ã‚¡ã‚¤ãƒ«ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“: '{onnxPath}'\n" +
-                      $"è©¦ã—ãŸãƒ‘ã‚¹: {string.Join(" | ", CandidatePaths(onnxPath))}\n" +
-                      $"å®Ÿè¡Œãƒ•ã‚©ãƒ«ãƒ€: {AppContext.BaseDirectory} / CWD: {Environment.CurrentDirectory}";
+            var msg = $"ONNX ƒtƒ@ƒCƒ‹‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ: '{onnxPath}'\n" +
+                      $"‚µ‚½ƒpƒX: {string.Join(" | ", CandidatePaths(onnxPath))}\n" +
+                      $"ÀsƒtƒHƒ‹ƒ_: {AppContext.BaseDirectory} / CWD: {Environment.CurrentDirectory}";
             throw new FileNotFoundException(msg, onnxPath);
         }
 
@@ -48,14 +49,14 @@ public sealed class YoloV8Detector : IDisposable
             catch
             {
                 throw new InvalidOperationException(
-                    "ONNX ãƒ©ãƒ³ã‚¿ã‚¤ãƒ ã®ãƒã‚¤ãƒ†ã‚£ãƒ– DLL ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚DirectML ã‚’ä½¿ã†å ´åˆã¯ " +
-                    "Microsoft.ML.OnnxRuntime.DirectML ã‚’å‚ç…§ã«è¿½åŠ ã—ã€å‡ºåŠ›ãƒ•ã‚©ãƒ«ãƒ€ã« DLL ãŒã‚³ãƒ”ãƒ¼ã•ã‚Œã¦ã„ã‚‹ã‹ç¢ºèªã—ã¦ãã ã•ã„ã€‚", ex);
+                    "ONNX ƒ‰ƒ“ƒ^ƒCƒ€‚ÌƒlƒCƒeƒBƒu DLL ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñBDirectML ‚ğg‚¤ê‡‚Í " +
+                    "Microsoft.ML.OnnxRuntime.DirectML ‚ğQÆ‚É’Ç‰Á‚µAo—ÍƒtƒHƒ‹ƒ_‚É DLL ‚ªƒRƒs[‚³‚ê‚Ä‚¢‚é‚©Šm”F‚µ‚Ä‚­‚¾‚³‚¢B", ex);
             }
         }
         catch (OnnxRuntimeException ex)
         {
             throw new InvalidOperationException(
-                $"ONNX ã®ãƒ­ãƒ¼ãƒ‰ã«å¤±æ•—ã—ã¾ã—ãŸ: {resolved}\nãƒ¢ãƒ‡ãƒ«ã®äº’æ›æ€§ã‚„å…¥åŠ›ã‚µã‚¤ã‚ºã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚", ex);
+                $"ONNX ‚Ìƒ[ƒh‚É¸”s‚µ‚Ü‚µ‚½: {resolved}\nƒ‚ƒfƒ‹‚ÌŒİŠ·«‚â“ü—ÍƒTƒCƒY‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢B", ex);
         }
 
         _inputName = _session.InputMetadata.Keys.First();
@@ -63,7 +64,7 @@ public sealed class YoloV8Detector : IDisposable
     }
 
     /// <summary>
-    /// æ¨è«– (BGRå…¥åŠ›ã‚’æ˜ç¤ºçš„ã«RGBã¸å¤‰æ›å¾Œã€swapRB=false ã§BlobåŒ–)
+    /// „˜_ (BGR“ü—Í‚ğ–¾¦“I‚ÉRGB‚Ö•ÏŠ·ŒãAswapRB=false ‚ÅBlob‰»)
     /// </summary>
     public List<Detection> Detect(Mat frameBgr, float confTh = 0.25f, float iouTh = 0.45f)
     {
@@ -73,7 +74,7 @@ public sealed class YoloV8Detector : IDisposable
         // 1) Letterbox
         var lb = Letterbox(frameBgr, new Size(_inputSize, _inputSize), 32);
 
-        // 2) ãƒãƒ£ãƒãƒ«æ­£è¦åŒ–
+        // 2) ƒ`ƒƒƒlƒ‹³‹K‰»
         using var bgr3 = EnsureBgr3(lb.Image);
 
         // 3) BGR -> RGB
@@ -92,10 +93,10 @@ public sealed class YoloV8Detector : IDisposable
         if (blob.Empty())
             throw new InvalidOperationException("BlobFromImage returned empty Mat.");
 
-        // Blob shape èª¿æŸ»
-        // OpenCV ã® 4D blob: N,C,H,W
-        int dims = blob.Dims; // 4 æœŸå¾…
-        var shape = Enumerable.Range(0, dims).Select(i => blob.Size(i)).ToArray(); // [1,3,H,W] æœŸå¾…
+        // Blob shape ’²¸
+        // OpenCV ‚Ì 4D blob: N,C,H,W
+        int dims = blob.Dims; // 4 Šú‘Ò
+        var shape = Enumerable.Range(0, dims).Select(i => blob.Size(i)).ToArray(); // [1,3,H,W] Šú‘Ò
         long expected = 1L * shape.Aggregate(1, (a, b) => a * b);
 
         // 5) Mat -> float[]
@@ -103,7 +104,7 @@ public sealed class YoloV8Detector : IDisposable
 
         if (!blob.IsContinuous())
         {
-            // å¿µã®ãŸã‚é€£ç¶šåŒ–
+            // ”O‚Ì‚½‚ß˜A‘±‰»
             using var continuous = blob.Clone();
             CopyMatToArray(continuous, inputData);
         }
@@ -112,12 +113,12 @@ public sealed class YoloV8Detector : IDisposable
             CopyMatToArray(blob, inputData);
         }
 
-        // å€¤åŸŸãƒ­ã‚°
+        // ’lˆæƒƒO
         float min = inputData.Min();
         float max = inputData.Max();
         System.Diagnostics.Debug.WriteLine($"[YOLO] blob shape={string.Join("x", shape)} len={inputData.Length} range=({min:F3},{max:F3})");
 
-        // 6) Tensor æ§‹ç¯‰ (NCHW)
+        // 6) Tensor \’z (NCHW)
         var tensor = new DenseTensor<float>(new[] { shape[0], shape[1], shape[2], shape[3] });
         inputData.CopyTo(tensor.Buffer.Span);
 
@@ -128,7 +129,7 @@ public sealed class YoloV8Detector : IDisposable
         var outDims = output.Dimensions.ToArray();
         System.Diagnostics.Debug.WriteLine($"[YOLO] output dims={string.Join("x", outDims)} len={output.Length}");
 
-        // 7) å¾Œå‡¦ç†
+        // 7) Œãˆ—
         int origW = frameBgr.Cols, origH = frameBgr.Rows;
         var dets = ParseDetections(output, confTh, lb, origW, origH);
         dets = MathUtil.Nms(dets, iouTh);
@@ -143,7 +144,7 @@ public sealed class YoloV8Detector : IDisposable
             throw new ArgumentException($"Blob MatType must be CV_32F but was {m.Type()}");
         if (dst.Length == 0) return;
 
-        // Mat ã®ãƒ‡ãƒ¼ã‚¿ã¯ NCHW é€£ç¶šé ˜åŸŸ
+        // Mat ‚Ìƒf[ƒ^‚Í NCHW ˜A‘±—Ìˆæ
         Marshal.Copy(m.Data, dst, 0, dst.Length);
     }
 
@@ -167,22 +168,22 @@ public sealed class YoloV8Detector : IDisposable
     {
         var dims = tensor.Dimensions; // [1,C,Anchors] or [1,Anchors,C]
         if (dims.Length != 3)
-            throw new NotSupportedException("æƒ³å®šå¤–ã®å‡ºåŠ›æ¬¡å…ƒ");
+            throw new NotSupportedException("‘z’èŠO‚Ìo—ÍŸŒ³");
 
         var flat = tensor.ToArray();
         bool channelFirst = dims[1] < dims[2]; // [1,C,A]
         int anchors = channelFirst ? dims[2] : dims[1];
         int ch = channelFirst ? dims[1] : dims[2];
 
-        // æƒ³å®š: ch = 4 + numClasses (objectness ç„¡) = 7
+        // ‘z’è: ch = 4 + numClasses (objectness –³) = 7
         if (ch < 5)
-            throw new NotSupportedException($"æƒ³å®šå¤–ãƒãƒ£ãƒ³ãƒãƒ«æ•° ch={ch}");
+            throw new NotSupportedException($"‘z’èŠOƒ`ƒƒƒ“ƒlƒ‹” ch={ch}");
 
         int classesStart = 4;
         int numClasses = ch - classesStart;
-        bool hasObj = false; // ä»Šå› end2end: objectness ãªã—
+        bool hasObj = false; // ¡‰ñ end2end: objectness ‚È‚µ
 
-        // ã‚¯ãƒ©ã‚¹å€¤ãŒæ—¢ã« [0,1] ã‹åˆ¤å®š (æœ€å¤§å€¤ <=1 ã‹ã¤ æœ€å°å€¤ >=0 ãªã‚‰ç”Ÿå€¤ä½¿ç”¨)
+        // ƒNƒ‰ƒX’l‚ªŠù‚É [0,1] ‚©”»’è (Å‘å’l <=1 ‚©‚Â Å¬’l >=0 ‚È‚ç¶’lg—p)
         bool classAlreadyProb;
         {
             double cMin = double.PositiveInfinity, cMax = double.NegativeInfinity;
@@ -247,9 +248,9 @@ public sealed class YoloV8Detector : IDisposable
                 float ww = wCh[a];
                 float hh = hCh[a];
 
-                // (æ—¢ã«å…¥åŠ›ã‚¹ã‚±ãƒ¼ãƒ«ã® x,y,w,h ã®æƒ³å®š) â†’ æ­£è¦åŒ–ã§ãªã•ãã†ãªã®ã§ãã®ã¾ã¾
+                // (Šù‚É“ü—ÍƒXƒP[ƒ‹‚Ì x,y,w,h ‚Ì‘z’è) ¨ ³‹K‰»‚Å‚È‚³‚»‚¤‚È‚Ì‚Å‚»‚Ì‚Ü‚Ü
 
-                float obj = hasObj ? 1f /*æœªå¯¾å¿œ*/ : 1f;
+                float obj = hasObj ? 1f /*–¢‘Î‰*/ : 1f;
 
                 int bestCls = -1;
                 float bestScore = 0f;
@@ -348,5 +349,8 @@ public sealed class YoloV8Detector : IDisposable
     }
 }
 
+/// <summary>ŒŸoŒ‹‰Ê</summary>
 public readonly record struct Detection(OpenCvSharp.Rect2f Rect, float Score, int ClassId);
+
+/// <summary>Letterboxˆ—Œ‹‰Êi“à•”g—pj</summary>
 internal readonly record struct LetterboxResult(Mat Image, float Gain, float PadX, float PadY);

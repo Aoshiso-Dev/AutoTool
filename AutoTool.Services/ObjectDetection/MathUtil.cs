@@ -1,15 +1,17 @@
-ï»¿namespace YoloWinLib;
+using OpenCvSharp;
 
+namespace AutoTool.Services.ObjectDetection;
 
+/// <summary>
+/// ”ŠwEŠô‰½ŒvZƒ†[ƒeƒBƒŠƒeƒB
+/// </summary>
 internal static class MathUtil
 {
     public static OpenCvSharp.Rect2f Xywh2Xyxy(float x, float y, float w, float h)
-    => new(x - w / 2f, y - h / 2f, w, h);
-
+        => new(x - w / 2f, y - h / 2f, w, h);
 
     public static OpenCvSharp.Rect2f UndoLetterbox(OpenCvSharp.Rect2f r, LetterboxResult lb)
-    => new((r.X - lb.PadX) / lb.Gain, (r.Y - lb.PadY) / lb.Gain, r.Width / lb.Gain, r.Height / lb.Gain);
-
+        => new((r.X - lb.PadX) / lb.Gain, (r.Y - lb.PadY) / lb.Gain, r.Width / lb.Gain, r.Height / lb.Gain);
 
     public static OpenCvSharp.Rect2f ClipRect(OpenCvSharp.Rect2f r, int w, int h)
     {
@@ -19,7 +21,6 @@ internal static class MathUtil
         float y2 = Math.Clamp(r.Y + r.Height, 0, h - 1);
         return new(x1, y1, x2 - x1, y2 - y1);
     }
-
 
     public static List<Detection> Nms(List<Detection> dets, float iouTh)
     {
@@ -40,7 +41,6 @@ internal static class MathUtil
         }
         return keep;
     }
-
 
     private static float IoU(OpenCvSharp.Rect2f a, OpenCvSharp.Rect2f b)
     {
