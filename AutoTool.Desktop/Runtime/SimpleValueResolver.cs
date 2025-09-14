@@ -2,6 +2,7 @@ using AutoTool.Core.Abstractions;
 
 namespace AutoTool.Desktop.Runtime;
 
+/*
 public class SimpleValueResolver : IValueResolver
 {
     public Task<string?> ResolveStringAsync(object? valueSource, CancellationToken ct)
@@ -18,3 +19,4 @@ public class SimpleValueResolver : IValueResolver
         return Task.FromResult(!string.IsNullOrWhiteSpace(expr));
     }
 }
+*/

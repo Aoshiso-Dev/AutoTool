@@ -1,4 +1,5 @@
 ﻿using AutoTool.Core.Abstractions;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,6 @@ namespace AutoTool.Core.Commands
         bool IsEnabled { get; set; }    // 無効化トグル
 
         /// <summary>コマンドを実行。ControlFlowで制御転送を表現。</summary>
-        Task<ControlFlow> ExecuteAsync(IExecutionContext context, CancellationToken ct);
+        Task<ControlFlow> ExecuteAsync(CancellationToken ct);
     }
 }

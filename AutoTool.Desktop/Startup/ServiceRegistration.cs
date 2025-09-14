@@ -1,23 +1,19 @@
-﻿// AutoTool.Commands.* の Descriptor を登録
-using AutoTool.Commands.Flow.If;
-using AutoTool.Commands.Flow.While;
-using AutoTool.Commands.Flow.Wait;
-using AutoTool.Commands.Input.Click;
-using AutoTool.Commands.Input.KeyInput;
-using AutoTool.Core.Abstractions;
+﻿using AutoTool.Core.Abstractions;
 using AutoTool.Core.Descriptors;
-using AutoTool.Core.Runtime;
 using AutoTool.Core.Registration;
+using AutoTool.Core.Runtime;
 using AutoTool.Core.Services;
-using AutoTool.Services;
-using AutoTool.Desktop.ViewModels;
-using AutoTool.Desktop.Views;
 using AutoTool.Desktop.Runtime;
 using AutoTool.Desktop.Services;
+using AutoTool.Desktop.ViewModels;
+using AutoTool.Desktop.Views;
+using AutoTool.Services;
+using AutoTool.Services.Abstractions;
+using AutoTool.Services.Implementations;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
 using System.IO;
 
 namespace AutoTool.Desktop.Startup;
@@ -95,31 +91,28 @@ public static class ServiceRegistration
             });
 
             services.AddSingleton<ICommandRunner, CommandRunner>();
-
-            // Runtime実装
+            
+            // Services
             services.AddSingleton<IValueResolver, SimpleValueResolver>();
             services.AddSingleton<IVariableScope, SimpleVariableScope>();
-            services.AddSingleton<IExecutionContext>(sp =>
-            {
-                var valueResolver = sp.GetRequiredService<IValueResolver>();
-                var variables = sp.GetRequiredService<IVariableScope>();
-                var logger = sp.GetRequiredService<ILogger<AutoTool.Desktop.Runtime.ExecutionContext>>();
-                return new AutoTool.Desktop.Runtime.ExecutionContext(valueResolver, variables, logger);
-            });
+            services.AddSingleton<ICaptureService, CaptureService>();
+            services.AddSingleton<IUIService, UIService>();
 
             // ViewModels
             services.AddTransient<MainViewModel>();
             services.AddTransient<ButtonPanelViewModel>();
             services.AddTransient<EditPanelViewModel>();
-            
+            services.AddTransient<ListPanelViewModel>();
+
             // Views
             services.AddTransient<MainWindow>(serviceProvider =>
             {
                 var mainViewModel = serviceProvider.GetRequiredService<MainViewModel>();
                 var buttonPanelViewModel = serviceProvider.GetRequiredService<ButtonPanelViewModel>();
                 var editPanelViewModel = serviceProvider.GetRequiredService<EditPanelViewModel>();
-                
-                return new MainWindow(mainViewModel, buttonPanelViewModel, editPanelViewModel);
+                var listPanelViewModel = serviceProvider.GetRequiredService<ListPanelViewModel>();
+
+                return new MainWindow(mainViewModel, buttonPanelViewModel, editPanelViewModel, listPanelViewModel);
             });
 
             // WPF Application Service
@@ -139,48 +132,5 @@ public static class ServiceRegistration
             services.AddTransient<MainWindow>();
             services.AddHostedService<WpfApplicationService>();
         }
-    }
-
-    /// <summary>
-    /// 従来のServiceProvider方式との後方互換性のためのメソッド
-    /// </summary>
-    [Obsolete("Use BuildHost() instead. This method is provided for backward compatibility.")]
-    public static IServiceProvider BuildServices()
-    {
-        var services = new ServiceCollection();
-
-        // 基本的なサービスのみ登録
-        services.AddLogging(builder => builder.AddConsole().AddDebug());
-
-        // Attribute-based Command Registry
-        services.AddSingleton<AttributeCommandRegistrationService>();
-        services.AddSingleton<ICommandRegistry>(sp =>
-        {
-            var logger = sp.GetService<ILogger<DynamicCommandRegistry>>();
-            var registry = new DynamicCommandRegistry(null, logger);
-            
-            // 自動登録を試行
-            try
-            {
-                var registrationService = sp.GetService<AttributeCommandRegistrationService>();
-                registrationService?.RegisterCommandsFromCurrentDomain(registry);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Auto-registration failed: {ex.Message}");
-            }
-            
-            return registry;
-        });
-
-        services.AddSingleton<ICommandRunner, CommandRunner>();
-        services.AddSingleton<IValueResolver, SimpleValueResolver>();
-        services.AddSingleton<IVariableScope, SimpleVariableScope>();
-
-        services.AddTransient<MainViewModel>();
-        services.AddTransient<ButtonPanelViewModel>();
-        services.AddTransient<EditPanelViewModel>();
-
-        return services.BuildServiceProvider();
     }
 }

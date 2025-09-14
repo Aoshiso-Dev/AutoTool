@@ -1,7 +1,7 @@
 using AutoTool.Core.Abstractions;
 
 namespace AutoTool.Desktop.Runtime;
-
+/*
 public class SimpleVariableScope : IVariableScope
 {
     private readonly Dictionary<string, object?> _variables = new();
@@ -16,3 +16,4 @@ public class SimpleVariableScope : IVariableScope
         _variables[name] = value;
     }
 }
+*/

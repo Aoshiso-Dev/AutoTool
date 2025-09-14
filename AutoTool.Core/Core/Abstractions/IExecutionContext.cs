@@ -17,5 +17,6 @@ namespace AutoTool.Core.Abstractions
         ILogger Logger { get; }                // 任意のロガー抽象
         CancellationToken ShutdownToken { get; } // 全体停止と連動
         Task DelayAsync(TimeSpan delay, CancellationToken ct);
+        
     }
 }

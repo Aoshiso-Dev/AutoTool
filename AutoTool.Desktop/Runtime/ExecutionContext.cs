@@ -2,7 +2,7 @@ using AutoTool.Core.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace AutoTool.Desktop.Runtime;
-
+/*
 public class ExecutionContext : IExecutionContext
 {
     public IValueResolver ValueResolver { get; }
@@ -27,3 +27,4 @@ public class ExecutionContext : IExecutionContext
         await Task.Delay(delay, ct);
     }
 }
+    */

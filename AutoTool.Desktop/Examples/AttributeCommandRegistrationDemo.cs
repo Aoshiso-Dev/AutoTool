@@ -42,7 +42,7 @@ namespace AutoTool.Desktop.Examples
                 var registrationService = services.GetService<AttributeCommandRegistrationService>();
                 if (registrationService != null)
                 {
-                    RunAdvancedDemo(registrationService, commandRegistry, logger);
+                    //RunAdvancedDemo(registrationService, commandRegistry, logger);
                 }
                 else
                 {

@@ -33,12 +33,9 @@ public interface ICaptureService
     Task<Color?> ShowColorPickerAsync(CancellationToken cancellationToken = default);
     
     /// <summary>
-    /// 指定された画像を画面上で検索します
+    /// 指定された画像をウィンドウ上で検索します
     /// </summary>
-    Task<Point?> FindImageAsync(Bitmap targetImage, double threshold = 0.9, CancellationToken cancellationToken = default);
-    
-    /// <summary>
-    /// 指定された画像を画面上で検索し、すべての一致する位置を返します
-    /// </summary>
-    Task<Point[]> FindAllImagesAsync(Bitmap targetImage, double threshold = 0.9, CancellationToken cancellationToken = default);
+    Task<Point?> FindImageAsync(string imagePath, string windowTitle = "", string windowClass = "", double threshold = 0.9, CancellationToken cancellationToken = default);
+
+    Task<Point[]> FindAllImagesAsync(string imagePath, string windowTitle = "", string windowClass = "", double threshold = 0.9, CancellationToken cancellationToken = default);
 }

@@ -7,7 +7,7 @@
         xmlns:parts="clr-namespace:AutoTool.Desktop.Views.Parts"
         xmlns:vm="clr-namespace:AutoTool.Desktop.ViewModels"
         mc:Ignorable="d"
-        Title="AutoTool - 自動操作ツール" Height="720" Width="1200"
+        Title="AutoTool" Height="720" Width="1200"
         Background="#FFF"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}">
     <Grid>
@@ -16,7 +16,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="420"/>
+            <ColumnDefinition Width="700"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -25,7 +25,7 @@
 
 
         <!-- Left: Tree/List -->
-        <parts:ListPanel Grid.Row="1" Grid.Column="0"/>
+        <parts:ListPanel x:Name="ListPanel" Grid.Row="1" Grid.Column="0"/>
 
 
         <!-- Right: Editor -->

@@ -3,11 +3,13 @@ using AutoTool.Core.Attributes;
 using AutoTool.Core.Commands;
 using AutoTool.Core.Diagnostics;
 using AutoTool.Core.Utilities;
+using AutoTool.Services.Abstractions;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 
 namespace AutoTool.Commands.Input.KeyInput
@@ -15,33 +17,37 @@ namespace AutoTool.Commands.Input.KeyInput
     /// <summary>
     /// 指定したキーを押下するコマンド
     /// </summary>
-    [Command("keyinput", "キー入力", IconKey = "mdi:keyboard", Category = "キーボード操作", Description = "指定したキーを押下します", Order = 25)]
+    [Command("KeyInput", "キー入力", IconKey = "mdi:keyboard", Category = "キーボード操作", Description = "指定したキーを押下します", Order = 25)]
     public sealed class KeyInputCommand :
         IAutoToolCommand,
         IHasSettings<KeyInputSettings>,
-        IValidatableCommand,
-        IDeepCloneable<KeyInputCommand>
+        IValidatableCommand
     {
         public Guid Id { get; } = Guid.NewGuid();
-        public string Type => "keyinput";
+        public string Type => "KeyInput";
         public string DisplayName => "キー入力";
         public bool IsEnabled { get; set; } = true;
 
         public KeyInputSettings Settings { get; private set; }
 
-        public KeyInputCommand(KeyInputSettings settings)
+        public IServiceProvider? _serviceProvider = null;
+        private readonly ILogger<KeyInputCommand>? _logger = null;
+
+        public KeyInputCommand(KeyInputSettings settings, IServiceProvider serviceProvider)
         {
             Settings = settings;
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _logger = _serviceProvider.GetService(typeof(ILogger<KeyInputCommand>)) as ILogger<KeyInputCommand> ?? throw new ArgumentNullException(nameof(_logger));
         }
 
-        public async Task<ControlFlow> ExecuteAsync(IExecutionContext ctx, CancellationToken ct)
+        public async Task<ControlFlow> ExecuteAsync(CancellationToken ct)
         {
             if (!IsEnabled) return ControlFlow.Next;
 
             try
             {
                 // キー入力を実行
-                await ExecuteKeyInputAsync(ctx, Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift,
+                await ExecuteKeyInputAsync(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift,
                     Settings.WindowTitle, Settings.WindowClassName, ct);
 
                 return ControlFlow.Next;
@@ -53,7 +59,7 @@ namespace AutoTool.Commands.Input.KeyInput
             }
             catch (Exception ex)
             {
-                ctx.Logger.LogError(ex, "Key input failed: {Key}", Settings.Key);
+                _logger?.LogError(ex, "Key input failed: {Key}", Settings.Key);
                 return ControlFlow.Error;
             }
         }
@@ -61,24 +67,21 @@ namespace AutoTool.Commands.Input.KeyInput
         /// <summary>
         /// キー入力の実行（実装はプラットフォーム固有のライブラリに依存）
         /// </summary>
-        private async Task ExecuteKeyInputAsync(IExecutionContext ctx, Key key, bool ctrl, bool alt, bool shift,
+        private async Task ExecuteKeyInputAsync(Key key, bool ctrl, bool alt, bool shift,
             string windowTitle, string windowClassName, CancellationToken ct)
         {
-            // TODO: 実際のキー入力実装
-            // 既存のKeyHelper.Inputを使用する場合の例:
-            // await KeyHelper.Input.KeyPressAsync(key, ctrl, alt, shift, windowTitle, windowClassName);
-            
-            // 現在はシミュレーション
-            await Task.Delay(10, ct); // キー入力の処理時間をシミュレート
-            
+
+            var ui = _serviceProvider?.GetService(typeof(IUIService)) as IUIService;
+            ui?.ShowToast("KeyInputCommand");
+
             // ログ出力
             var hotkeyText = GetHotkeyString(key, ctrl, alt, shift);
-            
+
             var target = string.IsNullOrEmpty(windowTitle) 
                 ? "システム全体" 
                 : $"ウィンドウ「{windowTitle}」";
                 
-            ctx.Logger.LogInformation("キー入力実行: {Hotkey} -> {Target}", hotkeyText, target);
+            _logger?.LogInformation("キー入力実行: {Hotkey} -> {Target}", hotkeyText, target);
         }
 
         /// <summary>
@@ -108,10 +111,5 @@ namespace AutoTool.Commands.Input.KeyInput
             if (Settings.Alt && Settings.Key == Key.F4)
                 yield return "Alt+F4はアプリケーションを終了させる可能性があります。";
         }
-
-        public KeyInputCommand DeepClone()
-            => new KeyInputCommand(Settings with { });
-
-        public void ReplaceSettings(KeyInputSettings next) => Settings = next;
     }
 }

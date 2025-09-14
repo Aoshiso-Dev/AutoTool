@@ -13,8 +13,78 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <!-- カスタムの逆変換コンバーター -->
         <conv:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        
+        
+        <!-- DataContext: VM などが SelectedCommand を持つ想定 -->
+        
+        <!-- 参照ボタンのスタイル -->
+        <Style TargetType="Button" x:Key="BrowseButton">
+            <Setter Property="Margin" Value="3,0,0,0"/>
+            <Setter Property="Width" Value="40"/>
+        </Style>
+
+        <!-- 画像ファイルのテンプレ（TextBox + 参照ボタン） -->
+        <DataTemplate x:Key="FilePathEditorTemplate">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" Content="参照" Click="OnBrowseImagePath_Click" Style="{StaticResource BrowseButton}"/>
+                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </DockPanel>
+        </DataTemplate>
+
+        <!-- ONNXモデルのテンプレ（TextBox + 参照ボタン） -->
+        <DataTemplate x:Key="OnnxPathEditorTemplate">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" Content="参照" Click="OnBrowseOnnxPath_Click" Style="{StaticResource BrowseButton}"/>
+                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </DockPanel>
+        </DataTemplate>
+
+        <!-- Point のテンプレ（X/Y + 取得ボタン） -->
+        <DataTemplate x:Key="PointEditorTemplate">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" Content="取得" Click="OnPickPoint_Click" Style="{StaticResource BrowseButton}"/>
+                <xctk:IntegerUpDown Minimum="0" Maximum="20000" Width="80"
+                        Value="{Binding Value.X, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <xctk:IntegerUpDown Minimum="0" Maximum="20000" Width="80"
+                        Value="{Binding Value.Y, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock/>
+            </DockPanel>
+        </DataTemplate>
+
+        <!-- ウィンドウタイトルのテンプレ（TextBox + 取得ボタン） -->
+        <DataTemplate x:Key="WindowTitlePickerTemplate">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" Content="取得" Click="OnPickWindowTitle_Click" Style="{StaticResource BrowseButton}"/>
+                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </DockPanel>
+        </DataTemplate>
+
+        <!-- ウィンドウクラス名のテンプレ（TextBox + 取得ボタン） -->
+        <DataTemplate x:Key="WindowClassNamePickerTemplate">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" Content="取得" Click="OnPickWindowClassName_Click" Style="{StaticResource BrowseButton}"/>
+                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </DockPanel>
+        </DataTemplate>
+
+        <!-- 0〜1 のスライダ用テンプレ -->
+        <DataTemplate x:Key="Slider01Template">
+            <StackPanel>
+                <Slider Minimum="0" Maximum="1"
+            Value="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Foreground="Gray" FontSize="11"
+                Text="{Binding Value, StringFormat=0.00}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- 色選択（ColorPicker） -->
+        <DataTemplate x:Key="ColorPickerTemplate">
+            <xctk:ColorPicker UsingAlphaChannel="True"
+                    SelectedColor="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </DataTemplate>
+        
     </UserControl.Resources>
-    
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -35,20 +105,46 @@
         <!-- Content Area -->
         <Border Grid.Row="1" Margin="8" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8">
             <Grid>
-                <!-- PropertyGrid when command is selected -->
-                <xctk:PropertyGrid Name="PropertyGrid"
-                                   SelectedObject="{Binding SelectedEditor}"
-                                   AutoGenerateProperties="True"
-                                   ShowSortOptions="False"
-                                   ShowSearchBox="True"
-                                   ShowAdvancedOptions="False"
-                                   ShowTitle="False"
-                                   Visibility="{Binding HasSelection, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                   Margin="8"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="11*"/>
+                </Grid.ColumnDefinitions>
                 
+                <!-- PropertyGrid when command is selected -->
+                <xctk:PropertyGrid x:Name="PropertyGrid"
+                       SelectedObject="{Binding SelectedEditor}"
+                       AutoGenerateProperties="True"
+                       IsCategorized="True"
+                       NameColumnWidth="220"
+                       Visibility="{Binding HasSelection, Converter={StaticResource BooleanToVisibilityConverter}}"
+                       ShowSearchBox="True"
+                       Grid.ColumnSpan="2">
+
+                    <!-- ★ プロパティ名でテンプレを割り当てる -->
+                    <xctk:PropertyGrid.EditorDefinitions>
+                        <!-- スライダ（複数プロパティ名をカンマ区切り） -->
+                        <xctk:EditorTemplateDefinition TargetProperties="Similarity,ConfThreshold,IoUThreshold"
+                                     EditingTemplate="{StaticResource Slider01Template}"/>
+
+                        <!-- ファイル/ONNX/座標/ウィンドウ/色 -->
+                        <xctk:EditorTemplateDefinition TargetProperties="ImagePath"
+                                     EditingTemplate="{StaticResource FilePathEditorTemplate}"/>
+                        <xctk:EditorTemplateDefinition TargetProperties="ModelPath"
+                                     EditingTemplate="{StaticResource OnnxPathEditorTemplate}"/>
+                        <xctk:EditorTemplateDefinition TargetProperties="Point"
+                                     EditingTemplate="{StaticResource PointEditorTemplate}"/>
+                        <xctk:EditorTemplateDefinition TargetProperties="WindowTitle"
+                                     EditingTemplate="{StaticResource WindowTitlePickerTemplate}"/>
+                        <xctk:EditorTemplateDefinition TargetProperties="WindowClassName"
+                                     EditingTemplate="{StaticResource WindowClassNamePickerTemplate}"/>
+                        <xctk:EditorTemplateDefinition TargetProperties="SearchColor"
+                                     EditingTemplate="{StaticResource ColorPickerTemplate}"/>
+                    </xctk:PropertyGrid.EditorDefinitions>
+                </xctk:PropertyGrid>
+
                 <!-- No Selection Message -->
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Visibility="{Binding HasSelection, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=Invert}">
+                <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center"
+                            Visibility="{Binding HasSelection, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=Invert}" Grid.ColumnSpan="2">
                     <TextBlock Text="📄" FontSize="48" HorizontalAlignment="Center" Opacity="0.3"/>
                     <TextBlock Text="コマンドを選択してください" 
                                FontSize="14" HorizontalAlignment="Center" 
@@ -67,16 +163,17 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                
+
                 <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" 
                            VerticalAlignment="Center" Foreground="#6B7280"/>
-                
-                <StackPanel Grid.Column="1" Orientation="Horizontal" 
+                <!--
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
                             Visibility="{Binding HasSelection, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Button Content="元に戻す" Command="{Binding RevertCommand}" Margin="0,0,4,0"/>
                     <Button Content="適用" Background="#10B981" Foreground="White" 
                             Command="{Binding ApplyCommand}"/>
                 </StackPanel>
+                -->
             </Grid>
         </Border>
     </Grid>

@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using AutoTool.Core.Descriptors;
 using Microsoft.Extensions.Logging;
+using AutoTool.Core.Commands;
 
 namespace AutoTool.Desktop.ViewModels;
 
@@ -16,13 +17,10 @@ public partial class ButtonPanelViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
 
     [ObservableProperty]
-    private string _searchText = string.Empty;
-    
+    private bool _isRunning = false;
+
     [ObservableProperty]
     private ObservableCollection<CommandDescriptorItem> _availableCommands = new();
-    
-    [ObservableProperty]
-    private ObservableCollection<CommandDescriptorItem> _filteredCommands = new();
     
     [ObservableProperty]
     private CommandDescriptorItem? _selectedCommand;
@@ -37,7 +35,13 @@ public partial class ButtonPanelViewModel : ObservableObject
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         
         LoadAvailableCommands();
-        FilterCommands();
+        RegisterMessages();
+    }
+
+    private void RegisterMessages()
+    {
+        WeakReferenceMessenger.Default.Register<StartMacroMessage>(this, (r, m) => IsRunning = true);
+        WeakReferenceMessenger.Default.Register<FinishMacroMessage>(this, (r, m) => IsRunning = false);
     }
 
     private void LoadAvailableCommands()
@@ -64,41 +68,8 @@ public partial class ButtonPanelViewModel : ObservableObject
             _logger.LogError(ex, "利用可能なコマンドの読み込み中にエラーが発生しました");
         }
     }
-    
-    partial void OnSearchTextChanged(string value)
-    {
-        FilterCommands();
-    }
-    
-    private void FilterCommands()
-    {
-        try
-        {
-            var filtered = AvailableCommands.AsEnumerable();
-            
-            if (!string.IsNullOrEmpty(SearchText))
-            {
-                var searchLower = SearchText.ToLower();
-                filtered = filtered.Where(cmd => 
-                    cmd.DisplayName.ToLower().Contains(searchLower) ||
-                    cmd.Type.ToLower().Contains(searchLower));
-            }
-            
-            FilteredCommands = new ObservableCollection<CommandDescriptorItem>(filtered);
-            
-            // 検索結果の最初のアイテムを選択
-            if (FilteredCommands.Count > 0 && (SelectedCommand == null || !FilteredCommands.Contains(SelectedCommand)))
-            {
-                SelectedCommand = FilteredCommands.First();
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "コマンドフィルタリング中にエラーが発生しました");
-        }
-    }
 
-    // File operations - メッセージング経由でMainViewModelに通知
+
     [RelayCommand]
     private void New()
     {
@@ -238,28 +209,29 @@ public partial class ButtonPanelViewModel : ObservableObject
     [RelayCommand]
     private void Run()
     {
-        try
+        if (IsRunning)
         {
-            WeakReferenceMessenger.Default.Send(new RunMacroMessage());
-            _logger.LogInformation("Run macro message sent");
+            try
+            {
+                WeakReferenceMessenger.Default.Send(new RunMacroMessage());
+                _logger.LogInformation("Run macro message sent");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Run macro command error");
+            }
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, "Run macro command error");
-        }
-    }
-
-    [RelayCommand]
-    private void Stop()
-    {
-        try
-        {
-            WeakReferenceMessenger.Default.Send(new StopMacroMessage());
-            _logger.LogInformation("Stop macro message sent");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Stop macro command error");
+            try
+            {
+                WeakReferenceMessenger.Default.Send(new StopMacroMessage());
+                _logger.LogInformation("Stop macro message sent");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Stop macro command error");
+            }
         }
     }
 }
@@ -285,3 +257,16 @@ public record MoveUpCommandMessage;
 public record MoveDownCommandMessage;
 public record RunMacroMessage;
 public record StopMacroMessage;
+public record StartMacroMessage;
+
+public record FinishMacroMessage;
+
+public record GetRootMacroMessaage
+{
+    public ObservableCollection<IAutoToolCommand>? Root { get; private set; }
+    
+    internal void Reply(ObservableCollection<IAutoToolCommand> root)
+    {
+        Root = root;
+    }
+}

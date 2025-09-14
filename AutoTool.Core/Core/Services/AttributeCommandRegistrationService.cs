@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using AutoTool.Core.Abstractions;
@@ -8,6 +9,7 @@ using AutoTool.Core.Commands;
 using AutoTool.Core.Descriptors;
 using AutoTool.Core.Registration;
 using Microsoft.Extensions.Logging;
+using System.Runtime.Loader;
 
 namespace AutoTool.Core.Services
 {
@@ -208,13 +210,56 @@ namespace AutoTool.Core.Services
 
         /// <summary>
         /// 現在実行中のアセンブリドメインから自動的にコマンドを登録
+        /// ※ 出力フォルダの AutoTool*.dll を見て、未ロードのものは明示的にロードして探索します。
         /// </summary>
         public int RegisterCommandsFromCurrentDomain(ICommandRegistry registry)
         {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies()
-                .Where(a => !a.IsDynamic && 
-                           !string.IsNullOrEmpty(a.Location) &&
-                           (a.GetName().Name?.StartsWith("AutoTool", StringComparison.OrdinalIgnoreCase) ?? false))
+            // 1) まず現在ロードされているアセンブリを取得
+            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+                .ToList();
+
+            _logger.LogDebug("現在のドメインにロード済みアセンブリ: {Count}個", loadedAssemblies.Count);
+            foreach (var a in loadedAssemblies)
+            {
+                _logger.LogDebug("- {Name}", a.GetName().Name);
+            }
+
+            // 2) 出力フォルダ内の AutoTool*.dll を列挙し、まだロードされていないアセンブリをロードする
+            try
+            {
+                var baseDir = AppContext.BaseDirectory;
+                var dllFiles = Directory.EnumerateFiles(baseDir, "AutoTool*.dll", SearchOption.TopDirectoryOnly);
+                foreach (var dll in dllFiles)
+                {
+                    try
+                    {
+                        var asmName = AssemblyName.GetAssemblyName(dll);
+                        if (loadedAssemblies.Any(a => string.Equals(a.GetName().Name, asmName.Name, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            continue; // 既にロード済み
+                        }
+
+                        // 安全にロード（既存のLoadコンテキストに追加）
+                        var loaded = AssemblyLoadContext.Default.LoadFromAssemblyPath(dll);
+                        loadedAssemblies.Add(loaded);
+                        _logger.LogDebug("ディスクからアセンブリをロード: {Assembly}", asmName.Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "出力フォルダのアセンブリ読み込みに失敗: {Path}", dll);
+                        // 続行
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "出力フォルダスキャン中に例外が発生しました");
+            }
+
+            // 3) AutoTool で始まるアセンブリのみを対象にする（既存ロジックを再現）
+            var assemblies = loadedAssemblies
+                .Where(a => (a.GetName().Name?.StartsWith("AutoTool", StringComparison.OrdinalIgnoreCase) ?? false))
                 .ToArray();
 
             _logger.LogDebug("現在のドメインから検索対象アセンブリを特定: {Count}個", assemblies.Length);

@@ -12,7 +12,8 @@ namespace AutoTool.Desktop.Views
         public MainWindow(
             MainViewModel mainViewModel,
             ButtonPanelViewModel buttonPanelViewModel,
-            EditPanelViewModel editPanelViewModel)
+            EditPanelViewModel editPanelViewModel,
+            ListPanelViewModel listPanelViewModel)
         {
             InitializeComponent();
 
@@ -22,6 +23,7 @@ namespace AutoTool.Desktop.Views
                 DataContext = mainViewModel;
                 ButtonPanel.DataContext = buttonPanelViewModel;
                 EditPanel.DataContext = editPanelViewModel;
+                ListPanel.DataContext = listPanelViewModel;
             }
             catch (Exception ex)
             {
@@ -31,7 +33,7 @@ namespace AutoTool.Desktop.Views
         }
 
         // パラメータなしのコンストラクタ（デザイナー用）
-        public MainWindow() : this(null!, null!, null!)
+        public MainWindow() : this(null!, null!, null!, null!)
         {
             // デザイナー専用
         }

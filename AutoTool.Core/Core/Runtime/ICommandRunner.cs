@@ -8,5 +8,5 @@ public interface ICommandRunner
     event EventHandler<IAutoToolCommand>? CommandStarting;
     event EventHandler<(IAutoToolCommand cmd, ControlFlow result)>? CommandFinished;
 
-    Task<ControlFlow> RunAsync(IEnumerable<IAutoToolCommand> root, IExecutionContext ctx, CancellationToken ct);
+    Task<ControlFlow> RunAsync(IEnumerable<IAutoToolCommand> root, CancellationToken ct);
 }

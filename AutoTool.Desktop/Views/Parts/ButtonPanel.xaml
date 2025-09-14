@@ -10,76 +10,54 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            
+        </StackPanel>
         
         <!-- Main Button Bar -->
-        <Border Grid.Row="0" Padding="8" Background="#FAFAFB" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
-            <DockPanel>
-                <!-- Left group: file -->
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" Margin="0,0,16,0">
-                    <Button Content="新規作成" Command="{Binding NewCommand}" Margin="0,0,4,0"/>
-                    <Button Content="読み込み" Command="{Binding LoadCommand}" Margin="0,0,4,0"/>
-                    <Button Content="保存" Command="{Binding SaveCommand}"/>
-                </StackPanel>
-
-                <!-- Center group: edit -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="選択を追加" Command="{Binding AddCommand}" 
-                            Background="#10B981" Foreground="White" Margin="0,0,4,0"/>
-                    <Button Content="削除" Command="{Binding RemoveCommand}" Margin="0,0,4,0"/>
-                    <Button Content="↑" Command="{Binding MoveUpCommand}" Margin="0,0,4,0"/>
-                    <Button Content="↓" Command="{Binding MoveDownCommand}"/>
-                </StackPanel>
-
-                <!-- Right group: run -->
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                    <Button Content="実行" Background="#3B82F6" Foreground="White" 
-                            Command="{Binding RunCommand}" Margin="0,0,4,0"/>
-                    <Button Content="停止" Background="#EF4444" Foreground="White" 
-                            Command="{Binding StopCommand}"/>
-                </StackPanel>
-            </DockPanel>
-        </Border>
-        
-        <!-- Command Selection Panel -->
-        <Border Grid.Row="1" Padding="8" Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="200"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="250"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                
-                <TextBlock Grid.Column="0" Text="検索:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                
-                <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         VerticalAlignment="Center" Margin="0,0,16,0"/>
-                
-                <TextBlock Grid.Column="2" Text="コマンド:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                
-                <ComboBox Grid.Column="3" ItemsSource="{Binding FilteredCommands}"
-                          SelectedItem="{Binding SelectedCommand}"
-                          DisplayMemberPath="DisplayName"
-                          VerticalAlignment="Center" Margin="0,0,16,0"/>
-                
-                <StackPanel Grid.Column="4" Orientation="Horizontal">
-                    <!-- Quick Add Buttons for Common Commands -->
-                    <Button Content="+ 待機" Command="{Binding AddSpecificCommandCommand}" 
-                            CommandParameter="wait" Margin="0,0,4,0"/>
-                    <Button Content="+ クリック" Command="{Binding AddSpecificCommandCommand}" 
-                            CommandParameter="click" Margin="0,0,4,0"/>
-                    <Button Content="+ 条件分岐" Command="{Binding AddSpecificCommandCommand}" 
-                            CommandParameter="if" Margin="0,0,4,0"/>
-                </StackPanel>
-                
-                <!-- Command Info -->
-                <TextBlock Grid.Column="5" Text="{Binding SelectedCommand.Type, StringFormat='タイプ: {0}'}"
-                           VerticalAlignment="Center" Foreground="#6B7280" 
-                           HorizontalAlignment="Right"/>
-            </Grid>
-        </Border>
+        <ToolBar>
+            <ToggleButton IsChecked="{Binding IsRunning, Mode=TwoWay}"
+              Command="{Binding RunCommand}"
+              Padding="6,2"
+              Width="100"
+              Margin="3">
+                <ToggleButton.Style>
+                    <Style TargetType="ToggleButton">
+                        <Setter Property="Background" Value="Green"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="BorderBrush" Value="DarkGreen"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="Content" Value="実行"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="Red"/>
+                                <Setter Property="BorderBrush" Value="DarkRed"/>
+                                <Setter Property="Content" Value="停止"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ToggleButton.Style>
+            </ToggleButton>
+            <Border Width="1" Background="#E5E7EB"/>
+            <Button Content="新規" Command="{Binding NewCommand}" Margin="3"/>
+            <Border Width="1" Background="#E5E7EB"/>
+            <Button Content="開く" Command="{Binding LoadCommand}" Margin="3"/>
+            <Button Content="保存" Command="{Binding SaveCommand}" Margin="3"/>
+            <Border Width="1" Background="#E5E7EB"/>
+            <Button Content="元に戻す" Command="{Binding UndoCommand}" Margin="3"/>
+            <Button Content="やり直し" Command="{Binding RedoCommand}" Margin="3"/>
+            <Border Width="1" Background="#E5E7EB"/>
+            <Border Width="1" Background="#E5E7EB"/>
+            <TextBlock Text="コマンド:" VerticalAlignment="Center" Margin="3"/>
+            <ComboBox ItemsSource="{Binding AvailableCommands}" SelectedItem="{Binding SelectedCommand}" DisplayMemberPath="DisplayName" VerticalAlignment="Center" Width="200"  Margin="3"/>
+            <Button Content="追加" Command="{Binding AddCommand}" Margin="3"/>
+            <Button Content="削除" Command="{Binding RemoveCommand}" Margin="3"/>
+            <Border Width="1" Background="#E5E7EB" Margin="6,0"/>
+            <Button Content="上へ" Command="{Binding MoveUpCommand}" Margin="3"/>
+            <Button Content="下へ" Command="{Binding MoveDownCommand}" Margin="3"/>
+        </ToolBar>
     </Grid>
 </UserControl>

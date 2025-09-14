@@ -5,57 +5,51 @@ xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
 xmlns:corecmd="clr-namespace:AutoTool.Core.Commands;assembly=AutoTool.Core"
+xmlns:converters="clr-namespace:AutoTool.Desktop.Converters"
 mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+        <converters:IndentConverter x:Key="IndentConverter"/>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="コマンド一覧" FontSize="14" FontWeight="SemiBold" Margin="8,8,8,4"/>
+        <TextBlock Text="マクロリスト" FontSize="14" FontWeight="SemiBold" Margin="8,8,8,4"/>
 
         <Border Grid.Row="1" Margin="8" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8">
             <ScrollViewer>
-                <TreeView x:Name="CommandTree"
-                         ItemsSource="{Binding Root}">
-                    <TreeView.Resources>
-                        <!-- Command Node: show DisplayName -->
-                        <HierarchicalDataTemplate DataType="{x:Type corecmd:IAutoToolCommand}" ItemsSource="{Binding Blocks}">
-                            <StackPanel Orientation="Horizontal" Margin="4">
-                                <Ellipse Width="8" Height="8" Fill="#9CA3AF" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
-                                <TextBlock Text="{Binding Type}" Foreground="#6B7280" Margin="8,0,0,0"/>
-                                <TextBlock Text=" (無効)" Foreground="#9CA3AF">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled}" Value="False">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                <ListView x:Name="CommandList"
+                         ItemsSource="{Binding FlatItems}"
+                         SelectedItem="{Binding SelectedNode, Mode=TwoWay}"
+                         SelectionMode="Single"
+                         Background="Transparent"
+                         BorderThickness="0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="{Binding IndentLevel, Converter={StaticResource IndentConverter}}">
+                                <!-- Command items -->
+                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsCommand, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <Ellipse Width="8" Height="8" Fill="#9CA3AF" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Type}" Foreground="#6B7280" Margin="8,0,0,0"/>
+                                    <TextBlock Text=" (無効)" Foreground="#9CA3AF" Visibility="{Binding IsEnabled, Converter={StaticResource InverseBoolToVisibilityConverter}, ConverterParameter=Invert}"/>
+                                    <TextBlock Text="{Binding BlockCount, StringFormat='[{0}ブロック]'}" Foreground="#9CA3AF" Margin="6,0,0,0"/>
+                                </StackPanel>
+                                
+                                <!-- Block items -->
+                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsBlock, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock Text="{Binding Name}" FontStyle="Italic" Foreground="#6B7280"/>
+                                    <TextBlock Text="{Binding ChildCount, StringFormat='[{0}子]'}" Foreground="#9CA3AF" Margin="6,0,0,0"/>
+                                </StackPanel>
                             </StackPanel>
-                        </HierarchicalDataTemplate>
-
-                        <!-- Block: show name and children -->
-                        <HierarchicalDataTemplate DataType="{x:Type corecmd:CommandBlock}" ItemsSource="{Binding Children}">
-                            <StackPanel Orientation="Horizontal" Margin="4">
-                                <TextBlock Text="{Binding Name}" FontStyle="Italic" Foreground="#6B7280"/>
-                            </StackPanel>
-                        </HierarchicalDataTemplate>
-                    </TreeView.Resources>
-
-                    <!-- Selection relay to VM command -->
-                    <i:Interaction.Triggers>
-                        <i:EventTrigger EventName="SelectedItemChanged">
-                            <i:InvokeCommandAction Command="{Binding SelectNodeCommand}"
-                                                    CommandParameter="{Binding SelectedItem, ElementName=CommandTree}"/>
-                        </i:EventTrigger>
-                    </i:Interaction.Triggers>
-                </TreeView>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
             </ScrollViewer>
         </Border>
     </Grid>

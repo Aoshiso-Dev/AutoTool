@@ -8,61 +8,54 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace AutoTool.Commands.Flow.Wait
+namespace AutoTool.Commands.Flow.Wait;
+
+/// <summary>
+/// 指定した時間だけ待機するコマンド
+/// </summary>
+[Command("Wait", "待機", IconKey = "mdi:timer", Category = "フロー制御", Description = "指定した時間だけ処理を待機します", Order = 10)]
+public sealed class WaitCommand :
+    IAutoToolCommand,
+    IHasSettings<WaitSettings>,
+    IValidatableCommand
 {
-    /// <summary>
-    /// 指定した時間だけ待機するコマンド
-    /// </summary>
-    [Command("wait", "待機", IconKey = "mdi:timer", Category = "フロー制御", Description = "指定した時間だけ処理を待機します", Order = 10)]
-    public sealed class WaitCommand :
-        IAutoToolCommand,
-        IHasSettings<WaitSettings>,
-        IValidatableCommand,
-        IDeepCloneable<WaitCommand>
+    public Guid Id { get; } = Guid.NewGuid();
+    public string Type => "Wait";
+    public string DisplayName => "待機";
+    public bool IsEnabled { get; set; } = true;
+
+    public WaitSettings Settings { get; private set; }
+
+    public WaitCommand(WaitSettings settings)
     {
-        public Guid Id { get; } = Guid.NewGuid();
-        public string Type => "wait";
-        public string DisplayName => "待機";
-        public bool IsEnabled { get; set; } = true;
+        Settings = settings;
+    }
 
-        public WaitSettings Settings { get; private set; }
+    public async Task<ControlFlow> ExecuteAsync(CancellationToken ct)
+    {
+        if (!IsEnabled) return ControlFlow.Next;
 
-        public WaitCommand(WaitSettings settings)
+        try
         {
-            Settings = settings;
-        }
+            // DelayAsyncを使って指定時間待機
+            var duration = TimeSpan.FromMilliseconds(Settings.DurationMs);
+            await Task.Delay(duration, ct);
 
-        public async Task<ControlFlow> ExecuteAsync(IExecutionContext ctx, CancellationToken ct)
+            return ControlFlow.Next;
+        }
+        catch (OperationCanceledException)
         {
-            if (!IsEnabled) return ControlFlow.Next;
-
-            try
-            {
-                // DelayAsyncを使って指定時間待機
-                var duration = TimeSpan.FromMilliseconds(Settings.DurationMs);
-                await ctx.DelayAsync(duration, ct);
-
-                return ControlFlow.Next;
-            }
-            catch (OperationCanceledException)
-            {
-                // キャンセル時は停止を返す
-                return ControlFlow.Stop;
-            }
+            // キャンセル時は停止を返す
+            return ControlFlow.Stop;
         }
+    }
 
-        public IEnumerable<string> Validate(IServiceProvider _)
-        {
-            if (Settings.DurationMs < 0)
-                yield return "待機時間は0以上である必要があります。";
+    public IEnumerable<string> Validate(IServiceProvider _)
+    {
+        if (Settings.DurationMs < 0)
+            yield return "待機時間は0以上である必要があります。";
 
-            if (Settings.DurationMs > 300000) // 5分以上の場合は警告
-                yield return "待機時間が5分を超えています。意図した値か確認してください。";
-        }
-
-        public WaitCommand DeepClone()
-            => new WaitCommand(Settings with { });
-
-        public void ReplaceSettings(WaitSettings next) => Settings = next;
+        if (Settings.DurationMs > 300000) // 5分以上の場合は警告
+            yield return "待機時間が5分を超えています。意図した値か確認してください。";
     }
 }

@@ -81,7 +81,7 @@ namespace AutoTool.Core.Registration
                 BlockSlots = Array.Empty<BlockSlot>();
             }
 
-            _logger?.LogDebug("AttributeBasedDescriptor作成: Type={Type}, DisplayName={DisplayName}, CommandType={CommandType}", 
+            _logger?.LogDebug("AttributeBasedDescriptor作成: Type={Type}, DisplayName={DisplayName}, CommandType={CommandType}",
                 Type, DisplayName, commandType.Name);
         }
 
@@ -144,10 +144,9 @@ namespace AutoTool.Core.Registration
         {
             try
             {
-                // コンストラクタパターンを試行
                 var constructors = _commandType.GetConstructors();
 
-                // (TSettings settings) パターンを探す
+                // 1) (TSettings settings) パターンを探す（厳密マッチ）
                 var settingsConstructor = constructors.FirstOrDefault(c =>
                 {
                     var parameters = c.GetParameters();
@@ -161,11 +160,11 @@ namespace AutoTool.Core.Registration
                     return command;
                 }
 
-                // (TSettings settings, IServiceProvider services) パターンを探す
+                // 2) (TSettings settings, IServiceProvider services) パターンを探す（厳密マッチ）
                 var settingsServiceConstructor = constructors.FirstOrDefault(c =>
                 {
                     var parameters = c.GetParameters();
-                    return parameters.Length == 2 && 
+                    return parameters.Length == 2 &&
                            parameters[0].ParameterType == SettingsType &&
                            parameters[1].ParameterType == typeof(IServiceProvider);
                 });
@@ -177,12 +176,68 @@ namespace AutoTool.Core.Registration
                     return command;
                 }
 
-                // デフォルトコンストラクタを試行
+                // 3) 先頭パラメータが SettingsType で、残りが optional（HasDefaultValue）または IServiceProvider のコンストラクタを探す（柔軟対応）
+                var flexibleCtor = constructors.FirstOrDefault(c =>
+                {
+                    var parameters = c.GetParameters();
+                    if (parameters.Length == 0) return false;
+                    if (parameters[0].ParameterType != SettingsType) return false;
+
+                    // 残りのパラメータはすべて optional（HasDefaultValue）か IServiceProvider 型であれば OK
+                    return parameters.Skip(1).All(p =>
+                        p.ParameterType == typeof(IServiceProvider) ||
+                        p.HasDefaultValue ||
+                        (!p.ParameterType.IsValueType && Nullable.GetUnderlyingType(p.ParameterType) != null) ||
+                        !p.ParameterType.IsValueType // reference type can accept null
+                    );
+                });
+
+                if (flexibleCtor != null)
+                {
+                    var parms = flexibleCtor.GetParameters();
+                    var args = new object?[parms.Length];
+                    args[0] = settings;
+
+                    for (int i = 1; i < parms.Length; i++)
+                    {
+                        var p = parms[i];
+                        if (p.ParameterType == typeof(IServiceProvider))
+                        {
+                            args[i] = services;
+                        }
+                        else if (p.HasDefaultValue)
+                        {
+                            // ParameterInfo.DefaultValue を使う（注意: 一部環境で DBNull.Value が入ることがある）
+                            try { args[i] = p.DefaultValue; }
+                            catch { args[i] = null; }
+                        }
+                        else
+                        {
+                            // 参照型なら null を渡す。値型で既定値が無ければ無理なのでスキップして次の候補へ。
+                            if (!p.ParameterType.IsValueType)
+                                args[i] = null;
+                            else
+                            {
+                                args = null;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (args != null)
+                    {
+                        var command = (IAutoToolCommand)Activator.CreateInstance(_commandType, args)!;
+                        _logger?.LogDebug("コマンド作成成功 (flexible settings-first constructor): Type={Type}", Type);
+                        return command;
+                    }
+                }
+
+                // 4) デフォルトコンストラクタを試行
                 var defaultConstructor = constructors.FirstOrDefault(c => c.GetParameters().Length == 0);
                 if (defaultConstructor != null)
                 {
                     var command = (IAutoToolCommand)Activator.CreateInstance(_commandType)!;
-                    
+
                     // 設定を後から注入できるかチェック
                     if (command is IHasSettings<AutoToolCommandSettings> hasSettings)
                     {
