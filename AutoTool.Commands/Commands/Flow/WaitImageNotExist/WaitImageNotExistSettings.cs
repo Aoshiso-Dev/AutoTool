@@ -27,6 +27,6 @@ public sealed class WaitImageNotExistSettings : AutoToolCommandSettings
     [Category("詳細設定"), DisplayName("対象ウィンドウタイトル"),]
     public string WindowTitle { get; set; } = string.Empty;
 
-    [Category("詳細設定"), DisplayName("対象ウィンドウクラス"),]
-    public string WindowClass { get; set; } = string.Empty;
+    [Category("詳細設定"), DisplayName("対象ウィンドウクラス名"),]
+    public string WindowClassName { get; set; } = string.Empty;
 }

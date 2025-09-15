@@ -53,7 +53,7 @@ public class ColorPickService : IColorPickService
     public Color GetColorAtCurrentMousePosition()
     {
         var position = _mouseService.GetCurrentPosition();
-        return GetColorAt(position.X, position.Y);
+        return GetColorAt((int)position.X, (int)position.Y);
     }
 
     public string ColorToHex(Color color)

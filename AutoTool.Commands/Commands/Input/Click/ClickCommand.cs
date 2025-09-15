@@ -30,6 +30,7 @@ namespace AutoTool.Commands.Input.Click
 
         private IServiceProvider? _serviceProvider = null;
         private ILogger<ClickCommand>? _logger = null;
+        private IMouseService? _mouseService = null;
 
         public ClickSettings Settings { get; private set; }
 
@@ -37,6 +38,7 @@ namespace AutoTool.Commands.Input.Click
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _logger = _serviceProvider.GetService(typeof(ILogger<ClickCommand>)) as ILogger<ClickCommand>;
+            _mouseService = _serviceProvider.GetService(typeof(IMouseService)) as IMouseService;
             Settings = settings;
         }
 
@@ -70,6 +72,21 @@ namespace AutoTool.Commands.Input.Click
         {
             var ui = _serviceProvider?.GetService(typeof(IUIService)) as IUIService;
             ui?.ShowToast("ClickCommand");
+
+            switch (Settings.Button)
+            {
+                case MouseButton.Left:
+                    await _mouseService!.ClickAsync((int)Settings.Point.X, (int)Settings.Point.Y, Settings.WindowTitle, Settings.WindowClassName);
+                    break;
+                case MouseButton.Right:
+                    await _mouseService!.RightClickAsync((int)Settings.Point.X, (int)Settings.Point.Y, Settings.WindowTitle, Settings.WindowClassName);
+                    break;
+                case MouseButton.Middle:
+                    await _mouseService!.MiddleClickAsync((int)Settings.Point.X, (int)Settings.Point.Y, Settings.WindowTitle, Settings.WindowClassName);
+                    break;
+                default:
+                    throw new InvalidOperationException("Unsupported mouse button: " + Settings.Button);
+            }
 
             // ÉçÉOèoóÕ
             var buttonName = Settings.Button switch

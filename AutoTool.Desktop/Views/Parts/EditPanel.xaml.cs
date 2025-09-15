@@ -1,5 +1,8 @@
 ﻿using AutoTool.Core.Abstractions;
 using AutoTool.Desktop.ViewModels;
+using AutoTool.Services.Abstractions;
+using AutoTool.Services.Implementations;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
@@ -8,7 +11,6 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using Xceed.Wpf.Toolkit.PropertyGrid; // xctk PropertyItem 型を扱うため
-using CommunityToolkit.Mvvm.Messaging;
 
 namespace AutoTool.Desktop.Views.Parts
 {
@@ -17,12 +19,20 @@ namespace AutoTool.Desktop.Views.Parts
     /// </summary>
     public partial class EditPanel : UserControl
     {
-        public EditPanel()
+        private readonly IWindowCaptureService? _windowCaptureService;
+        private readonly IMouseService? _mouseService;
+
+        public EditPanel(EditPanelViewModel editPanelViewModel, 
+                        IWindowCaptureService? windowCaptureService,
+                        IMouseService? mouseService)
         {
+            DataContext = editPanelViewModel ?? throw new ArgumentNullException(nameof(editPanelViewModel));
+            _windowCaptureService = windowCaptureService ?? throw new ArgumentNullException(nameof(windowCaptureService));
+            _mouseService = mouseService ?? throw new ArgumentNullException(nameof(mouseService));
+
             InitializeComponent();
         }
 
-        // ヘルパ: Button の DataContext から SettingsAdapter とプロパティ名を取得
         private void SetValue(object sender, object value)
         {
             if (sender is not FrameworkElement fe) return;
@@ -62,20 +72,44 @@ namespace AutoTool.Desktop.Views.Parts
 
         private void OnPickPoint_Click(object sender, RoutedEventArgs e)
         {
-            var sample = new System.Windows.Point(100,200);
-            SetValue(sender, sample);
+            _mouseService!.WaitForRightClickAsync().ContinueWith(t =>
+            {
+                var result = t.Result;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    SetValue(sender, result);
+                });
+            });
         }
 
         private void OnPickWindowTitle_Click(object sender, RoutedEventArgs e)
         {
-            var sample = "ExampleWindowTitle";
-            SetValue(sender, sample);
+            _windowCaptureService!.CaptureWindowInfoAtRightClickAsync().ContinueWith(t =>
+            {
+                var result = t.Result;
+                if (result != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        SetValue(sender, result.WindowTitle);
+                    });
+                }
+            });
         }
 
         private void OnPickWindowClassName_Click(object sender, RoutedEventArgs e)
         {
-            var sample = "ExampleWindowClass";
-            SetValue(sender, sample);
+            _windowCaptureService!.CaptureWindowInfoAtRightClickAsync().ContinueWith(t =>
+            {
+                var result = t.Result;
+                if (result != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        SetValue(sender, result.WindowClassName);
+                    });
+                }
+            });
         }
     }
 }

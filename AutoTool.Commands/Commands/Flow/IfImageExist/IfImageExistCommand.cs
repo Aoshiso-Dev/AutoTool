@@ -40,7 +40,7 @@ INotifyPropertyChanged
 
     private readonly IServiceProvider? _serviceProvider = null;
     private readonly ILogger<IfImageExistCommand>? _logger = null;
-    private readonly ICaptureService? _capture = null;
+    private readonly IImageService? _imageService = null;
 
     public IfImageExistCommand(IfImageExistSettings settings,
                      IServiceProvider? serviceProvider,
@@ -50,8 +50,8 @@ INotifyPropertyChanged
         Settings = settings;
 
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _logger = _serviceProvider.GetService(typeof(ILogger<IfImageExistCommand>)) as ILogger<IfImageExistCommand> ?? throw new ArgumentNullException(nameof(_logger));
-        _capture = _serviceProvider.GetService(typeof(ICaptureService)) as ICaptureService ?? throw new ArgumentNullException(nameof(_capture));
+        _logger = _serviceProvider.GetService(typeof(ILogger<IfImageExistCommand>)) as ILogger<IfImageExistCommand> ?? throw new ArgumentNullException(nameof(ILogger));
+        _imageService = _serviceProvider.GetService(typeof(IImageService)) as IImageService ?? throw new ArgumentNullException(nameof(IImageService));
 
         _then = new CommandBlock("Then", then);
         _else = new CommandBlock("Else", @else);
@@ -61,13 +61,14 @@ INotifyPropertyChanged
     public async Task<ControlFlow> ExecuteAsync(CancellationToken ct)
     {
         if (!IsEnabled) return ControlFlow.Next;
-        if ( _capture == null) throw new InvalidOperationException("CaptureService is not set.");
 
-        var ui = _serviceProvider?.GetService(typeof(IUIService)) as IUIService;
-        ui?.ShowToast("IfImageExistCommand");
+        Func<string, double, CancellationToken, Task<Point?>> func =
+            (Settings.WindowTitle == string.Empty && Settings.WindowClassName == string.Empty)
+            ? _imageService!.SearchImageOnScreenAsync
+            : (imagePath, threshold, cancellationToken) => _imageService!.SearchImageInWindowAsync(imagePath, Settings.WindowTitle, Settings.WindowClassName, threshold, cancellationToken);
 
-        var point = await _capture.FindImageAsync(Settings.ImagePath, Settings.WindowTitle, Settings.WindowClass, Settings.Similarity, ct);
-
+        var point = await func(Settings.ImagePath, Settings.Similarity, ct);
+        
         var target = point.HasValue ? _then.Children : _else.Children;
 
         foreach (var child in target)

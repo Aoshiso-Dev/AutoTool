@@ -19,5 +19,5 @@ public sealed class IfImageExistSettings : AutoToolCommandSettings
     public string WindowTitle { get; set; } = string.Empty;
 
     [Category("詳細設定"), DisplayName("対象ウィンドウクラス"),]
-    public string WindowClass { get; set; } = string.Empty;
+    public string WindowClassName { get; set; } = string.Empty;
 }

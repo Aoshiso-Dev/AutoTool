@@ -8,6 +8,7 @@ using AutoTool.Services.Abstractions;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -30,13 +31,17 @@ namespace AutoTool.Commands.Input.ClickImage
 
         private IServiceProvider? _serviceProvider = null;
         private ILogger<ClickImageCommand>? _logger = null;
+        private IImageService? _imageService = null;
+        private IMouseService? _mouseService = null;
 
         public ClickImageSettings Settings { get; private set; }
 
         public ClickImageCommand(ClickImageSettings settings, IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _logger = _serviceProvider.GetService(typeof(ILogger<ClickImageCommand>)) as ILogger<ClickImageCommand>;
+            _logger = _serviceProvider.GetService(typeof(ILogger<ClickImageCommand>)) as ILogger<ClickImageCommand> ?? throw new ArgumentNullException(nameof(ILogger));
+            _imageService = _serviceProvider.GetService(typeof(IImageService)) as IImageService ?? throw new ArgumentNullException(nameof(IImageService));
+            _mouseService = _serviceProvider.GetService(typeof(IMouseService)) as IMouseService ?? throw new ArgumentNullException(nameof(IMouseService));
             Settings = settings;
         }
 
@@ -46,7 +51,71 @@ namespace AutoTool.Commands.Input.ClickImage
 
             try
             {
-                await ExecuteMouseClickAsync();
+                var sw = Stopwatch.StartNew();
+                var timeout = TimeSpan.FromMilliseconds(Settings.TimeoutMs);
+                var interval = TimeSpan.FromMilliseconds(Math.Max(Settings.IntervalMs, 10));
+
+                Func<string, double, CancellationToken, Task<Point?>> func =
+                    (Settings.WindowTitle == string.Empty && Settings.WindowClassName == string.Empty)
+                    ? _imageService!.SearchImageOnScreenAsync
+                    : (imagePath, threshold, cancellationToken) => _imageService!.SearchImageInWindowAsync(imagePath, Settings.WindowTitle, Settings.WindowClassName, threshold, cancellationToken);
+
+
+                Point? result = null;
+
+                while (true)
+                {
+                    // タイムアウトチェック
+                    if (sw.Elapsed > timeout)
+                    {
+                        _logger?.LogWarning("画像が見つかりませんでした: {ImagePath}", Settings.ImagePath);
+                        return ControlFlow.Error;
+                    }
+
+                    // 画像から座標を取得
+                    result = await func(Settings.ImagePath, Settings.Similarity, ct);
+
+                    if (result.HasValue)
+                    {
+                        // 座標が見つかったらループを抜ける
+                        break;
+                    }
+
+                    // 少し待ってから再試行
+                    await Task.Delay(interval, ct);
+                }
+
+                // マウスクリックを実行
+                switch (Settings.Button)
+                {
+                    case MouseButton.Left:
+                        await _mouseService!.ClickAsync((int)result.Value.X, (int)result.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
+                        break;
+                    case MouseButton.Right:
+                        await _mouseService!.RightClickAsync((int)result.Value.X, (int)result.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
+                        break;
+                    case MouseButton.Middle:
+                        await _mouseService!.MiddleClickAsync((int)result.Value.X, (int)result.Value.Y, Settings.WindowTitle, Settings.WindowClassName);
+                        break;
+                    default:
+                        throw new InvalidOperationException("Unsupported mouse button: " + Settings.Button);
+                }
+
+                // ログ出力
+                var buttonName = Settings.Button switch
+                {
+                    MouseButton.Left => "Left",
+                    MouseButton.Right => "Right",
+                    MouseButton.Middle => "Middle",
+                    _ => Settings.Button.ToString()
+                };
+
+                var target = string.IsNullOrEmpty(Settings.WindowTitle)
+                    ? $"座標 ({result.Value.X}, {result.Value.Y})"
+                    : $"ウィンドウ「{Settings.WindowTitle}」の座標 ({result.Value.X}, {result.Value.Y})";
+
+                _logger?.LogInformation("{Button}ボタンクリック実行: {Target}", buttonName, target);
+                
                 return ControlFlow.Next;
             }
             catch (OperationCanceledException)
@@ -59,32 +128,6 @@ namespace AutoTool.Commands.Input.ClickImage
                 _logger?.LogError(ex, "Mouse click failed at {ImagePath}", Settings.ImagePath);
                 return ControlFlow.Error;
             }
-        }
-
-        /// <summary>
-        /// マウスクリックの実行（実装はプラットフォーム固有のライブラリに依存）
-        /// </summary>
-        private async Task ExecuteMouseClickAsync()
-        {
-            var ui = _serviceProvider?.GetService(typeof(IUIService)) as IUIService;
-            ui?.ShowToast("ClickImageCommand");
-
-            (int X, int Y) point = (0, 0); 
-
-            // ログ出力
-            var buttonName = Settings.Button switch
-            {
-                MouseButton.Left => "Left",
-                MouseButton.Right => "Right", 
-                MouseButton.Middle => "Middle",
-                _ => Settings.Button.ToString()
-            };
-
-            var target = string.IsNullOrEmpty(Settings.WindowTitle) 
-                ? $"座標 ({point.X}, {point.Y})" 
-                : $"ウィンドウ「{Settings.WindowTitle}」の座標 ({point.X}, {point.Y})";
-                
-            _logger?.LogInformation("{Button}ボタンクリック実行: {Target}", buttonName, target);
         }
 
         public IEnumerable<string> Validate(IServiceProvider _)

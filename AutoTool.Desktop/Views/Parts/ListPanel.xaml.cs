@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using AutoTool.Desktop.ViewModels;
 
 namespace AutoTool.Desktop.Views.Parts
 {
@@ -20,8 +21,9 @@ namespace AutoTool.Desktop.Views.Parts
     /// </summary>
     public partial class ListPanel : UserControl
     {
-        public ListPanel()
+        public ListPanel(ListPanelViewModel listPanelViewModel)
         {
+            DataContext = listPanelViewModel;
             InitializeComponent();
         }
     }

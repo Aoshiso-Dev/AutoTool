@@ -5,6 +5,7 @@ using AutoTool.Core.Diagnostics;
 using AutoTool.Core.Utilities;
 using AutoTool.Services.Abstractions;
 using Microsoft.Extensions.Logging;
+using OpenCvSharp.Features2D;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -32,12 +33,14 @@ namespace AutoTool.Commands.Input.KeyInput
 
         public IServiceProvider? _serviceProvider = null;
         private readonly ILogger<KeyInputCommand>? _logger = null;
+        private readonly IKeyboardService? _keyboardService = null;
 
         public KeyInputCommand(KeyInputSettings settings, IServiceProvider serviceProvider)
         {
             Settings = settings;
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _logger = _serviceProvider.GetService(typeof(ILogger<KeyInputCommand>)) as ILogger<KeyInputCommand> ?? throw new ArgumentNullException(nameof(_logger));
+            _logger = _serviceProvider.GetService(typeof(ILogger<KeyInputCommand>)) as ILogger<KeyInputCommand> ?? throw new ArgumentNullException(nameof(ILogger));
+            _keyboardService = _serviceProvider.GetService(typeof(IKeyboardService)) as IKeyboardService ?? throw new ArgumentNullException(nameof(IKeyboardService));
         }
 
         public async Task<ControlFlow> ExecuteAsync(CancellationToken ct)
@@ -46,10 +49,16 @@ namespace AutoTool.Commands.Input.KeyInput
 
             try
             {
-                // キー入力を実行
-                await ExecuteKeyInputAsync(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift,
-                    Settings.WindowTitle, Settings.WindowClassName, ct);
+                var hotkeyText = GetHotkeyString(Settings.Key, Settings.Ctrl, Settings.Alt, Settings.Shift);
 
+                await _keyboardService!.SendHotkeyAsync(hotkeyText, ct);
+
+                // ログ出力
+                var target = string.IsNullOrEmpty(Settings.WindowTitle)
+                    ? "システム全体"
+                    : $"ウィンドウ「{Settings.WindowTitle}」";
+
+                _logger?.LogInformation("キー入力実行: {Hotkey} -> {Target}", hotkeyText, target);
                 return ControlFlow.Next;
             }
             catch (OperationCanceledException)
@@ -62,26 +71,6 @@ namespace AutoTool.Commands.Input.KeyInput
                 _logger?.LogError(ex, "Key input failed: {Key}", Settings.Key);
                 return ControlFlow.Error;
             }
-        }
-
-        /// <summary>
-        /// キー入力の実行（実装はプラットフォーム固有のライブラリに依存）
-        /// </summary>
-        private async Task ExecuteKeyInputAsync(Key key, bool ctrl, bool alt, bool shift,
-            string windowTitle, string windowClassName, CancellationToken ct)
-        {
-
-            var ui = _serviceProvider?.GetService(typeof(IUIService)) as IUIService;
-            ui?.ShowToast("KeyInputCommand");
-
-            // ログ出力
-            var hotkeyText = GetHotkeyString(key, ctrl, alt, shift);
-
-            var target = string.IsNullOrEmpty(windowTitle) 
-                ? "システム全体" 
-                : $"ウィンドウ「{windowTitle}」";
-                
-            _logger?.LogInformation("キー入力実行: {Hotkey} -> {Target}", hotkeyText, target);
         }
 
         /// <summary>

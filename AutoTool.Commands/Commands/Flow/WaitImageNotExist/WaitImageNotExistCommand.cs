@@ -3,11 +3,15 @@ using AutoTool.Core.Attributes;
 using AutoTool.Core.Commands;
 using AutoTool.Core.Diagnostics;
 using AutoTool.Core.Utilities;
+using AutoTool.Services.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace AutoTool.Commands.Flow.Wait;
 
@@ -25,10 +29,17 @@ public sealed class WaitImageNotExistCommand :
     public string DisplayName => "待機（画像非存在）";
     public bool IsEnabled { get; set; } = true;
 
+    private IServiceProvider? _serviceProvider = null;
+    private ILogger<WaitImageExistCommand>? _logger = null;
+    private IImageService? _imageService = null;
+
     public WaitImageNotExistSettings Settings { get; private set; }
 
-    public WaitImageNotExistCommand(WaitImageNotExistSettings settings)
+    public WaitImageNotExistCommand(WaitImageNotExistSettings settings, IServiceProvider serviceProvider)
     {
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _logger = _serviceProvider.GetService(typeof(ILogger<WaitImageExistCommand>)) as ILogger<WaitImageExistCommand> ?? throw new ArgumentNullException(nameof(ILogger));
+        _imageService = _serviceProvider.GetService(typeof(IImageService)) as IImageService ?? throw new ArgumentNullException(nameof(IImageService));
         Settings = settings;
     }
 
@@ -39,24 +50,32 @@ public sealed class WaitImageNotExistCommand :
         try
         {
             var timeout = Settings.TimeoutMs <= 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(Settings.TimeoutMs);
-            var interval = TimeSpan.FromMilliseconds(Math.Max(Settings.IntervalMs, 50)); // 最小50ms間隔
+            var interval = TimeSpan.FromMilliseconds(Math.Max(Settings.IntervalMs, 10)); // 最小10ms間隔
             var sw = Stopwatch.StartNew();
+
+            Func<string, double, CancellationToken, Task<Point?>> func =
+                (Settings.WindowTitle == string.Empty && Settings.WindowClassName == string.Empty)
+                ? _imageService!.SearchImageOnScreenAsync
+                : (imagePath, threshold, cancellationToken) => _imageService!.SearchImageInWindowAsync(imagePath, Settings.WindowTitle, Settings.WindowClassName, threshold, cancellationToken);
 
             while (sw.Elapsed < timeout)
             {
                 ct.ThrowIfCancellationRequested();
                 // 画像が存在するかチェック
-                var found = false   ;
-                if (found == false)
+
+                var result = await func(Settings.ImagePath, Settings.Similarity, ct);
+
+                if (result.HasValue == false)
                 {
-                    // 見つからなかった場合は成功
+                    // 画像が見つからなかった場合は次へ進む
                     return ControlFlow.Next;
                 }
+
                 await Task.Delay(interval, ct);
             }
 
-            // タイムアウトした場合は停止を返す
-            return ControlFlow.Stop;
+            // タイムアウトした場合はエラーを返す
+            return ControlFlow.Error;
         }
         catch (OperationCanceledException)
         {

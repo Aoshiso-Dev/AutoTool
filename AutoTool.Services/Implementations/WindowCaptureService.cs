@@ -92,7 +92,7 @@ public class WindowCaptureService : IWindowCaptureService
                     await Task.Delay(10);
                 }
                 
-                return new Point(position.X, position.Y);
+                return new Point((int)position.X, (int)position.Y);
             }
 
             await Task.Delay(50);

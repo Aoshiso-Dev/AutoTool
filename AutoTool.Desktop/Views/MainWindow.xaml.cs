@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using AutoTool.Desktop.ViewModels;
+using AutoTool.Desktop.Views.Parts; // ButtonPanel, ListPanel, EditPanel
 
 namespace AutoTool.Desktop.Views
 {
@@ -9,33 +10,28 @@ namespace AutoTool.Desktop.Views
     /// </summary>
     public partial class MainWindow : Window
     {
+        // Designer 用のパラメータなしコンストラクタを残す
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        // DI 用コンストラクタ：必要な View / ViewModel を注入
         public MainWindow(
             MainViewModel mainViewModel,
-            ButtonPanelViewModel buttonPanelViewModel,
-            EditPanelViewModel editPanelViewModel,
-            ListPanelViewModel listPanelViewModel)
+            ButtonPanel buttonPanel,
+            ListPanel listPanel,
+            EditPanel editPanel)
         {
             InitializeComponent();
 
-            try
-            {
-                // ViewModelを設定
-                DataContext = mainViewModel;
-                ButtonPanel.DataContext = buttonPanelViewModel;
-                EditPanel.DataContext = editPanelViewModel;
-                ListPanel.DataContext = listPanelViewModel;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"MainWindow initialization error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                throw;
-            }
-        }
+            // ViewModel を Window 全体にセット
+            DataContext = mainViewModel;
 
-        // パラメータなしのコンストラクタ（デザイナー用）
-        public MainWindow() : this(null!, null!, null!, null!)
-        {
-            // デザイナー専用
+            // DI で解決した View をプレースホルダに配置
+            ButtonHost.Content = buttonPanel;
+            ListHost.Content = listPanel;
+            EditHost.Content = editPanel;
         }
     }
 }

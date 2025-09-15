@@ -1,20 +1,23 @@
-using System.ComponentModel;
-using System.Collections.ObjectModel;
+using AutoTool.Core.Abstractions;
+using AutoTool.Core.Commands;
+using AutoTool.Services.Abstractions;
+using AutoTool.Services.Implementations;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using AutoTool.Core.Commands;
 using Microsoft.Extensions.Logging;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
-using AutoTool.Core.Abstractions;
 
 namespace AutoTool.Desktop.ViewModels;
 
 public partial class EditPanelViewModel : ObservableObject
 {
-    private readonly ILogger<EditPanelViewModel> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<EditPanelViewModel> _logger;
+    private readonly IWindowCaptureService _windowCaptureService;
 
     // 現在選択中のコマンドを保持（Apply 時に使う)
     private IAutoToolCommand? _currentCommand;
@@ -34,10 +37,11 @@ public partial class EditPanelViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = "コマンドを選択してください";
 
-    public EditPanelViewModel(ILogger<EditPanelViewModel> logger, IServiceProvider serviceProvider)
+    public EditPanelViewModel(ILogger<EditPanelViewModel> logger, IServiceProvider serviceProvider, IWindowCaptureService windowCaptureService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _windowCaptureService = windowCaptureService ?? throw new ArgumentNullException(nameof(windowCaptureService));
 
         // メッセージ登録
         WeakReferenceMessenger.Default.Register<SelectNodeMessage>(this, (r, m) => OnSelectNodeMessage(m));
@@ -201,6 +205,30 @@ public partial class EditPanelViewModel : ObservableObject
         {
             _logger.LogError(ex, "設定復元中にエラー");
             StatusMessage = $"復元エラー: {ex.Message}";
+        }
+    }
+
+    public async Task PickWindowClassName()
+    {
+        var result = await _windowCaptureService.CaptureWindowInfoAtRightClickAsync();
+        if (result != null)
+        {
+            if (SelectedEditor is IAutoToolCommandSettings settings)
+            {
+                var prop = settings.GetType().GetProperty("WindowClassName");
+                if (prop != null && prop.CanWrite && prop.PropertyType == typeof(string))
+                {
+                    prop.SetValue(settings, result.WindowClassName);
+                    StatusMessage = $"ウィンドウクラス名を設定: {result.WindowClassName}";
+                    _logger.LogInformation("ウィンドウクラス名を設定: {ClassName}", result.WindowClassName);
+                    return;
+                }
+            }
+            StatusMessage = "選択された設定に WindowClassName プロパティが見つかりません";
+        }
+        else
+        {
+            StatusMessage = "ウィンドウ情報の取得に失敗しました";
         }
     }
 }

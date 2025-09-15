@@ -3,8 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:views="clr-namespace:AutoTool.Desktop.Views"
-        xmlns:parts="clr-namespace:AutoTool.Desktop.Views.Parts"
         xmlns:vm="clr-namespace:AutoTool.Desktop.ViewModels"
         mc:Ignorable="d"
         Title="AutoTool" Height="720" Width="1200"
@@ -20,15 +18,13 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Top Buttons -->
-        <parts:ButtonPanel x:Name="ButtonPanel" Grid.Row="0" Grid.ColumnSpan="2"/>
+        <!-- Top Buttons: DIで解決した View をここに置く -->
+        <ContentControl x:Name="ButtonHost" Grid.Row="0" Grid.ColumnSpan="2"/>
 
-
-        <!-- Left: Tree/List -->
-        <parts:ListPanel x:Name="ListPanel" Grid.Row="1" Grid.Column="0"/>
-
+        <!-- Left: List -->
+        <ContentControl x:Name="ListHost" Grid.Row="1" Grid.Column="0"/>
 
         <!-- Right: Editor -->
-        <parts:EditPanel x:Name="EditPanel" Grid.Row="1" Grid.Column="1"/>
+        <ContentControl x:Name="EditHost" Grid.Row="1" Grid.Column="1"/>
     </Grid>
 </Window>

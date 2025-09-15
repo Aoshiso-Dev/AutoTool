@@ -7,6 +7,7 @@ using AutoTool.Desktop.Runtime;
 using AutoTool.Desktop.Services;
 using AutoTool.Desktop.ViewModels;
 using AutoTool.Desktop.Views;
+using AutoTool.Desktop.Views.Parts;
 using AutoTool.Services;
 using AutoTool.Services.Abstractions;
 using AutoTool.Services.Implementations;
@@ -96,7 +97,17 @@ public static class ServiceRegistration
             services.AddSingleton<IValueResolver, SimpleValueResolver>();
             services.AddSingleton<IVariableScope, SimpleVariableScope>();
             services.AddSingleton<ICaptureService, CaptureService>();
+            services.AddSingleton<IMouseService, MouseService>();
+            services.AddSingleton<IKeyboardService, KeyboardService>();
+            services.AddSingleton<IWindowCaptureService, WindowCaptureService>();
+            services.AddSingleton<IImageService, ImageService>();
             services.AddSingleton<IUIService, UIService>();
+
+            // Views
+            services.AddSingleton<MainWindow>();
+            services.AddSingleton<ButtonPanel>();
+            services.AddSingleton<EditPanel>();
+            services.AddSingleton<ListPanel>();
 
             // ViewModels
             services.AddTransient<MainViewModel>();
@@ -105,15 +116,7 @@ public static class ServiceRegistration
             services.AddTransient<ListPanelViewModel>();
 
             // Views
-            services.AddTransient<MainWindow>(serviceProvider =>
-            {
-                var mainViewModel = serviceProvider.GetRequiredService<MainViewModel>();
-                var buttonPanelViewModel = serviceProvider.GetRequiredService<ButtonPanelViewModel>();
-                var editPanelViewModel = serviceProvider.GetRequiredService<EditPanelViewModel>();
-                var listPanelViewModel = serviceProvider.GetRequiredService<ListPanelViewModel>();
-
-                return new MainWindow(mainViewModel, buttonPanelViewModel, editPanelViewModel, listPanelViewModel);
-            });
+            services.AddTransient<MainWindow>();
 
             // WPF Application Service
             services.AddHostedService<WpfApplicationService>();
