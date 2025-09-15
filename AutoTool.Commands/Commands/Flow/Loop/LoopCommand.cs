@@ -3,7 +3,9 @@ using AutoTool.Commands.Input.KeyInput;
 using AutoTool.Core.Abstractions;
 using AutoTool.Core.Attributes;
 using AutoTool.Core.Commands;
+using AutoTool.Core.Runtime;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -54,15 +56,16 @@ namespace AutoTool.Commands.Flow.While
         {
             if (!IsEnabled) return ControlFlow.Next;
 
-            for(int i = 0; i< Settings.LoopCount; i++)
+            var runner = _serviceProvider!.GetRequiredService<ICommandRunner>();
+
+            for (int i = 0; i< Settings.LoopCount; i++)
             {
-                foreach (var child in Body.Children)
-                {
-                    var r = await child.ExecuteAsync(ct);
-                    if (r == ControlFlow.Break) return ControlFlow.Next;
-                    if (r == ControlFlow.Continue) break;
-                    if (r is ControlFlow.Stop or ControlFlow.Error) return r;
-                }
+                var r = await runner.RunAsync(Body.Children, ct);
+
+                if (r == ControlFlow.Break) return ControlFlow.Next;
+                if (r == ControlFlow.Continue) continue;
+                if (r == ControlFlow.Stop || r == ControlFlow.Error) return r;
+
                 ct.ThrowIfCancellationRequested();
             }
             return ControlFlow.Next;

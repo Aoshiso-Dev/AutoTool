@@ -2,9 +2,11 @@
 using AutoTool.Core.Attributes;
 using AutoTool.Core.Commands;
 using AutoTool.Core.Diagnostics;
+using AutoTool.Core.Runtime;
 using AutoTool.Core.Utilities;
 using AutoTool.Services.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -71,11 +73,11 @@ INotifyPropertyChanged
         
         var target = point.HasValue ? _then.Children : _else.Children;
 
-        foreach (var child in target)
-        {
-            var r = await child.ExecuteAsync(ct);
-            if (r is not ControlFlow.Next) return r;
-        }
+        var runner = _serviceProvider!.GetRequiredService<ICommandRunner>();
+
+        var r = await runner.RunAsync(target, ct);
+        if (r is not ControlFlow.Next) return r;
+
         return ControlFlow.Next;
     }
 

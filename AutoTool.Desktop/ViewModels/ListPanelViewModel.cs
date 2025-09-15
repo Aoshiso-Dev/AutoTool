@@ -1,6 +1,7 @@
 using AutoTool.Core.Commands;
 using AutoTool.Core.Descriptors;
 using AutoTool.Core.Serialization;
+using AutoTool.Services.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -27,6 +28,9 @@ namespace AutoTool.Desktop.ViewModels
         
         [ObservableProperty]
         private ObservableCollection<FlatItem> flatItems = new();
+
+        [ObservableProperty]
+        private IAutoToolCommand? currentExecutingCommand;
 
         private object? _selectedNode = null;
         public object? SelectedNode
@@ -64,11 +68,50 @@ namespace AutoTool.Desktop.ViewModels
             WeakReferenceMessenger.Default.Register<MoveDownCommandMessage>(this, (r, m) => OnMoveDownMessage());
             WeakReferenceMessenger.Default.Register<GetRootMacroMessaage>(this, (r, m) => m.Reply(Root));
 
+            // 実行状態の通知を受信
+            WeakReferenceMessenger.Default.Register<CommandExecutionStartMessage>(this, (r, m) => OnCommandExecutionStart(m));
+            WeakReferenceMessenger.Default.Register<CommandExecutionEndMessage>(this, (r, m) => OnCommandExecutionEnd(m));
 
             // Subscribe to Root changes to rebuild flat list
             Root.CollectionChanged += (s, e) => RebuildFlatItems();
 
             _logger.LogDebug("ListPanelViewModel initialized and message handlers registered");
+        }
+
+        private void OnCommandExecutionStart(CommandExecutionStartMessage message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // コンテナはスキップ（子の開始で上書きさせる）
+                if (message.Command is IHasBlocks) return;
+                CurrentExecutingCommand = message.Command;
+                UpdateExecutionState();
+            });
+        }
+
+        private void OnCommandExecutionEnd(CommandExecutionEndMessage message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                CurrentExecutingCommand = null;
+                UpdateExecutionState();
+                _logger.LogDebug("Command execution ended: {CommandType}", message.Command.GetType().Name);
+            });
+        }
+
+        private void UpdateExecutionState()
+        {
+            foreach (var item in FlatItems)
+            {
+                if (item.OriginalObject is IAutoToolCommand cmd)
+                {
+                    item.IsExecuting = ReferenceEquals(cmd, CurrentExecutingCommand);
+                }
+                else
+                {
+                    item.IsExecuting = false;
+                }
+            }
         }
 
         private void RebuildFlatItems()
@@ -88,6 +131,9 @@ namespace AutoTool.Desktop.ViewModels
                 {
                     FlatItems.Add(item);
                 }
+
+                // 実行状態を更新
+                UpdateExecutionState();
                 
                 _logger.LogDebug("FlatItems再構築完了: {Count}個", FlatItems.Count);
             }
@@ -108,6 +154,7 @@ namespace AutoTool.Desktop.ViewModels
             commandItem.IndentLevel = indentLevel;
             commandItem.IsCommand = true;
             commandItem.IsBlock = false;
+            commandItem.IsExecuting = ReferenceEquals(command, CurrentExecutingCommand);
 
             // Get block count if command has blocks
             var blocksProp = command.GetType().GetProperty("Blocks");
@@ -137,6 +184,7 @@ namespace AutoTool.Desktop.ViewModels
                             blockItem.IsCommand = false;
                             blockItem.IsBlock = true;
                             blockItem.ChildCount = cmdBlock.Children.Count;
+                            blockItem.IsExecuting = false; // ブロック自体は実行されない
                             items.Add(blockItem);
 
                             // Add block's children
@@ -154,6 +202,7 @@ namespace AutoTool.Desktop.ViewModels
         {
             Root.Clear();
             SelectedNode = null;
+            CurrentExecutingCommand = null;
             _logger.LogDebug("新規プロジェクトを作成しました");
         }
 
@@ -480,8 +529,8 @@ namespace AutoTool.Desktop.ViewModels
         }
     }
 
-    // Flat item wrapper for ListView
-    public class FlatItem
+    // Flat item wrapper for ListView with proper INotifyPropertyChanged support
+    public class FlatItem : ObservableObject
     {
         public object? OriginalObject { get; set; }
         public string DisplayName { get; set; } = "";
@@ -493,8 +542,17 @@ namespace AutoTool.Desktop.ViewModels
         public bool IsBlock { get; set; }
         public int BlockCount { get; set; }
         public int ChildCount { get; set; }
+        
+        private bool _isExecuting;
+        public bool IsExecuting
+        {
+            get => _isExecuting;
+            set => SetProperty(ref _isExecuting, value);
+        }
     }
 }
 
-// Missing message class - add at bottom of file
+// Message classes for execution state tracking
 public record SelectNodeMessage(object? Node);
+public record CommandExecutionStartMessage(IAutoToolCommand Command);
+public record CommandExecutionEndMessage(IAutoToolCommand Command);

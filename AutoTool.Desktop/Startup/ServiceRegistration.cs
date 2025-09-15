@@ -11,6 +11,7 @@ using AutoTool.Desktop.Views.Parts;
 using AutoTool.Services;
 using AutoTool.Services.Abstractions;
 using AutoTool.Services.Implementations;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -91,7 +92,30 @@ public static class ServiceRegistration
                 return registry;
             });
 
-            services.AddSingleton<ICommandRunner, CommandRunner>();
+            // ICommandRunner 登録（イベント → Messenger ブリッジ付き）
+            services.AddSingleton<ICommandRunner>(sp =>
+            {
+                var logger = sp.GetService<ILogger<CommandRunner>>();
+                var runner = new CommandRunner();
+
+                var messenger = CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default;
+
+                runner.CommandStarting += (_, cmd) =>
+                {
+                    if (!cmd.IsEnabled) return;
+                    logger?.LogDebug("[Runner] CommandStarting: {Type}", cmd.Type);
+                    messenger.Send(new CommandExecutionStartMessage(cmd));
+                };
+
+                runner.CommandFinished += (_, result) =>
+                {
+                    logger?.LogDebug("[Runner] CommandFinished: {Type} -> {Flow}", result.cmd.Type, result.result);
+                    messenger.Send(new CommandExecutionEndMessage(result.cmd));
+                };
+
+                logger?.LogInformation("ICommandRunner initialized and bridged to Messenger");
+                return runner;
+            });
             
             // Services
             services.AddSingleton<IValueResolver, SimpleValueResolver>();

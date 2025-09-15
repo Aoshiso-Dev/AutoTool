@@ -11,6 +11,35 @@ mc:Ignorable="d">
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
         <converters:IndentConverter x:Key="IndentConverter"/>
+        
+        <!-- 実行中アニメーション用のストーリーボード -->
+        <Storyboard x:Key="PulseAnimation" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                           From="1.0" To="0.6" Duration="0:0:0.8"/>
+        </Storyboard>
+        
+        <!-- 実行中コマンド用のスタイル -->
+        <Style x:Key="ExecutingItemStyle" TargetType="ListViewItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="1"/>
+            <Setter Property="Padding" Value="2"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsExecuting}" Value="True">
+                    <Setter Property="Background">
+                        <Setter.Value>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#E8F5E8" Offset="0"/>
+                                <GradientStop Color="#F0FFF0" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="BorderBrush" Value="#4CAF50"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -28,25 +57,124 @@ mc:Ignorable="d">
                          SelectedItem="{Binding SelectedNode, Mode=TwoWay}"
                          SelectionMode="Single"
                          Background="Transparent"
-                         BorderThickness="0">
+                         BorderThickness="0"
+                         ItemContainerStyle="{StaticResource ExecutingItemStyle}">
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="{Binding IndentLevel, Converter={StaticResource IndentConverter}}">
-                                <!-- Command items -->
-                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsCommand, Converter={StaticResource BoolToVisibilityConverter}}">
-                                    <Ellipse Width="8" Height="8" Fill="#9CA3AF" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding Type}" Foreground="#6B7280" Margin="8,0,0,0"/>
-                                    <TextBlock Text=" (無効)" Foreground="#9CA3AF" Visibility="{Binding IsEnabled, Converter={StaticResource InverseBoolToVisibilityConverter}, ConverterParameter=Invert}"/>
-                                    <TextBlock Text="{Binding BlockCount, StringFormat='[{0}ブロック]'}" Foreground="#9CA3AF" Margin="6,0,0,0"/>
-                                </StackPanel>
+                            <Border CornerRadius="4" Padding="4" Margin="2">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsExecuting}" Value="True">
+                                                <Setter Property="Background">
+                                                    <Setter.Value>
+                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                            <GradientStop Color="#E3F2FD" Offset="0"/>
+                                                            <GradientStop Color="#F3E5F5" Offset="1"/>
+                                                        </LinearGradientBrush>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Setter Property="BorderBrush" Value="#2196F3"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 
-                                <!-- Block items -->
-                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsBlock, Converter={StaticResource BoolToVisibilityConverter}}">
-                                    <TextBlock Text="{Binding Name}" FontStyle="Italic" Foreground="#6B7280"/>
-                                    <TextBlock Text="{Binding ChildCount, StringFormat='[{0}子]'}" Foreground="#9CA3AF" Margin="6,0,0,0"/>
+                                <StackPanel Orientation="Horizontal" Margin="{Binding IndentLevel, Converter={StaticResource IndentConverter}}">
+                                    <!-- Command items -->
+                                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsCommand, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <!-- 実行中インジケーター -->
+                                        <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,8,0"
+                                                Visibility="{Binding IsExecuting, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                    <GradientStop Color="#FF6B00" Offset="0"/>
+                                                    <GradientStop Color="#FFB300" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                            <Border.RenderTransform>
+                                                <ScaleTransform ScaleY="1"/>
+                                            </Border.RenderTransform>
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsExecuting}" Value="True">
+                                                            <DataTrigger.EnterActions>
+                                                                <BeginStoryboard>
+                                                                    <Storyboard RepeatBehavior="Forever">
+                                                                        <DoubleAnimation Storyboard.TargetProperty="(Border.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                                       From="0.5" To="1.2" Duration="0:0:1" AutoReverse="True"/>
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </DataTrigger.EnterActions>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                        
+                                        <Ellipse Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="#9CA3AF"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsExecuting}" Value="True">
+                                                            <Setter Property="Fill">
+                                                                <Setter.Value>
+                                                                    <RadialGradientBrush>
+                                                                        <GradientStop Color="#FF6B00" Offset="0"/>
+                                                                        <GradientStop Color="#FFB300" Offset="1"/>
+                                                                    </RadialGradientBrush>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                            <Ellipse.RenderTransform>
+                                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                            </Ellipse.RenderTransform>
+                                        </Ellipse>
+                                        
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsExecuting}" Value="True">
+                                                            <Setter Property="Foreground" Value="#FF6B00"/>
+                                                            <Setter Property="FontWeight" Value="Bold"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        
+                                        <TextBlock Text="{Binding Type}" Foreground="#6B7280" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                        
+                                        <TextBlock Text=" (無効)" Foreground="#9CA3AF" VerticalAlignment="Center"
+                                                   Visibility="{Binding IsEnabled, Converter={StaticResource InverseBoolToVisibilityConverter}, ConverterParameter=Invert}"/>
+                                        
+                                        <TextBlock Text="{Binding BlockCount, StringFormat='[{0}ブロック]'}" 
+                                                   Foreground="#9CA3AF" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                        
+                                        <!-- 実行中テキストとアイコン -->
+                                        <StackPanel Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                    Visibility="{Binding IsExecuting, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <TextBlock Text="⚡" FontSize="14" Foreground="#FF6B00" VerticalAlignment="Center"/>
+                                            <TextBlock Text="実行中" Foreground="#FF6B00" FontWeight="Bold" 
+                                                       Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    
+                                    <!-- Block items -->
+                                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsBlock, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <TextBlock Text="{Binding Name}" FontStyle="Italic" Foreground="#6B7280" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding ChildCount, StringFormat='[{0}子]'}" 
+                                                   Foreground="#9CA3AF" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
+                            </Border>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>

@@ -1,5 +1,16 @@
 ﻿// File: AutoTool.Desktop/ViewModels/MainViewModel.cs
 #nullable enable
+using AutoTool.Core.Abstractions;
+using AutoTool.Core.Commands;
+using AutoTool.Core.Descriptors;
+using AutoTool.Core.Runtime;
+using AutoTool.Core.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
+using OpenCvSharp.Text;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -7,16 +18,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
-using AutoTool.Core.Abstractions;
-using AutoTool.Core.Commands;
-using AutoTool.Core.Descriptors;
-using AutoTool.Core.Runtime;
-using AutoTool.Core.Serialization;
-using Microsoft.Win32;
-using Microsoft.Extensions.Logging;
 
 namespace AutoTool.Desktop.ViewModels;
 
