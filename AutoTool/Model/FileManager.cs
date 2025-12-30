@@ -1,13 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+using AutoTool.Services.Interfaces;
 
 namespace AutoTool.Model
 {
@@ -28,9 +23,11 @@ namespace AutoTool.Model
             public string Title { get; set; } = string.Empty;
         }
 
-        private FileTypeInfo _fileTypeInfo;
-        private Action<string> _saveFunc;
-        private Action<string> _loadFunc;
+        private readonly FileTypeInfo _fileTypeInfo;
+        private readonly Action<string> _saveFunc;
+        private readonly Action<string> _loadFunc;
+        private readonly IFileDialogService _fileDialogService;
+        private readonly IRecentFileStore _recentFileStore;
 
         [ObservableProperty]
         private bool isFileOpened = false;
@@ -45,11 +42,18 @@ namespace AutoTool.Model
         private ObservableCollection<RecentFile>? _recentFiles;
 
 
-        public FileManager(FileTypeInfo fileTypeInfo, Action<string> saveFunc, Action<string>loadFunc)
+        public FileManager(
+            FileTypeInfo fileTypeInfo,
+            Action<string> saveFunc,
+            Action<string> loadFunc,
+            IFileDialogService fileDialogService,
+            IRecentFileStore recentFileStore)
         {
             _fileTypeInfo = fileTypeInfo;
             _saveFunc = saveFunc;
             _loadFunc = loadFunc;
+            _fileDialogService = fileDialogService;
+            _recentFileStore = recentFileStore;
 
             LoadRecentFiles();
         }
@@ -63,23 +67,11 @@ namespace AutoTool.Model
         {
             if (string.IsNullOrEmpty(filePath))
             {
-                var dialog = new OpenFileDialog()
-                {
-                    Title = _fileTypeInfo.Title,
-                    Filter = _fileTypeInfo.Filter,
-                    FilterIndex = _fileTypeInfo.FilterIndex,
-                    RestoreDirectory = _fileTypeInfo.RestoreDirectory,
-                    DefaultExt = _fileTypeInfo.DefaultExt,
-                };
-
-                dialog.ShowDialog();
-
-                if (dialog.FileName == "")
+                filePath = _fileDialogService.OpenFile(CreateDialogOptions()) ?? string.Empty;
+                if (string.IsNullOrEmpty(filePath))
                 {
                     return;
                 }
-
-                filePath = dialog.FileName;
             }
 
             _loadFunc(filePath);
@@ -102,37 +94,35 @@ namespace AutoTool.Model
 
         public void SaveFileAs()
         {
-            var dialog = new SaveFileDialog()
-            {
-                Title = _fileTypeInfo.Title,
-                Filter = _fileTypeInfo.Filter,
-                FilterIndex = _fileTypeInfo.FilterIndex,
-                RestoreDirectory = _fileTypeInfo.RestoreDirectory,
-                DefaultExt = _fileTypeInfo.DefaultExt,
-            };
-
-            dialog.ShowDialog();
-
-            if (dialog.FileName == "")
+            var filePath = _fileDialogService.SaveFile(CreateDialogOptions());
+            if (string.IsNullOrEmpty(filePath))
             {
                 return;
             }
 
-            _saveFunc(dialog.FileName);
+            _saveFunc(filePath);
 
-            AddToRecentFiles(dialog.FileName);
+            AddToRecentFiles(filePath);
 
-            CurrentFilePath = dialog.FileName;
-            CurrentFileName = System.IO.Path.GetFileName(dialog.FileName);
+            CurrentFilePath = filePath;
+            CurrentFileName = System.IO.Path.GetFileName(filePath);
 
             IsFileOpened = true;
         }
 
-
+        private FileDialogOptions CreateDialogOptions()
+        {
+            return new FileDialogOptions(
+                _fileTypeInfo.Title,
+                _fileTypeInfo.Filter,
+                _fileTypeInfo.FilterIndex,
+                _fileTypeInfo.RestoreDirectory,
+                _fileTypeInfo.DefaultExt);
+        }
 
         private void LoadRecentFiles()
         {
-            RecentFiles = XmlSerializer.XmlSerializer.DeserializeFromFile<ObservableCollection<RecentFile>>($"RecentFiles_{_fileTypeInfo.DefaultExt}.xml");
+            RecentFiles = _recentFileStore.Load(GetRecentFilesKey());
 
             if (RecentFiles == null)
             {
@@ -142,7 +132,7 @@ namespace AutoTool.Model
 
         private void SaveRecentFiles()
         {
-            XmlSerializer.XmlSerializer.SerializeToFile(RecentFiles, $"RecentFiles_{_fileTypeInfo.DefaultExt}.xml");
+            _recentFileStore.Save(GetRecentFilesKey(), RecentFiles);
         }
 
         private void AddToRecentFiles(string filePath)
@@ -162,5 +152,7 @@ namespace AutoTool.Model
 
             SaveRecentFiles();
         }
+
+        private string GetRecentFilesKey() => $"RecentFiles_{_fileTypeInfo.DefaultExt}.xml";
     }
 }

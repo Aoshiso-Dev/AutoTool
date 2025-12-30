@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using AutoTool.Model;
+using AutoTool.Services;
 
 namespace AutoTool
 {
@@ -22,6 +23,7 @@ namespace AutoTool
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = AppServices.CreateMainWindowViewModel();
             
             // ウィンドウ設定を読み込み
             _windowSettings = WindowSettings.Load();

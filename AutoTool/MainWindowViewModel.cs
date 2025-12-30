@@ -1,10 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Windows;
 using System.Collections.ObjectModel;
 using AutoTool.ViewModel;
 using AutoTool.Model;
 using static AutoTool.Model.FileManager;
+using AutoTool.Services.Interfaces;
 using System.Windows.Threading;
 
 namespace AutoTool
@@ -17,6 +17,12 @@ namespace AutoTool
 
     public partial class MainWindowViewModel : ObservableObject
     {
+        private readonly INotificationService _notificationService;
+        private readonly IStatusMessageScheduler _statusMessageScheduler;
+        private readonly IFileDialogService _fileDialogService;
+        private readonly IRecentFileStore _recentFileStore;
+        private readonly ILogService _logService;
+
         // Undo/Redo管理
         [ObservableProperty]
         private CommandHistoryManager _commandHistory = new();
@@ -102,9 +108,20 @@ namespace AutoTool
         [ObservableProperty]
         private string _statusMessage = "準備完了";
 
-        public MainWindowViewModel()
+        public MainWindowViewModel(
+            INotificationService notificationService,
+            IStatusMessageScheduler statusMessageScheduler,
+            IFileDialogService fileDialogService,
+            IRecentFileStore recentFileStore,
+            ILogService logService)
         {
-            MacroPanelViewModel = new MacroPanelViewModel();
+            _notificationService = notificationService;
+            _statusMessageScheduler = statusMessageScheduler;
+            _fileDialogService = fileDialogService;
+            _recentFileStore = recentFileStore;
+            _logService = logService;
+
+            MacroPanelViewModel = new MacroPanelViewModel(_notificationService, _logService);
 
             InitializeFileManager();
             InitializeCommandHistory();
@@ -158,7 +175,9 @@ namespace AutoTool
                         Title = "マクロファイルを開く",
                     },
                     SaveFile,
-                    LoadFile
+                    LoadFile,
+                    _fileDialogService,
+                    _recentFileStore
                     )
                 );
         }
@@ -187,7 +206,7 @@ namespace AutoTool
             string githubUrl = "https://github.com/Aoshiso-Dev/AutoTool";
             var versionString = $"{version.Major}.{version.Minor}.{version.Build}";
 
-            MessageBox.Show($"{appName}\nVer.{versionString}\n{githubUrl}", "バージョン情報", MessageBoxButton.OK, MessageBoxImage.Information);
+            _notificationService.ShowInfo($"{appName}\nVer.{versionString}\n{githubUrl}", "バージョン情報");
         }
 
         [RelayCommand]
@@ -200,7 +219,7 @@ namespace AutoTool
             }
             else
             {
-                MessageBox.Show("アプリケーションのディレクトリが見つかりませんでした。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                _notificationService.ShowError("アプリケーションのディレクトリが見つかりませんでした。", "エラー");
             }
         }
 
@@ -228,20 +247,12 @@ namespace AutoTool
                 StatusMessage = $"保存完了: {CurrentFileName}";
                 
                 // 3秒後にステータスメッセージをクリア
-                var timer = new DispatcherTimer();
-                timer.Interval = TimeSpan.FromSeconds(3);
-                timer.Tick += (s, e) => 
-                {
-                    StatusMessage = "準備完了";
-                    timer.Stop();
-                };
-                timer.Start();
+                _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
             }
             catch (Exception ex)
             {
                 StatusMessage = "保存に失敗しました";
-                MessageBox.Show($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー", 
-                              MessageBoxButton.OK, MessageBoxImage.Error);
+                _notificationService.ShowError($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー");
             }
         }
 
@@ -257,20 +268,12 @@ namespace AutoTool
                 StatusMessage = $"保存完了: {CurrentFileName}";
                 
                 // 3秒後にステータスメッセージをクリア
-                var timer = new DispatcherTimer();
-                timer.Interval = TimeSpan.FromSeconds(3);
-                timer.Tick += (s, e) => 
-                {
-                    StatusMessage = "準備完了";
-                    timer.Stop();
-                };
-                timer.Start();
+                _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
             }
             catch (Exception ex)
             {
                 StatusMessage = "保存に失敗しました";
-                MessageBox.Show($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー", 
-                              MessageBoxButton.OK, MessageBoxImage.Error);
+                _notificationService.ShowError($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー");
             }
         }
 
@@ -281,14 +284,7 @@ namespace AutoTool
             StatusMessage = $"元に戻しました: {CommandHistory.RedoDescription}";
             
             // 2秒後にステータスメッセージをクリア
-            var timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(2);
-            timer.Tick += (s, e) => 
-            {
-                StatusMessage = "準備完了";
-                timer.Stop();
-            };
-            timer.Start();
+            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
         }
 
         [RelayCommand(CanExecute = nameof(CanRedo))]
@@ -298,14 +294,7 @@ namespace AutoTool
             StatusMessage = $"やり直しました: {CommandHistory.UndoDescription}";
             
             // 2秒後にステータスメッセージをクリア
-            var timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(2);
-            timer.Tick += (s, e) => 
-            {
-                StatusMessage = "準備完了";
-                timer.Stop();
-            };
-            timer.Start();
+            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
         }
 
         // CanExecute メソッドを追加
