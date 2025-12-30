@@ -7,7 +7,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Input;
 using MacroPanels.List.Class;
-using System.Windows;
 using MacroPanels.Command.Class;
 using MacroPanels.Command.Interface;
 using MacroPanels.Command.Message;
@@ -25,14 +24,16 @@ using MacroPanels.Message;
 using MacroPanels.Model.MacroFactory;
 using MacroPanels.Model.List.Interface;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-using LogHelper;
 using static System.Net.Mime.MediaTypeNames;
 using AutoTool.Model;
+using AutoTool.Services.Interfaces;
 
 namespace AutoTool.ViewModel
 {
     public partial class MacroPanelViewModel : ObservableObject
     {
+        private readonly INotificationService _notificationService;
+        private readonly ILogService _logService;
         private CancellationTokenSource? _cts;
         private CommandHistoryManager? _commandHistory;
 
@@ -57,8 +58,10 @@ namespace AutoTool.ViewModel
         [ObservableProperty]
         private int _selectedListTabIndex = 0;
 
-        public MacroPanelViewModel()
+        public MacroPanelViewModel(INotificationService notificationService, ILogService logService)
         {
+            _notificationService = notificationService;
+            _logService = logService;
             ListPanelViewModel = new ListPanelViewModel();
             EditPanelViewModel = new EditPanelViewModel();
             ButtonPanelViewModel = new ButtonPanelViewModel();
@@ -278,7 +281,7 @@ namespace AutoTool.ViewModel
 
                 LogPanelViewModel.WriteLog(lineNumber, commandName, logString);
 
-                GlobalLogger.Instance.Write(lineNumber, commandName, logString);
+                _logService.Write(lineNumber, commandName, logString);
 
                 var commandItem = ListPanelViewModel.GetItem(command.LineNumber);
 
@@ -307,7 +310,7 @@ namespace AutoTool.ViewModel
                 var detail = (message as DoingCommandMessage).Detail;
                 LogPanelViewModel.WriteLog(lineNumber, commandName, detail);
 
-                GlobalLogger.Instance.Write(lineNumber, commandName, detail);
+                _logService.Write(lineNumber, commandName, detail);
             });
             WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (sender, message) =>
             {
@@ -327,7 +330,7 @@ namespace AutoTool.ViewModel
             {
                 LogPanelViewModel.WriteLog((message as LogMessage).Text);
 
-                GlobalLogger.Instance.Write((message as LogMessage).Text);
+                _logService.Write((message as LogMessage).Text);
             });
         }
 
@@ -366,7 +369,7 @@ namespace AutoTool.ViewModel
             {
                 if (_cts != null && !_cts.Token.IsCancellationRequested)
                 {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _notificationService.ShowError(ex.Message, "Error");
                 }
             }
             finally

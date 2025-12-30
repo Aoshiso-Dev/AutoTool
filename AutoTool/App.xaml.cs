@@ -2,8 +2,8 @@
 using System.Data;
 using System.Windows;
 using System.Windows.Threading;
-using LogHelper;
 using MacroPanels.Model.CommandDefinition;
+using AutoTool.Services;
 
 namespace AutoTool
 {
@@ -28,10 +28,10 @@ namespace AutoTool
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
             // 例外を処理（例: ログに記録、ユーザーに通知など）
-            MessageBox.Show("予期しないエラーが発生しました: " + e.Exception.Message, "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            AppServices.NotificationService.ShowError("予期しないエラーが発生しました: " + e.Exception.Message, "エラー");
 
             // ログに例外を記録
-            GlobalLogger.Instance.Write(e.Exception);
+            AppServices.LogService.Write(e.Exception);
 
             // 例外をハンドル済みとして設定（アプリケーションが終了しないようにする）
             e.Handled = true;
