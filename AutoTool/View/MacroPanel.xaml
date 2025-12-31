@@ -29,14 +29,15 @@
                 <panels:ListPanel DataContext="{Binding ListPanelViewModel}"/>
             </ui:Card>
 
-            <!-- スプリッター -->
-            <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" 
-                          Background="Transparent" Cursor="SizeNS"/>
+        <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="250" HorizontalAlignment="Stretch">
+            <TabItem Header="編集">
+                <panels:EditPanel DataContext="{Binding EditPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            </TabItem>
+            <TabItem Header="ログ">
+                <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            </TabItem>
+        </TabControl>
 
-            <!-- ログパネル -->
-            <ui:Card Grid.Row="2" Margin="8,4,8,8" Padding="0">
-                <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="8"/>
-            </ui:Card>
-        </Grid>
-    </Grid>
+        <panels:ListPanel DataContext="{Binding ListPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+    </DockPanel>
 </UserControl>

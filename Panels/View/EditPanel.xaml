@@ -149,35 +149,21 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- 画像パス -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <Border.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsWaitImageItem"/>
-                                <Binding Path="IsClickImageItem"/>
-                                <Binding Path="IsIfImageExistItem"/>
-                                <Binding Path="IsIfImageNotExistItem"/>
-                            </MultiBinding>
-                        </Border.Visibility>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="検索画像" Style="{StaticResource SettingLabel}"/>
-                                <TextBlock Text="{Binding ImagePath, TargetNullValue='画像が選択されていません'}" 
-                                           Style="{StaticResource SettingDescription}" 
-                                           TextTrimming="CharacterEllipsis" MaxWidth="300"/>
+                            <!-- 画像パスの設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="画像パス:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="250"/>
+                                <Button Content="参照" Command="{Binding BrowseCommand}" Margin="5,0,2,0" Width="40"/>
+                                <Button Content="取得" Command="{Binding CaptureCommand}" Margin="2,0" Width="40"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsWaitImageItem"/>
+                                        <Binding Path="IsClickImageItem"/>
+                                        <Binding Path="IsIfImageExistItem"/>
+                                        <Binding Path="IsIfImageNotExistItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
                             </StackPanel>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                <ui:Button Content="参照" Icon="{ui:SymbolIcon FolderOpen24}" 
-                                           Command="{Binding BrowseCommand}" Margin="0,0,4,0"/>
-                                <ui:Button Content="キャプチャ" Icon="{ui:SymbolIcon Screenshot24}" 
-                                           Command="{Binding CaptureCommand}" Appearance="Primary"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
 
                     <!-- しきい値 -->
                     <Border Style="{StaticResource SettingCard}">
@@ -314,210 +300,228 @@
                         </Grid>
                     </Border>
 
-                    <!-- ホットキー -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <Border.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsHotkeyItem"/>
-                            </MultiBinding>
-                        </Border.Visibility>
-                        <StackPanel>
-                            <TextBlock Text="ホットキー設定" Style="{StaticResource SettingLabel}" Margin="0,0,0,8"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                <CheckBox Content="Ctrl" IsChecked="{Binding Ctrl}" Margin="0,0,16,0"/>
-                                <CheckBox Content="Shift" IsChecked="{Binding Shift}" Margin="0,0,16,0"/>
-                                <CheckBox Content="Alt" IsChecked="{Binding Alt}"/>
+                            <!-- ホットキーの設定 -->
+                            <StackPanel Margin="0,5">
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Ctrl:" Width="120" VerticalAlignment="Center"/>
+                                    <CheckBox IsChecked="{Binding Ctrl, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Shift:" Width="120" VerticalAlignment="Center"/>
+                                    <CheckBox IsChecked="{Binding Shift, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Alt:" Width="120" VerticalAlignment="Center"/>
+                                    <CheckBox IsChecked="{Binding Alt, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="キー:" Width="120" VerticalAlignment="Center"/>
+                                    <TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource KeyToStringConverter}}"
+                                             Width="100"/>
+                                </StackPanel>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsHotkeyItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
                             </StackPanel>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="60"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="キー:" VerticalAlignment="Center"
-                                           Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
-                                <TextBox Grid.Column="1" 
-                                         Text="{Binding Key, Converter={StaticResource KeyToStringConverter}}"/>
-                            </Grid>
+
+                            <!-- 待機時間の設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="待機時間:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Wait, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                                <TextBlock Text="(ms)" Margin="5,0" VerticalAlignment="Center"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsWaitItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+
+                            <!-- ループ回数の設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="ループ回数:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding LoopCount, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsLoopItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+
+                            <!-- プログラムパスの設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="プログラムパス:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ProgramPath, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="250"/>
+                                <Button Content="参照" Command="{Binding BrowseProgramCommand}" Margin="5,0" Width="40"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsExecuteProgramItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+
+                            <!-- 引数の設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="引数:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Arguments, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsExecuteProgramItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+                            
+                            <!-- ワーキングディレクトリの設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="ワーキングディレクトリ:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding WorkingDirectory, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="250"/>
+                                <Button Content="参照" Command="{Binding BrowseWorkingDirectoryCommand}" Margin="5,0" Width="40"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsExecuteProgramItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+                            
+                            <!-- 変数名の設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="変数名:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding VariableName, UpdateSourceTrigger=PropertyChanged}" Width="250"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsSetVariableItem"/>
+                                        <Binding Path="IsIfVariableItem"/>
+                                        <Binding Path="IsSetVariableAIItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+                            
+                            <!-- 変数値の設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="変数値:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding VariableValue, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsSetVariableItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+                            
+                            <!-- 比較演算子の設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="比較演算子:" Width="120" VerticalAlignment="Center"/>
+                                <ComboBox ItemsSource="{Binding Operators, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedOperator}" Width="150"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsIfVariableItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+
+                            <!-- 比較値の設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="比較値:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding CompareValue, UpdateSourceTrigger=PropertyChanged}" Width="250"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsIfVariableItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+                            
+                            <!-- スクリーンショット保存先ディレクトリの設定 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <TextBlock Text="保存先ディレクトリ:" Width="120" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Width="250"/>
+                                <Button Content="参照" Command="{Binding BrowseSaveDirectoryCommand}" Margin="5,0" Width="40"/>
+                                <StackPanel.Visibility>
+                                    <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                                        <Binding Path="IsScreenshotItem"/>
+                                    </MultiBinding>
+                                </StackPanel.Visibility>
+                            </StackPanel>
+                            
+                            <!-- コメント設定（全コマンド共通） -->
+                            <StackPanel Margin="0,5">
+                                <TextBlock Text="コメント:" Margin="0,0,0,5" HorizontalAlignment="Left"/>
+                                <TextBox Text="{Binding Comment, UpdateSourceTrigger=PropertyChanged}" 
+                                         Width="450" 
+                                         Height="60"
+                                         TextWrapping="Wrap"
+                                         AcceptsReturn="True"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalAlignment="Left"
+                                         ToolTip="このコマンドに関する説明やメモを入力できます"/>
+                            </StackPanel>
                         </StackPanel>
-                    </Border>
-
-                    <!-- 待機時間 -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <Border.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsWaitItem"/>
-                            </MultiBinding>
-                        </Border.Visibility>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="150"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="待機時間" Style="{StaticResource SettingLabel}"/>
-                                <TextBlock Text="指定した時間待機します" Style="{StaticResource SettingDescription}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1">
-                                <ui:NumberBox Value="{Binding Wait}" Minimum="0" SpinButtonPlacementMode="Compact"/>
-                                <TextBlock Text="ミリ秒" Style="{StaticResource SettingDescription}" HorizontalAlignment="Right"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-
-                    <!-- ループ回数 -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <Border.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsLoopItem"/>
-                            </MultiBinding>
-                        </Border.Visibility>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="150"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="ループ回数" Style="{StaticResource SettingLabel}"/>
-                                <TextBlock Text="0で無限ループ" Style="{StaticResource SettingDescription}"/>
-                            </StackPanel>
-                            <ui:NumberBox Grid.Column="1" Value="{Binding LoopCount}" Minimum="0" 
-                                          SpinButtonPlacementMode="Compact"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- AI検出：モデルパス -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <Border.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsClickImageAIItem"/>
-                                <Binding Path="IsIfImageExistAIItem"/>
-                                <Binding Path="IsIfImageNotExistAIItem"/>
-                                <Binding Path="IsSetVariableAIItem"/>
-                            </MultiBinding>
-                        </Border.Visibility>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="ONNXモデル" Style="{StaticResource SettingLabel}"/>
-                                <TextBlock Text="{Binding ModelPath, TargetNullValue='モデルが選択されていません'}" 
-                                           Style="{StaticResource SettingDescription}" 
-                                           TextTrimming="CharacterEllipsis" MaxWidth="400"/>
-                            </StackPanel>
-                            <ui:Button Grid.Column="1" Content="参照" Icon="{ui:SymbolIcon FolderOpen24}" 
-                                       Command="{Binding BrowseModelCommand}" Appearance="Primary"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- AI検出：クラスID -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <Border.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsClickImageAIItem"/>
-                                <Binding Path="IsIfImageExistAIItem"/>
-                                <Binding Path="IsIfImageNotExistAIItem"/>
-                            </MultiBinding>
-                        </Border.Visibility>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="150"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="クラスID" Style="{StaticResource SettingLabel}"/>
-                                <TextBlock Text="検出する物体のクラス番号" Style="{StaticResource SettingDescription}"/>
-                            </StackPanel>
-                            <ui:NumberBox Grid.Column="1" Value="{Binding ClassID}" Minimum="0" 
-                                          SpinButtonPlacementMode="Compact"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- AI検出：しきい値 -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <Border.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsClickImageAIItem"/>
-                                <Binding Path="IsIfImageExistAIItem"/>
-                                <Binding Path="IsIfImageNotExistAIItem"/>
-                                <Binding Path="IsSetVariableAIItem"/>
-                            </MultiBinding>
-                        </Border.Visibility>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                <TextBlock Text="信頼度しきい値" Style="{StaticResource SettingLabel}"/>
-                                <ui:NumberBox Value="{Binding ConfThreshold}" Minimum="0.01" Maximum="1.0" 
-                                              SmallChange="0.05" LargeChange="0.1" SpinButtonPlacementMode="Compact"/>
-                                <TextBlock Text="0.01〜1.00" Style="{StaticResource SettingDescription}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="IoUしきい値" Style="{StaticResource SettingLabel}"/>
-                                <ui:NumberBox Value="{Binding IoUThreshold}" Minimum="0.01" Maximum="1.0" 
-                                              SmallChange="0.05" LargeChange="0.1" SpinButtonPlacementMode="Compact"/>
-                                <TextBlock Text="NMS用（0.01〜1.00）" Style="{StaticResource SettingDescription}"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-
-                    <!-- AI検出：変数名（SetVariableAI用） -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <Border.Visibility>
-                            <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                                <Binding Path="IsSetVariableAIItem"/>
-                            </MultiBinding>
-                        </Border.Visibility>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="200"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="変数名" Style="{StaticResource SettingLabel}"/>
-                                <TextBlock Text="検出結果を保存する変数" Style="{StaticResource SettingDescription}"/>
-                            </StackPanel>
-                            <TextBox Grid.Column="1" Text="{Binding VariableName, UpdateSourceTrigger=PropertyChanged}"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- コメント -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <StackPanel>
-                            <TextBlock Text="コメント" Style="{StaticResource SettingLabel}" Margin="0,0,0,4"/>
-                            <TextBox Text="{Binding Comment, UpdateSourceTrigger=PropertyChanged}" 
-                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60"/>
-                        </StackPanel>
-                    </Border>
-
-                </StackPanel>
-            </StackPanel>
-        </ScrollViewer>
-
-        <!-- プレビューエリア（画像系コマンドのときのみ表示） -->
-        <Border Grid.Row="1" Background="{ui:ThemeResource ControlFillColorDefaultBrush}" 
-                CornerRadius="8" Margin="4" Padding="12">
-            <Border.Visibility>
-                <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
-                    <Binding Path="IsWaitImageItem"/>
-                    <Binding Path="IsClickImageItem"/>
-                    <Binding Path="IsIfImageExistItem"/>
-                    <Binding Path="IsIfImageNotExistItem"/>
-                </MultiBinding>
-            </Border.Visibility>
-            <StackPanel>
-                <TextBlock Text="プレビュー" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"
-                           Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"/>
+                    </StackPanel>
+                </ScrollViewer>
                 
-                <!-- 画像プレビュー -->
-                <Border CornerRadius="4" Background="{ui:ThemeResource ControlFillColorSecondaryBrush}"
-                        MinHeight="100" MaxHeight="200">
-                    <Image Source="{Binding ImagePath}" Stretch="Uniform" MaxHeight="180"/>
-                </Border>
-            </StackPanel>
+                <!-- GridSplitter -->
+                <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
+                              Background="LightGray" ShowsPreview="True"
+                              Visibility="{Binding IsNotNullItem, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                
+                <!-- 画像のプレビュー（右側、サイズ制限あり） -->
+                <GroupBox Grid.Column="2" Header="プレビュー" Margin="10">
+                    <Grid>
+                        <!-- 画像が存在しない場合のメッセージ -->
+                        <TextBlock Text="画像ファイルが見つかりません" 
+                                   HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center"
+                                   Foreground="Gray"
+                                   FontSize="14">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ImagePath}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ImagePath}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        
+                        <!-- 画像プレビュー -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                            <Image MaxWidth="400" MaxHeight="600" Stretch="Uniform">
+                                <Image.Source>
+                                    <Binding Path="ImagePath" UpdateSourceTrigger="PropertyChanged">
+                                        <Binding.TargetNullValue>
+                                            <x:Null/>
+                                        </Binding.TargetNullValue>
+                                    </Binding>
+                                </Image.Source>
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ImagePath}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ImagePath}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+                        </ScrollViewer>
+                    </Grid>
+                    <GroupBox.Visibility>
+                        <MultiBinding Converter="{StaticResource BoolToVisibilityMultiConverter}">
+                            <Binding Path="IsWaitImageItem"/>
+                            <Binding Path="IsClickImageItem"/>
+                            <Binding Path="IsIfImageExistItem"/>
+                            <Binding Path="IsIfImageNotExistItem"/>
+                        </MultiBinding>
+                    </GroupBox.Visibility>
+                </GroupBox>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

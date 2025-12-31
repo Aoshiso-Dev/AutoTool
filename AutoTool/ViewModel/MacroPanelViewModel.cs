@@ -274,73 +274,51 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     {
         if (item == null) return;
 
-        var oldItem = _listPanel.SelectedItem;
-        var index = item.LineNumber - 1;
-
-        if (oldItem != null && _commandHistory != null)
-        {
-            var editCommand = new EditItemCommand(
-                oldItem, item, index,
-                (editedItem, editIndex) => _listPanel.ReplaceAt(editIndex, editedItem)
-            );
-            _commandHistory.ExecuteCommand(editCommand);
-        }
-        else
-        {
-            _listPanel.SetSelectedItem(item);
-            _listPanel.SetSelectedLineNumber(index);
-        }
-    }
-
-    private void HandleItemDoubleClick(ICommandListItem? item)
-    {
-        if (item == null || IsRunning) return;
-
-        // EditPanelWindowを表示
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-        {
-            // 編集前のバックアップを作成
-            var backup = item.Clone();
-            var index = item.LineNumber - 1;
-
-            // 編集パネルにアイテムをセット
-            _editPanel.SetItem(item);
-
-            var editWindow = new MacroPanels.View.EditPanelWindow();
-            editWindow.SetEditPanelDataContext(EditPanelViewModel);
-            editWindow.Owner = System.Windows.Application.Current.MainWindow;
-            
-            var result = editWindow.ShowDialog();
-            
-            if (result == true)
+            // From EditPanelViewModel
+            WeakReferenceMessenger.Default.Register<EditCommandMessage>(this, (sender, message) =>
             {
-                // OKの場合：変更を確定（Undo/Redo対応）
-                if (_commandHistory != null)
+                var item = (message as EditCommandMessage).Item;
+                if (item != null)
                 {
-                    var editCommand = new EditItemCommand(
-                        backup, item, index,
-                        (editedItem, editIndex) => _listPanel.ReplaceAt(editIndex, editedItem)
-                    );
-                    _commandHistory.ExecuteCommand(editCommand);
+                    var oldItem = ListPanelViewModel.SelectedItem;
+                    var index = item.LineNumber - 1;
+                    
+                    // 編集操作をUndoスタックに追加
+                    if (oldItem != null && _commandHistory != null)
+                    {
+                        var editCommand = new EditItemCommand(
+                            oldItem, item, index,
+                            (editedItem, editIndex) => ListPanelViewModel.ReplaceAt(editIndex, editedItem)
+                        );
+                        _commandHistory.ExecuteCommand(editCommand);
+                    }
+                    else
+                    {
+                        ListPanelViewModel.SetSelectedItem(item);
+                        ListPanelViewModel.SetSelectedLineNumber(item.LineNumber - 1);
+                    }
                 }
-            }
-            else
+            });
+            WeakReferenceMessenger.Default.Register<RefreshListViewMessage>(this, (sender, message) =>
             {
-                // キャンセルの場合：バックアップから復元
-                _listPanel.ReplaceAt(index, backup);
-                _editPanel.SetItem(backup);
-            }
-        });
-    }
+                ListPanelViewModel.Refresh();
+            });
 
-    private void HandleStartCommand(ICommand command)
-    {
-        var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
-        var commandName = command.GetType().Name.Replace("Command", "").PadRight(20, ' ');
+            // From Commands
+            WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (sender, message) =>
+            {
+                var command = (message as StartCommandMessage).Command;
+                var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
+                var commandName = command.GetType().ToString().Split('.').Last().Replace("Command", "").PadRight(20, ' ');
 
-        var settingDict = command.Settings.GetType().GetProperties()
-            .ToDictionary(x => x.Name, x => x.GetValue(command.Settings, null));
-        var logString = string.Join(", ", settingDict.Select(s => $"({s.Key} = {s.Value})"));
+                var settingDict = command.Settings.GetType().GetProperties().ToDictionary(x => x.Name, x => x.GetValue(command.Settings, null));
+                var logString = string.Empty;
+                foreach (var setting in settingDict)
+                {
+                    logString += $"({setting.Key} = {setting.Value}), ";
+                }
+
+                LogPanelViewModel.WriteLog(lineNumber, commandName, logString);
 
         _logPanel.WriteLog(lineNumber, commandName, logString);
         _logService.Write(lineNumber, commandName, logString);
