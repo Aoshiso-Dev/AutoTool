@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using MacroPanels.List.Class;
 using MacroPanels.Model.List.Interface;
 using MacroPanels.Command.Interface;
-using MacroPanels.Command.Class;
+using MacroPanels.Command.Commands;
 using MacroPanels.Model.CommandDefinition;
 
 namespace MacroPanels.List.Class

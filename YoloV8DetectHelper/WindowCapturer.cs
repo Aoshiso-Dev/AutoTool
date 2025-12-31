@@ -11,6 +11,29 @@ internal static class WindowCapturer
 {
     private const int SRCCOPY = 0x00CC0020;
 
+    /// <summary>
+    /// デスクトップ全体（プライマリスクリーン）をキャプチャします。
+    /// </summary>
+    public static Bitmap CaptureScreen()
+    {
+        int width = Native.GetSystemMetrics(0);  // SM_CXSCREEN
+        int height = Native.GetSystemMetrics(1); // SM_CYSCREEN
+        
+        IntPtr hDeskDC = Native.GetDC(IntPtr.Zero);
+        IntPtr memDC = Native.CreateCompatibleDC(hDeskDC);
+        IntPtr hBmp = Native.CreateCompatibleBitmap(hDeskDC, width, height);
+        IntPtr old = Native.SelectObject(memDC, hBmp);
+        
+        Native.BitBlt(memDC, 0, 0, width, height, hDeskDC, 0, 0, SRCCOPY);
+        
+        Native.SelectObject(memDC, old);
+        Native.ReleaseDC(IntPtr.Zero, hDeskDC);
+        Native.DeleteDC(memDC);
+        
+        var bmp = Image.FromHbitmap(hBmp);
+        Native.DeleteObject(hBmp);
+        return bmp;
+    }
 
     public static Bitmap? CaptureByTitle(string windowTitle)
     {
@@ -85,4 +108,5 @@ internal static class Native
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdcBlt, uint nFlags);
     [DllImport("gdi32.dll")] public static extern bool BitBlt(IntPtr hdcDest, int x, int y, int w, int h, IntPtr hdcSrc, int sx, int sy, int rop);
     [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr value);
+    [DllImport("user32.dll")] public static extern int GetSystemMetrics(int nIndex);
 }

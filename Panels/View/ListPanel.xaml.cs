@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -12,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using MacroPanels.ViewModel;
 
 namespace MacroPanels.View
 {
@@ -47,6 +49,9 @@ namespace MacroPanels.View
 
                 // SelectionChangedイベントでスクロール位置を復元
                 dataGrid.SelectionChanged += DataGrid_SelectionChanged;
+                
+                // ダブルクリックイベントを追加
+                dataGrid.MouseDoubleClick += DataGrid_MouseDoubleClick;
             }
         }
 
@@ -78,6 +83,34 @@ namespace MacroPanels.View
                     }
                 }
             }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        private void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // ヘッダー部分のダブルクリックは無視
+            var dataGrid = sender as DataGrid;
+            if (dataGrid == null) return;
+
+            // クリック位置の要素を確認
+            var element = e.OriginalSource as DependencyObject;
+            while (element != null)
+            {
+                if (element is DataGridColumnHeader)
+                {
+                    // ヘッダーのダブルクリックは無視
+                    return;
+                }
+                if (element is DataGridRow)
+                {
+                    // 行のダブルクリック - ViewModelに通知
+                    if (DataContext is ListPanelViewModel viewModel)
+                    {
+                        viewModel.OnItemDoubleClick();
+                    }
+                    return;
+                }
+                element = VisualTreeHelper.GetParent(element);
+            }
         }
 
         /// <summary>

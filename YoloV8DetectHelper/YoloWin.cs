@@ -28,15 +28,31 @@ public static class YoloWin
 
     /// <summary>
     /// 指定タイトルのウィンドウをキャプチャして検出します。
+    /// タイトルが空の場合はデスクトップ全体をキャプチャします。
     /// </summary>
-    public static DetectionResult DetectFromWindowTitle(string windowTitle, float confTh = 0.45f, float iouTh = 0.15f, bool draw = true)
+    public static DetectionResult DetectFromWindowTitle(string? windowTitle, float confTh = 0.45f, float iouTh = 0.15f, bool draw = true)
     {
         EnsureReady();
         DpiUtil.TryEnablePerMonitorDpi();
-        using var bmp = WindowCapturer.CaptureByTitle(windowTitle)
-        ?? throw new InvalidOperationException("ウィンドウのキャプチャに失敗しました");
-        using var mat = BitmapConverter.ToMat(bmp);
-        return DetectFromMat(mat, confTh, iouTh, draw);
+        
+        Bitmap bmp;
+        if (string.IsNullOrEmpty(windowTitle))
+        {
+            // グローバル（全画面）対象
+            bmp = WindowCapturer.CaptureScreen();
+        }
+        else
+        {
+            // 指定ウィンドウ対象
+            bmp = WindowCapturer.CaptureByTitle(windowTitle)
+                ?? throw new InvalidOperationException($"ウィンドウのキャプチャに失敗しました: '{windowTitle}'");
+        }
+        
+        using (bmp)
+        {
+            using var mat = BitmapConverter.ToMat(bmp);
+            return DetectFromMat(mat, confTh, iouTh, draw);
+        }
     }
 
 

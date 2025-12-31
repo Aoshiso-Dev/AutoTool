@@ -1,20 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MacroPanels.List;
-using System.Windows;
-using MacroPanels.Command.Interface;
-using MacroPanels.Command.Class;
-using MacroPanels.Model.List.Interface;
-using System.Windows.Controls;
-using System.Text.Json.Serialization;
-using OpenCvSharp.Features2D;
 using System.Windows.Input;
 using System.Windows.Media;
-using MacroPanels.Model.MacroFactory;
+using MacroPanels.Command.Interface;
+using MacroPanels.Command.Commands;
+using MacroPanels.Model.List.Interface;
 using CommandDef = MacroPanels.Model.CommandDefinition;
 
 namespace MacroPanels.List.Class

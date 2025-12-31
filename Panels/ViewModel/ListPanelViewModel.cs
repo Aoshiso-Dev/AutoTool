@@ -1,357 +1,359 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using MacroPanels.List.Class;
-using MacroPanels.Message;
 using MacroPanels.Model.List.Interface;
-using MacroPanels.Model.List.Type;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Windows.Data;
 using MacroPanels.Model.CommandDefinition;
 
-namespace MacroPanels.ViewModel
+namespace MacroPanels.ViewModel;
+
+public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 {
-    public partial class ListPanelViewModel : ObservableObject
+    private readonly ICommandRegistry _commandRegistry;
+    private object? _commandHistory;
+
+    // イベント
+    public event Action<ICommandListItem?>? SelectedItemChanged;
+    public event Action<ICommandListItem?>? ItemDoubleClicked;
+
+    #region Properties
+    [ObservableProperty]
+    private bool _isRunning;
+
+    [ObservableProperty]
+    private CommandList _commandList = new();
+
+    private int _selectedLineNumber;
+    public int SelectedLineNumber
     {
-        private object? _commandHistory;
-
-        #region Properties
-        [ObservableProperty]
-        private bool _isRunning;
-
-        [ObservableProperty]
-        private CommandList _commandList = new();
-
-        private int _selectedLineNumber = 0;
-        public int SelectedLineNumber
+        get => _selectedLineNumber;
+        set
         {
-            get => _selectedLineNumber;
-            set
+            if (SetProperty(ref _selectedLineNumber, value))
             {
-                SetProperty(ref _selectedLineNumber, value);
                 OnSelectedLineNumberChanged();
             }
         }
+    }
 
-        public ICommandListItem? SelectedItem
+    public ICommandListItem? SelectedItem
+    {
+        get => CommandList.Items.FirstOrDefault(x => x.IsSelected);
+        set
         {
-            get
-            {
-                return CommandList.Items.FirstOrDefault(x => x.IsSelected == true);
-            }
-            set
-            {
-                if (value == null)
-                {
-                    return;
-                }
+            if (value == null) return;
 
-                var existingItem = CommandList.Items.FirstOrDefault(x => x.IsSelected == true);
-
-                if (existingItem != null)
-                {
-                    var index = CommandList.Items.IndexOf(existingItem);
-
-                    CommandList.Override(index, value);
-
-                    CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-                }
-            }
-        }
-
-        private int _executedLineNumber = 0;
-        public int ExecutedLineNumber
-        {
-            get => _executedLineNumber;
-            set
-            {
-                SetProperty(ref _executedLineNumber, value);
-                OnExecutedLineNumberChanged();
-            }
-        }
-        #endregion
-
-        public ListPanelViewModel()
-        {
-        }
-
-        /// <summary>
-        /// CommandHistoryManagerを設定
-        /// </summary>
-        public void SetCommandHistory(object commandHistory)
-        {
-            _commandHistory = commandHistory;
-        }
-
-        #region OnChanged
-        private void OnSelectedLineNumberChanged()
-        {
-            CommandList.Items.ToList().ForEach(x => x.IsSelected = false);
-
-            var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
+            var existingItem = CommandList.Items.FirstOrDefault(x => x.IsSelected);
             if (existingItem != null)
             {
-                existingItem.IsSelected = true;
-                WeakReferenceMessenger.Default.Send(new ChangeSelectedMessage(existingItem));
+                var index = CommandList.Items.IndexOf(existingItem);
+                CommandList.Override(index, value);
+                // Refresh()を削除 - ObservableCollectionが自動的に通知する
             }
+        }
+    }
+
+    private int _executedLineNumber;
+    public int ExecutedLineNumber
+    {
+        get => _executedLineNumber;
+        set
+        {
+            SetProperty(ref _executedLineNumber, value);
+            OnExecutedLineNumberChanged();
+        }
+    }
+    #endregion
+
+    public ListPanelViewModel(ICommandRegistry commandRegistry)
+    {
+        _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
+    }
+
+    /// <summary>
+    /// CommandHistoryManagerを設定
+    /// </summary>
+    public void SetCommandHistory(object commandHistory)
+    {
+        _commandHistory = commandHistory;
+    }
+
+    #region OnChanged
+    private void OnSelectedLineNumberChanged()
+    {
+        foreach (var item in CommandList.Items)
+        {
+            item.IsSelected = false;
+        }
+
+        var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
+        if (existingItem != null)
+        {
+            existingItem.IsSelected = true;
+            SelectedItemChanged?.Invoke(existingItem);
+        }
+        // Refresh()を削除 - IsSelectedはINotifyPropertyChangedで通知される
+    }
+
+    private void OnExecutedLineNumberChanged()
+    {
+        foreach (var item in CommandList.Items)
+        {
+            item.IsRunning = false;
+        }
+        
+        var cmd = CommandList.Items.FirstOrDefault(x => x.LineNumber == ExecutedLineNumber);
+        if (cmd != null)
+        {
+            cmd.IsRunning = true;
+            // Refresh()を削除 - IsRunningはINotifyPropertyChangedで通知される
+        }
+    }
+    #endregion
+
+    #region ListInteraction
+    public void Refresh()
+    {
+        // 必要な場合のみ呼び出す（Load後など）
+        CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+    }
+
+    public void Add(string itemType)
+    {
+        var item = _commandRegistry.CreateCommandItem(itemType);
+
+        if (item != null)
+        {
+            item.ItemType = itemType;
+
+            if (CommandList.Items.Count != 0 && SelectedLineNumber >= 0)
+            {
+                CommandList.Insert(SelectedLineNumber + 1, item);
+            }
+            else
+            {
+                CommandList.Add(item);
+            }
+
+            var newIndex = CommandList.Items.IndexOf(item);
+            if (_selectedLineNumber == newIndex)
+            {
+                // 同じ値でもOnSelectedLineNumberChangedを呼び出す（最初のアイテム追加時など）
+                OnSelectedLineNumberChanged();
+            }
+            else
+            {
+                SelectedLineNumber = newIndex;
+            }
+            // Refresh()を削除 - ObservableCollectionのInsert/Addで自動通知
+        }
+    }
+
+    /// <summary>
+    /// 指定位置にアイテムを挿入（Undo/Redo用）
+    /// </summary>
+    public void InsertAt(int index, ICommandListItem item)
+    {
+        if (index < 0) index = 0;
+        if (index > CommandList.Items.Count) index = CommandList.Items.Count;
+
+        CommandList.Insert(index, item);
+        SelectedLineNumber = index;
+        // Refresh()を削除
+    }
+
+    /// <summary>
+    /// 指定位置のアイテムを削除（Undo/Redo用）
+    /// </summary>
+    public void RemoveAt(int index)
+    {
+        if (index >= 0 && index < CommandList.Items.Count)
+        {
+            CommandList.RemoveAt(index);
             
-            // 選択変更時はRefreshを呼ばない（スクロール位置保持のため）
-            // CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-        }
-
-        private void OnExecutedLineNumberChanged()
-        {
-            CommandList.Items.ToList().ForEach(x => x.IsRunning = false);
-            var cmd = CommandList.Items.Where(x => x.LineNumber == ExecutedLineNumber).FirstOrDefault();
-            if (cmd != null)
-            {
-                cmd.IsRunning = true;
-                // 実行中の表示更新は必要なのでRefreshを残す
-                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-            }
-        }
-        #endregion
-
-        #region ListIntaraction
-        public void Refresh()
-        {
-            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-        }
-
-        public void Add(string itemType)
-        {
-            // CommandRegistry を使用して自動生成
-            var item = CommandRegistry.CreateCommandItem(itemType);
-
-            if (item != null)
-            {
-                item.ItemType = itemType;
-
-                if(CommandList.Items.Count != 0 && SelectedLineNumber >= 0)
-                {
-                    CommandList.Insert(SelectedLineNumber + 1, item);
-                }
-                else
-                {
-                    CommandList.Add(item);
-                }
-
-                SelectedLineNumber = CommandList.Items.IndexOf(item);
-
-                // 追加後にCollectionViewを更新
-                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-                
-                System.Diagnostics.Debug.WriteLine($"Added command: {item.ItemType} -> {CommandRegistry.DisplayOrder.GetDisplayName(item.ItemType)}");
-            }
-        }
-
-        /// <summary>
-        /// 指定位置にアイテムを挿入（Undo/Redo用）
-        /// </summary>
-        public void InsertAt(int index, ICommandListItem item)
-        {
-            if (index < 0) index = 0;
-            if (index > CommandList.Items.Count) index = CommandList.Items.Count;
-
-            CommandList.Insert(index, item);
-            SelectedLineNumber = index;
-            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-        }
-
-        /// <summary>
-        /// 指定位置のアイテムを削除（Undo/Redo用）
-        /// </summary>
-        public void RemoveAt(int index)
-        {
-            if (index >= 0 && index < CommandList.Items.Count)
-            {
-                CommandList.RemoveAt(index);
-                
-                if (CommandList.Items.Count == 0)
-                {
-                    SelectedLineNumber = 0;
-                }
-                else if (index >= CommandList.Items.Count)
-                {
-                    SelectedLineNumber = CommandList.Items.Count - 1;
-                }
-                else
-                {
-                    SelectedLineNumber = index;
-                }
-                
-                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-            }
-        }
-
-        /// <summary>
-        /// 指定位置のアイテムを置換（Undo/Redo用）
-        /// </summary>
-        public void ReplaceAt(int index, ICommandListItem item)
-        {
-            if (index >= 0 && index < CommandList.Items.Count)
-            {
-                CommandList.Override(index, item);
-                SelectedLineNumber = index;
-                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-            }
-        }
-
-        /// <summary>
-        /// アイテムを移動（Undo/Redo用）
-        /// </summary>
-        public void MoveItem(int fromIndex, int toIndex)
-        {
-            if (fromIndex >= 0 && fromIndex < CommandList.Items.Count &&
-                toIndex >= 0 && toIndex < CommandList.Items.Count &&
-                fromIndex != toIndex)
-            {
-                CommandList.Move(fromIndex, toIndex);
-                SelectedLineNumber = toIndex;
-                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-            }
-        }
-
-        /// <summary>
-        /// アイテムを追加（Undo/Redo用）
-        /// </summary>
-        public void AddItem(ICommandListItem item)
-        {
-            CommandList.Add(item);
-            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-        }
-
-        public void Up()
-        {
-            if(SelectedLineNumber == 0)
-            {
-                return;
-            }
-
-            var selectedBak = SelectedLineNumber;
-            CommandList.Move(SelectedLineNumber, SelectedLineNumber - 1);
-            SelectedLineNumber = selectedBak - 1;
-        }
-
-        public void Down()
-        {
-            if(SelectedLineNumber == CommandList.Items.Count - 1)
-            {
-                return;
-            }
-
-            var selectedBak = SelectedLineNumber;
-            CommandList.Move(SelectedLineNumber, SelectedLineNumber + 1);
-            SelectedLineNumber = selectedBak + 1;
-        }
-
-        public void Delete()
-        {
-            if (SelectedItem == null)
-            {
-                return;
-            }
-
-            var index = CommandList.Items.IndexOf(SelectedItem);
-
-            CommandList.Remove(SelectedItem);
-
             if (CommandList.Items.Count == 0)
             {
                 SelectedLineNumber = 0;
             }
-            else if (index == CommandList.Items.Count)
+            else if (index >= CommandList.Items.Count)
             {
-                SelectedLineNumber = index - 1;
+                SelectedLineNumber = CommandList.Items.Count - 1;
             }
             else
             {
                 SelectedLineNumber = index;
             }
-            
+            // Refresh()を削除
         }
+    }
 
-        public void Clear()
+    /// <summary>
+    /// 指定位置のアイテムを置換（Undo/Redo用）
+    /// </summary>
+    public void ReplaceAt(int index, ICommandListItem item)
+    {
+        if (index >= 0 && index < CommandList.Items.Count)
         {
-            CommandList.Clear();
+            CommandList.Override(index, item);
+            SelectedLineNumber = index;
+            // Refresh()を削除
+        }
+    }
+
+    /// <summary>
+    /// アイテムを移動（Undo/Redo用）
+    /// </summary>
+    public void MoveItem(int fromIndex, int toIndex)
+    {
+        if (fromIndex >= 0 && fromIndex < CommandList.Items.Count &&
+            toIndex >= 0 && toIndex < CommandList.Items.Count &&
+            fromIndex != toIndex)
+        {
+            CommandList.Move(fromIndex, toIndex);
+            SelectedLineNumber = toIndex;
+            // Refresh()を削除
+        }
+    }
+
+    /// <summary>
+    /// アイテムを追加（Undo/Redo用）
+    /// </summary>
+    public void AddItem(ICommandListItem item)
+    {
+        CommandList.Add(item);
+        // Refresh()を削除
+    }
+
+    public void Up()
+    {
+        if (SelectedLineNumber == 0) return;
+
+        var selectedBak = SelectedLineNumber;
+        CommandList.Move(SelectedLineNumber, SelectedLineNumber - 1);
+        SelectedLineNumber = selectedBak - 1;
+    }
+
+    public void Down()
+    {
+        if (SelectedLineNumber == CommandList.Items.Count - 1) return;
+
+        var selectedBak = SelectedLineNumber;
+        CommandList.Move(SelectedLineNumber, SelectedLineNumber + 1);
+        SelectedLineNumber = selectedBak + 1;
+    }
+
+    public void Delete()
+    {
+        if (SelectedItem == null) return;
+
+        var index = CommandList.Items.IndexOf(SelectedItem);
+        CommandList.Remove(SelectedItem);
+
+        if (CommandList.Items.Count == 0)
+        {
             SelectedLineNumber = 0;
         }
-
-        public void Save(string filePath = "")
+        else if (index == CommandList.Items.Count)
         {
-            CommandList.Save(filePath);
+            SelectedLineNumber = index - 1;
         }
-
-        public void Load(string filePath = "")
+        else
         {
-            CommandList.Load(filePath);
-            SelectedLineNumber = 0;
-            SelectedItem = CommandList.Items.FirstOrDefault();
+            SelectedLineNumber = index;
+        }
+    }
 
-            // 読み込み後にCommandRegistryを初期化して日本語表示名が正しく表示されるようにする
-            CommandRegistry.Initialize();
-            
-            // CollectionViewを更新して日本語表示名を適用
-            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-            
-            // 各アイテムのプロパティ変更通知を発火してUI更新
-            foreach (var item in CommandList.Items)
+    public void Clear()
+    {
+        CommandList.Clear();
+        SelectedLineNumber = 0;
+    }
+
+    public void Save(string filePath = "")
+    {
+        CommandList.Save(filePath);
+    }
+
+    public void Load(string filePath = "")
+    {
+        CommandList.Load(filePath);
+        SelectedLineNumber = 0;
+        SelectedItem = CommandList.Items.FirstOrDefault();
+
+        _commandRegistry.Initialize();
+        // Load後はRefresh()が必要（全データが入れ替わるため）
+        // 編集中のトランザクションをコミットしてからRefresh
+        var view = CollectionViewSource.GetDefaultView(CommandList.Items);
+        if (view is IEditableCollectionView editableView)
+        {
+            if (editableView.IsEditingItem)
             {
-                if (item is System.ComponentModel.INotifyPropertyChanged notifyItem)
-                {
-                    // ItemTypeプロパティの変更を通知（コンバーターが再実行される）
-                    var propertyInfo = item.GetType().GetProperty(nameof(item.ItemType));
-                    if (propertyInfo != null)
-                    {
-                        // 現在の値を再設定してプロパティ変更通知を発火
-                        var currentValue = item.ItemType;
-                        item.ItemType = currentValue;
-                    }
-                }
+                editableView.CommitEdit();
+            }
+            if (editableView.IsAddingNew)
+            {
+                editableView.CommitNew();
             }
         }
-        #endregion
-
-        #region Call from MainWindowViewModel
-        public int GetCount()
+        view.Refresh();
+        
+        foreach (var item in CommandList.Items)
         {
-            return CommandList.Items.Count;
+            var currentValue = item.ItemType;
+            item.ItemType = currentValue;
         }
-
-        public ICommandListItem? GetRunningItem()
-        {
-            return CommandList.Items.FirstOrDefault(x => x.IsRunning == true);
-        }
-
-        public ICommandListItem? GetItem(int lineNumber)
-        {
-            return CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber);
-        }
-
-        public void SetRunningState(bool isRunning)
-        {
-            IsRunning = isRunning;
-        }
-
-        public void SetSelectedItem(ICommandListItem? item)
-        {
-            SelectedItem = item;
-        }
-
-        public void SetSelectedLineNumber(int lineNumber)
-        {
-            SelectedLineNumber = lineNumber;
-        }
-
-        public void Prepare()
-        {
-            CommandList.Items.ToList().ForEach(x => x.IsRunning = false);
-            CommandList.Items.ToList().ForEach(x => x.Progress = 0);
-
-            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-        }
-        #endregion
     }
+    #endregion
+
+    #region Call from MainWindowViewModel
+    public int GetCount() => CommandList.Items.Count;
+
+    public ICommandListItem? GetRunningItem() => CommandList.Items.FirstOrDefault(x => x.IsRunning);
+
+    public ICommandListItem? GetItem(int lineNumber) => CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber);
+
+    public void SetRunningState(bool isRunning) => IsRunning = isRunning;
+
+    public void SetSelectedItem(ICommandListItem? item) => SelectedItem = item;
+
+    public void SetSelectedLineNumber(int lineNumber) => SelectedLineNumber = lineNumber;
+
+    public void Prepare()
+    {
+        foreach (var item in CommandList.Items)
+        {
+            item.IsRunning = false;
+            item.Progress = 0;
+        }
+        
+        // 編集中のトランザクションをコミットしてからRefresh
+        var view = CollectionViewSource.GetDefaultView(CommandList.Items);
+        if (view is IEditableCollectionView editableView)
+        {
+            if (editableView.IsEditingItem)
+            {
+                editableView.CommitEdit();
+            }
+            if (editableView.IsAddingNew)
+            {
+                editableView.CommitNew();
+            }
+        }
+        view.Refresh();
+    }
+
+    /// <summary>
+    /// ダブルクリック時の処理を実行
+    /// </summary>
+    public void OnItemDoubleClick()
+    {
+        // SelectedLineNumberから直接アイテムを取得（IsSelectedの更新タイミングに依存しない）
+        ICommandListItem? selectedItem = null;
+        if (SelectedLineNumber >= 0 && SelectedLineNumber < CommandList.Items.Count)
+        {
+            selectedItem = CommandList.Items[SelectedLineNumber];
+        }
+        ItemDoubleClicked?.Invoke(selectedItem);
+    }
+    #endregion
 }

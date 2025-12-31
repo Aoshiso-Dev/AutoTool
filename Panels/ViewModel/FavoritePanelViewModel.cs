@@ -1,40 +1,25 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Messaging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MacroPanels.Message;
 using System.Collections.ObjectModel;
 
-namespace MacroPanels.ViewModel
+namespace MacroPanels.ViewModel;
+
+public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelViewModel
 {
+    [ObservableProperty]
+    private bool _isRunning;
 
-    public partial class FavoritePanelViewModel : ObservableObject
+    [ObservableProperty]
+    private ObservableCollection<string> _favoriteList = new();
+    
+    public FavoritePanelViewModel()
     {
-        [ObservableProperty]
-        private bool _isRunning = false;
-
-        [ObservableProperty]
-        private ObservableCollection<string> _favoriteList = new();
-        
-        public FavoritePanelViewModel()
-        {
-            FavoriteList.Add("test1");
-            FavoriteList.Add("test2");
-            FavoriteList.Add("test3");
-            FavoriteList.Add("test3");
-
-        }
-
-        public void SetRunningState(bool isRunning)
-        {
-            IsRunning = isRunning;
-        }
-
-        public void Prepare()
-        {
-        }
+        // TODO: お気に入りの永続化を実装
+        FavoriteList.Add("test1");
+        FavoriteList.Add("test2");
+        FavoriteList.Add("test3");
     }
+
+    public void SetRunningState(bool isRunning) => IsRunning = isRunning;
+
+    public void Prepare() { }
 }

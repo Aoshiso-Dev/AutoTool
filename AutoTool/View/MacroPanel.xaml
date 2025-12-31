@@ -3,24 +3,40 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:AutoTool"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:panels="clr-namespace:MacroPanels.View;assembly=MacroPanels"
-        xmlns:converter="clr-namespace:MacroPanels.View.Converter;assembly=MacroPanels"
-        xmlns:vm="MainW"
         mc:Ignorable="d">
 
-    <DockPanel LastChildFill="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-        <panels:ButtonPanel DockPanel.Dock="Top" DataContext="{Binding ButtonPanelViewModel}" Margin="2" HorizontalAlignment="Stretch"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="250" HorizontalAlignment="Stretch">
-            <TabItem Header="編集">
-                <panels:EditPanel DataContext="{Binding EditPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </TabItem>
-            <TabItem Header="ログ">
-                <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </TabItem>
-        </TabControl>
+        <!-- ボタンパネル -->
+        <panels:ButtonPanel Grid.Row="0" DataContext="{Binding ButtonPanelViewModel}" Margin="8"/>
 
-        <panels:ListPanel DataContext="{Binding ListPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-    </DockPanel>
+        <!-- メインコンテンツ（上下分割） -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" MinHeight="200"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="200" MinHeight="100"/>
+            </Grid.RowDefinitions>
+
+            <!-- リストパネル -->
+            <ui:Card Grid.Row="0" Margin="8,0,8,4" Padding="0" VerticalAlignment="Top">
+                <panels:ListPanel DataContext="{Binding ListPanelViewModel}"/>
+            </ui:Card>
+
+            <!-- スプリッター -->
+            <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" 
+                          Background="Transparent" Cursor="SizeNS"/>
+
+            <!-- ログパネル -->
+            <ui:Card Grid.Row="2" Margin="8,4,8,8" Padding="0">
+                <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="8"/>
+            </ui:Card>
+        </Grid>
+    </Grid>
 </UserControl>

@@ -1,114 +1,118 @@
-﻿<Window x:Class="AutoTool.MainWindow"
+﻿<ui:FluentWindow x:Class="AutoTool.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:macroPanels="clr-namespace:MacroPanels.View;assembly=MacroPanels"
-        xmlns:vm="clr-namespace:AutoTool.ViewModel"
         xmlns:panel="clr-namespace:AutoTool.View"
-        mc:Ignorable="d"
         xmlns:converters="clr-namespace:AutoTool.View.Converters"
+        mc:Ignorable="d"
         Title="{Binding AutoToolTitle}"
-        MinWidth="600" MinHeight="400">
-    <!-- Width/Heightを削除し、MinWidth/MinHeightを追加 -->
+        MinWidth="800" MinHeight="500"
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="Mica"
+        WindowCornerPreference="Round">
 
-    <Window.Resources>
+    <ui:FluentWindow.Resources>
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
         <converters:RunningStatusConverter x:Key="RunningStatusConverter"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-    </Window.Resources>
+    </ui:FluentWindow.Resources>
 
     <!-- キーボードショートカットの設定 -->
-    <Window.InputBindings>
-        <!-- ファイル操作 -->
+    <ui:FluentWindow.InputBindings>
         <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveFileCommand}"/>
         <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding SaveFileAsCommand}"/>
         <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenFileCommand}"/>
-        
-        <!-- 編集操作 -->
         <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}"/>
         <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}"/>
         <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}"/>
-        
-        <!-- 今後拡張可能なショートカット -->
-        <!-- <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding NewFileCommand}"/> -->
-        <!-- <KeyBinding Key="F5" Command="{Binding RefreshCommand}"/> -->
-    </Window.InputBindings>
+    </ui:FluentWindow.InputBindings>
 
-    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Menu Grid.Row="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
-            <MenuItem DockPanel.Dock="Left" Header="ファイル">
-                <MenuItem Header="開く (_O)" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}" InputGestureText="Ctrl+O"/>
-                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFile, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOpened}" InputGestureText="Ctrl+S"/>
-                <MenuItem Header="{Binding DataContext.MenuItemHeader_SaveFileAs, RelativeSource={RelativeSource AncestorType=Window}}" Command="{Binding DataContext.SaveFileAsCommand, RelativeSource={RelativeSource AncestorType=Window}}" IsEnabled="{Binding IsFileOperationEnable}" InputGestureText="Ctrl+Shift+S"/>
-                <Separator/>
-                <MenuItem Header="最近開いたファイル" ItemsSource="{Binding RecentFiles}" IsEnabled="{Binding IsFileOperationEnable}">
-                    <MenuItem.ItemTemplate>
-                        <DataTemplate>
-                            <MenuItem Header="{Binding FileName}" Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding FilePath}" />
-                        </DataTemplate>
-                    </MenuItem.ItemTemplate>
-                </MenuItem>
-            </MenuItem>
-            <MenuItem Header="編集">
-                <MenuItem Header="元に戻す (_U)" Command="{Binding UndoCommand}" InputGestureText="Ctrl+Z">
-                    <MenuItem.ToolTip>
-                        <TextBlock Text="{Binding CommandHistory.UndoDescription, StringFormat='元に戻す: {0}'}"/>
-                    </MenuItem.ToolTip>
-                </MenuItem>
-                <MenuItem Header="やり直し (_R)" Command="{Binding RedoCommand}" InputGestureText="Ctrl+Y">
-                    <MenuItem.ToolTip>
-                        <TextBlock Text="{Binding CommandHistory.RedoDescription, StringFormat='やり直し: {0}'}"/>
-                    </MenuItem.ToolTip>
-                </MenuItem>
-            </MenuItem>
-            <MenuItem DockPanel.Dock="Right" Header="ヘルプ" HorizontalAlignment="Right">
-                <MenuItem Header="アプリのフォルダを開く" Command="{Binding OpenAppDirCommand}"/>
-                <MenuItem Header="バージョン情報" Command="{Binding VersionInfoCommand}"/>
-            </MenuItem>
-        </Menu>
+        <!-- タイトルバー -->
+        <ui:TitleBar Grid.Row="0" Title="{Binding AutoToolTitle}" ShowMinimize="True" ShowMaximize="True" ShowClose="True">
+            <ui:TitleBar.Header>
+                <StackPanel Orientation="Horizontal" Margin="8,0">
+                    <ui:Button Icon="{ui:SymbolIcon FolderOpen24}" 
+                               ToolTip="開く (Ctrl+O)" 
+                               Command="{Binding OpenFileCommand}"
+                               Appearance="Transparent"
+                               IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                    <ui:Button Icon="{ui:SymbolIcon Save24}" 
+                               ToolTip="保存 (Ctrl+S)" 
+                               Command="{Binding SaveFileCommand}"
+                               Appearance="Transparent"
+                               IsEnabled="{Binding IsFileOpened}"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
+                    <ui:Button Icon="{ui:SymbolIcon ArrowUndo24}" 
+                               ToolTip="{Binding CommandHistory.UndoDescription, StringFormat='元に戻す: {0}'}" 
+                               Command="{Binding UndoCommand}"
+                               Appearance="Transparent"/>
+                    <ui:Button Icon="{ui:SymbolIcon ArrowRedo24}" 
+                               ToolTip="{Binding CommandHistory.RedoDescription, StringFormat='やり直し: {0}'}" 
+                               Command="{Binding RedoCommand}"
+                               Appearance="Transparent"/>
+                </StackPanel>
+            </ui:TitleBar.Header>
+        </ui:TitleBar>
 
-        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <TabItem Header="マクロ">
-                <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </TabItem>
-            <!--
-            <TabItem Header="モニタリング">
-                <panel:MonitoringPanel DataContext="{Binding MacroPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </TabItem>
-            -->
-        </TabControl>
+        <!-- メインコンテンツ -->
+        <Grid Grid.Row="1" Margin="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
+            <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}"/>
+        </Grid>
 
         <!-- ステータスバー -->
-        <StatusBar Grid.Row="2" Height="25">
-            <StatusBarItem>
-                <TextBlock Text="{Binding StatusMessage}" />
-            </StatusBarItem>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Undo: " Visibility="{Binding CommandHistory.CanUndo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text="{Binding CommandHistory.UndoDescription}" FontStyle="Italic" 
-                               Visibility="{Binding CommandHistory.CanUndo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text=" | " Margin="5,0" 
-                               Visibility="{Binding CommandHistory.CanRedo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text="Redo: " Visibility="{Binding CommandHistory.CanRedo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text="{Binding CommandHistory.RedoDescription}" FontStyle="Italic" 
-                               Visibility="{Binding CommandHistory.CanRedo, Converter={StaticResource BoolToVisibilityConverter}}" />
-                </StackPanel>
-            </StatusBarItem>
-            <StatusBarItem HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="実行状態: " />
-                    <TextBlock Text="{Binding IsRunning, Converter={StaticResource RunningStatusConverter}}" />
-                </StackPanel>
-            </StatusBarItem>
-        </StatusBar>
+        <Border Grid.Row="2" 
+                Background="{ui:ThemeResource ControlFillColorDefaultBrush}" 
+                BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="12,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
+                <TextBlock Grid.Column="0" 
+                           Text="{Binding StatusMessage}" 
+                           VerticalAlignment="Center"
+                           Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0"
+                            Visibility="{Binding CommandHistory.CanUndo, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <ui:SymbolIcon Symbol="ArrowUndo24" FontSize="12" Margin="0,0,4,0"/>
+                    <TextBlock Text="{Binding CommandHistory.UndoDescription}" 
+                               Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                               FontSize="12"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Ellipse Width="8" Height="8" Margin="0,0,6,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#10B981"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                        <Setter Property="Fill" Value="#F59E0B"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="{Binding IsRunning, Converter={StaticResource RunningStatusConverter}}"
+                               Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                               FontSize="12"/>
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
-</Window>
+</ui:FluentWindow>
