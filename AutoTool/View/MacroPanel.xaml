@@ -21,23 +21,29 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" MinHeight="200"/>
                 <RowDefinition Height="5"/>
-                <RowDefinition Height="200" MinHeight="100"/>
+                <RowDefinition Height="250" MinHeight="100"/>
             </Grid.RowDefinitions>
 
             <!-- リストパネル -->
-            <ui:Card Grid.Row="0" Margin="8,0,8,4" Padding="0" VerticalAlignment="Top">
+            <ui:Card Grid.Row="0" Margin="8,0,8,4" Padding="0">
                 <panels:ListPanel DataContext="{Binding ListPanelViewModel}"/>
             </ui:Card>
 
-        <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}" Height="250" HorizontalAlignment="Stretch">
-            <TabItem Header="編集">
-                <panels:EditPanel DataContext="{Binding EditPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </TabItem>
-            <TabItem Header="ログ">
-                <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </TabItem>
-        </TabControl>
+            <!-- スプリッター -->
+            <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" 
+                          Height="5" Background="Transparent" Cursor="SizeNS"/>
 
-        <panels:ListPanel DataContext="{Binding ListPanelViewModel}" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-    </DockPanel>
+            <!-- 編集/ログタブ -->
+            <ui:Card Grid.Row="2" Margin="8,4,8,8" Padding="0">
+                <TabControl SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}">
+                    <TabItem Header="編集">
+                        <panels:EditPanel DataContext="{Binding EditPanelViewModel}" Margin="4"/>
+                    </TabItem>
+                    <TabItem Header="ログ">
+                        <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="4"/>
+                    </TabItem>
+                </TabControl>
+            </ui:Card>
+        </Grid>
+    </Grid>
 </UserControl>

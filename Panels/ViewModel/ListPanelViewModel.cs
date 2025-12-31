@@ -12,9 +12,13 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     private readonly ICommandRegistry _commandRegistry;
     private object? _commandHistory;
 
-        #region Properties
-        [ObservableProperty]
-        private bool _isRunning;
+    // イベント
+    public event Action<ICommandListItem?>? SelectedItemChanged;
+    public event Action<ICommandListItem?>? ItemDoubleClicked;
+
+    #region Properties
+    [ObservableProperty]
+    private bool _isRunning;
 
     [ObservableProperty]
     private CommandList _commandList = new();
@@ -321,18 +325,44 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
             SelectedItem = item;
         }
 
-        public void SetSelectedLineNumber(int lineNumber)
-        {
-            SelectedLineNumber = lineNumber;
-        }
-
-        public void Prepare()
-        {
-            CommandList.Items.ToList().ForEach(x => x.IsRunning = false);
-            CommandList.Items.ToList().ForEach(x => x.Progress = 0);
-
-            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-        }
-        #endregion
+    public void SetSelectedLineNumber(int lineNumber)
+    {
+        SelectedLineNumber = lineNumber;
     }
+
+    public void Prepare()
+    {
+        foreach (var item in CommandList.Items)
+        {
+            item.IsRunning = false;
+            item.Progress = 0;
+        }
+        var view = CollectionViewSource.GetDefaultView(CommandList.Items);
+        if (view is IEditableCollectionView editableView)
+        {
+            if (editableView.IsEditingItem)
+            {
+                editableView.CommitEdit();
+            }
+            if (editableView.IsAddingNew)
+            {
+                editableView.CommitNew();
+            }
+        }
+        view.Refresh();
+    }
+
+    /// <summary>
+    /// ダブルクリック時の処理を実行
+    /// </summary>
+    public void OnItemDoubleClick()
+    {
+        ICommandListItem? selectedItem = null;
+        if (SelectedLineNumber >= 0 && SelectedLineNumber < CommandList.Items.Count)
+        {
+            selectedItem = CommandList.Items[SelectedLineNumber];
+        }
+        ItemDoubleClicked?.Invoke(selectedItem);
+    }
+    #endregion
 }
