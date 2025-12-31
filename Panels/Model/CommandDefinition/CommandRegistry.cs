@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using MacroPanels.List.Class;
-using MacroPanels.Command.Class;
+using MacroPanels.Command.Commands;
 using MacroPanels.Command.Interface;
 using MacroPanels.Model.List.Interface;
 using System.Collections.Concurrent;
@@ -619,6 +619,14 @@ namespace MacroPanels.Model.CommandDefinition
         /// </summary>
         public static bool TryCreateSimple(ICommand parent, ICommandListItem item, out ICommand? command)
         {
+            return TryCreateSimple(parent, item, null, out command);
+        }
+
+        /// <summary>
+        /// 指定されたタイプからコマンドを作成（SimpleCommandBinding用、サービスプロバイダー付き）
+        /// </summary>
+        public static bool TryCreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider, out ICommand? command)
+        {
             command = null;
             if (item?.ItemType == null) return false;
 
@@ -642,8 +650,60 @@ namespace MacroPanels.Model.CommandDefinition
 
             try
             {
-                // 設定オブジェクトとしてアイテム自体を使用
-                command = (ICommand)Activator.CreateInstance(bindingAttr.CommandType, parent, item)!;
+                // コンストラクタを取得して適切なものを選択
+                var constructors = bindingAttr.CommandType.GetConstructors();
+                
+                // まず2引数のコンストラクタを試す (parent, settings)
+                var twoArgConstructor = constructors.FirstOrDefault(c => 
+                    c.GetParameters().Length == 2);
+                
+                if (twoArgConstructor != null)
+                {
+                    command = (ICommand)twoArgConstructor.Invoke(new object?[] { parent, item })!;
+                }
+                else if (serviceProvider != null)
+                {
+                    // サービスを必要とするコンストラクタを探す
+                    foreach (var ctor in constructors.OrderByDescending(c => c.GetParameters().Length))
+                    {
+                        var parameters = ctor.GetParameters();
+                        if (parameters.Length < 2) continue;
+                        
+                        var args = new object?[parameters.Length];
+                        args[0] = parent;
+                        args[1] = item;
+                        
+                        bool allServicesFound = true;
+                        for (int i = 2; i < parameters.Length; i++)
+                        {
+                            var service = serviceProvider.GetService(parameters[i].ParameterType);
+                            if (service == null)
+                            {
+                                allServicesFound = false;
+                                break;
+                            }
+                            args[i] = service;
+                        }
+                        
+                        if (allServicesFound)
+                        {
+                            command = (ICommand)ctor.Invoke(args)!;
+                            break;
+                        }
+                    }
+                    
+                    if (command == null)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Could not find suitable constructor for {bindingAttr.CommandType.Name}");
+                        return false;
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"TryCreateSimple: No suitable constructor found for {bindingAttr.CommandType.Name}");
+                    return false;
+                }
+                
                 command.LineNumber = item.LineNumber;
                 command.IsEnabled = item.IsEnable;
                 System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Successfully created {bindingAttr.CommandType.Name}");

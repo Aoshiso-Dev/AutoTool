@@ -3,49 +3,128 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:MacroPanels.View"
-             xmlns:vm="clr-namespace:MacroPanels.ViewModel"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:converter="clr-namespace:MacroPanels.View.Converter"
              mc:Ignorable="d" 
-             d:DesignHeight="50" d:DesignWidth="800">
+             d:DesignHeight="60" d:DesignWidth="900">
 
     <UserControl.Resources>
-        <ResourceDictionary>
-            <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
-        </ResourceDictionary>
+        <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </UserControl.Resources>
 
-    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-        <!-- ボタン -->
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-            <Button Command="{Binding RunCommand}" Width="100" Margin="2" Foreground="White">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="Green"/>
-                        <Setter Property="Content" Value="実行"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                <Setter Property="Background" Value="Red"/>
-                                <Setter Property="Content" Value="停止"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
-            <StackPanel>
-                <Button Content="上へ" Command="{Binding UpCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
-                <Button Content="下へ" Command="{Binding DownCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Margin="2"/>
-            </StackPanel>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 実行/停止ボタン - 標準のButtonを使用（常に有効） -->
+        <Button Grid.Column="0" 
+                Command="{Binding RunCommand}" 
+                Margin="0,0,16,0"
+                MinWidth="120"
+                Height="40"
+                Cursor="Hand">
+            <Button.Style>
+                <Style TargetType="Button">
+                    <Setter Property="Background" Value="#10B981"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Padding" Value="16,8"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" 
+                                        CornerRadius="6"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="Content">
+                        <Setter.Value>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Play24" Margin="0,0,8,0" Foreground="White"/>
+                                <TextBlock Text="実行" VerticalAlignment="Center" Foreground="White"/>
+                            </StackPanel>
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#0D9668"/>
+                        </Trigger>
+                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                            <Setter Property="Background" Value="#EF4444"/>
+                            <Setter Property="Content">
+                                <Setter.Value>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="Stop24" Margin="0,0,8,0" Foreground="White"/>
+                                        <TextBlock Text="停止" VerticalAlignment="Center" Foreground="White"/>
+                                    </StackPanel>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <MultiTrigger.Setters>
+                                <Setter Property="Opacity" Value="0.9"/>
+                            </MultiTrigger.Setters>
+                        </MultiTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
+
+        <!-- 移動ボタン -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,16,0">
+            <ui:Button Icon="{ui:SymbolIcon ArrowUp24}" 
+                       ToolTip="上へ移動"
+                       Command="{Binding UpCommand}" 
+                       IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
+                       Appearance="Secondary"
+                       Margin="0,0,4,0"/>
+            <ui:Button Icon="{ui:SymbolIcon ArrowDown24}" 
+                       ToolTip="下へ移動"
+                       Command="{Binding DownCommand}" 
+                       IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
+                       Appearance="Secondary"/>
+        </StackPanel>
+
+        <!-- コマンド追加 -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <TextBlock Text="コマンド:" VerticalAlignment="Center" Margin="0,0,8,0"
+                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
             <ComboBox ItemsSource="{Binding ItemTypes}" 
                       SelectedItem="{Binding SelectedItemType}" 
                       DisplayMemberPath="DisplayName"
                       IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" 
-                      VerticalContentAlignment="Center" 
-                      Width="150" 
-                      Margin="2"/>
-            <Button Content="追加" Command="{Binding AddCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
-            <Button Content="削除" Command="{Binding DeleteCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
-            <Button Content="クリア" Command="{Binding ClearCommand}" IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" Width="100" Height="Auto" Margin="2"/>
+                      MinWidth="180"
+                      Margin="0,0,8,0"/>
+            <ui:Button Content="追加" 
+                       Icon="{ui:SymbolIcon Add24}"
+                       Command="{Binding AddCommand}" 
+                       IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
+                       Appearance="Primary"/>
+        </StackPanel>
+
+        <!-- 削除・クリア -->
+        <StackPanel Grid.Column="3" Orientation="Horizontal">
+            <ui:Button Icon="{ui:SymbolIcon Delete24}" 
+                       ToolTip="削除"
+                       Command="{Binding DeleteCommand}" 
+                       IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
+                       Appearance="Secondary"
+                       Margin="0,0,4,0"/>
+            <ui:Button Icon="{ui:SymbolIcon DismissCircle24}" 
+                       ToolTip="すべてクリア"
+                       Command="{Binding ClearCommand}" 
+                       IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
+                       Appearance="Secondary"/>
         </StackPanel>
     </Grid>
 </UserControl>

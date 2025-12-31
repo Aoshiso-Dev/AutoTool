@@ -1,18 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.ObjectModel;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Win32;
-using MacroPanels.Command.Interface;
-using MacroPanels.Command.Class;
-using MacroPanels.List.Class;
-using System.Diagnostics;
 using MacroPanels.Model.List.Interface;
 using MacroPanels.Model.CommandDefinition;
-using System.IO;
+using MacroPanels.Serialization;
 
 namespace MacroPanels.List.Class
 {
@@ -235,12 +227,12 @@ namespace MacroPanels.List.Class
         {
             var cloneItems = Clone();
 
-            JsonSerializerHelper.SerializeToFile(cloneItems, filePath);
+            MacroFileSerializer.SerializeToFile(cloneItems, filePath);
         }
 
         public void Load(string filePath)
         {
-            var deserializedItems = JsonSerializerHelper.DeserializeFromFile<ObservableCollection<ICommandListItem>>(filePath);
+            var deserializedItems = MacroFileSerializer.DeserializeFromFile<ObservableCollection<ICommandListItem>>(filePath);
             if (deserializedItems != null)
             {
                 Items.Clear();
