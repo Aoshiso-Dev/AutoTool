@@ -74,25 +74,6 @@
 
                 <!-- 設定項目 -->
                 <StackPanel Visibility="{Binding IsNotNullItem, Converter={StaticResource BoolToVisibilityConverter}}">
-                    
-                    <!-- コマンド種類 -->
-                    <Border Style="{StaticResource SettingCard}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="コマンド種類" Style="{StaticResource SettingLabel}"/>
-                                <TextBlock Text="実行するコマンドの種類を選択" Style="{StaticResource SettingDescription}"/>
-                            </StackPanel>
-                            <ComboBox Grid.Column="1" 
-                                      ItemsSource="{Binding ItemTypes}" 
-                                      SelectedItem="{Binding SelectedItemTypeObj}" 
-                                      DisplayMemberPath="DisplayName"
-                                      MinWidth="200"/>
-                        </Grid>
-                    </Border>
 
                     <!-- 対象ウィンドウ -->
                     <Border Style="{StaticResource SettingCard}">

@@ -114,6 +114,25 @@ namespace MacroPanels.View
         }
 
         /// <summary>
+        /// 設定編集ボタンクリック時の処理
+        /// </summary>
+        private void EditSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            // クリックされたボタンの行を選択状態にする
+            var button = sender as FrameworkElement;
+            if (button?.DataContext is MacroPanels.Model.List.Interface.ICommandListItem item)
+            {
+                if (DataContext is ListPanelViewModel viewModel)
+                {
+                    // 行を選択
+                    viewModel.SelectedLineNumber = item.LineNumber - 1;
+                    // 編集ウィンドウを開く
+                    viewModel.OnItemDoubleClick();
+                }
+            }
+        }
+
+        /// <summary>
         /// ビジュアルツリーから指定した型の子要素を検索
         /// </summary>
         private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject

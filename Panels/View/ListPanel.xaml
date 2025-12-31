@@ -32,7 +32,8 @@
                      CanUserSortColumns="False"
                      GridLinesVisibility="None"
                      BorderThickness="0"
-                     VirtualizingPanel.IsVirtualizing="False">
+                     VirtualizingPanel.IsVirtualizing="False"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 
             <!-- 選択行のハイライトスタイル -->
             <ui:DataGrid.RowStyle>
@@ -158,13 +159,15 @@
                 <DataGridTemplateColumn Header="コマンド" Width="180">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Border Background="{Binding ItemType, Converter={StaticResource CommandTypeToCategoryColorConverter}}" 
-                                    CornerRadius="4" Padding="8,4"
-                                    Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}">
-                                <TextBlock Text="{Binding DisplayName}" 
-                                           FontWeight="Medium" FontSize="13"
-                                           Foreground="#1a1a1a"/>
-                            </Border>
+                            <StackPanel Margin="3">
+                                <Border Background="{Binding ItemType, Converter={StaticResource CommandTypeToCategoryColorConverter}}" 
+                                        CornerRadius="4" Padding="8,4"
+                                        Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}">
+                                    <TextBlock Text="{Binding DisplayName}" 
+                                               FontWeight="Medium" FontSize="13"
+                                               Foreground="#1a1a1a"/>
+                                </Border>
+                            </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -183,6 +186,21 @@
                                            Visibility="{Binding HasComment, Converter={StaticResource BoolToVisibilityConverter}}"
                                            Margin="0,2,0,0"/>
                             </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- 設定編集ボタン -->
+                <DataGridTemplateColumn Header="" Width="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ui:Button Icon="{ui:SymbolIcon Settings24}" 
+                                       Appearance="Secondary"
+                                       Click="EditSettingsButton_Click"
+                                       ToolTip="設定を編集"
+                                       Padding="4"
+                                       Margin="2"
+                                       IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
