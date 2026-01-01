@@ -4,6 +4,7 @@ using System.Windows.Media;
 using MacroPanels.Command.Interface;
 using MacroPanels.Command.Commands;
 using MacroPanels.Model.List.Interface;
+using MacroPanels.Attributes;
 using CommandDef = MacroPanels.Model.CommandDefinition;
 
 namespace MacroPanels.List.Class
@@ -27,6 +28,8 @@ namespace MacroPanels.List.Class
         protected string _description = string.Empty;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(FullDescription))]
+        [property: CommandProperty("コメント", EditorType.MultiLineTextBox, Group = "その他", Order = 99,
+                         Description = "このコマンドのメモ")]
         protected string _comment = string.Empty;
         [ObservableProperty]
         protected int _nestLevel = 0;
@@ -93,32 +96,59 @@ namespace MacroPanels.List.Class
         {
             return new CommandListItem(this);
         }
+        
+        /// <summary>
+        /// Execute the command logic (override in derived classes)
+        /// </summary>
+        public virtual Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
+        }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(WaitImageCommand), typeof(IWaitImageCommandSettings))]
-    [CommandDef.CommandDefinition("Wait_Image", typeof(WaitImageCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Action)]
+    [CommandDef.CommandDefinition("Wait_Image", typeof(SimpleCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("検索画像", EditorType.ImagePicker, Group = "画像設定", Order = 1, 
+                         Description = "検索する画像ファイル", FileFilter = "画像ファイル|*.png;*.jpg;*.bmp")]
         private string _imagePath = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("一致しきい値", EditorType.Slider, Group = "画像設定", Order = 2,
+                         Description = "画像一致度の最小値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _threshold = 0.8;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
+                         Description = "特定の色を強調して検索")]
         private Color? _searchColor = null;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("タイムアウト", EditorType.NumberBox, Group = "タイミング", Order = 1,
+                         Description = "検索を諦めるまでの時間", Unit = "ミリ秒", Min = 0)]
         private int _timeout = 5000;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("検索間隔", EditorType.NumberBox, Group = "タイミング", Order = 2,
+                         Description = "画像検索の間隔", Unit = "ミリ秒", Min = 0)]
         private int _interval = 500;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
 
         new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
@@ -143,35 +173,91 @@ namespace MacroPanels.List.Class
         {
             return new WaitImageItem(this);
         }
+        
+        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var absolutePath = context.ToAbsolutePath(ImagePath);
+
+            while (stopwatch.ElapsedMilliseconds < Timeout)
+            {
+                var point = await context.SearchImageAsync(
+                    absolutePath,
+                    Threshold,
+                    SearchColor,
+                    WindowTitle,
+                    WindowClassName,
+                    cancellationToken);
+
+                if (point != null)
+                {
+                    context.Log($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+                    return true;
+                }
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                var progress = Timeout > 0 ? (int)((stopwatch.ElapsedMilliseconds * 100) / Timeout) : 100;
+                context.ReportProgress(Math.Clamp(progress, 0, 100));
+
+                await Task.Delay(Interval, cancellationToken);
+            }
+
+            context.Log("画像が見つかりませんでした。");
+            return false;
+        }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ClickImageCommand), typeof(IClickImageCommandSettings))]
-    [CommandDef.CommandDefinition("Click_Image", typeof(ClickImageCommand), typeof(IClickImageCommandSettings), CommandDef.CommandCategory.Action)]
+
+    [CommandDef.CommandDefinition("Click_Image", typeof(SimpleCommand), typeof(IClickImageCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickImageCommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("検索画像", EditorType.ImagePicker, Group = "画像設定", Order = 1,
+                         Description = "検索する画像ファイル", FileFilter = "画像ファイル|*.png;*.jpg;*.bmp")]
         private string _imagePath = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("一致しきい値", EditorType.Slider, Group = "画像設定", Order = 2,
+                         Description = "画像一致度の最小値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _threshold = 0.8;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
+                         Description = "特定の色を強調して検索")]
         private Color? _searchColor = null;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("タイムアウト", EditorType.NumberBox, Group = "タイミング", Order = 1,
+                         Description = "検索を諦めるまでの時間", Unit = "ミリ秒", Min = 0)]
         private int _timeout = 5000;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("検索間隔", EditorType.NumberBox, Group = "タイミング", Order = 2,
+                         Description = "画像検索の間隔", Unit = "ミリ秒", Min = 0)]
         private int _interval = 500;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("マウスボタン", EditorType.MouseButtonPicker, Group = "クリック設定", Order = 1,
+                         Description = "クリックに使用するボタン")]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
 
         new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]") } / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
@@ -197,29 +283,76 @@ namespace MacroPanels.List.Class
         {
             return new ClickImageItem(this);
         }
+        
+        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var absolutePath = context.ToAbsolutePath(ImagePath);
+
+            while (stopwatch.ElapsedMilliseconds < Timeout)
+            {
+                var point = await context.SearchImageAsync(
+                    absolutePath,
+                    Threshold,
+                    SearchColor,
+                    WindowTitle,
+                    WindowClassName,
+                    cancellationToken);
+
+                if (point != null)
+                {
+                    await context.ClickAsync(point.Value.X, point.Value.Y, Button, WindowTitle, WindowClassName);
+                    context.Log($"画像をクリックしました。({point.Value.X}, {point.Value.Y})");
+                    return true;
+                }
+
+                if (cancellationToken.IsCancellationRequested) return false;
+
+                var progress = Timeout > 0 ? (int)((stopwatch.ElapsedMilliseconds * 100) / Timeout) : 100;
+                context.ReportProgress(Math.Clamp(progress, 0, 100));
+
+                await Task.Delay(Interval, cancellationToken);
+            }
+
+            context.Log("画像が見つかりませんでした。");
+            return false;
+        }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(HotkeyCommand), typeof(IHotkeyCommandSettings))]
-    [CommandDef.CommandDefinition("Hotkey", typeof(HotkeyCommand), typeof(IHotkeyCommandSettings), CommandDef.CommandCategory.Action)]
+    [CommandDef.CommandDefinition("Hotkey", typeof(SimpleCommand), typeof(IHotkeyCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class HotkeyItem : CommandListItem, IHotkeyItem, IHotkeyCommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("Ctrl", EditorType.CheckBox, Group = "修飾キー", Order = 1)]
         private bool _ctrl = false;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("Alt", EditorType.CheckBox, Group = "修飾キー", Order = 2)]
         private bool _alt = false;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("Shift", EditorType.CheckBox, Group = "修飾キー", Order = 3)]
         private bool _shift = false;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("キー", EditorType.KeyPicker, Group = "キー設定", Order = 1,
+                         Description = "押すキー")]
         private System.Windows.Input.Key _key = System.Windows.Input.Key.Escape;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
 
         new public string Description
@@ -258,26 +391,51 @@ namespace MacroPanels.List.Class
         {
             return new HotkeyItem(this);
         }
+        
+        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            await context.SendHotkeyAsync(Key, Ctrl, Alt, Shift, WindowTitle, WindowClassName);
+            
+            var keys = new List<string>();
+            if (Ctrl) keys.Add("Ctrl");
+            if (Alt) keys.Add("Alt");
+            if (Shift) keys.Add("Shift");
+            keys.Add(Key.ToString());
+            
+            context.Log($"キー送信: {string.Join(" + ", keys)}");
+            return true;
+        }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ClickCommand), typeof(IClickCommandSettings))]
-    [CommandDef.CommandDefinition("Click", typeof(ClickCommand), typeof(IClickCommandSettings), CommandDef.CommandCategory.Action)]
+    [CommandDef.CommandDefinition("Click", typeof(SimpleCommand), typeof(IClickCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class ClickItem : CommandListItem, IClickItem, IClickCommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("座標", EditorType.PointPicker, Group = "座標", Order = 1,
+                         Description = "クリックする座標")]
         private int _x = 0;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private int _y = 0;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("マウスボタン", EditorType.MouseButtonPicker, Group = "クリック設定", Order = 1,
+                         Description = "クリックに使用するボタン")]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
 
         new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / X座標:{X} / Y座標:{Y} / ボタン:{Button}";
@@ -300,14 +458,27 @@ namespace MacroPanels.List.Class
         {
             return new ClickItem(this);
         }
+        
+        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            await context.ClickAsync(X, Y, Button, WindowTitle, WindowClassName);
+            
+            var targetDescription = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
+                ? "グローバル"
+                : $"{WindowTitle}[{WindowClassName}]";
+            
+            context.Log($"クリックしました。対象: {targetDescription} ({X}, {Y})");
+            return true;
+        }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(WaitCommand), typeof(IWaitCommandSettings))]
-    [CommandDef.CommandDefinition("Wait", typeof(WaitCommand), typeof(IWaitCommandSettings), CommandDef.CommandCategory.Action)]
+    [CommandDef.CommandDefinition("Wait", typeof(SimpleCommand), typeof(IWaitCommandSettings), CommandDef.CommandCategory.Action)]
     public partial class WaitItem : CommandListItem, IWaitItem, IWaitCommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("待機時間", EditorType.NumberBox, Group = "基本設定", Order = 1,
+                         Description = "指定した時間待機します", Unit = "ミリ秒", Min = 0)]
         private int _wait = 5000;
 
         new public string Description => $"待機時間:{Wait}ms";
@@ -324,6 +495,24 @@ namespace MacroPanels.List.Class
         public new ICommandListItem Clone()
         {
             return new WaitItem(this);
+        }
+        
+        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            
+            while (stopwatch.ElapsedMilliseconds < Wait)
+            {
+                if (cancellationToken.IsCancellationRequested) return false;
+                
+                var progress = Wait > 0 ? (int)((stopwatch.ElapsedMilliseconds * 100) / Wait) : 100;
+                context.ReportProgress(Math.Clamp(progress, 0, 100));
+                
+                await Task.Delay(100, cancellationToken);
+            }
+            
+            context.Log("待機完了");
+            return true;
         }
     }
 
@@ -352,19 +541,34 @@ namespace MacroPanels.List.Class
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("検索画像", EditorType.ImagePicker, Group = "画像設定", Order = 1,
+                         Description = "検索する画像ファイル")]
         private string _imagePath = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("一致しきい値", EditorType.Slider, Group = "画像設定", Order = 2,
+                         Description = "画像一致度の最小値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _threshold = 0.8;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
+                         Description = "特定の色を強調して検索")]
         private Color? _searchColor = null;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
@@ -418,19 +622,34 @@ namespace MacroPanels.List.Class
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("検索画像", EditorType.ImagePicker, Group = "画像設定", Order = 1,
+                         Description = "検索する画像ファイル")]
         private string _imagePath = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("一致しきい値", EditorType.Slider, Group = "画像設定", Order = 2,
+                         Description = "画像一致度の最小値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _threshold = 0.8;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
+                         Description = "特定の色を強調して検索")]
         private Color? _searchColor = null;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
@@ -524,7 +743,10 @@ namespace MacroPanels.List.Class
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ループ回数", EditorType.NumberBox, Group = "基本設定", Order = 1,
+                         Description = "繰り返す回数（0で無限ループ）", Min = 0)]
         private int _loopCount = 2;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
@@ -626,22 +848,40 @@ namespace MacroPanels.List.Class
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ONNXモデル", EditorType.FilePicker, Group = "AI設定", Order = 1,
+                         Description = "YOLOv8 ONNXモデルファイル")]
         private string _modelPath = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("クラスID", EditorType.NumberBox, Group = "AI設定", Order = 2,
+                         Description = "検出する物体のクラス番号", Min = 0)]
         private int _classID = 0;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("信頼度しきい値", EditorType.Slider, Group = "AI設定", Order = 3,
+                         Description = "検出の信頼度しきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _confThreshold = 0.5;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("IoUしきい値", EditorType.Slider, Group = "AI設定", Order = 4,
+                         Description = "重なり除去のしきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _ioUThreshold = 0.25;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
@@ -689,22 +929,40 @@ namespace MacroPanels.List.Class
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ONNXモデル", EditorType.FilePicker, Group = "AI設定", Order = 1,
+                         Description = "YOLOv8 ONNXモデルファイル")]
         private string _modelPath = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("クラスID", EditorType.NumberBox, Group = "AI設定", Order = 2,
+                         Description = "検出する物体のクラス番号", Min = 0)]
         private int _classID = 0;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("信頼度しきい値", EditorType.Slider, Group = "AI設定", Order = 3,
+                         Description = "検出の信頼度しきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _confThreshold = 0.5;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("IoUしきい値", EditorType.Slider, Group = "AI設定", Order = 4,
+                         Description = "重なり除去のしきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _ioUThreshold = 0.25;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
@@ -732,21 +990,31 @@ namespace MacroPanels.List.Class
         }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ExecuteCommand), typeof(IExecuteCommandSettings))]
-    [CommandDef.CommandDefinition("Execute", typeof(ExecuteCommand), typeof(IExecuteCommandSettings), CommandDef.CommandCategory.System)]
+    [CommandDef.CommandDefinition("Execute", typeof(SimpleCommand), typeof(IExecuteCommandSettings), CommandDef.CommandCategory.System)]
     public partial class ExecuteItem : CommandListItem, IExecuteItem, IExecuteCommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("プログラムパス", EditorType.FilePicker, Group = "実行設定", Order = 1,
+                         Description = "実行するプログラム")]
         private string _programPath = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("引数", EditorType.TextBox, Group = "実行設定", Order = 2,
+                         Description = "コマンドライン引数")]
         private string _arguments = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("作業ディレクトリ", EditorType.DirectoryPicker, Group = "実行設定", Order = 3,
+                         Description = "作業ディレクトリ")]
         private string _workingDirectory = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("終了を待つ", EditorType.CheckBox, Group = "実行設定", Order = 4,
+                         Description = "プログラム終了まで待機")]
         private bool _waitForExit = false;
 
         new public string Description => $"ファイルパス:{System.IO.Path.GetFileName(ProgramPath)} / 引数:{Arguments} / 作業フォルダ:{WorkingDirectory}";
@@ -765,18 +1033,36 @@ namespace MacroPanels.List.Class
         {
             return new ExecuteItem(this);
         }
+        
+        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await context.ExecuteProgramAsync(ProgramPath, Arguments, WorkingDirectory, WaitForExit, cancellationToken);
+                context.Log($"プログラムを実行しました: {ProgramPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                context.Log($"プログラム実行エラー: {ex.Message}");
+                return false;
+            }
+        }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(SetVariableCommand), typeof(ISetVariableCommandSettings))]
-    [CommandDef.CommandDefinition("SetVariable", typeof(SetVariableCommand), typeof(ISetVariableCommandSettings), CommandDef.CommandCategory.Variable)]
+    [CommandDef.CommandDefinition("SetVariable", typeof(SimpleCommand), typeof(ISetVariableCommandSettings), CommandDef.CommandCategory.Variable)]
     public partial class SetVariableItem : CommandListItem, ISetVariableItem, ISetVariableCommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("変数名", EditorType.TextBox, Group = "変数設定", Order = 1,
+                         Description = "設定する変数の名前")]
         private string _name = string.Empty;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("値", EditorType.TextBox, Group = "変数設定", Order = 2,
+                         Description = "設定する値")]
         private string _value = string.Empty;
 
         new public string Description => $"変数:{Name} = \"{Value}\"";
@@ -792,32 +1078,58 @@ namespace MacroPanels.List.Class
         }
 
         public new ICommandListItem Clone() => new SetVariableItem(this);
+        
+        public override Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            context.SetVariable(Name, Value);
+            context.Log($"変数 {Name} = \"{Value}\" を設定しました");
+            return Task.FromResult(true);
+        }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(SetVariableAICommand), typeof(ISetVariableAICommandSettings))]
-    [CommandDef.CommandDefinition("SetVariable_AI", typeof(SetVariableAICommand), typeof(ISetVariableAICommandSettings), CommandDef.CommandCategory.AI)]
+    [CommandDef.CommandDefinition("SetVariable_AI", typeof(SimpleCommand), typeof(ISetVariableAICommandSettings), CommandDef.CommandCategory.AI)]
     public partial class SetVariableAIItem : CommandListItem, ISetVariableAIItem, ISetVariableAICommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("検出モード", EditorType.ComboBox, Group = "AI設定", Order = 1,
+                         Description = "取得する値の種類", Options = "Class,Count,X,Y,Width,Height")]
         private string _aIDetectMode = "Class";
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ONNXモデル", EditorType.FilePicker, Group = "AI設定", Order = 2,
+                         Description = "YOLOv8 ONNXモデルファイル")]
         private string _modelPath = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("信頼度しきい値", EditorType.Slider, Group = "AI設定", Order = 3,
+                         Description = "検出の信頼度しきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _confThreshold = 0.5;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("IoUしきい値", EditorType.Slider, Group = "AI設定", Order = 4,
+                         Description = "重なり除去のしきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _ioUThreshold = 0.25;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("変数名", EditorType.TextBox, Group = "変数設定", Order = 1,
+                         Description = "結果を格納する変数名")]
         private string _name = string.Empty;
 
         new public string Description =>
@@ -841,6 +1153,44 @@ namespace MacroPanels.List.Class
         {
             return new SetVariableAIItem(this);
         }
+        
+        public override Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            var absoluteModelPath = context.ToAbsolutePath(ModelPath);
+            context.InitializeAIModel(absoluteModelPath, 640, true);
+
+            var detections = context.DetectAI(WindowTitle, (float)ConfThreshold, (float)IoUThreshold);
+            
+            string value;
+            switch (AIDetectMode)
+            {
+                case "Class":
+                    value = detections.Count > 0 ? detections[0].ClassId.ToString() : "-1";
+                    break;
+                case "Count":
+                    value = detections.Count.ToString();
+                    break;
+                case "X":
+                    value = detections.Count > 0 ? (detections[0].Rect.X + detections[0].Rect.Width / 2).ToString() : "-1";
+                    break;
+                case "Y":
+                    value = detections.Count > 0 ? (detections[0].Rect.Y + detections[0].Rect.Height / 2).ToString() : "-1";
+                    break;
+                case "Width":
+                    value = detections.Count > 0 ? detections[0].Rect.Width.ToString() : "-1";
+                    break;
+                case "Height":
+                    value = detections.Count > 0 ? detections[0].Rect.Height.ToString() : "-1";
+                    break;
+                default:
+                    value = "0";
+                    break;
+            }
+            
+            context.SetVariable(Name, value);
+            context.Log($"AI検出結果: {Name} = {value} (モード: {AIDetectMode}, 検出数: {detections.Count})");
+            return Task.FromResult(true);
+        }
     }
 
 
@@ -849,14 +1199,20 @@ namespace MacroPanels.List.Class
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("変数名", EditorType.TextBox, Group = "条件設定", Order = 1,
+                         Description = "比較する変数の名前")]
         private string _name = string.Empty;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("演算子", EditorType.ComboBox, Group = "条件設定", Order = 2,
+                         Description = "比較演算子", Options = "==,!=,>,<,>=,<=")]
         private string _operator = "==";
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("比較値", EditorType.TextBox, Group = "条件設定", Order = 3,
+                         Description = "比較する値")]
         private string _value = string.Empty;
 
         [ObservableProperty]
@@ -880,20 +1236,25 @@ namespace MacroPanels.List.Class
         public new ICommandListItem Clone() => new IfVariableItem(this);
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ScreenshotCommand), typeof(IScreenshotCommandSettings))]
-    [CommandDef.CommandDefinition("Screenshot", typeof(ScreenshotCommand), typeof(IScreenshotCommandSettings), CommandDef.CommandCategory.System)]
+    [CommandDef.CommandDefinition("Screenshot", typeof(SimpleCommand), typeof(IScreenshotCommandSettings), CommandDef.CommandCategory.System)]
     public partial class ScreenshotItem : CommandListItem, IScreenshotItem, IScreenshotCommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("保存先ディレクトリ", EditorType.DirectoryPicker, Group = "保存設定", Order = 1,
+                         Description = "スクリーンショットの保存先")]
         private string _saveDirectory = string.Empty;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "キャプチャ対象のウィンドウ（空欄で全画面）")]
         private string _windowTitle = string.Empty;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
 
         new public string Description =>
@@ -911,32 +1272,79 @@ namespace MacroPanels.List.Class
         }
 
         public new ICommandListItem Clone() => new ScreenshotItem(this);
+        
+        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var dir = string.IsNullOrWhiteSpace(SaveDirectory)
+                    ? System.IO.Path.Combine(Environment.CurrentDirectory, "Screenshots")
+                    : SaveDirectory;
+
+                if (!System.IO.Directory.Exists(dir))
+                {
+                    System.IO.Directory.CreateDirectory(dir);
+                }
+
+                var fileName = $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                var filePath = System.IO.Path.Combine(dir, fileName);
+
+                await context.TakeScreenshotAsync(filePath, WindowTitle, WindowClassName, cancellationToken);
+                
+                context.Log($"スクリーンショットを保存しました: {filePath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                context.Log($"スクリーンショットの保存に失敗しました: {ex.Message}");
+                return false;
+            }
+        }
     }
 
-    [CommandDef.SimpleCommandBinding(typeof(ClickImageAICommand), typeof(IClickImageAICommandSettings))]
-    [CommandDef.CommandDefinition("Click_Image_AI", typeof(ClickImageAICommand), typeof(IClickImageAICommandSettings), CommandDef.CommandCategory.AI)]
+    [CommandDef.CommandDefinition("Click_Image_AI", typeof(SimpleCommand), typeof(IClickImageAICommandSettings), CommandDef.CommandCategory.AI)]
     public partial class ClickImageAIItem : CommandListItem, IClickImageAIItem, IClickImageAICommandSettings
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                         Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
         private string _windowTitle = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                         Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ONNXモデル", EditorType.FilePicker, Group = "AI設定", Order = 1,
+                         Description = "YOLOv8 ONNXモデルファイル")]
         private string _modelPath = string.Empty;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("クラスID", EditorType.NumberBox, Group = "AI設定", Order = 2,
+                         Description = "検出する物体のクラス番号", Min = 0)]
         private int _classID = 0;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("信頼度しきい値", EditorType.Slider, Group = "AI設定", Order = 3,
+                         Description = "検出の信頼度しきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _confThreshold = 0.5;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("IoUしきい値", EditorType.Slider, Group = "AI設定", Order = 4,
+                         Description = "重なり除去のしきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _ioUThreshold = 0.25;
+        
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("マウスボタン", EditorType.MouseButtonPicker, Group = "クリック設定", Order = 1,
+                         Description = "クリックに使用するボタン")]
         private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
 
         new public string Description =>
@@ -958,5 +1366,28 @@ namespace MacroPanels.List.Class
         }
 
         public new ICommandListItem Clone() => new ClickImageAIItem(this);
+        
+        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            var absoluteModelPath = context.ToAbsolutePath(ModelPath);
+            context.InitializeAIModel(absoluteModelPath, 640, true);
+
+            var detections = context.DetectAI(WindowTitle, (float)ConfThreshold, (float)IoUThreshold);
+            var targetDetections = detections.Where(d => d.ClassId == ClassID).ToList();
+
+            if (targetDetections.Count > 0)
+            {
+                var best = targetDetections.OrderByDescending(d => d.Score).First();
+                int centerX = best.Rect.X + best.Rect.Width / 2;
+                int centerY = best.Rect.Y + best.Rect.Height / 2;
+
+                await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName);
+                context.Log($"AI画像クリックしました。({centerX}, {centerY}) ClassId: {best.ClassId}, Score: {best.Score:F2}");
+                return true;
+            }
+
+            context.Log($"クラスID {ClassID} の画像が見つかりませんでした。");
+            return false;
+        }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using MacroPanels.List.Class;
 using MacroPanels.Command.Commands;
 using MacroPanels.Command.Interface;
@@ -623,6 +624,20 @@ namespace MacroPanels.Model.CommandDefinition
         }
 
         /// <summary>
+        /// ItemがExecuteAsyncをオーバーライドしているかチェック
+        /// </summary>
+        private static bool HasExecuteAsyncOverride(Type itemType)
+        {
+            var method = itemType.GetMethod("ExecuteAsync", 
+                BindingFlags.Public | BindingFlags.Instance,
+                null,
+                new[] { typeof(ICommandExecutionContext), typeof(CancellationToken) },
+                null);
+            
+            return method != null && method.DeclaringType != typeof(CommandListItem);
+        }
+
+        /// <summary>
         /// 指定されたタイプからコマンドを作成（SimpleCommandBinding用、サービスプロバイダー付き）
         /// </summary>
         public static bool TryCreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider, out ICommand? command)
@@ -640,17 +655,39 @@ namespace MacroPanels.Model.CommandDefinition
                 return false;
             }
 
-            // SimpleCommandBinding属性をチェック
-            var bindingAttr = info.ItemType.GetCustomAttribute<SimpleCommandBindingAttribute>();
-            if (bindingAttr == null)
-            {
-                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: No SimpleCommandBinding attribute found for {info.ItemType.Name}");
-                return false;
-            }
-
             try
             {
-                // コンストラクタを取得して適切なものを選択
+                // ItemにExecuteAsyncがオーバーライドされていて、サービスプロバイダーがある場合はSimpleCommandを使用
+                if (serviceProvider != null && HasExecuteAsyncOverride(item.GetType()))
+                {
+                    var variableStore = serviceProvider.GetService(typeof(Command.Services.IVariableStore)) as Command.Services.IVariableStore;
+                    var pathService = serviceProvider.GetService(typeof(Command.Services.IPathService)) as Command.Services.IPathService;
+                    var mouseService = serviceProvider.GetService(typeof(Command.Services.IMouseService)) as Command.Services.IMouseService;
+                    var keyboardService = serviceProvider.GetService(typeof(Command.Services.IKeyboardService)) as Command.Services.IKeyboardService;
+                    var processService = serviceProvider.GetService(typeof(Command.Services.IProcessService)) as Command.Services.IProcessService;
+                    var screenCaptureService = serviceProvider.GetService(typeof(Command.Services.IScreenCaptureService)) as Command.Services.IScreenCaptureService;
+                    var imageSearchService = serviceProvider.GetService(typeof(Command.Services.IImageSearchService)) as Command.Services.IImageSearchService;
+                    var aiDetectionService = serviceProvider.GetService(typeof(Command.Services.IAIDetectionService)) as Command.Services.IAIDetectionService;
+
+                    if (variableStore != null && pathService != null && mouseService != null && keyboardService != null)
+                    {
+                        command = new SimpleCommand(parent, item as ICommandSettings ?? new CommandSettings(), item, variableStore, pathService, mouseService, keyboardService, processService, screenCaptureService, imageSearchService, aiDetectionService);
+                        command.LineNumber = item.LineNumber;
+                        command.IsEnabled = item.IsEnable;
+                        System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Created SimpleCommand for {item.GetType().Name}");
+                        return true;
+                    }
+                }
+
+                // SimpleCommandBinding属性をチェック（レガシー対応）
+                var bindingAttr = info.ItemType.GetCustomAttribute<SimpleCommandBindingAttribute>();
+                if (bindingAttr == null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"TryCreateSimple: No SimpleCommandBinding attribute and no ExecuteAsync override for {info.ItemType.Name}");
+                    return false;
+                }
+
+                // 従来の方法でコマンドを作成
                 var constructors = bindingAttr.CommandType.GetConstructors();
                 
                 // まず2引数のコンストラクタを試す (parent, settings)
@@ -711,7 +748,7 @@ namespace MacroPanels.Model.CommandDefinition
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Failed to create command {bindingAttr.CommandType.Name}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"TryCreateSimple: Failed to create command: {ex.Message}");
                 return false;
             }
         }

@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                    xmlns:editors="clr-namespace:MacroPanels.View.Editors"
+                    xmlns:attrs="clr-namespace:MacroPanels.Attributes"
+                    xmlns:converter="clr-namespace:MacroPanels.View.Converter">
+
+    <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+
+    <Style x:Key="EditorCard" TargetType="Border">
+        <Setter Property="Background" Value="{ui:ThemeResource ControlFillColorDefaultBrush}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="16,12"/>
+        <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+
+    <Style x:Key="EditorLabel" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ui:ThemeResource TextFillColorPrimaryBrush}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="EditorDescription" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <DataTemplate x:Key="TextBoxEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="200"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" Text="{Binding StringValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="NumberBoxEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                </StackPanel>
+                <ui:NumberBox Grid.Column="1" Value="{Binding IntValue, Mode=TwoWay}" 
+                              Minimum="{Binding Min}" Maximum="{Binding Max}"
+                              SpinButtonPlacementMode="Compact"/>
+                <TextBlock Grid.Column="2" Text="{Binding Unit}" 
+                           Style="{StaticResource EditorDescription}" 
+                           VerticalAlignment="Center" Margin="8,0,0,0"
+                           Visibility="{Binding Unit, Converter={StaticResource StringToVisibilityConverter}}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="SliderEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="60"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                </StackPanel>
+                <Slider Grid.Column="1" Value="{Binding DoubleValue, Mode=TwoWay}" 
+                        Minimum="{Binding Min}" Maximum="{Binding Max}" 
+                        SmallChange="{Binding Step}" LargeChange="{Binding Step}"
+                        TickFrequency="{Binding Step}" IsSnapToTickEnabled="True" 
+                        VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding DoubleValue, StringFormat={}{0:F2}}" 
+                           VerticalAlignment="Center" HorizontalAlignment="Right"
+                           Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="CheckBoxEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                </StackPanel>
+                <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding BoolValue, Mode=TwoWay}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="ComboBoxEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="150"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                </StackPanel>
+                <ComboBox Grid.Column="1" 
+                          ItemsSource="{Binding Options}"
+                          SelectedItem="{Binding StringValue, Mode=TwoWay}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="MultiLineTextBoxEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <StackPanel>
+                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}" Margin="0,0,0,4"/>
+                <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}" Margin="0,0,0,8"
+                           Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                <TextBox Text="{Binding StringValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                         AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60"/>
+            </StackPanel>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="MouseButtonPickerEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="150"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                </StackPanel>
+                <ComboBox Grid.Column="1" 
+                          ItemsSource="{Binding MouseButtonOptions}"
+                          SelectedItem="{Binding MouseButtonValue, Mode=TwoWay}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="KeyPickerEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding KeyDisplayText}" Style="{StaticResource EditorDescription}"/>
+                </StackPanel>
+                <ui:Button Grid.Column="1" Content="Pick Key" Icon="{ui:SymbolIcon Keyboard24}"
+                           Command="{Binding PickKeyCommand}" Appearance="Primary"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="PointPickerEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Style="{StaticResource EditorDescription}">
+                        <Run Text="X: "/><Run Text="{Binding IntValue, Mode=OneWay}"/>
+                        <Run Text="  Y: "/><Run Text="{Binding RelatedIntValue, Mode=OneWay}"/>
+                    </TextBlock>
+                </StackPanel>
+                <ui:Button Grid.Column="1" Content="Pick" Icon="{ui:SymbolIcon Location24}"
+                           Command="{Binding PickPointCommand}" Appearance="Primary"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="DefaultEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="200"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" Text="{Binding StringValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="ImagePickerEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding StringValue, TargetNullValue='Not selected'}" 
+                               Style="{StaticResource EditorDescription}" 
+                               TextTrimming="CharacterEllipsis" MaxWidth="300"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:Button Content="Browse" Icon="{ui:SymbolIcon FolderOpen24}" 
+                               Command="{Binding BrowseCommand}" Margin="0,0,4,0"/>
+                    <ui:Button Content="Capture" Icon="{ui:SymbolIcon Screenshot24}" 
+                               Command="{Binding CaptureCommand}" Appearance="Primary"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="ColorPickerEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Style="{StaticResource EditorDescription}">
+                        <TextBlock.Text>
+                            <Binding Path="ColorValue" TargetNullValue="Not set">
+                                <Binding.StringFormat>RGB({0})</Binding.StringFormat>
+                            </Binding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Border Width="32" Height="32" CornerRadius="4" Margin="0,0,8,0"
+                            Background="{Binding ColorBrush}"
+                            BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"/>
+                    <ui:Button Icon="{ui:SymbolIcon Eyedropper24}" ToolTip="Pick Color" 
+                               Command="{Binding PickColorCommand}" Margin="0,0,4,0"/>
+                    <ui:Button Icon="{ui:SymbolIcon Dismiss24}" ToolTip="Clear" 
+                               Command="{Binding ClearCommand}" Appearance="Secondary"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="WindowInfoEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding StringValue, TargetNullValue='Not specified'}" 
+                               Style="{StaticResource EditorDescription}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:Button Content="Get" Icon="{ui:SymbolIcon WindowNew20}" 
+                               Command="{Binding GetWindowInfoCommand}" Margin="0,0,4,0"/>
+                    <ui:Button Icon="{ui:SymbolIcon Dismiss24}" ToolTip="Clear" 
+                               Command="{Binding ClearCommand}" Appearance="Secondary"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="FilePickerEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding StringValue, TargetNullValue='Not selected'}" 
+                               Style="{StaticResource EditorDescription}" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <ui:Button Grid.Column="1" Content="Browse" Icon="{ui:SymbolIcon FolderOpen24}"
+                           Command="{Binding BrowseCommand}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="DirectoryPickerEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding StringValue, TargetNullValue='Not selected'}" 
+                               Style="{StaticResource EditorDescription}" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <ui:Button Grid.Column="1" Content="Browse" Icon="{ui:SymbolIcon FolderOpen24}"
+                           Command="{Binding BrowseCommand}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <editors:EditorTemplateSelector x:Key="EditorTemplateSelector"
+                                    TextBoxTemplate="{StaticResource TextBoxEditorTemplate}"
+                                    NumberBoxTemplate="{StaticResource NumberBoxEditorTemplate}"
+                                    SliderTemplate="{StaticResource SliderEditorTemplate}"
+                                    CheckBoxTemplate="{StaticResource CheckBoxEditorTemplate}"
+                                    ComboBoxTemplate="{StaticResource ComboBoxEditorTemplate}"
+                                    MultiLineTextBoxTemplate="{StaticResource MultiLineTextBoxEditorTemplate}"
+                                    ImagePickerTemplate="{StaticResource ImagePickerEditorTemplate}"
+                                    ColorPickerTemplate="{StaticResource ColorPickerEditorTemplate}"
+                                    KeyPickerTemplate="{StaticResource KeyPickerEditorTemplate}"
+                                    WindowInfoTemplate="{StaticResource WindowInfoEditorTemplate}"
+                                    FilePickerTemplate="{StaticResource FilePickerEditorTemplate}"
+                                    DirectoryPickerTemplate="{StaticResource DirectoryPickerEditorTemplate}"
+                                    MouseButtonPickerTemplate="{StaticResource MouseButtonPickerEditorTemplate}"
+                                    PointPickerTemplate="{StaticResource PointPickerEditorTemplate}"
+                                    DefaultTemplate="{StaticResource DefaultEditorTemplate}"/>
+
+</ResourceDictionary>

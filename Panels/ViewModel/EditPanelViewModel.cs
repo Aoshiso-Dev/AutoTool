@@ -12,6 +12,8 @@ using MacroPanels.ViewModel.Helpers;
 using MacroPanels.Model.CommandDefinition;
 using MacroPanels.ViewModel.Shared;
 using MacroPanels.Command.Services;
+using MacroPanels.Services;
+using MacroPanels.Attributes;
 
 namespace MacroPanels.ViewModel;
 
@@ -22,6 +24,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     private readonly IWindowService _windowService;
     private readonly IPathService _pathService;
     private readonly INotificationService _notificationService;
+    private readonly PropertyMetadataProvider _metadataProvider = new();
 
     // イベント
     public event Action<ICommandListItem?>? ItemEdited;
@@ -31,6 +34,12 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     private bool _isRunning;
     private bool _isUpdating;
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromMilliseconds(120) };
+
+    /// <summary>
+    /// メタデータ駆動UIのプロパティグループ
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<PropertyGroup> _propertyGroups = new();
 
     #region Item
     private ICommandListItem? _item;
@@ -57,11 +66,258 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
                 }
                 
                 UpdateProperties(); 
-                UpdateIsProperties(); 
+                UpdateIsProperties();
+                UpdatePropertyGroups();
             }
         }
     }
     #endregion
+
+
+
+
+    /// <summary>
+    /// メタデータからプロパティグループを更新
+    /// </summary>
+    private void UpdatePropertyGroups()
+    {
+        PropertyGroups.Clear();
+        if (Item == null) return;
+        
+        // まず全グループを追加
+        foreach (var group in _metadataProvider.GetGroupedMetadata(Item))
+        {
+            PropertyGroups.Add(group);
+        }
+        
+        // 次に各プロパティにコマンドを設定（全プロパティが揃った後）
+        foreach (var group in PropertyGroups)
+        {
+            foreach (var prop in group.Properties)
+            {
+                SetupPropertyCommands(prop);
+            }
+        }
+    }
+    
+    
+    
+    
+    /// <summary>
+    /// プロパティのエディタタイプに応じてコマンドを設定
+    /// </summary>
+    private void SetupPropertyCommands(PropertyMetadata prop)
+    {
+        switch (prop.EditorType)
+        {
+            case EditorType.ImagePicker:
+                prop.BrowseCommand = new RelayCommand(() => BrowseImageForProperty(prop));
+                prop.CaptureCommand = new RelayCommand(() => CaptureImageForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; OnPropertyChanged(nameof(prop.StringValue)); });
+                break;
+                
+            case EditorType.ColorPicker:
+                prop.PickColorCommand = new RelayCommand(() => PickColorForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => prop.Value = null);
+                break;
+                
+            case EditorType.WindowInfo:
+                prop.GetWindowInfoCommand = new RelayCommand(() => GetWindowInfoForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; OnPropertyChanged(nameof(prop.StringValue)); });
+                break;
+                
+            case EditorType.FilePicker:
+                prop.BrowseCommand = new RelayCommand(() => BrowseFileForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; OnPropertyChanged(nameof(prop.StringValue)); });
+                break;
+                
+            case EditorType.DirectoryPicker:
+                prop.BrowseCommand = new RelayCommand(() => BrowseDirectoryForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; OnPropertyChanged(nameof(prop.StringValue)); });
+                break;
+                
+            case EditorType.KeyPicker:
+                prop.PickKeyCommand = new RelayCommand(() => PickKeyForProperty(prop));
+                break;
+                
+            case EditorType.PointPicker:
+                prop.PickPointCommand = new RelayCommand(() => PickPointForProperty(prop));
+                // 関連するY座標を設定
+                var yProp = PropertyGroups
+                    .SelectMany(g => g.Properties)
+                    .FirstOrDefault(p => p.PropertyInfo.Name == "Y" && p.Target == prop.Target);
+                prop.RelatedProperty = yProp;
+                break;
+        }
+    }
+    
+    
+    
+    
+    
+    
+    private void BrowseImageForProperty(PropertyMetadata prop)
+    {
+        var path = DialogHelper.SelectImageFile();
+        if (!string.IsNullOrEmpty(path))
+        {
+            prop.Value = _pathService.ToRelativePath(path);
+            OnPropertyChanged(nameof(ImagePath));
+            OnPropertyChanged(nameof(PreviewImagePath));
+            OnPropertyChanged(nameof(HasImagePreview));
+            UpdateProperties();
+        }
+    }
+    
+    private void CaptureImageForProperty(PropertyMetadata prop)
+    {
+        var cw = new CaptureWindow { Mode = 0 };
+        if (cw.ShowDialog() == true)
+        {
+            var path = DialogHelper.CreateCaptureFilePath();
+            var mat = OpenCVHelper.ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion);
+            OpenCVHelper.ScreenCaptureHelper.SaveCapture(mat, path);
+            prop.Value = _pathService.ToRelativePath(path);
+            OnPropertyChanged(nameof(ImagePath));
+            OnPropertyChanged(nameof(PreviewImagePath));
+            OnPropertyChanged(nameof(HasImagePreview));
+            UpdateProperties();
+        }
+    }
+    
+    private void PickColorForProperty(PropertyMetadata prop)
+    {
+        var w = new ColorPickWindow();
+        w.ShowDialog();
+        if (w.Color.HasValue)
+        {
+            prop.Value = w.Color.Value;
+            UpdateProperties();
+        }
+    }
+    
+    private void GetWindowInfoForProperty(PropertyMetadata prop)
+    {
+        var w = new GetWindowInfoWindow();
+        if (w.ShowDialog() == true)
+        {
+            // ウィンドウタイトルを設定
+            prop.Value = w.WindowTitle;
+            
+            // 同じターゲットのWindowClassNameプロパティも探して設定
+            var classNameProp = PropertyGroups
+                .SelectMany(g => g.Properties)
+                .FirstOrDefault(p => p.PropertyInfo.Name == "WindowClassName" && p.Target == prop.Target);
+            
+            if (classNameProp != null)
+            {
+                classNameProp.Value = w.WindowClassName;
+            }
+            
+            UpdateProperties();
+        }
+    }
+    
+    private void BrowseFileForProperty(PropertyMetadata prop)
+    {
+        var path = DialogHelper.SelectModelFile();
+        if (!string.IsNullOrEmpty(path))
+        {
+            prop.Value = _pathService.ToRelativePath(path);
+            UpdateProperties();
+        }
+    }
+    
+    private void BrowseDirectoryForProperty(PropertyMetadata prop)
+    {
+        var path = DialogHelper.SelectFolder();
+        if (!string.IsNullOrEmpty(path))
+        {
+            prop.Value = _pathService.ToRelativePath(path);
+            UpdateProperties();
+        }
+    }
+    
+    private void PickKeyForProperty(PropertyMetadata prop)
+    {
+        var keyPickerWindow = new KeyPickerWindow();
+        if (keyPickerWindow.ShowDialog() == true)
+        {
+            prop.Value = keyPickerWindow.SelectedKey;
+            UpdateProperties();
+        }
+    }
+    
+    private void PickPointForProperty(PropertyMetadata prop)
+    {
+        var cw = new CaptureWindow { Mode = 1 };
+        if (cw.ShowDialog() != true) return;
+        
+        var absoluteX = (int)cw.SelectedPoint.X;
+        var absoluteY = (int)cw.SelectedPoint.Y;
+        
+        // ウィンドウタイトルを取得（同じターゲット内から）
+        var windowTitleProp = PropertyGroups
+            .SelectMany(g => g.Properties)
+            .FirstOrDefault(p => p.PropertyInfo.Name == "WindowTitle" && p.Target == prop.Target);
+        var windowClassNameProp = PropertyGroups
+            .SelectMany(g => g.Properties)
+            .FirstOrDefault(p => p.PropertyInfo.Name == "WindowClassName" && p.Target == prop.Target);
+        
+        var windowTitle = windowTitleProp?.Value?.ToString() ?? string.Empty;
+        var windowClassName = windowClassNameProp?.Value?.ToString() ?? string.Empty;
+        
+        var (relativeX, relativeY, success, errorMessage) = _windowService.ConvertToRelativeCoordinates(
+            absoluteX, absoluteY, windowTitle, windowClassName);
+        
+        
+        // Xプロパティの場合
+        if (prop.PropertyInfo.Name == "X")
+        {
+            prop.Value = relativeX;
+            // Yプロパティも探して設定
+            var yProp = PropertyGroups
+                .SelectMany(g => g.Properties)
+                .FirstOrDefault(p => p.PropertyInfo.Name == "Y" && p.Target == prop.Target);
+            if (yProp != null)
+            {
+                yProp.Value = relativeY;
+            }
+            prop.NotifyRelatedValueChanged();
+        }
+        // Yプロパティの場合
+        else if (prop.PropertyInfo.Name == "Y")
+        {
+            prop.Value = relativeY;
+            // Xプロパティも探して設定
+            var xProp = PropertyGroups
+                .SelectMany(g => g.Properties)
+                .FirstOrDefault(p => p.PropertyInfo.Name == "X" && p.Target == prop.Target);
+            if (xProp != null)
+            {
+                xProp.Value = relativeX;
+                xProp.NotifyRelatedValueChanged();
+            }
+        }
+        
+        UpdateProperties();
+        
+        if (!string.IsNullOrEmpty(windowTitle) || !string.IsNullOrEmpty(windowClassName))
+        {
+            if (success)
+            {
+                _notificationService.ShowInfo(
+                    $"Relative coordinates set: ({relativeX}, {relativeY})\nWindow: {windowTitle}[{windowClassName}]",
+                    "Coordinates Set");
+            }
+            else
+            {
+                _notificationService.ShowWarning(
+                    $"{errorMessage}\nAbsolute coordinates ({relativeX}, {relativeY}) set.",
+                    "Warning");
+            }
+        }
+    }
 
     #region ListCount
     private int _listCount;
@@ -96,6 +352,27 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     public bool IsSetVariableAIItem => Item is SetVariableAIItem;
     public bool IsIfVariableItem => Item is IfVariableItem;
     public bool IsScreenshotItem => Item is ScreenshotItem;
+    
+    /// <summary>
+    /// Has image preview (for image-based commands)
+    /// </summary>
+    public bool HasImagePreview => Item is WaitImageItem or ClickImageItem or IfImageExistItem or IfImageNotExistItem;
+    
+    /// <summary>
+    /// Preview image path (from dynamic properties)
+    /// </summary>
+    public string? PreviewImagePath
+    {
+        get
+        {
+            var imageProp = PropertyGroups
+                .SelectMany(g => g.Properties)
+                .FirstOrDefault(p => p.PropertyInfo.Name == "ImagePath");
+            var path = imageProp?.Value?.ToString();
+            if (string.IsNullOrEmpty(path)) return null;
+            return _pathService.ToAbsolutePath(path);
+        }
+    }
     #endregion
 
     #region Properties (via PropertyManager)

@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using MacroPanels.Command.Interface;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -25,6 +26,12 @@ namespace MacroPanels.Model.List.Interface
         public int Progress { get; set; }
 
         ICommandListItem Clone();
+        
+        /// <summary>
+        /// Execute the command logic (override in derived classes)
+        /// </summary>
+        Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+            => Task.FromResult(true);
     }
 
     public interface IWaitImageItem : ICommandListItem

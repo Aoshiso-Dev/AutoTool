@@ -111,3 +111,50 @@ public class IfImageNotExistCommand : BaseCommand, IIfCommand, IIfImageNotExistC
         return true;
     }
 }
+
+/// <summary>
+/// 変数条件判定コマンド
+/// </summary>
+public class IfVariableCommand : BaseCommand, IIfCommand
+{
+    private readonly IVariableStore _variableStore;
+
+    public new IIfVariableCommandSettings Settings => (IIfVariableCommandSettings)base.Settings;
+
+    public IfVariableCommand(ICommand? parent, ICommandSettings settings, IVariableStore variableStore)
+        : base(parent, settings)
+    {
+        _variableStore = variableStore ?? throw new ArgumentNullException(nameof(variableStore));
+    }
+
+    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    {
+        if (Children == null || !Children.Any())
+        {
+            throw new InvalidOperationException("If文中に要素がありません。");
+        }
+
+        var actualValue = _variableStore.Get(Settings.Name) ?? "";
+        var expectedValue = Settings.Value;
+        
+        bool conditionMet = Settings.Operator switch
+        {
+            "==" => actualValue == expectedValue,
+            "!=" => actualValue != expectedValue,
+            ">" => double.TryParse(actualValue, out var a) && double.TryParse(expectedValue, out var b) && a > b,
+            "<" => double.TryParse(actualValue, out var a2) && double.TryParse(expectedValue, out var b2) && a2 < b2,
+            ">=" => double.TryParse(actualValue, out var a3) && double.TryParse(expectedValue, out var b3) && a3 >= b3,
+            "<=" => double.TryParse(actualValue, out var a4) && double.TryParse(expectedValue, out var b4) && a4 <= b4,
+            _ => false
+        };
+
+        if (conditionMet)
+        {
+            RaiseDoingCommand($"条件一致: {Settings.Name} {Settings.Operator} \"{expectedValue}\" (実際: \"{actualValue}\")");
+            return await ExecuteChildrenAsync(cancellationToken);
+        }
+
+        RaiseDoingCommand($"条件不一致: {Settings.Name} {Settings.Operator} \"{expectedValue}\" (実際: \"{actualValue}\")");
+        return true;
+    }
+}
