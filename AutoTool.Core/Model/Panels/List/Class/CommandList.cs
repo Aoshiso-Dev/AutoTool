@@ -10,8 +10,17 @@ namespace AutoTool.Panels.List.Class
 {
     public partial class CommandList : ObservableObject, ICommandList
     {
+        private readonly ICommandDefinitionProvider _commandDefinitionProvider;
+        private readonly IMacroFileSerializer _macroFileSerializer;
+
         [ObservableProperty]
         private ObservableCollection<ICommandListItem> _items = new();
+
+        public CommandList(ICommandDefinitionProvider commandDefinitionProvider, IMacroFileSerializer macroFileSerializer)
+        {
+            _commandDefinitionProvider = commandDefinitionProvider ?? throw new ArgumentNullException(nameof(commandDefinitionProvider));
+            _macroFileSerializer = macroFileSerializer ?? throw new ArgumentNullException(nameof(macroFileSerializer));
+        }
 
         public ICommandListItem this[int index]
         {
@@ -138,7 +147,7 @@ namespace AutoTool.Panels.List.Class
             foreach (var item in Items)
             {
                 // ネストレベルを減らすコマンド（終了系）
-                if (CommandRegistry.IsEndCommand(item.ItemType))
+                if (_commandDefinitionProvider.IsEndCommand(item.ItemType))
                 {
                     nestLevel--;
                 }
@@ -146,7 +155,7 @@ namespace AutoTool.Panels.List.Class
                 item.NestLevel = nestLevel;
 
                 // ネストレベルを増やすコマンド（開始系）
-                if (CommandRegistry.IsStartCommand(item.ItemType))
+                if (_commandDefinitionProvider.IsStartCommand(item.ItemType))
                 {
                     nestLevel++;
                 }
@@ -155,8 +164,13 @@ namespace AutoTool.Panels.List.Class
 
         public void PairIfItems()
         {
-            var ifItems = Items.OfType<IIfItem>().Where(x => CommandRegistry.IsIfCommand(x.ItemType)).OrderBy(x => x.LineNumber).ToList();
-            var endIfItems = Items.OfType<IIfEndItem>().Where(x => x.ItemType == CommandRegistry.CommandTypes.IfEnd).OrderBy(x => x.LineNumber).ToList();
+            var ifItems = Items.OfType<IIfItem>()
+                .Where(x => _commandDefinitionProvider.IsIfCommand(x.ItemType))
+                .OrderBy(x => x.LineNumber)
+                .ToList();
+            var endIfItems = Items.OfType<IIfEndItem>()
+                .OrderBy(x => x.LineNumber)
+                .ToList();
 
             foreach (var ifItem in ifItems)
             {
@@ -188,8 +202,13 @@ namespace AutoTool.Panels.List.Class
 
         public void PairLoopItems()
         {
-            var loopItems = Items.OfType<ILoopItem>().Where(x => CommandRegistry.IsLoopCommand(x.ItemType)).OrderBy(x => x.LineNumber).ToList();
-            var endLoopItems = Items.OfType<ILoopEndItem>().Where(x => x.ItemType == CommandRegistry.CommandTypes.LoopEnd).OrderBy(x => x.LineNumber).ToList();
+            var loopItems = Items.OfType<ILoopItem>()
+                .Where(x => _commandDefinitionProvider.IsLoopCommand(x.ItemType))
+                .OrderBy(x => x.LineNumber)
+                .ToList();
+            var endLoopItems = Items.OfType<ILoopEndItem>()
+                .OrderBy(x => x.LineNumber)
+                .ToList();
 
             foreach (var loopItem in loopItems)
             {
@@ -235,20 +254,20 @@ namespace AutoTool.Panels.List.Class
         {
             var cloneItems = Clone();
 
-            MacroFileSerializer.SerializeToFile(cloneItems, filePath);
+            _macroFileSerializer.SerializeToFile(cloneItems, filePath);
         }
 
         public void Load(string filePath)
         {
-            var deserializedItems = MacroFileSerializer.DeserializeFromFile<ObservableCollection<ICommandListItem>>(filePath);
+            var deserializedItems = _macroFileSerializer.DeserializeFromFile<ObservableCollection<ICommandListItem>>(filePath);
             if (deserializedItems != null)
             {
                 Items.Clear();
 
                 foreach (var item in deserializedItems)
                 {
-                    // CommandRegistry を使用して自動的に適切な型を作成
-                    var itemType = CommandRegistry.GetItemType(item.ItemType);
+                    // 定義プロバイダーを使用して適切な型を作成
+                    var itemType = _commandDefinitionProvider.GetItemType(item.ItemType);
                     if (itemType != null)
                     {
                         try

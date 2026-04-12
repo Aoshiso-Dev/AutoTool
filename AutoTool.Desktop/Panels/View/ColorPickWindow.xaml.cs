@@ -34,7 +34,7 @@ public partial class ColorPickWindow : Window
 
     private void OnMouseMove(object? sender, Win32MouseHookHelper.MouseEventArgs e)
     {
-        var cursorPos = Win32MouseInputHelper.GetCursorPosition();
+        var cursorPos = Win32MouseInterop.GetCursorPosition();
         Left = cursorPos.X + 10;
         Top = cursorPos.Y + 10;
 

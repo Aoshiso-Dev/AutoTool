@@ -1,41 +1,56 @@
-﻿using AutoTool.Commands.Interface;
-using AutoTool.Commands.Commands;
-using AutoTool.Commands.Services;
-using AutoTool.Panels.List.Class;
 using System.Diagnostics;
-using AutoTool.Panels.Model.List.Interface;
+using AutoTool.Commands.Commands;
+using AutoTool.Commands.DependencyInjection;
+using AutoTool.Commands.Interface;
+using AutoTool.Commands.Services;
 using AutoTool.Panels.Model.CommandDefinition;
+using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.Model.MacroFactory;
 
-/// <summary>
-/// マクロファクトリの実装
-/// </summary>
 public class MacroFactory : IMacroFactory
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly IImageSearchService _imageSearchService;
-    private readonly IAIDetectionService _aiDetectionService;
-    private readonly IVariableStore _variableStore;
+    private readonly ICommandRegistry _commandRegistry;
+    private readonly ICommandFactory _commandFactory;
+    private readonly ICommandEventBus _commandEventBus;
+    private readonly IReadOnlyList<ICompositeCommandBuilder> _compositeBuilders;
 
     public MacroFactory(
         IServiceProvider serviceProvider,
-        IImageSearchService imageSearchService,
-        IAIDetectionService aiDetectionService,
-        IVariableStore variableStore)
+        ICommandRegistry commandRegistry,
+        ICommandFactory commandFactory,
+        ICommandEventBus commandEventBus,
+        IEnumerable<ICompositeCommandBuilder> compositeBuilders)
     {
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _imageSearchService = imageSearchService ?? throw new ArgumentNullException(nameof(imageSearchService));
-        _aiDetectionService = aiDetectionService ?? throw new ArgumentNullException(nameof(aiDetectionService));
-        _variableStore = variableStore ?? throw new ArgumentNullException(nameof(variableStore));
+        _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
+        _commandFactory = commandFactory ?? throw new ArgumentNullException(nameof(commandFactory));
+        _commandEventBus = commandEventBus ?? throw new ArgumentNullException(nameof(commandEventBus));
+        _compositeBuilders = (compositeBuilders ?? throw new ArgumentNullException(nameof(compositeBuilders))).ToList();
     }
 
     public ICommand CreateMacro(IEnumerable<ICommandListItem> items)
     {
         var cloneItems = items.Select(x => x.Clone()).ToList();
-        var root = new LoopCommand(new RootCommand(), new LoopCommandSettings() { LoopCount = 1 });
+        var rootCommand = _commandFactory.Create<RootCommand>(null, new CommandSettings());
+        var root = _commandFactory.Create<LoopCommand>(rootCommand, new LoopCommandSettings { LoopCount = 1 });
         root.Children = ListItemToCommand(root, cloneItems);
+        AttachEventBusRecursive(root);
         return root;
+    }
+
+    private void AttachEventBusRecursive(ICommand command)
+    {
+        if (command is BaseCommand baseCommand)
+        {
+            baseCommand.SetEventBus(_commandEventBus);
+        }
+
+        foreach (var child in command.Children)
+        {
+            AttachEventBusRecursive(child);
+        }
     }
 
     private IEnumerable<ICommand> ListItemToCommand(ICommand parent, IEnumerable<ICommandListItem> items)
@@ -45,7 +60,7 @@ public class MacroFactory : IMacroFactory
         {
             if (!item.IsEnable) continue;
             Debug.WriteLine($"Create: {item.LineNumber}, {item.ItemType}");
-            
+
             try
             {
                 var command = CreateCommand(parent, item, items);
@@ -57,185 +72,33 @@ public class MacroFactory : IMacroFactory
                 throw new InvalidOperationException($"コマンド '{item.ItemType}' (行 {item.LineNumber}) の生成に失敗しました", ex);
             }
         }
+
         return commands;
     }
 
     private ICommand? CreateCommand(ICommand parent, ICommandListItem item, IEnumerable<ICommandListItem> items)
     {
         if (item.IsInLoop || item.IsInIf) return null;
-        
-        Debug.WriteLine($"Creating command for ItemType: {item.ItemType}, Type: {item.GetType().Name}");
-        
-        // CommandRegistryの初期化を確実に実行
-        CommandRegistry.Initialize();
-        
-        // 属性ベースの単純コマンドを優先
-        if (CommandRegistry.TryCreateSimple(parent, item, _serviceProvider, out var simple)) 
+
+        _commandRegistry.Initialize();
+
+        var simpleResult = _commandRegistry.CreateSimple(parent, item, _serviceProvider);
+        if (simpleResult.Success && simpleResult.Command != null)
         {
-            Debug.WriteLine($"Successfully created simple command: {simple?.GetType().Name}");
-            return simple;
+            return simpleResult.Command;
         }
 
-        Debug.WriteLine($"Could not create simple command for {item.ItemType}, checking complex commands...");
-        
-        // 複合コマンド（条件分岐・ループ）の処理
-        return item switch
+        Debug.WriteLine($"Simple command creation skipped ({simpleResult.FailureReason}): {simpleResult.Message}");
+
+        var builder = _compositeBuilders.FirstOrDefault(x => x.CanBuild(item));
+        if (builder == null)
         {
-            IIfItem ifItem => CreateIfCommand(parent, ifItem, items),
-            ILoopItem loopItem => CreateLoopCommand(parent, loopItem, items),
-            _ => throw new NotSupportedException($"未対応のアイテム型です: {item.GetType().Name} (ItemType: {item.ItemType})")
-        };
-    }
-
-    private ICommand CreateIfCommand(ICommand parent, IIfItem ifItem, IEnumerable<ICommandListItem> items)
-    {
-        if (ifItem.Pair == null)
-            throw new InvalidOperationException($"If文 (行 {ifItem.LineNumber}) に対応するEndIfがありません");
-
-        var endIfItem = ifItem.Pair;
-        var childrenListItems = items
-            .Where(x => x.LineNumber > ifItem.LineNumber && x.LineNumber < endIfItem.LineNumber)
-            .ToList();
-
-        if (childrenListItems.Count == 0)
-            throw new InvalidOperationException($"If文 (行 {ifItem.LineNumber}) 内にコマンドがありません");
-
-        var ifCommand = CreateIfCommandInstance(parent, ifItem);
-        ifCommand.Children = ListItemToCommand(ifCommand, childrenListItems);
-        
-        // 子要素のフラグを設定
-        foreach (var child in childrenListItems.Where(x => x.NestLevel == ifItem.NestLevel + 1))
-        {
-            child.IsInIf = true;
+            throw new UnsupportedCommandTypeException(
+                $"未対応のアイテム型です: {item.GetType().Name} (ItemType: {item.ItemType})",
+                item.LineNumber,
+                item.ItemType);
         }
-        
-        return ifCommand;
-    }
 
-    private IIfCommand CreateIfCommandInstance(ICommand parent, IIfItem ifItem)
-    {
-        return ifItem switch
-        {
-            IfImageExistItem exist => new IfImageExistCommand(
-                parent, 
-                new IfImageCommandSettings 
-                { 
-                    ImagePath = exist.ImagePath,
-                    Threshold = exist.Threshold,
-                    SearchColor = exist.SearchColor,
-                    WindowTitle = exist.WindowTitle,
-                    WindowClassName = exist.WindowClassName
-                }, 
-                _imageSearchService) 
-            { 
-                LineNumber = exist.LineNumber, 
-                IsEnabled = exist.IsEnable 
-            },
-                
-            IfImageNotExistItem notExist => new IfImageNotExistCommand(
-                parent, 
-                new IfImageCommandSettings 
-                { 
-                    ImagePath = notExist.ImagePath,
-                    Threshold = notExist.Threshold,
-                    SearchColor = notExist.SearchColor,
-                    WindowTitle = notExist.WindowTitle,
-                    WindowClassName = notExist.WindowClassName
-                }, 
-                _imageSearchService) 
-            { 
-                LineNumber = notExist.LineNumber, 
-                IsEnabled = notExist.IsEnable 
-            },
-                
-            IfImageExistAIItem existAI => new IfImageExistAICommand(
-                parent, 
-                new AIImageDetectCommandSettings 
-                { 
-                    ModelPath = existAI.ModelPath,
-                    ClassID = existAI.ClassID,
-                    ConfThreshold = existAI.ConfThreshold,
-                    IoUThreshold = existAI.IoUThreshold,
-                    WindowTitle = existAI.WindowTitle,
-                    WindowClassName = existAI.WindowClassName
-                }, 
-                _aiDetectionService) 
-            { 
-                LineNumber = existAI.LineNumber, 
-                IsEnabled = existAI.IsEnable 
-            },
-                
-            IfImageNotExistAIItem notExistAI => new IfImageNotExistAICommand(
-                parent, 
-                new AIImageNotDetectCommandSettings 
-                { 
-                    ModelPath = notExistAI.ModelPath,
-                    ClassID = notExistAI.ClassID,
-                    ConfThreshold = notExistAI.ConfThreshold,
-                    IoUThreshold = notExistAI.IoUThreshold,
-                    WindowTitle = notExistAI.WindowTitle,
-                    WindowClassName = notExistAI.WindowClassName
-                }, 
-                _aiDetectionService) 
-            { 
-                LineNumber = notExistAI.LineNumber, 
-                IsEnabled = notExistAI.IsEnable 
-            },
-                
-            IfVariableItem ifVar => new IfVariableCommand(
-                parent, 
-                new IfVariableCommandSettings 
-                { 
-                    Name = ifVar.Name,
-                    Operator = ifVar.Operator,
-                    Value = ifVar.Value
-                }, 
-                _variableStore) 
-            { 
-                LineNumber = ifVar.LineNumber, 
-                IsEnabled = ifVar.IsEnable 
-            },
-                
-            _ => throw new NotSupportedException($"未対応のIf文型です: {ifItem.GetType().Name}")
-        };
-    }
-
-    private LoopCommand CreateLoopCommand(ICommand parent, ILoopItem loopItem, IEnumerable<ICommandListItem> items)
-    {
-        if (loopItem.Pair == null)
-            throw new InvalidOperationException($"ループ (行 {loopItem.LineNumber}) に対応するEndLoopがありません");
-
-        var endLoopItem = loopItem.Pair;
-        var childrenListItems = items
-            .Where(x => x.LineNumber > loopItem.LineNumber && x.LineNumber < endLoopItem.LineNumber)
-            .ToList();
-
-        if (childrenListItems.Count == 0)
-            throw new InvalidOperationException($"ループ (行 {loopItem.LineNumber}) 内にコマンドがありません");
-
-        var endLoopCommand = parent.Children.FirstOrDefault(x => x.LineNumber == endLoopItem.LineNumber) as LoopEndCommand;
-        
-        var loopCommand = new LoopCommand(parent, new LoopCommandSettings() 
-        { 
-            LoopCount = loopItem.LoopCount, 
-            Pair = endLoopCommand 
-        })
-        {
-            LineNumber = loopItem.LineNumber,
-            IsEnabled = loopItem.IsEnable,
-        };
-
-        loopCommand.Children = ListItemToCommand(loopCommand, childrenListItems);
-        
-        // 子要素のフラグを設定
-        foreach (var child in childrenListItems.Where(x => x.NestLevel == loopItem.NestLevel + 1))
-        {
-            child.IsInLoop = true;
-        }
-        
-        Debug.WriteLine($"Successfully created LoopCommand with {childrenListItems.Count} children");
-        
-        return loopCommand;
+        return builder.Build(parent, item, items, (p, children) => ListItemToCommand(p, children));
     }
 }
-

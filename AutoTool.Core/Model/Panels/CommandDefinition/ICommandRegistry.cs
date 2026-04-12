@@ -3,6 +3,29 @@ using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.Model.CommandDefinition;
 
+public enum CommandCreationFailureReason
+{
+    None = 0,
+    MissingItemType,
+    UnknownItemType,
+    CommandFactoryUnavailable,
+    MissingCommandBinding,
+    FactoryException
+}
+
+public sealed record CommandCreationResult(
+    bool Success,
+    ICommand? Command,
+    CommandCreationFailureReason FailureReason,
+    string Message)
+{
+    public static CommandCreationResult Ok(ICommand command) =>
+        new(true, command, CommandCreationFailureReason.None, string.Empty);
+
+    public static CommandCreationResult Fail(CommandCreationFailureReason reason, string message) =>
+        new(false, null, reason, message);
+}
+
 /// <summary>
 /// �R�}���h���W�X�g���̃C���^�[�t�F�[�X
 /// </summary>
@@ -32,6 +55,7 @@ public interface ICommandRegistry
     /// �P���R�}���h��쐬
     /// </summary>
     bool TryCreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider, out ICommand? command);
+    CommandCreationResult CreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider);
 
     /// <summary>
     /// If�n�R�}���h���ǂ�������
@@ -65,33 +89,18 @@ public interface ICommandRegistry
 }
 
 /// <summary>
-/// �ÓICommandRegistry����b�v����A�_�v�^
+/// コマンド定義の参照専用プロバイダー
 /// </summary>
-public class CommandRegistryAdapter : ICommandRegistry
+public interface ICommandDefinitionProvider
 {
-    public void Initialize() => CommandRegistry.Initialize();
-
-    public IEnumerable<string> GetAllTypeNames() => CommandRegistry.GetAllTypeNames();
-
-    public IEnumerable<string> GetOrderedTypeNames() => CommandRegistry.GetOrderedTypeNames();
-
-    public ICommandListItem? CreateCommandItem(string typeName) => CommandRegistry.CreateCommandItem(typeName);
-
-    public bool TryCreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider, out ICommand? command) 
-        => CommandRegistry.TryCreateSimple(parent, item, serviceProvider, out command);
-
-    public bool IsIfCommand(string typeName) => CommandRegistry.IsIfCommand(typeName);
-
-    public bool IsLoopCommand(string typeName) => CommandRegistry.IsLoopCommand(typeName);
-
-    public bool IsEndCommand(string typeName) => CommandRegistry.IsEndCommand(typeName);
-
-    public bool IsStartCommand(string typeName) => CommandRegistry.IsStartCommand(typeName);
-
-    public string GetDisplayName(string typeName, string language = "ja") 
-        => CommandRegistry.DisplayOrder.GetDisplayName(typeName, language);
-
-    public string GetCategoryName(string typeName, string language = "ja") 
-        => CommandRegistry.DisplayOrder.GetCategoryName(typeName, language);
+    string GetDisplayName(string typeName, string language = "ja");
+    string GetCategoryName(string typeName, string language = "ja");
+    int GetDisplayPriority(string typeName);
+    Type? GetItemType(string typeName);
+    bool IsIfCommand(string typeName);
+    bool IsLoopCommand(string typeName);
+    bool IsEndCommand(string typeName);
+    bool IsStartCommand(string typeName);
 }
+
 

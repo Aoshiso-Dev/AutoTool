@@ -43,7 +43,7 @@ namespace AutoTool.Panels.View
             {
                 if (e.LeftButton == MouseButtonState.Pressed)
                 {
-                    _screenStartPoint = Win32MouseInputHelper.GetCursorPosition();
+                    _screenStartPoint = Win32MouseInterop.GetCursorPosition();
                     _canvasStartPoint = PointToScreen(e.GetPosition(this));
 
                     _canvasSelectionRectangle.Visibility = Visibility.Visible;
@@ -56,7 +56,7 @@ namespace AutoTool.Panels.View
             {
                 if (e.LeftButton == MouseButtonState.Pressed)
                 {
-                    SelectedPoint = Win32MouseInputHelper.GetCursorPosition();
+                    SelectedPoint = Win32MouseInterop.GetCursorPosition();
                     this.DialogResult = true;
                     this.Close();
                 }
@@ -70,7 +70,7 @@ namespace AutoTool.Panels.View
                 if (_canvasSelectionRectangle.Visibility == Visibility.Visible)
                 {
                     // 現在のマウスカーソル位置を取得
-                    _screenCurrentPoint = Win32MouseInputHelper.GetCursorPosition();
+                    _screenCurrentPoint = Win32MouseInterop.GetCursorPosition();
 
                     // キャンバス更新：現在のキャンバス座標を取得
                     _canvasCurrentPoint = PointToScreen(e.GetPosition(this));

@@ -21,7 +21,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     private bool _isRunning;
 
     [ObservableProperty]
-    private CommandList _commandList = new();
+    private CommandList _commandList;
 
     private int _selectedLineNumber;
     public int SelectedLineNumber
@@ -65,9 +65,10 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     }
     #endregion
 
-    public ListPanelViewModel(ICommandRegistry commandRegistry)
+    public ListPanelViewModel(ICommandRegistry commandRegistry, CommandList commandList)
     {
         _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
+        _commandList = commandList ?? throw new ArgumentNullException(nameof(commandList));
     }
 
     /// <summary>
@@ -140,7 +141,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
                 // 追加後にCollectionViewを更新
                 CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
                 
-                System.Diagnostics.Debug.WriteLine($"Added command: {item.ItemType} -> {CommandRegistry.DisplayOrder.GetDisplayName(item.ItemType)}");
+                System.Diagnostics.Debug.WriteLine($"Added command: {item.ItemType} -> {_commandRegistry.GetDisplayName(item.ItemType)}");
             }
         }
 
@@ -275,8 +276,8 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         SelectedLineNumber = 0;
         SelectedItem = CommandList.Items.FirstOrDefault();
 
-            // 読み込み後にCommandRegistryを初期化して日本語表示名が正しく表示されるようにする
-            CommandRegistry.Initialize();
+            // 読み込み後にレジストリを初期化して表示名が正しく表示されるようにする
+            _commandRegistry.Initialize();
             
             // CollectionViewを更新して日本語表示名を適用
             CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();

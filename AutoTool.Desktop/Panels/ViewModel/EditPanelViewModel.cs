@@ -1,4 +1,4 @@
-ï»¿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using System.Windows.Media;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,6 +14,7 @@ using AutoTool.Commands.Services;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Panels.Services;
 using AutoTool.Panels.Attributes;
+using AutoTool.Core.Ports;
 
 namespace AutoTool.Panels.ViewModel;
 
@@ -22,11 +23,13 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     private readonly EditPanelPropertyManager _propertyManager = new();
     private readonly ICommandRegistry _commandRegistry;
     private readonly IWindowService _windowService;
-    private readonly IPathService _pathService;
-    private readonly INotificationService _notificationService;
+    private readonly IPathResolver _pathResolver;
+    private readonly INotifier _notifier;
+    private readonly IPanelDialogService _panelDialogService;
+    private readonly ICapturePathProvider _capturePathProvider;
     private readonly PropertyMetadataProvider _metadataProvider = new();
 
-    // ã‚¤ãƒ™ãƒ³ãƒˆ
+    // ƒCƒxƒ“ƒg
     public event Action<ICommandListItem?>? ItemEdited;
     public event Action? RefreshRequested;
 
@@ -36,7 +39,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromMilliseconds(120) };
 
     /// <summary>
-    /// ãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿é§†å‹•UIã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚°ãƒ«ãƒ¼ãƒ—
+    /// ƒƒ^ƒf[ƒ^‹ì“®UI‚ÌƒvƒƒpƒeƒBƒOƒ‹[ƒv
     /// </summary>
     [ObservableProperty]
     private ObservableCollection<PropertyGroup> _propertyGroups = new();
@@ -77,20 +80,20 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
 
 
     /// <summary>
-    /// ãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿ã‹ã‚‰ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚°ãƒ«ãƒ¼ãƒ—ã‚’æ›´æ–°
+    /// ƒƒ^ƒf[ƒ^‚©‚çƒvƒƒpƒeƒBƒOƒ‹[ƒv‚ğXV
     /// </summary>
     private void UpdatePropertyGroups()
     {
         PropertyGroups.Clear();
         if (Item == null) return;
         
-        // ã¾ãšå…¨ã‚°ãƒ«ãƒ¼ãƒ—ã‚’è¿½åŠ 
+        // ‚Ü‚¸‘SƒOƒ‹[ƒv‚ğ’Ç‰Á
         foreach (var group in _metadataProvider.GetGroupedMetadata(Item))
         {
             PropertyGroups.Add(group);
         }
         
-        // æ¬¡ã«å„ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«ã‚³ãƒãƒ³ãƒ‰ã‚’è¨­å®šï¼ˆå…¨ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ãŒæƒã£ãŸå¾Œï¼‰
+        // Ÿ‚ÉŠeƒvƒƒpƒeƒB‚ÉƒRƒ}ƒ“ƒh‚ğİ’èi‘SƒvƒƒpƒeƒB‚ª‘µ‚Á‚½Œãj
         foreach (var group in PropertyGroups)
         {
             foreach (var prop in group.Properties)
@@ -104,7 +107,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     
     
     /// <summary>
-    /// ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã®ã‚¨ãƒ‡ã‚£ã‚¿ã‚¿ã‚¤ãƒ—ã«å¿œã˜ã¦ã‚³ãƒãƒ³ãƒ‰ã‚’è¨­å®š
+    /// ƒvƒƒpƒeƒB‚ÌƒGƒfƒBƒ^ƒ^ƒCƒv‚É‰‚¶‚ÄƒRƒ}ƒ“ƒh‚ğİ’è
     /// </summary>
     private void SetupPropertyCommands(PropertyMetadata prop)
     {
@@ -142,7 +145,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
                 
             case EditorType.PointPicker:
                 prop.PickPointCommand = new RelayCommand(() => PickPointForProperty(prop));
-                // é–¢é€£ã™ã‚‹Yåº§æ¨™ã‚’è¨­å®š
+                // ŠÖ˜A‚·‚éYÀ•W‚ğİ’è
                 var yProp = PropertyGroups
                     .SelectMany(g => g.Properties)
                     .FirstOrDefault(p => p.PropertyInfo.Name == "Y" && p.Target == prop.Target);
@@ -158,10 +161,10 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     
     private void BrowseImageForProperty(PropertyMetadata prop)
     {
-        var path = DialogHelper.SelectImageFile();
+        var path = _panelDialogService.SelectImageFile();
         if (!string.IsNullOrEmpty(path))
         {
-            prop.Value = _pathService.ToRelativePath(path);
+            prop.Value = _pathResolver.ToRelativePath(path);
             OnPropertyChanged(nameof(ImagePath));
             OnPropertyChanged(nameof(PreviewImagePath));
             OnPropertyChanged(nameof(HasImagePreview));
@@ -174,10 +177,10 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         var cw = new CaptureWindow { Mode = 0 };
         if (cw.ShowDialog() == true)
         {
-            var path = DialogHelper.CreateCaptureFilePath();
+            var path = _capturePathProvider.CreateCaptureFilePath();
             var mat = Win32ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion);
             Win32ScreenCaptureHelper.SaveCapture(mat, path);
-            prop.Value = _pathService.ToRelativePath(path);
+            prop.Value = _pathResolver.ToRelativePath(path);
             OnPropertyChanged(nameof(ImagePath));
             OnPropertyChanged(nameof(PreviewImagePath));
             OnPropertyChanged(nameof(HasImagePreview));
@@ -201,10 +204,10 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         var w = new GetWindowInfoWindow();
         if (w.ShowDialog() == true)
         {
-            // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¿ã‚¤ãƒˆãƒ«ã‚’è¨­å®š
+            // ƒEƒBƒ“ƒhƒEƒ^ƒCƒgƒ‹‚ğİ’è
             prop.Value = w.WindowTitle;
             
-            // åŒã˜ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã®WindowClassNameãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚‚æ¢ã—ã¦è¨­å®š
+            // “¯‚¶ƒ^[ƒQƒbƒg‚ÌWindowClassNameƒvƒƒpƒeƒB‚à’T‚µ‚Äİ’è
             var classNameProp = PropertyGroups
                 .SelectMany(g => g.Properties)
                 .FirstOrDefault(p => p.PropertyInfo.Name == "WindowClassName" && p.Target == prop.Target);
@@ -220,20 +223,20 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     
     private void BrowseFileForProperty(PropertyMetadata prop)
     {
-        var path = DialogHelper.SelectModelFile();
+        var path = _panelDialogService.SelectModelFile();
         if (!string.IsNullOrEmpty(path))
         {
-            prop.Value = _pathService.ToRelativePath(path);
+            prop.Value = _pathResolver.ToRelativePath(path);
             UpdateProperties();
         }
     }
     
     private void BrowseDirectoryForProperty(PropertyMetadata prop)
     {
-        var path = DialogHelper.SelectFolder();
+        var path = _panelDialogService.SelectFolder();
         if (!string.IsNullOrEmpty(path))
         {
-            prop.Value = _pathService.ToRelativePath(path);
+            prop.Value = _pathResolver.ToRelativePath(path);
             UpdateProperties();
         }
     }
@@ -256,7 +259,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         var absoluteX = (int)cw.SelectedPoint.X;
         var absoluteY = (int)cw.SelectedPoint.Y;
         
-        // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¿ã‚¤ãƒˆãƒ«ã‚’å–å¾—ï¼ˆåŒã˜ã‚¿ãƒ¼ã‚²ãƒƒãƒˆå†…ã‹ã‚‰ï¼‰
+        // ƒEƒBƒ“ƒhƒEƒ^ƒCƒgƒ‹‚ğæ“¾i“¯‚¶ƒ^[ƒQƒbƒg“à‚©‚çj
         var windowTitleProp = PropertyGroups
             .SelectMany(g => g.Properties)
             .FirstOrDefault(p => p.PropertyInfo.Name == "WindowTitle" && p.Target == prop.Target);
@@ -271,11 +274,11 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
             absoluteX, absoluteY, windowTitle, windowClassName);
         
         
-        // Xãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã®å ´åˆ
+        // XƒvƒƒpƒeƒB‚Ìê‡
         if (prop.PropertyInfo.Name == "X")
         {
             prop.Value = relativeX;
-            // Yãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚‚æ¢ã—ã¦è¨­å®š
+            // YƒvƒƒpƒeƒB‚à’T‚µ‚Äİ’è
             var yProp = PropertyGroups
                 .SelectMany(g => g.Properties)
                 .FirstOrDefault(p => p.PropertyInfo.Name == "Y" && p.Target == prop.Target);
@@ -285,11 +288,11 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
             }
             prop.NotifyRelatedValueChanged();
         }
-        // Yãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã®å ´åˆ
+        // YƒvƒƒpƒeƒB‚Ìê‡
         else if (prop.PropertyInfo.Name == "Y")
         {
             prop.Value = relativeY;
-            // Xãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚‚æ¢ã—ã¦è¨­å®š
+            // XƒvƒƒpƒeƒB‚à’T‚µ‚Äİ’è
             var xProp = PropertyGroups
                 .SelectMany(g => g.Properties)
                 .FirstOrDefault(p => p.PropertyInfo.Name == "X" && p.Target == prop.Target);
@@ -306,13 +309,13 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         {
             if (success)
             {
-                _notificationService.ShowInfo(
+                _notifier.ShowInfo(
                     $"Relative coordinates set: ({relativeX}, {relativeY})\nWindow: {windowTitle}[{windowClassName}]",
                     "Coordinates Set");
             }
             else
             {
-                _notificationService.ShowWarning(
+                _notifier.ShowWarning(
                     $"{errorMessage}\nAbsolute coordinates ({relativeX}, {relativeY}) set.",
                     "Warning");
             }
@@ -370,15 +373,15 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
                 .FirstOrDefault(p => p.PropertyInfo.Name == "ImagePath");
             var path = imageProp?.Value?.ToString();
             if (string.IsNullOrEmpty(path)) return null;
-            return _pathService.ToAbsolutePath(path);
+            return _pathResolver.ToAbsolutePath(path);
         }
     }
     #endregion
 
     #region Properties (via PropertyManager)
-    public string WindowTitleText => string.IsNullOrEmpty(WindowTitle) ? "æŒ‡å®šãªã—" : WindowTitle;
+    public string WindowTitleText => string.IsNullOrEmpty(WindowTitle) ? "w’è‚È‚µ" : WindowTitle;
     public string WindowTitle { get => _propertyManager.WindowTitle.GetValue(Item); set { _propertyManager.WindowTitle.SetValue(Item, value); UpdateProperties(); } }
-    public string WindowClassNameText => string.IsNullOrEmpty(WindowClassName) ? "æŒ‡å®šãªã—" : WindowClassName;
+    public string WindowClassNameText => string.IsNullOrEmpty(WindowClassName) ? "w’è‚È‚µ" : WindowClassName;
     public string WindowClassName { get => _propertyManager.WindowClassName.GetValue(Item); set { _propertyManager.WindowClassName.SetValue(Item, value); UpdateProperties(); } }
     
     public string ImagePath 
@@ -386,11 +389,11 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         get 
         {
             var relativePath = _propertyManager.ImagePath.GetValue(Item);
-            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathService.ToAbsolutePath(relativePath);
+            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathResolver.ToAbsolutePath(relativePath);
         } 
         set 
         { 
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathService.ToRelativePath(value);
+            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
             _propertyManager.ImagePath.SetValue(Item, relativePath); 
             UpdateProperties(); 
         } 
@@ -415,11 +418,11 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         get 
         {
             var relativePath = _propertyManager.ModelPath.GetValue(Item);
-            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathService.ToAbsolutePath(relativePath);
+            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathResolver.ToAbsolutePath(relativePath);
         } 
         set 
         { 
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathService.ToRelativePath(value);
+            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
             _propertyManager.ModelPath.SetValue(Item, relativePath); 
             UpdateProperties(); 
         } 
@@ -433,11 +436,11 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         get 
         {
             var relativePath = _propertyManager.ProgramPath.GetValue(Item);
-            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathService.ToAbsolutePath(relativePath);
+            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathResolver.ToAbsolutePath(relativePath);
         } 
         set 
         { 
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathService.ToRelativePath(value);
+            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
             _propertyManager.ProgramPath.SetValue(Item, relativePath); 
             UpdateProperties(); 
         } 
@@ -450,11 +453,11 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         get 
         {
             var relativePath = _propertyManager.WorkingDirectory.GetValue(Item);
-            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathService.ToAbsolutePath(relativePath);
+            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathResolver.ToAbsolutePath(relativePath);
         } 
         set 
         { 
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathService.ToRelativePath(value);
+            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
             _propertyManager.WorkingDirectory.SetValue(Item, relativePath); 
             UpdateProperties(); 
         } 
@@ -471,11 +474,11 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         get 
         {
             var relativePath = _propertyManager.SaveDirectory.GetValue(Item);
-            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathService.ToAbsolutePath(relativePath);
+            return string.IsNullOrEmpty(relativePath) ? relativePath : _pathResolver.ToAbsolutePath(relativePath);
         } 
         set 
         { 
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathService.ToRelativePath(value);
+            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
             _propertyManager.SaveDirectory.SetValue(Item, relativePath); 
             UpdateProperties(); 
         } 
@@ -500,7 +503,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
 
     #region ColorPicker
     public Brush SearchColorBrush => new SolidColorBrush(SearchColor ?? Color.FromArgb(0, 0, 0, 0));
-    public string SearchColorText => SearchColor != null ? $"R:{SearchColor.Value.R:D3} G:{SearchColor.Value.G:D3} B:{SearchColor.Value.B:D3}" : "æŒ‡å®šãªã—";
+    public string SearchColorText => SearchColor != null ? $"R:{SearchColor.Value.R:D3} G:{SearchColor.Value.G:D3} B:{SearchColor.Value.B:D3}" : "w’è‚È‚µ";
     public Brush SearchColorTextColor => SearchColor != null ? new SolidColorBrush(Color.FromArgb(255, (byte)(255 - SearchColor.Value.R), (byte)(255 - SearchColor.Value.G), (byte)(255 - SearchColor.Value.B))) : new SolidColorBrush(Colors.Black);
     #endregion
 
@@ -551,18 +554,22 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     public EditPanelViewModel(
         ICommandRegistry commandRegistry,
         IWindowService windowService,
-        IPathService pathService,
-        INotificationService notificationService)
+        IPathResolver pathResolver,
+        INotifier notifier,
+        IPanelDialogService panelDialogService,
+        ICapturePathProvider capturePathProvider)
     {
         _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
         _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
-        _pathService = pathService ?? throw new ArgumentNullException(nameof(pathService));
-        _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
+        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+        _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
+        _panelDialogService = panelDialogService ?? throw new ArgumentNullException(nameof(panelDialogService));
+        _capturePathProvider = capturePathProvider ?? throw new ArgumentNullException(nameof(capturePathProvider));
 
         _commandRegistry.Initialize();
         
-        // RefreshTimerã¯ä½¿ç”¨ã—ãªã„ï¼ˆToggleSwitchãƒªã‚»ãƒƒãƒˆå•é¡Œã‚’å›é¿ï¼‰
-        // ã‚¢ã‚¤ãƒ†ãƒ ã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å¤‰æ›´ã¯INotifyPropertyChangedã§è‡ªå‹•é€šçŸ¥ã•ã‚Œã‚‹
+        // RefreshTimer‚Íg—p‚µ‚È‚¢iToggleSwitchƒŠƒZƒbƒg–â‘è‚ğ‰ñ”ğj
+        // ƒAƒCƒeƒ€‚ÌƒvƒƒpƒeƒB•ÏX‚ÍINotifyPropertyChanged‚Å©“®’Ê’m‚³‚ê‚é
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
         _refreshTimer.Tick += (_, _) => { _refreshTimer.Stop(); RefreshRequested?.Invoke(); };
         
@@ -644,7 +651,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         }
         catch (Exception ex)
         {
-            _notificationService.ShowError($"ã‚³ãƒãƒ³ãƒ‰ã‚¢ã‚¤ãƒ†ãƒ ã®ä½œæˆã«å¤±æ•—ã—ã¾ã—ãŸ: {ex.Message}", "ã‚¨ãƒ©ãƒ¼");
+            _notifier.ShowError($"ƒRƒ}ƒ“ƒhƒAƒCƒeƒ€‚Ìì¬‚É¸”s‚µ‚Ü‚µ‚½: {ex.Message}", "ƒGƒ‰[");
         }
     }
     #endregion
@@ -692,8 +699,8 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
             foreach (var name in AllPropertyNames)
                 OnPropertyChanged(name);
             
-            // _refreshTimerã‚’ä½¿ã‚ãªã„ï¼ˆToggleSwitchãƒªã‚»ãƒƒãƒˆå•é¡Œã‚’å›é¿ï¼‰
-            // ã‚¢ã‚¤ãƒ†ãƒ ã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã¯INotifyPropertyChangedã§è‡ªå‹•çš„ã«é€šçŸ¥ã•ã‚Œã‚‹
+            // _refreshTimer‚ğg‚í‚È‚¢iToggleSwitchƒŠƒZƒbƒg–â‘è‚ğ‰ñ”ğj
+            // ƒAƒCƒeƒ€‚ÌƒvƒƒpƒeƒB‚ÍINotifyPropertyChanged‚Å©“®“I‚É’Ê’m‚³‚ê‚é
         }
         finally
         {
@@ -710,7 +717,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     [RelayCommand] 
     public void Browse() 
     { 
-        var f = DialogHelper.SelectImageFile(); 
+        var f = _panelDialogService.SelectImageFile(); 
         if (f != null) ImagePath = f;
     }
     
@@ -720,7 +727,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         var cw = new CaptureWindow { Mode = 0 }; 
         if (cw.ShowDialog() == true) 
         { 
-            var path = DialogHelper.CreateCaptureFilePath(); 
+            var path = _capturePathProvider.CreateCaptureFilePath(); 
             var mat = Win32ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion); 
             Win32ScreenCaptureHelper.SaveCapture(mat, path); 
             ImagePath = path;
@@ -749,27 +756,27 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         {
             if (success)
             {
-                _notificationService.ShowInfo(
-                    $"ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ç›¸å¯¾åº§æ¨™ã‚’è¨­å®šã—ã¾ã—ãŸ: ({X}, {Y})\nã‚¦ã‚£ãƒ³ãƒ‰ã‚¦: {WindowTitle}[{WindowClassName}]\nçµ¶å¯¾åº§æ¨™: ({absoluteX}, {absoluteY})", 
-                    "åº§æ¨™è¨­å®šå®Œäº†");
+                _notifier.ShowInfo(
+                    $"ƒEƒBƒ“ƒhƒE‘Š‘ÎÀ•W‚ğİ’è‚µ‚Ü‚µ‚½: ({X}, {Y})\nƒEƒBƒ“ƒhƒE: {WindowTitle}[{WindowClassName}]\nâ‘ÎÀ•W: ({absoluteX}, {absoluteY})", 
+                    "À•Wİ’èŠ®—¹");
             }
             else
             {
-                _notificationService.ShowWarning(
-                    $"{errorMessage}\nçµ¶å¯¾åº§æ¨™ ({X}, {Y}) ã‚’è¨­å®šã—ã¾ã—ãŸã€‚", 
-                    "è­¦å‘Š");
+                _notifier.ShowWarning(
+                    $"{errorMessage}\nâ‘ÎÀ•W ({X}, {Y}) ‚ğİ’è‚µ‚Ü‚µ‚½B", 
+                    "Œx");
             }
         }
         else
         {
-            _notificationService.ShowInfo($"çµ¶å¯¾åº§æ¨™ã‚’è¨­å®šã—ã¾ã—ãŸ: ({X}, {Y})", "åº§æ¨™è¨­å®šå®Œäº†");
+            _notifier.ShowInfo($"â‘ÎÀ•W‚ğİ’è‚µ‚Ü‚µ‚½: ({X}, {Y})", "À•Wİ’èŠ®—¹");
         }
     }
     
-    [RelayCommand] public void BrowseModel() { var f = DialogHelper.SelectModelFile(); if (f != null) ModelPath = f; }
-    [RelayCommand] public void BrowseProgram() { var f = DialogHelper.SelectExecutableFile(); if (f != null) ProgramPath = f; }
-    [RelayCommand] public void BrowseWorkingDirectory() { var d = DialogHelper.SelectFolder(); if (d != null) WorkingDirectory = d; }
-    [RelayCommand] public void BrowseSaveDirectory() { var d = DialogHelper.SelectFolder(); if (d != null) SaveDirectory = d; }
+    [RelayCommand] public void BrowseModel() { var f = _panelDialogService.SelectModelFile(); if (f != null) ModelPath = f; }
+    [RelayCommand] public void BrowseProgram() { var f = _panelDialogService.SelectExecutableFile(); if (f != null) ProgramPath = f; }
+    [RelayCommand] public void BrowseWorkingDirectory() { var d = _panelDialogService.SelectFolder(); if (d != null) WorkingDirectory = d; }
+    [RelayCommand] public void BrowseSaveDirectory() { var d = _panelDialogService.SelectFolder(); if (d != null) SaveDirectory = d; }
     #endregion
 
     #region External API

@@ -1,7 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.ObjectModel;
 using System.IO;
-using AutoTool.Services.Interfaces;
+using AutoTool.Core.Ports;
 
 namespace AutoTool.Model;
 
@@ -25,7 +25,7 @@ public partial class FileManager : ObservableObject
     private readonly FileTypeInfo _fileTypeInfo;
     private readonly Action<string> _saveFunc;
     private readonly Action<string> _loadFunc;
-    private readonly IFileDialogService _fileDialogService;
+    private readonly IFilePicker _filePicker;
     private readonly IRecentFileStore _recentFileStore;
 
     [ObservableProperty]
@@ -44,13 +44,13 @@ public partial class FileManager : ObservableObject
         FileTypeInfo fileTypeInfo,
         Action<string> saveFunc,
         Action<string> loadFunc,
-        IFileDialogService fileDialogService,
+        IFilePicker filePicker,
         IRecentFileStore recentFileStore)
     {
         _fileTypeInfo = fileTypeInfo ?? throw new ArgumentNullException(nameof(fileTypeInfo));
         _saveFunc = saveFunc ?? throw new ArgumentNullException(nameof(saveFunc));
         _loadFunc = loadFunc ?? throw new ArgumentNullException(nameof(loadFunc));
-        _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
+        _filePicker = filePicker ?? throw new ArgumentNullException(nameof(filePicker));
         _recentFileStore = recentFileStore ?? throw new ArgumentNullException(nameof(recentFileStore));
 
         LoadRecentFiles();
@@ -65,7 +65,7 @@ public partial class FileManager : ObservableObject
     {
         if (string.IsNullOrEmpty(filePath))
         {
-            filePath = _fileDialogService.OpenFile(CreateDialogOptions()) ?? string.Empty;
+            filePath = _filePicker.OpenFile(CreateDialogOptions()) ?? string.Empty;
             if (string.IsNullOrEmpty(filePath))
             {
                 return;
@@ -90,7 +90,7 @@ public partial class FileManager : ObservableObject
 
     public void SaveFileAs()
     {
-        var filePath = _fileDialogService.SaveFile(CreateDialogOptions());
+        var filePath = _filePicker.SaveFile(CreateDialogOptions());
         if (string.IsNullOrEmpty(filePath))
         {
             return;
@@ -145,3 +145,4 @@ public partial class FileManager : ObservableObject
 
     private string GetRecentFilesKey() => $"RecentFiles_{_fileTypeInfo.DefaultExt}";
 }
+

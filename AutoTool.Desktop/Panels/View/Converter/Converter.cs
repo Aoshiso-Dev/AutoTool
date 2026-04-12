@@ -144,7 +144,9 @@ public class CommandTypeToDisplayNameConverter : IValueConverter
     {
         if (value is string commandType && !string.IsNullOrEmpty(commandType))
         {
-            return CommandRegistry.DisplayOrder.GetDisplayName(commandType);
+            return CommandMetadataCatalog.TryGetByTypeName(commandType, out var metadata)
+                ? metadata.DisplayNameJa
+                : commandType;
         }
         return value ?? string.Empty;
     }
@@ -175,7 +177,9 @@ public class CommandTypeToCategoryColorConverter : IValueConverter
     {
         if (value is string commandType && !string.IsNullOrEmpty(commandType))
         {
-            var priority = CommandRegistry.DisplayOrder.GetPriority(commandType);
+            var priority = CommandMetadataCatalog.TryGetByTypeName(commandType, out var metadata)
+                ? metadata.DisplayPriority
+                : 9;
             return priority switch
             {
                 1 => SkyBlue,      // クリック操作

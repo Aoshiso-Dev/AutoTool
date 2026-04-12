@@ -37,6 +37,31 @@ namespace AutoTool.Panels.Model.CommandDefinition
         /// ���[�v�n�R�}���h���ǂ���
         /// </summary>
         public bool IsLoopCommand { get; }
+        
+        /// <summary>
+        /// ネスト終了コマンドかどうか
+        /// </summary>
+        public bool IsEndCommand { get; }
+
+        /// <summary>
+        /// 表示優先度
+        /// </summary>
+        public int DisplayPriority { get; }
+
+        /// <summary>
+        /// 同一優先度内の表示順
+        /// </summary>
+        public int DisplaySubPriority { get; }
+
+        /// <summary>
+        /// 日本語表示名
+        /// </summary>
+        public string DisplayNameJa { get; }
+
+        /// <summary>
+        /// 英語表示名
+        /// </summary>
+        public string DisplayNameEn { get; }
 
         public CommandDefinitionAttribute(
             string typeName, 
@@ -44,7 +69,12 @@ namespace AutoTool.Panels.Model.CommandDefinition
             Type settingsType, 
             CommandCategory category = CommandCategory.Action,
             bool isIfCommand = false,
-            bool isLoopCommand = false)
+            bool isLoopCommand = false,
+            bool isEndCommand = false,
+            int displayPriority = 9,
+            int displaySubPriority = 0,
+            string? displayNameJa = null,
+            string? displayNameEn = null)
         {
             TypeName = typeName;
             CommandType = commandType;
@@ -52,6 +82,11 @@ namespace AutoTool.Panels.Model.CommandDefinition
             Category = category;
             IsIfCommand = isIfCommand;
             IsLoopCommand = isLoopCommand;
+            IsEndCommand = isEndCommand;
+            DisplayPriority = displayPriority;
+            DisplaySubPriority = displaySubPriority;
+            DisplayNameJa = string.IsNullOrWhiteSpace(displayNameJa) ? typeName : displayNameJa;
+            DisplayNameEn = string.IsNullOrWhiteSpace(displayNameEn) ? typeName : displayNameEn;
         }
     }
 

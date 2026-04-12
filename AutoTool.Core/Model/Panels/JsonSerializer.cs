@@ -2,7 +2,6 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.List.Interface;
 using AutoTool.Panels.Model.CommandDefinition;
 
@@ -11,27 +10,41 @@ namespace AutoTool.Panels.Serialization;
 /// <summary>
 /// マクロファイルのシリアライズ/デシリアライズを行うヘルパークラス
 /// </summary>
-public static class MacroFileSerializer
+public interface IMacroFileSerializer
 {
-    private static readonly JsonSerializerOptions DefaultOptions = new()
-    {
-        ReferenceHandler = ReferenceHandler.Preserve,
-        Converters = { new CommandListItemConverter() },
-        WriteIndented = true
-    };
+    void SerializeToFile<T>(T obj, string path);
+    T? DeserializeFromFile<T>(string path);
+}
 
-    public static void SerializeToFile<T>(T obj, string path)
+/// <summary>
+/// マクロファイルのシリアライズ/デシリアライズを行うサービス
+/// </summary>
+public sealed class MacroFileSerializer : IMacroFileSerializer
+{
+    private readonly JsonSerializerOptions _options;
+
+    public MacroFileSerializer(ICommandDefinitionProvider definitionProvider)
+    {
+        _options = new JsonSerializerOptions
+        {
+            ReferenceHandler = ReferenceHandler.Preserve,
+            WriteIndented = true
+        };
+        _options.Converters.Add(new CommandListItemConverter(definitionProvider));
+    }
+
+    public void SerializeToFile<T>(T obj, string path)
     {
         if (File.Exists(path))
         {
             File.Delete(path);
         }
 
-        var json = JsonSerializer.Serialize(obj, DefaultOptions);
+        var json = JsonSerializer.Serialize(obj, _options);
         File.WriteAllText(path, json);
     }
 
-    public static T? DeserializeFromFile<T>(string path)
+    public T? DeserializeFromFile<T>(string path)
     {
         if (!File.Exists(path))
         {
@@ -39,7 +52,7 @@ public static class MacroFileSerializer
         }
 
         var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<T>(json, DefaultOptions);
+        return JsonSerializer.Deserialize<T>(json, _options);
     }
 }
 
@@ -48,6 +61,13 @@ public static class MacroFileSerializer
 /// </summary>
 internal sealed class CommandListItemConverter : JsonConverter<ICommandListItem>
 {
+    private readonly ICommandDefinitionProvider _definitionProvider;
+
+    public CommandListItemConverter(ICommandDefinitionProvider definitionProvider)
+    {
+        _definitionProvider = definitionProvider ?? throw new ArgumentNullException(nameof(definitionProvider));
+    }
+
     public override ICommandListItem Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using var doc = JsonDocument.ParseValue(ref reader);
@@ -59,7 +79,7 @@ internal sealed class CommandListItemConverter : JsonConverter<ICommandListItem>
             throw new JsonException("ItemType is not found");
         }
 
-        var targetType = CommandRegistry.GetItemType(typeName);
+        var targetType = _definitionProvider.GetItemType(typeName);
         if (targetType != null)
         {
             return (ICommandListItem?)JsonSerializer.Deserialize(jsonObject.GetRawText(), targetType, options)

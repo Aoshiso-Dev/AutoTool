@@ -1,25 +1,24 @@
-ï»¿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Messaging;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.Interface;
-using AutoTool.Commands.Message;
 using AutoTool.Commands.Services;
 using AutoTool.Panels.ViewModel;
-using AutoTool.Panels.Message;
 using AutoTool.Panels.Model.MacroFactory;
 using AutoTool.Panels.Model.List.Interface;
 using AutoTool.Panels.Model.CommandDefinition;
 using AutoTool.Model;
+using AutoTool.Core.Ports;
 
 namespace AutoTool.ViewModel;
 
 public partial class MacroPanelViewModel : ObservableObject, IDisposable
 {
-    private readonly INotificationService _notificationService;
-    private readonly AutoTool.Services.Interfaces.ILogService _logService;
+    private readonly INotifier _notifier;
+    private readonly ILogWriter _logWriter;
+    private readonly ICommandEventBus _commandEventBus;
     private readonly IMacroFactory _macroFactory;
     private readonly ICommandRegistry _commandRegistry;
     private readonly IListPanelViewModel _listPanel;
@@ -37,7 +36,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _selectedListTabIndex;
 
-    // UI ãƒã‚¤ãƒ³ãƒ‡ã‚£ãƒ³ã‚°ç”¨ã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ï¼ˆå…·ä½“å‹ã‚’å…¬é–‹ï¼‰
+    // UI ƒoƒCƒ“ƒfƒBƒ“ƒO—p‚ÌƒvƒƒpƒeƒBi‹ï‘ÌŒ^‚ğŒöŠJj
     public ListPanelViewModel ListPanelViewModel => (ListPanelViewModel)_listPanel;
     public EditPanelViewModel EditPanelViewModel => (EditPanelViewModel)_editPanel;
     public ButtonPanelViewModel ButtonPanelViewModel => (ButtonPanelViewModel)_buttonPanel;
@@ -45,8 +44,9 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     public FavoritePanelViewModel FavoritePanelViewModel => (FavoritePanelViewModel)_favoritePanel;
 
     public MacroPanelViewModel(
-        INotificationService notificationService, 
-        AutoTool.Services.Interfaces.ILogService logService,
+        INotifier notifier,
+        ILogWriter logWriter,
+        ICommandEventBus commandEventBus,
         IMacroFactory macroFactory,
         ICommandRegistry commandRegistry,
         IListPanelViewModel listPanelViewModel,
@@ -55,8 +55,9 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         ILogPanelViewModel logPanelViewModel,
         IFavoritePanelViewModel favoritePanelViewModel)
     {
-        _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
-        _logService = logService ?? throw new ArgumentNullException(nameof(logService));
+        _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
+        _logWriter = logWriter ?? throw new ArgumentNullException(nameof(logWriter));
+        _commandEventBus = commandEventBus ?? throw new ArgumentNullException(nameof(commandEventBus));
         _macroFactory = macroFactory ?? throw new ArgumentNullException(nameof(macroFactory));
         _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
         _listPanel = listPanelViewModel ?? throw new ArgumentNullException(nameof(listPanelViewModel));
@@ -66,11 +67,11 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _favoritePanel = favoritePanelViewModel ?? throw new ArgumentNullException(nameof(favoritePanelViewModel));
 
         SubscribeToChildViewModelEvents();
-        RegisterCommandMessages();
+        RegisterCommandEventHandlers();
     }
 
     /// <summary>
-    /// CommandHistoryManagerã‚’è¨­å®š
+    /// CommandHistoryManager‚ğİ’è
     /// </summary>
     public void SetCommandHistory(CommandHistoryManager commandHistory)
     {
@@ -79,14 +80,14 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// å­ViewModelã®ã‚¤ãƒ™ãƒ³ãƒˆã‚’è³¼èª­
+    /// qViewModel‚ÌƒCƒxƒ“ƒg‚ğw“Ç
     /// </summary>
     private void SubscribeToChildViewModelEvents()
     {
-        // ButtonPanelViewModel ã®ã‚¤ãƒ™ãƒ³ãƒˆ
+        // ButtonPanelViewModel ‚ÌƒCƒxƒ“ƒg
         _buttonPanel.RunRequested += async () =>
         {
-            // UIã‚¹ãƒ¬ãƒƒãƒ‰ã§ãƒ‘ãƒãƒ«ã®æº–å‚™ã¨çŠ¶æ…‹è¨­å®š
+            // UIƒXƒŒƒbƒh‚Åƒpƒlƒ‹‚Ì€”õ‚Æó‘Ôİ’è
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 PrepareAllPanels();
@@ -98,7 +99,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _buttonPanel.StopRequested += () =>
         {
             _cts?.Cancel();
-            // UIã‚¹ãƒ¬ãƒƒãƒ‰ã§çŠ¶æ…‹ã‚’æ›´æ–°
+            // UIƒXƒŒƒbƒh‚Åó‘Ô‚ğXV
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 SetAllPanelsRunningState(false);
@@ -117,39 +118,35 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _buttonPanel.DownRequested += HandleDown;
         _buttonPanel.DeleteRequested += HandleDelete;
 
-        // ListPanelViewModel ã®ã‚¤ãƒ™ãƒ³ãƒˆ
+        // ListPanelViewModel ‚ÌƒCƒxƒ“ƒg
         _listPanel.SelectedItemChanged += item => _editPanel.SetItem(item);
         _listPanel.ItemDoubleClicked += HandleItemDoubleClick;
 
-        // EditPanelViewModel ã®ã‚¤ãƒ™ãƒ³ãƒˆ
+        // EditPanelViewModel ‚ÌƒCƒxƒ“ƒg
         _editPanel.ItemEdited += HandleEdit;
-        // RefreshRequestedã¯OnPropertyChangedã§è‡ªå‹•çš„ã«æ›´æ–°ã•ã‚Œã‚‹ãŸã‚ã€
-        // Refresh()ã‚’å‘¼ã°ãªã„ï¼ˆToggleSwitchã®ãƒªã‚»ãƒƒãƒˆå•é¡Œã‚’å›é¿ï¼‰
+        // RefreshRequested‚ÍOnPropertyChanged‚Å©“®“I‚ÉXV‚³‚ê‚é‚½‚ßA
+        // Refresh()‚ğŒÄ‚Î‚È‚¢iToggleSwitch‚ÌƒŠƒZƒbƒg–â‘è‚ğ‰ñ”ğj
         _editPanel.RefreshRequested += () => 
         {
-            // ä½•ã‚‚ã—ãªã„ - ã‚¢ã‚¤ãƒ†ãƒ ã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£å¤‰æ›´ã¯INotifyPropertyChangedã§è‡ªå‹•é€šçŸ¥ã•ã‚Œã‚‹
+            // ‰½‚à‚µ‚È‚¢ - ƒAƒCƒeƒ€‚ÌƒvƒƒpƒeƒB•ÏX‚ÍINotifyPropertyChanged‚Å©“®’Ê’m‚³‚ê‚é
         };
     }
 
     /// <summary>
-    /// ã‚³ãƒãƒ³ãƒ‰å®Ÿè¡Œé–¢é€£ã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®ã¿ç™»éŒ²ï¼ˆç–çµåˆãŒå¿…è¦ãªéƒ¨åˆ†ï¼‰
+    /// ƒRƒ}ƒ“ƒhÀsŠÖ˜A‚ÌƒƒbƒZ[ƒW‚Ì‚İ“o˜^i‘aŒ‹‡‚ª•K—v‚È•”•ªj
     /// </summary>
-    private void RegisterCommandMessages()
+    private void RegisterCommandEventHandlers()
     {
-        // From Commandsï¼ˆå®Ÿè¡Œä¸­ã®ã‚³ãƒãƒ³ãƒ‰ã‹ã‚‰ã®é€šçŸ¥ - ç–çµåˆãŒå¿…è¦ï¼‰
-        WeakReferenceMessenger.Default.Register<StartCommandMessage>(this, (_, msg) => HandleStartCommand(msg.Command));
-        WeakReferenceMessenger.Default.Register<FinishCommandMessage>(this, (_, msg) => HandleFinishCommand(msg.Command));
-        WeakReferenceMessenger.Default.Register<DoingCommandMessage>(this, (_, msg) => HandleDoingCommand(msg.Command, msg.Detail));
-        WeakReferenceMessenger.Default.Register<UpdateProgressMessage>(this, (_, msg) => HandleUpdateProgress(msg.Command, msg.Progress));
-
-        // ã‚°ãƒ­ãƒ¼ãƒãƒ«ãƒ­ã‚°
-        WeakReferenceMessenger.Default.Register<LogMessage>(this, (_, msg) =>
-        {
-            _logPanel.WriteLog(msg.Text);
-            _logService.Write(msg.Text);
-        });
+        _commandEventBus.Started += OnCommandStarted;
+        _commandEventBus.Finished += OnCommandFinished;
+        _commandEventBus.Doing += OnCommandDoing;
+        _commandEventBus.ProgressUpdated += OnCommandProgressUpdated;
     }
 
+    private void OnCommandStarted(object? sender, CommandEventArgs args) => HandleStartCommand(args.Command);
+    private void OnCommandFinished(object? sender, CommandEventArgs args) => HandleFinishCommand(args.Command);
+    private void OnCommandDoing(object? sender, CommandLogEventArgs args) => HandleDoingCommand(args.Command, args.Detail);
+    private void OnCommandProgressUpdated(object? sender, CommandProgressEventArgs args) => HandleUpdateProgress(args.Command, args.Progress);
     private void PrepareAllPanels()
     {
         _listPanel.Prepare();
@@ -296,14 +293,14 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     {
         if (item == null || IsRunning) return;
 
-        // EditPanelWindowã‚’è¡¨ç¤º
+        // EditPanelWindow‚ğ•\¦
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
-            // ç·¨é›†å‰ã®ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ã‚’ä½œæˆ
+            // •ÒW‘O‚ÌƒoƒbƒNƒAƒbƒv‚ğì¬
             var backup = item.Clone();
             var index = item.LineNumber - 1;
 
-            // ç·¨é›†ãƒ‘ãƒãƒ«ã«ã‚¢ã‚¤ãƒ†ãƒ ã‚’ã‚»ãƒƒãƒˆ
+            // •ÒWƒpƒlƒ‹‚ÉƒAƒCƒeƒ€‚ğƒZƒbƒg
             _editPanel.SetItem(item);
 
             var editWindow = new AutoTool.Panels.View.EditPanelWindow();
@@ -314,7 +311,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
             
             if (result == true)
             {
-                // OKã®å ´åˆï¼šå¤‰æ›´ã‚’ç¢ºå®šï¼ˆUndo/Redoå¯¾å¿œï¼‰
+                // OK‚Ìê‡F•ÏX‚ğŠm’èiUndo/Redo‘Î‰j
                 if (_commandHistory != null)
                 {
                     var editCommand = new EditItemCommand(
@@ -326,7 +323,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
             }
             else
             {
-                // ã‚­ãƒ£ãƒ³ã‚»ãƒ«ã®å ´åˆï¼šãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ã‹ã‚‰å¾©å…ƒ
+                // ƒLƒƒƒ“ƒZƒ‹‚Ìê‡FƒoƒbƒNƒAƒbƒv‚©‚ç•œŒ³
                 _listPanel.ReplaceAt(index, backup);
                 _editPanel.SetItem(backup);
             }
@@ -343,7 +340,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         var logString = string.Join(", ", settingDict.Select(s => $"({s.Key} = {s.Value})"));
 
         _logPanel.WriteLog(lineNumber, commandName, logString);
-        _logService.Write(lineNumber, commandName, logString);
+        _logWriter.Write(lineNumber, commandName, logString);
 
         var commandItem = _listPanel.GetItem(command.LineNumber);
         if (commandItem != null)
@@ -368,7 +365,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
         var commandName = command.GetType().Name.Replace("Command", "").PadRight(20, ' ');
         _logPanel.WriteLog(lineNumber, commandName, detail);
-        _logService.Write(lineNumber, commandName, detail);
+        _logWriter.Write(lineNumber, commandName, detail);
     }
 
     private void HandleUpdateProgress(ICommand command, int progress)
@@ -408,13 +405,13 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
             {
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    _notificationService.ShowError(ex.Message, "Error");
+                    _notifier.ShowError(ex.Message, "Error");
                 });
             }
         }
         finally
         {
-            // UIã‚¹ãƒ¬ãƒƒãƒ‰ã§å¾Œå‡¦ç†
+            // UIƒXƒŒƒbƒh‚ÅŒãˆ—
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 foreach (var item in listItems.Where(x => x.IsRunning))
@@ -455,13 +452,16 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
         
-        // ã‚³ãƒãƒ³ãƒ‰å®Ÿè¡Œé–¢é€£ã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®ã¿è§£é™¤
-        WeakReferenceMessenger.Default.UnregisterAll(this);
+        _commandEventBus.Started -= OnCommandStarted;
+        _commandEventBus.Finished -= OnCommandFinished;
+        _commandEventBus.Doing -= OnCommandDoing;
+        _commandEventBus.ProgressUpdated -= OnCommandProgressUpdated;
         _cts?.Dispose();
         _disposed = true;
         
         GC.SuppressFinalize(this);
     }
 }
+
 
 

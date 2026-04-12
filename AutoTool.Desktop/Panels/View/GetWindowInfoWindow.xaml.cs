@@ -19,7 +19,7 @@ namespace AutoTool.Panels.View
             InitializeComponent();
 
             // 現在のマウスカーソル位置を取得
-            var _screenCurrentPoint = Win32MouseInputHelper.GetCursorPosition();
+            var _screenCurrentPoint = Win32MouseInterop.GetCursorPosition();
 
             // ウィンドウの位置をマウスポインタの位置に変更
             this.Left = _screenCurrentPoint.X + 5;
@@ -40,7 +40,7 @@ namespace AutoTool.Panels.View
         private void OnMouseMove(object? sender, Win32MouseHookHelper.MouseEventArgs e)
         {
             // 現在のマウスカーソル位置を取得
-            var _screenCurrentPoint = Win32MouseInputHelper.GetCursorPosition();
+            var _screenCurrentPoint = Win32MouseInterop.GetCursorPosition();
 
             // ウィンドウの位置をマウスポインタの位置に変更
             this.Left = _screenCurrentPoint.X + 5;

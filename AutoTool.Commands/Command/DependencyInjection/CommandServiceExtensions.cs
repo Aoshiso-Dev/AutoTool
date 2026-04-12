@@ -17,16 +17,17 @@ public static class CommandServiceExtensions
     public static IServiceCollection AddCommandServices(this IServiceCollection services)
     {
         // シングルトンサービス（状態を持つ、または高コストな初期化を持つ）
+        services.AddSingleton<ICommandEventBus, CommandEventBus>();
         services.AddSingleton<IVariableStore, InMemoryVariableStore>();
-        services.AddSingleton<IAIDetectionService, YoloDetectionService>();
-        services.AddSingleton<IPathService, PathService>();
+        services.AddSingleton<IObjectDetector, YoloObjectDetector>();
+        services.AddSingleton<IPathResolver, PathResolver>();
 
         // トランジェントサービス（ステートレスなもの）
-        services.AddTransient<IImageSearchService, OpenCVImageSearchService>();
-        services.AddTransient<IMouseService, Win32MouseService>();
-        services.AddTransient<IKeyboardService, Win32KeyboardService>();
-        services.AddTransient<IScreenCaptureService, OpenCVScreenCaptureService>();
-        services.AddTransient<IProcessService, ProcessService>();
+        services.AddTransient<IImageMatcher, OpenCvImageMatcher>();
+        services.AddTransient<IMouseInput, Win32MouseInput>();
+        services.AddTransient<IKeyboardInput, Win32KeyboardInput>();
+        services.AddTransient<IScreenCapturer, OpenCvScreenCapturer>();
+        services.AddTransient<IProcessLauncher, ProcessLauncher>();
         services.AddTransient<IWindowService, Win32WindowService>();
 
         return services;

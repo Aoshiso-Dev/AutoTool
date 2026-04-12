@@ -11,6 +11,38 @@ namespace AutoTool.Panels.List.Class
 {
     public partial class CommandListItem : ObservableObject, ICommandListItem
     {
+        public static string GetDisplayNameForType(string itemType)
+        {
+            return CommandDef.CommandMetadataCatalog.TryGetByTypeName(itemType, out var metadata)
+                ? metadata.DisplayNameJa
+                : itemType;
+        }
+
+        public static string GetCategoryNameForType(string itemType)
+        {
+            if (!CommandDef.CommandMetadataCatalog.TryGetByTypeName(itemType, out var metadata))
+            {
+                return itemType;
+            }
+
+            return metadata.Category switch
+            {
+                CommandDef.CommandCategory.Action => "クリック操作",
+                CommandDef.CommandCategory.Control => "条件分岐",
+                CommandDef.CommandCategory.AI => "AI",
+                CommandDef.CommandCategory.System => "システム操作",
+                CommandDef.CommandCategory.Variable => "変数操作",
+                _ => "その他"
+            };
+        }
+
+        public static int GetDisplayPriorityForType(string itemType)
+        {
+            return CommandDef.CommandMetadataCatalog.TryGetByTypeName(itemType, out var metadata)
+                ? metadata.DisplayPriority
+                : 9;
+        }
+
         [ObservableProperty]
         protected bool _isEnable = true;
         [ObservableProperty]
@@ -43,12 +75,12 @@ namespace AutoTool.Panels.List.Class
         /// <summary>
         /// UI表示用の日本語名を取得
         /// </summary>
-        public string DisplayName => CommandDef.CommandRegistry.DisplayOrder.GetDisplayName(ItemType);
+        public string DisplayName => GetDisplayNameForType(ItemType);
 
         /// <summary>
         /// カテゴリ名を取得
         /// </summary>
-        public string CategoryName => CommandDef.CommandRegistry.DisplayOrder.GetCategoryName(ItemType);
+        public string CategoryName => GetCategoryNameForType(ItemType);
 
         /// <summary>
         /// コメント付きの完全な説明を取得
@@ -106,7 +138,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("Wait_Image", typeof(SimpleCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Action)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.WaitImage, typeof(SimpleCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 2, displaySubPriority: 3, displayNameJa: "画像待機", displayNameEn: "Wait for Image")]
     public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImageCommandSettings
     {
         [ObservableProperty]
@@ -209,7 +241,7 @@ namespace AutoTool.Panels.List.Class
     }
 
 
-    [CommandDef.CommandDefinition("Click_Image", typeof(SimpleCommand), typeof(IClickImageCommandSettings), CommandDef.CommandCategory.Action)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.ClickImage, typeof(SimpleCommand), typeof(IClickImageCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 1, displaySubPriority: 2, displayNameJa: "画像クリック", displayNameEn: "Image Click")]
     public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickImageCommandSettings
     {
         [ObservableProperty]
@@ -319,7 +351,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("Hotkey", typeof(SimpleCommand), typeof(IHotkeyCommandSettings), CommandDef.CommandCategory.Action)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Hotkey, typeof(SimpleCommand), typeof(IHotkeyCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 2, displaySubPriority: 1, displayNameJa: "ホットキー", displayNameEn: "Hotkey")]
     public partial class HotkeyItem : CommandListItem, IHotkeyItem, IHotkeyCommandSettings
     {
         [ObservableProperty]
@@ -407,7 +439,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("Click", typeof(SimpleCommand), typeof(IClickCommandSettings), CommandDef.CommandCategory.Action)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Click, typeof(SimpleCommand), typeof(IClickCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 1, displaySubPriority: 1, displayNameJa: "クリック", displayNameEn: "Click")]
     public partial class ClickItem : CommandListItem, IClickItem, IClickCommandSettings
     {
         [ObservableProperty]
@@ -472,7 +504,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("Wait", typeof(SimpleCommand), typeof(IWaitCommandSettings), CommandDef.CommandCategory.Action)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Wait, typeof(SimpleCommand), typeof(IWaitCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 2, displaySubPriority: 2, displayNameJa: "待機", displayNameEn: "Wait")]
     public partial class WaitItem : CommandListItem, IWaitItem, IWaitCommandSettings
     {
         [ObservableProperty]
@@ -516,7 +548,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("IF_ImageExist", typeof(IfImageExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageExist, typeof(IfImageExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true, displayPriority: 4, displaySubPriority: 1, displayNameJa: "条件 - 画像存在判定", displayNameEn: "If Image Exists")]
     public partial class IfImageExistItem : CommandListItem, IIfItem, IIfImageExistItem, IIfImageCommandSettings
     {
         new public bool IsEnable
@@ -597,7 +629,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("IF_ImageNotExist", typeof(IfImageNotExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageNotExist, typeof(IfImageNotExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true, displayPriority: 4, displaySubPriority: 2, displayNameJa: "条件 - 画像非存在判定", displayNameEn: "If Image Not Exists")]
     public partial class IfImageNotExistItem : CommandListItem, IIfItem, IIfImageNotExistItem, IIfImageCommandSettings
     {
         new public bool IsEnable
@@ -679,7 +711,7 @@ namespace AutoTool.Panels.List.Class
 
 
     [CommandDef.SimpleCommandBinding(typeof(IfEndCommand), typeof(ICommandSettings))]
-    [CommandDef.CommandDefinition("IF_End", typeof(IfEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfEnd, typeof(IfEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, isEndCommand: true, displayPriority: 4, displaySubPriority: 6, displayNameJa: "条件 - 終了", displayNameEn: "If End")]
     public partial class IfEndItem : CommandListItem, IIfEndItem, ICommandSettings
     {
         new public bool IsEnable
@@ -718,7 +750,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("Loop", typeof(LoopCommand), typeof(ILoopCommandSettings), CommandDef.CommandCategory.Control, isLoopCommand: true)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Loop, typeof(LoopCommand), typeof(ILoopCommandSettings), CommandDef.CommandCategory.Control, isLoopCommand: true, displayPriority: 3, displaySubPriority: 1, displayNameJa: "ループ - 開始", displayNameEn: "Loop Start")]
     public partial class LoopItem : CommandListItem, ILoopItem, ICommandListItem
     {
         new public bool IsEnable
@@ -771,7 +803,7 @@ namespace AutoTool.Panels.List.Class
     }
 
     [CommandDef.SimpleCommandBinding(typeof(LoopEndCommand), typeof(ICommandSettings))]
-    [CommandDef.CommandDefinition("Loop_End", typeof(LoopEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.LoopEnd, typeof(LoopEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, isEndCommand: true, displayPriority: 3, displaySubPriority: 3, displayNameJa: "ループ - 終了", displayNameEn: "Loop End")]
     public partial class LoopEndItem : CommandListItem, ILoopEndItem, ICommandSettings
     {
         new public bool IsEnable
@@ -817,7 +849,7 @@ namespace AutoTool.Panels.List.Class
     }
 
     [CommandDef.SimpleCommandBinding(typeof(LoopBreakCommand), typeof(ICommandSettings))]
-    [CommandDef.CommandDefinition("Loop_Break", typeof(LoopBreakCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.LoopBreak, typeof(LoopBreakCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, displayPriority: 3, displaySubPriority: 2, displayNameJa: "ループ - 中断", displayNameEn: "Loop Break")]
     public partial class LoopBreakItem : CommandListItem, ILoopBreakItem, ICommandSettings
     {
         public LoopBreakItem() { }
@@ -830,7 +862,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("IF_ImageExist_AI", typeof(IfImageExistAICommand), typeof(IIfImageExistAISettings), CommandDef.CommandCategory.AI, isIfCommand: true)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageExistAI, typeof(IfImageExistAICommand), typeof(IIfImageExistAISettings), CommandDef.CommandCategory.AI, isIfCommand: true, displayPriority: 4, displaySubPriority: 3, displayNameJa: "条件 - 画像存在判定(AI検出)", displayNameEn: "If AI Image Exists")]
     public partial class IfImageExistAIItem : CommandListItem, IIfItem, IIfImageExistAIItem, IIfImageExistAISettings
     {
         new public bool IsEnable
@@ -911,7 +943,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("IF_ImageNotExist_AI", typeof(IfImageNotExistAICommand), typeof(IIfImageNotExistAISettings), CommandDef.CommandCategory.AI, isIfCommand: true)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageNotExistAI, typeof(IfImageNotExistAICommand), typeof(IIfImageNotExistAISettings), CommandDef.CommandCategory.AI, isIfCommand: true, displayPriority: 4, displaySubPriority: 4, displayNameJa: "条件 - 画像非存在判定(AI検出)", displayNameEn: "If AI Image Not Exists")]
     public partial class IfImageNotExistAIItem : CommandListItem, IIfItem, IIfImageNotExistAIItem, IIfImageNotExistAISettings
     {
         new public bool IsEnable
@@ -990,7 +1022,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("Execute", typeof(SimpleCommand), typeof(IExecuteCommandSettings), CommandDef.CommandCategory.System)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Execute, typeof(SimpleCommand), typeof(IExecuteCommandSettings), CommandDef.CommandCategory.System, displayPriority: 6, displaySubPriority: 1, displayNameJa: "プログラム実行", displayNameEn: "Execute Program")]
     public partial class ExecuteItem : CommandListItem, IExecuteItem, IExecuteCommandSettings
     {
         [ObservableProperty]
@@ -1050,7 +1082,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("SetVariable", typeof(SimpleCommand), typeof(ISetVariableCommandSettings), CommandDef.CommandCategory.Variable)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.SetVariable, typeof(SimpleCommand), typeof(ISetVariableCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 5, displaySubPriority: 1, displayNameJa: "変数設定", displayNameEn: "Set Variable")]
     public partial class SetVariableItem : CommandListItem, ISetVariableItem, ISetVariableCommandSettings
     {
         [ObservableProperty]
@@ -1087,7 +1119,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("SetVariable_AI", typeof(SimpleCommand), typeof(ISetVariableAICommandSettings), CommandDef.CommandCategory.AI)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.SetVariableAI, typeof(SimpleCommand), typeof(ISetVariableAICommandSettings), CommandDef.CommandCategory.AI, displayPriority: 5, displaySubPriority: 2, displayNameJa: "変数設定(AI検出)", displayNameEn: "Set AI Variable")]
     public partial class SetVariableAIItem : CommandListItem, ISetVariableAIItem, ISetVariableAICommandSettings
     {
         [ObservableProperty]
@@ -1194,7 +1226,7 @@ namespace AutoTool.Panels.List.Class
     }
 
 
-    [CommandDef.CommandDefinition("IF_Variable", typeof(IfVariableCommand), typeof(IIfVariableCommandSettings), CommandDef.CommandCategory.Variable, isIfCommand: true)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfVariable, typeof(IfVariableCommand), typeof(IIfVariableCommandSettings), CommandDef.CommandCategory.Variable, isIfCommand: true, displayPriority: 4, displaySubPriority: 5, displayNameJa: "条件 - 変数比較", displayNameEn: "If Variable")]
     public partial class IfVariableItem : CommandListItem, IIfVariableItem, IIfVariableCommandSettings, IIfItem
     {
         [ObservableProperty]
@@ -1236,7 +1268,7 @@ namespace AutoTool.Panels.List.Class
         public new ICommandListItem Clone() => new IfVariableItem(this);
     }
 
-    [CommandDef.CommandDefinition("Screenshot", typeof(SimpleCommand), typeof(IScreenshotCommandSettings), CommandDef.CommandCategory.System)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Screenshot, typeof(SimpleCommand), typeof(IScreenshotCommandSettings), CommandDef.CommandCategory.System, displayPriority: 6, displaySubPriority: 2, displayNameJa: "スクリーンショット", displayNameEn: "Screenshot")]
     public partial class ScreenshotItem : CommandListItem, IScreenshotItem, IScreenshotCommandSettings
     {
         [ObservableProperty]
@@ -1302,7 +1334,7 @@ namespace AutoTool.Panels.List.Class
         }
     }
 
-    [CommandDef.CommandDefinition("Click_Image_AI", typeof(SimpleCommand), typeof(IClickImageAICommandSettings), CommandDef.CommandCategory.AI)]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.ClickImageAI, typeof(SimpleCommand), typeof(IClickImageAICommandSettings), CommandDef.CommandCategory.AI, displayPriority: 1, displaySubPriority: 3, displayNameJa: "画像クリック(AI検出)", displayNameEn: "AI Click")]
     public partial class ClickImageAIItem : CommandListItem, IClickImageAIItem, IClickImageAICommandSettings
     {
         [ObservableProperty]

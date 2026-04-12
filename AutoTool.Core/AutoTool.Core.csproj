@@ -11,6 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoTool.Commands\AutoTool.Commands.csproj" />
+    <ProjectReference Include="..\AutoTool.Commands.Abstractions\AutoTool.Commands.Abstractions.csproj" />
   </ItemGroup>
 </Project>
