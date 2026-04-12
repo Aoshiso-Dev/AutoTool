@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Threading;
 using AutoTool.Hosting;
-using MacroPanels.Command.Services;
+using AutoTool.Commands.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -44,6 +44,10 @@ public partial class App : Application
 
         // ホストを開始
         _host.Start();
+
+        var mainWindow = Services.GetRequiredService<MainWindow>();
+        MainWindow = mainWindow;
+        mainWindow.Show();
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -67,3 +71,4 @@ public partial class App : Application
         e.Handled = true;
     }
 }
+

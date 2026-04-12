@@ -1,0 +1,210 @@
+﻿<UserControl x:Class="AutoTool.Panels.View.ListPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:converter="clr-namespace:AutoTool.Panels.View.Converter"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        <converter:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converter:NumberToBooleanConverter x:Key="NumberToBooleanConverter"/>
+        <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <converter:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter"/>
+        <converter:CommandTypeToCategoryColorConverter x:Key="CommandTypeToCategoryColorConverter"/>
+        <converter:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- ui:DataGrid を使用してテーマを継承 -->
+        <ui:DataGrid ItemsSource="{Binding CommandList.Items}" 
+                     SelectedIndex="{Binding SelectedLineNumber, Mode=TwoWay}"
+                     SelectionMode="Single" 
+                     HeadersVisibility="Column" 
+                     CanUserAddRows="False" 
+                     AutoGenerateColumns="False" 
+                     EnableRowVirtualization="False"
+                     EnableColumnVirtualization="False"
+                     CanUserReorderColumns="False"
+                     CanUserSortColumns="False"
+                     GridLinesVisibility="None"
+                     BorderThickness="0"
+                     VirtualizingPanel.IsVirtualizing="False"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+            <!-- 選択行のハイライトスタイル -->
+            <ui:DataGrid.RowStyle>
+                <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Style.Triggers>
+                        <!-- 選択時のハイライト -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#3050A0FF"/>
+                            <Setter Property="BorderBrush" Value="#50A0FF"/>
+                            <Setter Property="BorderThickness" Value="2,0,0,0"/>
+                        </Trigger>
+                        <!-- マウスホバー時 -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#1550A0FF"/>
+                        </Trigger>
+                        <!-- 選択 + ホバー -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="#4050A0FF"/>
+                        </MultiTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ui:DataGrid.RowStyle>
+
+            <!-- セルの選択色を上書き -->
+            <ui:DataGrid.CellStyle>
+                <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </ui:DataGrid.CellStyle>
+
+            <ui:DataGrid.Columns>
+                <!-- 有効/無効 -->
+                <DataGridTemplateColumn Width="60" Header="">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ui:ToggleSwitch IsChecked="{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                             IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center"
+                                             Margin="0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- 行番号 -->
+                <DataGridTemplateColumn Header="#" Width="35">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding LineNumber}" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontSize="12" Opacity="0.5"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- 進捗 -->
+                <DataGridTemplateColumn Header="" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid Margin="4,2"
+                                  Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <!-- 実行中：プログレス表示 -->
+                                <Border CornerRadius="6" Padding="4"
+                                        Background="#1510B981">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        
+                                        <!-- プログレスバー -->
+                                        <Grid Grid.Row="0" Height="8" Margin="0,0,0,4">
+                                            <Border Background="#30808080" CornerRadius="4"/>
+                                            <Border CornerRadius="4" HorizontalAlignment="Left"
+                                                    Width="{Binding Progress, Converter={StaticResource ProgressToWidthConverter}, ConverterParameter=60}">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                        <GradientStop Color="#10B981" Offset="0"/>
+                                                        <GradientStop Color="#34D399" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+                                        </Grid>
+                                        
+                                        <!-- パーセント表示 -->
+                                        <TextBlock Grid.Row="1" 
+                                                   Text="{Binding Progress, StringFormat={}{0}%}"
+                                                   HorizontalAlignment="Center" 
+                                                   FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="#10B981"/>
+                                    </Grid>
+                                </Border>
+                                
+                                <!-- 実行中インジケーター（左端のライン） -->
+                                <Border Width="3" HorizontalAlignment="Left" CornerRadius="2" Margin="-4,0,0,0">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#10B981" Offset="0"/>
+                                            <GradientStop Color="#34D399" Offset="0.5"/>
+                                            <GradientStop Color="#10B981" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- コマンド -->
+                <DataGridTemplateColumn Header="コマンド" Width="180">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="3">
+                                <Border Background="{Binding ItemType, Converter={StaticResource CommandTypeToCategoryColorConverter}}" 
+                                        CornerRadius="4" Padding="8,4"
+                                        Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}">
+                                    <TextBlock Text="{Binding DisplayName}" 
+                                               FontWeight="Medium" FontSize="13"
+                                               Foreground="#1a1a1a"/>
+                                </Border>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- 説明 -->
+                <DataGridTemplateColumn Header="説明" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Description}" 
+                                           FontSize="13"
+                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Comment}" 
+                                           FontSize="11" FontStyle="Italic"
+                                           Opacity="0.6"
+                                           Visibility="{Binding HasComment, Converter={StaticResource BoolToVisibilityConverter}}"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- 設定編集ボタン -->
+                <DataGridTemplateColumn Header="" Width="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ui:Button Icon="{ui:SymbolIcon Settings24}" 
+                                       Appearance="Secondary"
+                                       Click="EditSettingsButton_Click"
+                                       ToolTip="設定を編集"
+                                       Padding="4"
+                                       Margin="2"
+                                       IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </ui:DataGrid.Columns>
+        </ui:DataGrid>
+    </Grid>
+</UserControl>
