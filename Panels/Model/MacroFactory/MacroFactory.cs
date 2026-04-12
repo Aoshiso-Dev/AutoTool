@@ -72,7 +72,7 @@ public class MacroFactory : IMacroFactory
         // 属性ベースの単純コマンドを優先
         if (CommandRegistry.TryCreateSimple(parent, item, _serviceProvider, out var simple)) 
         {
-            Debug.WriteLine($"Successfully created simple command: {simple.GetType().Name}");
+            Debug.WriteLine($"Successfully created simple command: {simple?.GetType().Name}");
             return simple;
         }
 

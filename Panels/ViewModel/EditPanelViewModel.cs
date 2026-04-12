@@ -564,7 +564,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         // RefreshTimerは使用しない（ToggleSwitchリセット問題を回避）
         // アイテムのプロパティ変更はINotifyPropertyChangedで自動通知される
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
-        _refreshTimer.Tick += (_, _) => { _refreshTimer.Stop(); /* RefreshRequested?.Invoke(); を削除 */ };
+        _refreshTimer.Tick += (_, _) => { _refreshTimer.Stop(); RefreshRequested?.Invoke(); };
         
         InitializeItemTypes();
         InitializeMouseButtons();

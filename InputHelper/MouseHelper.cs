@@ -96,7 +96,7 @@ namespace MouseHelper
             }
 
             // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
             var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"Click: {targetX}, {targetY}";
             if (hwnd != IntPtr.Zero)
@@ -159,7 +159,7 @@ namespace MouseHelper
             }
 
             // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
             var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"Wheel: {targetX}, {targetY}";
             if (hwnd != IntPtr.Zero)
@@ -231,7 +231,7 @@ namespace MouseHelper
             }
 
             // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
             var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"Drag: {targetX1}, {targetY1} -> {targetX2}, {targetY2}";
             if (hwnd != IntPtr.Zero)
@@ -527,7 +527,8 @@ namespace MouseHelper
             // マウスイベントを全てブロック
             if (nCode >= 0)
             {
-                return IntPtr.Zero;
+                // 非ゼロを返すとイベントを食い止められる
+                return new IntPtr(1);
             }
 
             // 次のフックに処理を渡す
@@ -568,7 +569,7 @@ namespace MouseHelper
             }
 
             // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
             var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"GetPos: {lpPoint.X}, {lpPoint.Y} ({windowTitle}[{windowClassName}])";
             GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
@@ -611,7 +612,7 @@ namespace MouseHelper
                 });
 
                 // ログ出力
-                var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
                 var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
                 var resultMessage = $"Lock: {x}, {y}";
                 GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
@@ -625,7 +626,7 @@ namespace MouseHelper
                 isLocked = false;
 
                 // ログ出力
-                var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
                 var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
                 var resultMessage = $"Unlock";
                 GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);

@@ -20,7 +20,7 @@ public class OpenCVScreenCaptureService : IScreenCaptureService
 
             using var mat = (string.IsNullOrEmpty(windowTitle) && string.IsNullOrEmpty(windowClassName))
                 ? ScreenCaptureHelper.CaptureScreen()
-                : ScreenCaptureHelper.CaptureWindow(windowTitle, windowClassName);
+                : ScreenCaptureHelper.CaptureWindow(windowTitle ?? string.Empty, windowClassName ?? string.Empty);
 
             if (cancellationToken.IsCancellationRequested) return;
 

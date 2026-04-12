@@ -13,13 +13,13 @@ public class Win32MouseService : IMouseService
         switch (button)
         {
             case MouseButton.Left:
-                await MouseHelper.Input.ClickAsync(x, y, windowTitle, windowClassName);
+                await MouseHelper.Input.ClickAsync(x, y, windowTitle ?? string.Empty, windowClassName ?? string.Empty);
                 break;
             case MouseButton.Right:
-                await MouseHelper.Input.RightClickAsync(x, y, windowTitle, windowClassName);
+                await MouseHelper.Input.RightClickAsync(x, y, windowTitle ?? string.Empty, windowClassName ?? string.Empty);
                 break;
             case MouseButton.Middle:
-                await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle, windowClassName);
+                await MouseHelper.Input.MiddleClickAsync(x, y, windowTitle ?? string.Empty, windowClassName ?? string.Empty);
                 break;
             default:
                 throw new ArgumentException("不正なマウスボタンです。", nameof(button));

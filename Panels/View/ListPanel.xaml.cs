@@ -135,7 +135,7 @@ namespace MacroPanels.View
         /// <summary>
         /// ビジュアルツリーから指定した型の子要素を検索
         /// </summary>
-        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
         {
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
             {
@@ -151,7 +151,7 @@ namespace MacroPanels.View
                     return childOfChild;
                 }
             }
-            return null;
+            return default;
         }
     }
 }

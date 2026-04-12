@@ -39,8 +39,8 @@ namespace KeyHelper
             keybd_event((byte)KeyInterop.VirtualKeyFromKey(key), 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
 
             // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"KeyDown: {key}";
             GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
@@ -50,8 +50,8 @@ namespace KeyHelper
             keybd_event((byte)KeyInterop.VirtualKeyFromKey(key), 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
 
             // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var resultMessage = $"KeyUp: {key}";
             GlobalLogger.Instance.Write("", "", projectName, methodName, resultMessage);
         }
@@ -95,8 +95,8 @@ namespace KeyHelper
 
 
             // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var keys = new List<string>();
             if (ctrl) keys.Add("Ctrl");
             if (alt) keys.Add("Alt");
@@ -119,8 +119,8 @@ namespace KeyHelper
             if (shift) SendMessage(hWnd, WM_KEYUP, VK_SHIFT, IntPtr.Zero);
 
             // ログ出力
-            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-            var methodName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+            var projectName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? string.Empty;
+            var methodName = System.Reflection.MethodBase.GetCurrentMethod()?.Name ?? "Unknown";
             var keys = new List<string>();
             if (ctrl) keys.Add("Ctrl");
             if (alt) keys.Add("Alt");

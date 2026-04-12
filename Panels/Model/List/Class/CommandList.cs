@@ -114,7 +114,7 @@ namespace MacroPanels.List.Class
                 return;
             }
 
-            var item = Items[oldIndex];
+            var item = Items[oldIndex].Clone();
             Items.Insert(newIndex, item);
 
             ReorderItems();
@@ -160,11 +160,15 @@ namespace MacroPanels.List.Class
 
             foreach (var ifItem in ifItems)
             {
-                if(ifItem.Pair != null)
-                {
-                    continue;
-                }
+                ifItem.Pair = null;
+            }
+            foreach (var endIfItem in endIfItems)
+            {
+                endIfItem.Pair = null;
+            }
 
+            foreach (var ifItem in ifItems)
+            {
                 foreach(var endIfItem in endIfItems)
                 {
                     if (endIfItem.Pair != null)
@@ -172,7 +176,7 @@ namespace MacroPanels.List.Class
                         continue;
                     }
 
-                    if (endIfItem.NestLevel == ifItem.NestLevel &&　endIfItem.LineNumber > ifItem.LineNumber)
+                    if (endIfItem.NestLevel == ifItem.NestLevel && endIfItem.LineNumber > ifItem.LineNumber)
                     {
                         ifItem.Pair = endIfItem;
                         endIfItem.Pair = ifItem;
@@ -189,11 +193,15 @@ namespace MacroPanels.List.Class
 
             foreach (var loopItem in loopItems)
             {
-                if(loopItem.Pair != null)
-                {
-                    continue;
-                }
+                loopItem.Pair = null;
+            }
+            foreach (var endLoopItem in endLoopItems)
+            {
+                endLoopItem.Pair = null;
+            }
 
+            foreach (var loopItem in loopItems)
+            {
                 foreach (var endLoopItem in endLoopItems)
                 {
                     if (endLoopItem.Pair != null)

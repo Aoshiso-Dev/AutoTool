@@ -44,7 +44,7 @@ namespace WindowHelper
         public static extern int GetClassName(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        public static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
 
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
@@ -234,7 +234,7 @@ namespace WindowHelper
         private const uint SWP_SHOWWINDOW = 0x0040;
 
         [DllImport("user32.dll")]
-        public static extern bool SetFocus(IntPtr hWnd, int nCmdShow);
+        public static extern IntPtr SetFocus(IntPtr hWnd);
         #endregion
 
         #region SetForegroundWindow
@@ -310,7 +310,7 @@ namespace WindowHelper
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
             }
 
-            return new(screenY - rect.Left, screenX - rect.Top);
+            return new(screenX - rect.Left, screenY - rect.Top);
         }
 
         public static (int, int) ScreenToClient(string windowTitle, int screenX, int screenY)

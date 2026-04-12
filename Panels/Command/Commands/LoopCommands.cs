@@ -35,7 +35,8 @@ public class LoopCommand : BaseCommand, ILoopCommand
 
                 if (!await command.Execute(cancellationToken))
                 {
-                    return true;
+                    // LoopBreak ‚Í³í‚Èƒ‹[ƒv—£’E‚Æ‚µ‚Äˆµ‚¢A‚»‚Ì‘¼‚Ì false ‚Í¸”s‚Æ‚µ‚Ä“`”d
+                    return command is ILoopBreakCommand;
                 }
             }
 

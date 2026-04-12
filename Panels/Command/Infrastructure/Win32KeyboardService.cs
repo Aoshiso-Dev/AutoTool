@@ -10,6 +10,6 @@ public class Win32KeyboardService : IKeyboardService
 {
     public Task SendKeyAsync(Key key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null)
     {
-        return Task.Run(() => KeyHelper.Input.KeyPress(key, ctrl, alt, shift, windowTitle, windowClassName));
+        return Task.Run(() => KeyHelper.Input.KeyPress(key, ctrl, alt, shift, windowTitle ?? string.Empty, windowClassName ?? string.Empty));
     }
 }
