@@ -67,16 +67,16 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
             return;
         }
 
-        try
+        foreach (var handler in RunRequested.GetInvocationList())
         {
-            foreach (var handler in RunRequested.GetInvocationList())
+            try
             {
                 await ((Func<Task>)handler)();
             }
-        }
-        catch
-        {
-            System.Diagnostics.Debug.WriteLine("RunRequested handler failed.");
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"RunRequested handler failed: {ex}");
+            }
         }
     }
 
