@@ -65,7 +65,11 @@ public partial class MacroPanelViewModel
         var listItems = _listPanel.CommandList.Items;
         var macro = _macroFactory.CreateMacro(listItems) as LoopCommand;
 
-        if (macro == null) return;
+        if (macro == null)
+        {
+            OnUiThread(() => SetRunningState(false));
+            return;
+        }
 
         try
         {
