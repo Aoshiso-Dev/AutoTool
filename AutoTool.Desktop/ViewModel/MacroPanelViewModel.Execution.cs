@@ -74,6 +74,7 @@ public partial class MacroPanelViewModel
         }
         catch (Exception ex)
         {
+            _logWriter.Write(ex);
             if (_cts is { Token.IsCancellationRequested: false })
             {
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
