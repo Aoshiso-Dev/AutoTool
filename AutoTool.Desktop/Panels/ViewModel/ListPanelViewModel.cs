@@ -46,6 +46,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
                 {
                     item.IsSelected = false;
                 }
+                _selectedLineNumber = -1;
                 SelectedItemChanged?.Invoke(null);
                 return;
             }
@@ -63,7 +64,14 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
                     CommandList.Override(index, value);
                 }
 
-                SelectedLineNumber = index;
+                if (SelectedLineNumber == index)
+                {
+                    OnSelectedLineNumberChanged();
+                }
+                else
+                {
+                    SelectedLineNumber = index;
+                }
                 return;
             }
 
