@@ -2,6 +2,7 @@
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
+using AutoTool.Core.Ports;
 using AutoTool.Model;
 using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.CommandDefinition;
@@ -180,5 +181,82 @@ internal sealed class FakeMacroFileSerializer : IMacroFileSerializer
     public T? DeserializeFromFile<T>(string path)
     {
         return _deserializedObject is T casted ? casted : default;
+    }
+}
+
+public class FileManagerTests
+{
+    [Fact]
+    public void OpenFile_WhenPickerCancelled_ReturnsFalse()
+    {
+        var picker = new FakeFilePicker { OpenFilePath = null };
+        var store = new FakeRecentFileStore();
+        var manager = CreateFileManager(picker, store);
+
+        var opened = manager.OpenFile();
+
+        Assert.False(opened);
+        Assert.False(manager.IsFileOpened);
+    }
+
+    [Fact]
+    public void OpenFile_WhenMissingPath_RemovesRecentEntryAndReturnsFalse()
+    {
+        var missingPath = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid()}.macro");
+        var picker = new FakeFilePicker { OpenFilePath = missingPath };
+        var store = new FakeRecentFileStore
+        {
+            Files = new ObservableCollection<FileManager.RecentFile>
+            {
+                new() { FileName = Path.GetFileName(missingPath), FilePath = missingPath }
+            }
+        };
+        var manager = CreateFileManager(picker, store);
+
+        var opened = manager.OpenFile();
+
+        Assert.False(opened);
+        Assert.Empty(manager.RecentFiles!);
+        Assert.True(store.SaveCalled);
+    }
+
+    private static FileManager CreateFileManager(FakeFilePicker picker, FakeRecentFileStore store)
+    {
+        return new FileManager(
+            new FileManager.FileTypeInfo
+            {
+                DefaultExt = "macro",
+                Filter = "Macro|*.macro",
+                FilterIndex = 1,
+                RestoreDirectory = true,
+                Title = "Open"
+            },
+            _ => { },
+            _ => { },
+            picker,
+            store);
+    }
+
+    private sealed class FakeFilePicker : IFilePicker
+    {
+        public string? OpenFilePath { get; init; }
+        public string? SaveFilePath { get; init; }
+
+        public string? OpenFile(FileDialogOptions options) => OpenFilePath;
+        public string? SaveFile(FileDialogOptions options) => SaveFilePath;
+    }
+
+    private sealed class FakeRecentFileStore : IRecentFileStore
+    {
+        public ObservableCollection<FileManager.RecentFile>? Files { get; set; } = new();
+        public bool SaveCalled { get; private set; }
+
+        public ObservableCollection<FileManager.RecentFile>? Load(string key) => Files;
+
+        public void Save(string key, ObservableCollection<FileManager.RecentFile>? files)
+        {
+            SaveCalled = true;
+            Files = files;
+        }
     }
 }
