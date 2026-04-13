@@ -1,4 +1,4 @@
-namespace AutoTool.Panels.Model.CommandDefinition;
+﻿namespace AutoTool.Panels.Model.CommandDefinition;
 
 public static class CommandTypeNames
 {

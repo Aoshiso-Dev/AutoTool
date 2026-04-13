@@ -1,4 +1,4 @@
-using AutoTool.Commands.Interface;
+﻿using AutoTool.Commands.Interface;
 using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.Model.MacroFactory;

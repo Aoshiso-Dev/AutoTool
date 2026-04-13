@@ -31,21 +31,13 @@ namespace AutoTool.Panels.List.Class
         public void Add(ICommandListItem item)
         {
             Items.Add(item);
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RebuildState();
         }
 
         public void Remove(ICommandListItem item)
         {
             Items.Remove(item);
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RebuildState();
         }
 
         /// <summary>
@@ -56,22 +48,14 @@ namespace AutoTool.Panels.List.Class
             if (index >= 0 && index < Items.Count)
             {
                 Items.RemoveAt(index);
-
-                ReorderItems();
-                CalculateNestLevel();
-                PairIfItems();
-                PairLoopItems();
+                RebuildState();
             }
         }
 
         public void Insert(int index, ICommandListItem item)
         {
             Items.Insert(index, item);
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RebuildState();
         }
 
         public void Override(int index, ICommandListItem item)
@@ -87,11 +71,7 @@ namespace AutoTool.Panels.List.Class
             }
 
             Items[index] = item;
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RebuildState();
         }
 
         public void Clear()
@@ -109,11 +89,7 @@ namespace AutoTool.Panels.List.Class
             var item = Items[oldIndex];
             Items.RemoveAt(oldIndex);
             Items.Insert(newIndex, item);
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RebuildState();
         }
 
         public void Copy(int oldIndex, int newIndex)
@@ -125,18 +101,14 @@ namespace AutoTool.Panels.List.Class
 
             var item = Items[oldIndex].Clone();
             Items.Insert(newIndex, item);
-
-            ReorderItems();
-            CalculateNestLevel();
-            PairIfItems();
-            PairLoopItems();
+            RebuildState();
         }
 
         public void ReorderItems()
         {
-            foreach (var item in Items)
+            for (var i = 0; i < Items.Count; i++)
             {
-                item.LineNumber = Items.IndexOf(item) + 1;
+                Items[i].LineNumber = i + 1;
             }
         }
 
@@ -164,77 +136,87 @@ namespace AutoTool.Panels.List.Class
 
         public void PairIfItems()
         {
-            var ifItems = Items.OfType<IIfItem>()
-                .Where(x => _commandDefinitionProvider.IsIfCommand(x.ItemType))
-                .OrderBy(x => x.LineNumber)
-                .ToList();
-            var endIfItems = Items.OfType<IIfEndItem>()
-                .OrderBy(x => x.LineNumber)
-                .ToList();
+            PairItems(
+                Items.OfType<IIfItem>().Where(x => _commandDefinitionProvider.IsIfCommand(x.ItemType)),
+                Items.OfType<IIfEndItem>());
+        }
 
-            foreach (var ifItem in ifItems)
+        public void PairLoopItems()
+        {
+            PairItems(
+                Items.OfType<ILoopItem>().Where(x => _commandDefinitionProvider.IsLoopCommand(x.ItemType)),
+                Items.OfType<ILoopEndItem>());
+        }
+
+        private void RebuildState()
+        {
+            ReorderItems();
+            CalculateNestLevel();
+            PairIfItems();
+            PairLoopItems();
+        }
+
+        private static void PairItems<TStart, TEnd>(IEnumerable<TStart> starts, IEnumerable<TEnd> ends)
+            where TStart : class, ICommandListItem
+            where TEnd : class, ICommandListItem
+        {
+            var orderedStarts = starts.OrderBy(x => x.LineNumber).ToList();
+            var orderedEnds = ends.OrderBy(x => x.LineNumber).ToList();
+
+            foreach (var start in orderedStarts)
             {
-                ifItem.Pair = null;
-            }
-            foreach (var endIfItem in endIfItems)
-            {
-                endIfItem.Pair = null;
+                SetPair(start, null);
             }
 
-            foreach (var ifItem in ifItems)
+            foreach (var end in orderedEnds)
             {
-                foreach(var endIfItem in endIfItems)
+                SetPair(end, null);
+            }
+
+            foreach (var start in orderedStarts)
+            {
+                foreach (var end in orderedEnds)
                 {
-                    if (endIfItem.Pair != null)
+                    if (GetPair(end) != null)
                     {
                         continue;
                     }
 
-                    if (endIfItem.NestLevel == ifItem.NestLevel && endIfItem.LineNumber > ifItem.LineNumber)
+                    if (end.NestLevel == start.NestLevel && end.LineNumber > start.LineNumber)
                     {
-                        ifItem.Pair = endIfItem;
-                        endIfItem.Pair = ifItem;
+                        SetPair(start, end);
+                        SetPair(end, start);
                         break;
                     }
                 }
             }
         }
 
-        public void PairLoopItems()
+        private static ICommandListItem? GetPair(ICommandListItem item) => item switch
         {
-            var loopItems = Items.OfType<ILoopItem>()
-                .Where(x => _commandDefinitionProvider.IsLoopCommand(x.ItemType))
-                .OrderBy(x => x.LineNumber)
-                .ToList();
-            var endLoopItems = Items.OfType<ILoopEndItem>()
-                .OrderBy(x => x.LineNumber)
-                .ToList();
+            IIfItem x => x.Pair,
+            IIfEndItem x => x.Pair,
+            ILoopItem x => x.Pair,
+            ILoopEndItem x => x.Pair,
+            _ => null
+        };
 
-            foreach (var loopItem in loopItems)
+        private static void SetPair(ICommandListItem item, ICommandListItem? pair)
+        {
+            switch (item)
             {
-                loopItem.Pair = null;
-            }
-            foreach (var endLoopItem in endLoopItems)
-            {
-                endLoopItem.Pair = null;
-            }
-
-            foreach (var loopItem in loopItems)
-            {
-                foreach (var endLoopItem in endLoopItems)
-                {
-                    if (endLoopItem.Pair != null)
-                    {
-                        continue;
-                    }
-
-                    if (endLoopItem.NestLevel == loopItem.NestLevel && endLoopItem.LineNumber > loopItem.LineNumber)
-                    {
-                        loopItem.Pair = endLoopItem;
-                        endLoopItem.Pair = loopItem;
-                        break;
-                    }
-                }
+                case IIfItem x:
+                    x.Pair = pair;
+                    break;
+                case IIfEndItem x:
+                    x.Pair = pair;
+                    break;
+                case ILoopItem x:
+                    x.Pair = pair;
+                    break;
+                case ILoopEndItem x:
+                    x.Pair = pair;
+                    break;
             }
         }
 

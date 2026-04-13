@@ -3,7 +3,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                     xmlns:editors="clr-namespace:AutoTool.Panels.View.Editors"
-                    xmlns:attrs="clr-namespace:AutoTool.Panels.Attributes;assembly=AutoTool.Core"
+                    xmlns:attrs="clr-namespace:AutoTool.Panels.Attributes;assembly=AutoTool.Infrastructure"
                     xmlns:converter="clr-namespace:AutoTool.Panels.View.Converter">
 
     <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
@@ -57,7 +57,7 @@
                     <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
                                Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
                 </StackPanel>
-                <ui:NumberBox Grid.Column="1" Value="{Binding IntValue, Mode=TwoWay}" 
+                <ui:NumberBox Grid.Column="1" Value="{Binding IntValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                               Minimum="{Binding Min}" Maximum="{Binding Max}"
                               SpinButtonPlacementMode="Compact"/>
                 <TextBlock Grid.Column="2" Text="{Binding Unit}" 
@@ -186,10 +186,14 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
-                    <TextBlock Style="{StaticResource EditorDescription}">
-                        <Run Text="X: "/><Run Text="{Binding IntValue, Mode=OneWay}"/>
-                        <Run Text="  Y: "/><Run Text="{Binding RelatedIntValue, Mode=OneWay}"/>
-                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="X" Style="{StaticResource EditorDescription}" VerticalAlignment="Center"/>
+                        <ui:NumberBox Value="{Binding IntValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="90" Margin="8,0,12,0"
+                                      SpinButtonPlacementMode="Compact"/>
+                        <TextBlock Text="Y" Style="{StaticResource EditorDescription}" VerticalAlignment="Center"/>
+                        <ui:NumberBox Value="{Binding RelatedProperty.IntValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="90" Margin="8,0,0,0"
+                                      SpinButtonPlacementMode="Compact"/>
+                    </StackPanel>
                 </StackPanel>
                 <ui:Button Grid.Column="1" Content="Pick" Icon="{ui:SymbolIcon Location24}"
                            Command="{Binding PickPointCommand}" Appearance="Primary"/>

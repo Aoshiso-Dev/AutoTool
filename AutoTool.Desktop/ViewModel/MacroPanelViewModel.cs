@@ -1,13 +1,7 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using AutoTool.Commands.Commands;
-using AutoTool.Commands.Interface;
+ï»¿using CommunityToolkit.Mvvm.ComponentModel;
 using AutoTool.Commands.Services;
 using AutoTool.Panels.ViewModel;
 using AutoTool.Panels.Model.MacroFactory;
-using AutoTool.Panels.Model.List.Interface;
 using AutoTool.Panels.Model.CommandDefinition;
 using AutoTool.Model;
 using AutoTool.Core.Ports;
@@ -29,6 +23,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private CommandHistoryManager? _commandHistory;
     private bool _disposed;
+    private bool _isEditDialogOpen;
 
     [ObservableProperty]
     private bool _isRunning;
@@ -36,12 +31,12 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _selectedListTabIndex;
 
-    // UI ƒoƒCƒ“ƒfƒBƒ“ƒO—p‚ÌƒvƒƒpƒeƒBi‹ï‘ÌŒ^‚ğŒöŠJj
-    public ListPanelViewModel ListPanelViewModel => (ListPanelViewModel)_listPanel;
-    public EditPanelViewModel EditPanelViewModel => (EditPanelViewModel)_editPanel;
-    public ButtonPanelViewModel ButtonPanelViewModel => (ButtonPanelViewModel)_buttonPanel;
-    public LogPanelViewModel LogPanelViewModel => (LogPanelViewModel)_logPanel;
-    public FavoritePanelViewModel FavoritePanelViewModel => (FavoritePanelViewModel)_favoritePanel;
+    // Exposed for view binding without concrete casts.
+    public IListPanelViewModel ListPanelViewModel => _listPanel;
+    public IEditPanelViewModel EditPanelViewModel => _editPanel;
+    public IButtonPanelViewModel ButtonPanelViewModel => _buttonPanel;
+    public ILogPanelViewModel LogPanelViewModel => _logPanel;
+    public IFavoritePanelViewModel FavoritePanelViewModel => _favoritePanel;
 
     public MacroPanelViewModel(
         INotifier notifier,
@@ -70,364 +65,18 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         RegisterCommandEventHandlers();
     }
 
-    /// <summary>
-    /// CommandHistoryManager‚ğİ’è
-    /// </summary>
     public void SetCommandHistory(CommandHistoryManager commandHistory)
     {
         _commandHistory = commandHistory;
         _listPanel.SetCommandHistory(commandHistory);
     }
 
-    /// <summary>
-    /// qViewModel‚ÌƒCƒxƒ“ƒg‚ğw“Ç
-    /// </summary>
-    private void SubscribeToChildViewModelEvents()
+    public void SaveMacroFile(string filePath) => _listPanel.Save(filePath);
+
+    public void LoadMacroFile(string filePath)
     {
-        // ButtonPanelViewModel ‚ÌƒCƒxƒ“ƒg
-        _buttonPanel.RunRequested += async () =>
-        {
-            // UIƒXƒŒƒbƒh‚Åƒpƒlƒ‹‚Ì€”õ‚Æó‘Ôİ’è
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                PrepareAllPanels();
-                SetAllPanelsRunningState(true);
-            });
-            
-            await Run();
-        };
-        _buttonPanel.StopRequested += () =>
-        {
-            _cts?.Cancel();
-            // UIƒXƒŒƒbƒh‚Åó‘Ô‚ğXV
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                SetAllPanelsRunningState(false);
-            });
-        };
-        _buttonPanel.SaveRequested += () => _listPanel.Save();
-        _buttonPanel.LoadRequested += () =>
-        {
-            _listPanel.Load();
-            _editPanel.SetListCount(_listPanel.GetCount());
-            _commandHistory?.Clear();
-        };
-        _buttonPanel.ClearRequested += HandleClear;
-        _buttonPanel.AddRequested += HandleAdd;
-        _buttonPanel.UpRequested += HandleUp;
-        _buttonPanel.DownRequested += HandleDown;
-        _buttonPanel.DeleteRequested += HandleDelete;
-
-        // ListPanelViewModel ‚ÌƒCƒxƒ“ƒg
-        _listPanel.SelectedItemChanged += item => _editPanel.SetItem(item);
-        _listPanel.ItemDoubleClicked += HandleItemDoubleClick;
-
-        // EditPanelViewModel ‚ÌƒCƒxƒ“ƒg
-        _editPanel.ItemEdited += HandleEdit;
-        // RefreshRequested‚ÍOnPropertyChanged‚Å©“®“I‚ÉXV‚³‚ê‚é‚½‚ßA
-        // Refresh()‚ğŒÄ‚Î‚È‚¢iToggleSwitch‚ÌƒŠƒZƒbƒg–â‘è‚ğ‰ñ”ğj
-        _editPanel.RefreshRequested += () => 
-        {
-            // ‰½‚à‚µ‚È‚¢ - ƒAƒCƒeƒ€‚ÌƒvƒƒpƒeƒB•ÏX‚ÍINotifyPropertyChanged‚Å©“®’Ê’m‚³‚ê‚é
-        };
-    }
-
-    /// <summary>
-    /// ƒRƒ}ƒ“ƒhÀsŠÖ˜A‚ÌƒƒbƒZ[ƒW‚Ì‚İ“o˜^i‘aŒ‹‡‚ª•K—v‚È•”•ªj
-    /// </summary>
-    private void RegisterCommandEventHandlers()
-    {
-        _commandEventBus.Started += OnCommandStarted;
-        _commandEventBus.Finished += OnCommandFinished;
-        _commandEventBus.Doing += OnCommandDoing;
-        _commandEventBus.ProgressUpdated += OnCommandProgressUpdated;
-    }
-
-    private void OnCommandStarted(object? sender, CommandEventArgs args) => HandleStartCommand(args.Command);
-    private void OnCommandFinished(object? sender, CommandEventArgs args) => HandleFinishCommand(args.Command);
-    private void OnCommandDoing(object? sender, CommandLogEventArgs args) => HandleDoingCommand(args.Command, args.Detail);
-    private void OnCommandProgressUpdated(object? sender, CommandProgressEventArgs args) => HandleUpdateProgress(args.Command, args.Progress);
-    private void PrepareAllPanels()
-    {
-        _listPanel.Prepare();
-        _editPanel.Prepare();
-        _logPanel.Prepare();
-        _favoritePanel.Prepare();
-        _buttonPanel.Prepare();
-    }
-
-    private void SetAllPanelsRunningState(bool isRunning)
-    {
-        _listPanel.SetRunningState(isRunning);
-        _editPanel.SetRunningState(isRunning);
-        _favoritePanel.SetRunningState(isRunning);
-        _logPanel.SetRunningState(isRunning);
-        _buttonPanel.SetRunningState(isRunning);
-    }
-
-    private void HandleClear()
-    {
-        if (_commandHistory != null)
-        {
-            var clearCommand = new ClearAllCommand(
-                _listPanel.CommandList.Items.ToList(),
-                () => _listPanel.Clear(),
-                RestoreItems
-            );
-            _commandHistory.ExecuteCommand(clearCommand);
-        }
-        else
-        {
-            _listPanel.Clear();
-        }
+        _listPanel.Load(filePath);
         _editPanel.SetListCount(_listPanel.GetCount());
-    }
-
-    private void HandleAdd(string itemType)
-    {
-        if (_commandHistory != null)
-        {
-            var newItem = _commandRegistry.CreateCommandItem(itemType);
-            if (newItem != null)
-            {
-                var targetIndex = _listPanel.SelectedLineNumber + 1;
-                var addCommand = new AddItemCommand(
-                    newItem,
-                    targetIndex,
-                    (item, index) => _listPanel.InsertAt(index, item),
-                    index => _listPanel.RemoveAt(index)
-                );
-                _commandHistory.ExecuteCommand(addCommand);
-            }
-        }
-        else
-        {
-            _listPanel.Add(itemType);
-        }
-        _editPanel.SetListCount(_listPanel.GetCount());
-    }
-
-    private void HandleUp()
-    {
-        var fromIndex = _listPanel.SelectedLineNumber;
-        var toIndex = fromIndex - 1;
-
-        if (toIndex >= 0 && _commandHistory != null)
-        {
-            var moveCommand = new MoveItemCommand(
-                fromIndex, toIndex,
-                (from, to) => _listPanel.MoveItem(from, to)
-            );
-            _commandHistory.ExecuteCommand(moveCommand);
-        }
-        else
-        {
-            _listPanel.Up();
-        }
-    }
-
-    private void HandleDown()
-    {
-        var fromIndex = _listPanel.SelectedLineNumber;
-        var toIndex = fromIndex + 1;
-
-        if (toIndex < _listPanel.GetCount() && _commandHistory != null)
-        {
-            var moveCommand = new MoveItemCommand(
-                fromIndex, toIndex,
-                (from, to) => _listPanel.MoveItem(from, to)
-            );
-            _commandHistory.ExecuteCommand(moveCommand);
-        }
-        else
-        {
-            _listPanel.Down();
-        }
-    }
-
-    private void HandleDelete()
-    {
-        var selectedItem = _listPanel.SelectedItem;
-        var selectedIndex = _listPanel.SelectedLineNumber;
-
-        if (selectedItem != null && _commandHistory != null)
-        {
-            var removeCommand = new RemoveItemCommand(
-                selectedItem.Clone(),
-                selectedIndex,
-                (item, index) => _listPanel.InsertAt(index, item),
-                index => _listPanel.RemoveAt(index)
-            );
-            _commandHistory.ExecuteCommand(removeCommand);
-        }
-        else
-        {
-            _listPanel.Delete();
-        }
-        _editPanel.SetListCount(_listPanel.GetCount());
-    }
-
-    private void HandleEdit(ICommandListItem? item)
-    {
-        if (item == null) return;
-
-        var oldItem = _listPanel.SelectedItem;
-        var index = item.LineNumber - 1;
-
-        if (oldItem != null && _commandHistory != null)
-        {
-            var editCommand = new EditItemCommand(
-                oldItem, item, index,
-                (editedItem, editIndex) => _listPanel.ReplaceAt(editIndex, editedItem)
-            );
-            _commandHistory.ExecuteCommand(editCommand);
-        }
-        else
-        {
-            _listPanel.SetSelectedItem(item);
-            _listPanel.SetSelectedLineNumber(index);
-        }
-    }
-
-    private void HandleItemDoubleClick(ICommandListItem? item)
-    {
-        if (item == null || IsRunning) return;
-
-        // EditPanelWindow‚ğ•\¦
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-        {
-            // •ÒW‘O‚ÌƒoƒbƒNƒAƒbƒv‚ğì¬
-            var backup = item.Clone();
-            var index = item.LineNumber - 1;
-
-            // •ÒWƒpƒlƒ‹‚ÉƒAƒCƒeƒ€‚ğƒZƒbƒg
-            _editPanel.SetItem(item);
-
-            var editWindow = new AutoTool.Panels.View.EditPanelWindow();
-            editWindow.SetEditPanelDataContext(EditPanelViewModel);
-            editWindow.Owner = System.Windows.Application.Current.MainWindow;
-            
-            var result = editWindow.ShowDialog();
-            
-            if (result == true)
-            {
-                // OK‚Ìê‡F•ÏX‚ğŠm’èiUndo/Redo‘Î‰j
-                if (_commandHistory != null)
-                {
-                    var editCommand = new EditItemCommand(
-                        backup, item, index,
-                        (editedItem, editIndex) => _listPanel.ReplaceAt(editIndex, editedItem)
-                    );
-                    _commandHistory.ExecuteCommand(editCommand);
-                }
-            }
-            else
-            {
-                // ƒLƒƒƒ“ƒZƒ‹‚Ìê‡FƒoƒbƒNƒAƒbƒv‚©‚ç•œŒ³
-                _listPanel.ReplaceAt(index, backup);
-                _editPanel.SetItem(backup);
-            }
-        });
-    }
-
-    private void HandleStartCommand(ICommand command)
-    {
-        var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
-        var commandName = command.GetType().Name.Replace("Command", "").PadRight(20, ' ');
-
-        var settingDict = command.Settings.GetType().GetProperties()
-            .ToDictionary(x => x.Name, x => x.GetValue(command.Settings, null));
-        var logString = string.Join(", ", settingDict.Select(s => $"({s.Key} = {s.Value})"));
-
-        _logPanel.WriteLog(lineNumber, commandName, logString);
-        _logWriter.Write(lineNumber, commandName, logString);
-
-        var commandItem = _listPanel.GetItem(command.LineNumber);
-        if (commandItem != null)
-        {
-            commandItem.Progress = 0;
-            commandItem.IsRunning = true;
-        }
-    }
-
-    private void HandleFinishCommand(ICommand command)
-    {
-        var commandItem = _listPanel.GetItem(command.LineNumber);
-        if (commandItem != null)
-        {
-            commandItem.Progress = 0;
-            commandItem.IsRunning = false;
-        }
-    }
-
-    private void HandleDoingCommand(ICommand command, string detail)
-    {
-        var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
-        var commandName = command.GetType().Name.Replace("Command", "").PadRight(20, ' ');
-        _logPanel.WriteLog(lineNumber, commandName, detail);
-        _logWriter.Write(lineNumber, commandName, detail);
-    }
-
-    private void HandleUpdateProgress(ICommand command, int progress)
-    {
-        var commandItem = _listPanel.GetItem(command.LineNumber);
-        if (commandItem != null)
-        {
-            commandItem.Progress = progress;
-        }
-    }
-
-    private void RestoreItems(System.Collections.Generic.IEnumerable<ICommandListItem> items)
-    {
-        _listPanel.Clear();
-        foreach (var item in items)
-        {
-            _listPanel.AddItem(item.Clone());
-        }
-        _editPanel.SetListCount(_listPanel.GetCount());
-    }
-
-    public async Task Run()
-    {
-        var listItems = _listPanel.CommandList.Items;
-        var macro = _macroFactory.CreateMacro(listItems) as LoopCommand;
-
-        if (macro == null) return;
-
-        try
-        {
-            _cts = new CancellationTokenSource();
-            await macro.Execute(_cts.Token);
-        }
-        catch (Exception ex)
-        {
-            if (_cts is { Token.IsCancellationRequested: false })
-            {
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                {
-                    _notifier.ShowError(ex.Message, "Error");
-                });
-            }
-        }
-        finally
-        {
-            // UIƒXƒŒƒbƒh‚ÅŒãˆ—
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                foreach (var item in listItems.Where(x => x.IsRunning))
-                {
-                    item.IsRunning = false;
-                }
-                foreach (var item in _listPanel.CommandList.Items)
-                {
-                    item.Progress = 0;
-                }
-
-                _cts?.Dispose();
-                _cts = null;
-                SetRunningState(false);
-            });
-        }
     }
 
     public void SetRunningState(bool isRunning)
@@ -440,28 +89,14 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _logPanel.SetRunningState(isRunning);
     }
 
-    public void SaveMacroFile(string filePath) => _listPanel.Save(filePath);
-
-    public void LoadMacroFile(string filePath)
-    { 
-        _listPanel.Load(filePath); 
-        _editPanel.SetListCount(_listPanel.GetCount()); 
-    }
-
     public void Dispose()
     {
         if (_disposed) return;
-        
-        _commandEventBus.Started -= OnCommandStarted;
-        _commandEventBus.Finished -= OnCommandFinished;
-        _commandEventBus.Doing -= OnCommandDoing;
-        _commandEventBus.ProgressUpdated -= OnCommandProgressUpdated;
+
+        UnsubscribeCommandEventHandlers();
         _cts?.Dispose();
         _disposed = true;
-        
+
         GC.SuppressFinalize(this);
     }
 }
-
-
-

@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;

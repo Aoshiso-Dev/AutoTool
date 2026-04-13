@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿﻿using CommunityToolkit.Mvvm.ComponentModel;
 using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.List.Interface;
 using System.ComponentModel;
@@ -10,7 +10,6 @@ namespace AutoTool.Panels.ViewModel;
 public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 {
     private readonly ICommandRegistry _commandRegistry;
-    private object? _commandHistory;
 
     // イベント
     public event Action<ICommandListItem?>? SelectedItemChanged;
@@ -74,10 +73,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     /// <summary>
     /// CommandHistoryManagerを設定
     /// </summary>
-    public void SetCommandHistory(object commandHistory)
-    {
-        _commandHistory = commandHistory;
-    }
+    public void SetCommandHistory(AutoTool.Model.CommandHistoryManager commandHistory) { }
 
     #region OnChanged
     private void OnSelectedLineNumberChanged()
@@ -179,7 +175,8 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
             {
                 SelectedLineNumber = index;
             }
-            // Refresh()を削除
+            // 同じ index が再設定されたケースでも選択状態を同期
+            OnSelectedLineNumberChanged();
         }
     }
 
@@ -240,10 +237,15 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
     public void Delete()
     {
-        if (SelectedItem == null) return;
+        var targetItem = SelectedItem;
+        if (targetItem == null && SelectedLineNumber >= 0 && SelectedLineNumber < CommandList.Items.Count)
+        {
+            targetItem = CommandList.Items[SelectedLineNumber];
+        }
+        if (targetItem == null) return;
 
-        var index = CommandList.Items.IndexOf(SelectedItem);
-        CommandList.Remove(SelectedItem);
+        var index = CommandList.Items.IndexOf(targetItem);
+        CommandList.Remove(targetItem);
 
         if (CommandList.Items.Count == 0)
         {
@@ -257,6 +259,9 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         {
             SelectedLineNumber = index;
         }
+
+        // 同じ index が再設定されたケースでも選択状態を同期
+        OnSelectedLineNumberChanged();
     }
 
     public void Clear()
@@ -282,21 +287,6 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
             // CollectionViewを更新して日本語表示名を適用
             CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
             
-            // 各アイテムのプロパティ変更通知を発火してUI更新
-            foreach (var item in CommandList.Items)
-            {
-                if (item is System.ComponentModel.INotifyPropertyChanged notifyItem)
-                {
-                    // ItemTypeプロパティの変更を通知（コンバーターが再実行される）
-                    var propertyInfo = item.GetType().GetProperty(nameof(item.ItemType));
-                    if (propertyInfo != null)
-                    {
-                        // 現在の値を再設定してプロパティ変更通知を発火
-                        var currentValue = item.ItemType;
-                        item.ItemType = currentValue;
-                    }
-                }
-            }
         }
         #endregion
 

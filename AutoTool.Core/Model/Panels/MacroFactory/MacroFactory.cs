@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
@@ -56,15 +56,21 @@ public class MacroFactory : IMacroFactory
     private IEnumerable<ICommand> ListItemToCommand(ICommand parent, IEnumerable<ICommandListItem> items)
     {
         var commands = new List<ICommand>();
+        var skippedLines = new HashSet<int>();
         foreach (var item in items)
         {
+            if (skippedLines.Contains(item.LineNumber)) continue;
             if (!item.IsEnable) continue;
             Debug.WriteLine($"Create: {item.LineNumber}, {item.ItemType}");
 
             try
             {
                 var command = CreateCommand(parent, item, items);
-                if (command != null) commands.Add(command);
+                if (command != null)
+                {
+                    commands.Add(command);
+                    MarkChildLinesAsSkipped(item, skippedLines);
+                }
             }
             catch (Exception ex)
             {
@@ -78,8 +84,6 @@ public class MacroFactory : IMacroFactory
 
     private ICommand? CreateCommand(ICommand parent, ICommandListItem item, IEnumerable<ICommandListItem> items)
     {
-        if (item.IsInLoop || item.IsInIf) return null;
-
         _commandRegistry.Initialize();
 
         var simpleResult = _commandRegistry.CreateSimple(parent, item, _serviceProvider);
@@ -100,5 +104,26 @@ public class MacroFactory : IMacroFactory
         }
 
         return builder.Build(parent, item, items, (p, children) => ListItemToCommand(p, children));
+    }
+
+    private static void MarkChildLinesAsSkipped(ICommandListItem item, ISet<int> skippedLines)
+    {
+        switch (item)
+        {
+            case IIfItem ifItem when ifItem.Pair != null:
+                MarkRange(ifItem.LineNumber + 1, ifItem.Pair.LineNumber, skippedLines);
+                break;
+            case ILoopItem loopItem when loopItem.Pair != null:
+                MarkRange(loopItem.LineNumber + 1, loopItem.Pair.LineNumber, skippedLines);
+                break;
+        }
+    }
+
+    private static void MarkRange(int fromInclusive, int toInclusive, ISet<int> set)
+    {
+        for (var line = fromInclusive; line <= toInclusive; line++)
+        {
+            set.Add(line);
+        }
     }
 }

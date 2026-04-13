@@ -1,9 +1,9 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using System.IO;
 
 namespace AutoTool.Infrastructure;
 
-public sealed class AsyncFileLog : IDisposable
+public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
 {
     private readonly Channel<string> _logChannel;
     private readonly ChannelWriter<string> _writer;
@@ -13,6 +13,7 @@ public sealed class AsyncFileLog : IDisposable
     private readonly CancellationTokenSource _cancellationTokenSource;
     private readonly Task _processingTask;
     private volatile bool _disposed;
+    private const int FlushBatchSize = 32;
 
     public AsyncFileLog()
     {
@@ -73,12 +74,17 @@ public sealed class AsyncFileLog : IDisposable
             await using var fileStream = new FileStream(_logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, 4096);
             await using var streamWriter = new StreamWriter(fileStream);
 
+            var bufferedMessages = new List<string>(FlushBatchSize);
+
             await foreach (var logMessage in _reader.ReadAllAsync(cancellationToken))
             {
                 try
                 {
-                    await streamWriter.WriteLineAsync(logMessage);
-                    await streamWriter.FlushAsync(cancellationToken);
+                    bufferedMessages.Add(logMessage);
+                    if (bufferedMessages.Count >= FlushBatchSize)
+                    {
+                        await FlushBatchAsync(streamWriter, bufferedMessages, cancellationToken);
+                    }
                 }
                 catch (IOException ioEx)
                 {
@@ -88,6 +94,11 @@ public sealed class AsyncFileLog : IDisposable
                 {
                     Console.WriteLine($"ログ処理でエラーが発生しました: {ex.Message}");
                 }
+            }
+
+            if (bufferedMessages.Count > 0)
+            {
+                await FlushBatchAsync(streamWriter, bufferedMessages, cancellationToken);
             }
         }
         catch (OperationCanceledException)
@@ -102,6 +113,18 @@ public sealed class AsyncFileLog : IDisposable
 
     public void Dispose()
     {
+        try
+        {
+            DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Log dispose error: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
         if (_disposed)
         {
             return;
@@ -112,7 +135,18 @@ public sealed class AsyncFileLog : IDisposable
         try
         {
             _writer.Complete();
-            _processingTask.Wait(TimeSpan.FromSeconds(5));
+            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(5));
+            var completed = await Task.WhenAny(_processingTask, timeoutTask);
+            if (completed != _processingTask)
+            {
+                _cancellationTokenSource.Cancel();
+            }
+
+            await _processingTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // normal on shutdown
         }
         catch (Exception ex)
         {
@@ -123,5 +157,16 @@ public sealed class AsyncFileLog : IDisposable
             _cancellationTokenSource.Cancel();
             _cancellationTokenSource.Dispose();
         }
+    }
+
+    private static async Task FlushBatchAsync(StreamWriter writer, List<string> messages, CancellationToken cancellationToken)
+    {
+        foreach (var message in messages)
+        {
+            await writer.WriteLineAsync(message);
+        }
+
+        messages.Clear();
+        await writer.FlushAsync(cancellationToken);
     }
 }

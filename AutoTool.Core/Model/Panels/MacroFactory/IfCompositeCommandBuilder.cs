@@ -1,4 +1,4 @@
-using AutoTool.Commands.Commands;
+﻿using AutoTool.Commands.Commands;
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
 using AutoTool.Panels.List.Class;
@@ -41,11 +41,6 @@ public sealed class IfCompositeCommandBuilder : ICompositeCommandBuilder
 
         var ifCommand = CreateIfCommandInstance(parent, ifItem);
         ifCommand.Children = buildChildren(ifCommand, childrenListItems);
-
-        foreach (var child in childrenListItems.Where(x => x.NestLevel == ifItem.NestLevel + 1))
-        {
-            child.IsInIf = true;
-        }
 
         return ifCommand;
     }

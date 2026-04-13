@@ -1,12 +1,12 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+ï»¿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using AutoTool.ViewModel;
 using AutoTool.Model;
 using static AutoTool.Model.FileManager;
 using AutoTool.Core.Ports;
-using System.Windows.Threading;
 using INotifier = AutoTool.Commands.Services.INotifier;
+using System.ComponentModel;
 
 namespace AutoTool;
 
@@ -23,7 +23,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IFilePicker _filePicker;
     private readonly IRecentFileStore _recentFileStore;
     private readonly ILogWriter _logWriter;
-    private readonly DispatcherTimer _updateTimer;
+    private bool _lastKnownIsRunning;
     private bool _disposed;
 
     [ObservableProperty]
@@ -79,18 +79,18 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     public ObservableCollection<RecentFile>? RecentFiles => _fileManagers[SelectedTabIndex].RecentFiles;
 
     public string MenuItemHeader_SaveFile => IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened 
-        ? $"{CurrentFileName} ‚ð•Û‘¶" 
-        : "•Û‘¶";
+        ? $"{CurrentFileName} ã‚’ä¿å­˜" 
+        : "ä¿å­˜";
 
     public string MenuItemHeader_SaveFileAs => IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened 
-        ? $"{CurrentFileName} ‚ð–¼‘O‚ð•t‚¯‚Ä•Û‘¶" 
-        : "–¼‘O‚ð•t‚¯‚Ä•Û‘¶";
+        ? $"{CurrentFileName} ã‚’åå‰ã‚’ä»˜ã‘ã¦ä¿å­˜" 
+        : "åå‰ã‚’ä»˜ã‘ã¦ä¿å­˜";
 
     [ObservableProperty]
     private MacroPanelViewModel _macroPanelViewModel;
 
     [ObservableProperty]
-    private string _statusMessage = "€”õŠ®—¹";
+    private string _statusMessage = "æº–å‚™å®Œäº†";
 
     public MainWindowViewModel(
         INotifier notifier,
@@ -109,23 +109,21 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         InitializeFileManager();
         InitializeCommandHistory();
-
-        // IsRunning‚ð’èŠú“I‚ÉXV‚·‚é
-        _updateTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(100)
-        };
-        _updateTimer.Tick += OnUpdateTimerTick;
-        _updateTimer.Start();
+        _lastKnownIsRunning = IsRunning;
+        MacroPanelViewModel.PropertyChanged += OnMacroPanelPropertyChanged;
     }
 
-    private void OnUpdateTimerTick(object? sender, EventArgs e)
+    private void OnMacroPanelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        var wasRunning = IsRunning;
-        OnPropertyChanged(nameof(IsRunning));
-        
-        if (wasRunning != IsRunning)
+        if (e.PropertyName != nameof(MacroPanelViewModel.IsRunning))
         {
+            return;
+        }
+
+        OnPropertyChanged(nameof(IsRunning));
+        if (_lastKnownIsRunning != IsRunning)
+        {
+            _lastKnownIsRunning = IsRunning;
             UpdateCommandStates();
         }
     }
@@ -152,11 +150,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             new FileManager(
                 new FileTypeInfo
                 {
-                    Filter = "AutoTool ƒ}ƒNƒƒtƒ@ƒCƒ‹(*.macro)|*.macro",
+                    Filter = "AutoTool ãƒžã‚¯ãƒ­ãƒ•ã‚¡ã‚¤ãƒ«(*.macro)|*.macro",
                     FilterIndex = 1,
                     RestoreDirectory = true,
                     DefaultExt = "macro",
-                    Title = "ƒ}ƒNƒƒtƒ@ƒCƒ‹‚ðŠJ‚­",
+                    Title = "ãƒžã‚¯ãƒ­ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã",
                 },
                 SaveFile,
                 LoadFile,
@@ -188,7 +186,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         const string githubUrl = "https://github.com/Aoshiso-Dev/AutoTool";
         var versionString = $"{version?.Major}.{version?.Minor}.{version?.Build}";
 
-        _notifier.ShowInfo($"{appName}\nVer.{versionString}\n{githubUrl}", "ƒo[ƒWƒ‡ƒ“î•ñ");
+        _notifier.ShowInfo($"{appName}\nVer.{versionString}\n{githubUrl}", "ãƒãƒ¼ã‚¸ãƒ§ãƒ³æƒ…å ±");
     }
 
     [RelayCommand]
@@ -201,7 +199,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         else
         {
-            _notifier.ShowError("ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ÌƒfƒBƒŒƒNƒgƒŠ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½B", "ƒGƒ‰[");
+            _notifier.ShowError("ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã§ã—ãŸã€‚", "ã‚¨ãƒ©ãƒ¼");
         }
     }
 
@@ -210,7 +208,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         _fileManagers[SelectedTabIndex].OpenFile(filePath);
         CommandHistory.Clear();
-        StatusMessage = $"ƒtƒ@ƒCƒ‹‚ðŠJ‚«‚Ü‚µ‚½: {CurrentFileName}";
+        StatusMessage = $"ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ãã¾ã—ãŸ: {CurrentFileName}";
         UpdateProperties();
     }
 
@@ -219,17 +217,24 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
-            StatusMessage = "•Û‘¶’†...";
+            // æœªä¿å­˜ï¼ˆæ–°è¦ï¼‰çŠ¶æ…‹ã§ã¯ã€Œåå‰ã‚’ä»˜ã‘ã¦ä¿å­˜ã€ã«ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯
+            if (!IsFileOpened || string.IsNullOrWhiteSpace(CurrentFilePath))
+            {
+                SaveFileAs();
+                return;
+            }
+
+            StatusMessage = "ä¿å­˜ä¸­...";
             _fileManagers[SelectedTabIndex].SaveFile();
             UpdateProperties();
             
-            StatusMessage = $"•Û‘¶Š®—¹: {CurrentFileName}";
-            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "€”õŠ®—¹");
+            StatusMessage = $"ä¿å­˜å®Œäº†: {CurrentFileName}";
+            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "æº–å‚™å®Œäº†");
         }
         catch (Exception ex)
         {
-            StatusMessage = "•Û‘¶‚ÉŽ¸”s‚µ‚Ü‚µ‚½";
-            _notifier.ShowError($"ƒtƒ@ƒCƒ‹‚Ì•Û‘¶‚ÉŽ¸”s‚µ‚Ü‚µ‚½B\n{ex.Message}", "•Û‘¶ƒGƒ‰[");
+            StatusMessage = "ä¿å­˜ã«å¤±æ•—ã—ã¾ã—ãŸ";
+            _notifier.ShowError($"ãƒ•ã‚¡ã‚¤ãƒ«ã®ä¿å­˜ã«å¤±æ•—ã—ã¾ã—ãŸã€‚\n{ex.Message}", "ä¿å­˜ã‚¨ãƒ©ãƒ¼");
         }
     }
 
@@ -238,17 +243,17 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
-            StatusMessage = "–¼‘O‚ð•t‚¯‚Ä•Û‘¶’†...";
+            StatusMessage = "åå‰ã‚’ä»˜ã‘ã¦ä¿å­˜ä¸­...";
             _fileManagers[SelectedTabIndex].SaveFileAs();
             UpdateProperties();
             
-            StatusMessage = $"•Û‘¶Š®—¹: {CurrentFileName}";
-            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "€”õŠ®—¹");
+            StatusMessage = $"ä¿å­˜å®Œäº†: {CurrentFileName}";
+            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "æº–å‚™å®Œäº†");
         }
         catch (Exception ex)
         {
-            StatusMessage = "•Û‘¶‚ÉŽ¸”s‚µ‚Ü‚µ‚½";
-            _notifier.ShowError($"ƒtƒ@ƒCƒ‹‚Ì•Û‘¶‚ÉŽ¸”s‚µ‚Ü‚µ‚½B\n{ex.Message}", "•Û‘¶ƒGƒ‰[");
+            StatusMessage = "ä¿å­˜ã«å¤±æ•—ã—ã¾ã—ãŸ";
+            _notifier.ShowError($"ãƒ•ã‚¡ã‚¤ãƒ«ã®ä¿å­˜ã«å¤±æ•—ã—ã¾ã—ãŸã€‚\n{ex.Message}", "ä¿å­˜ã‚¨ãƒ©ãƒ¼");
         }
     }
 
@@ -256,20 +261,20 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void Undo()
     {
         CommandHistory.Undo();
-        StatusMessage = $"Œ³‚É–ß‚µ‚Ü‚µ‚½: {CommandHistory.RedoDescription}";
-        _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "€”õŠ®—¹");
+        StatusMessage = $"å…ƒã«æˆ»ã—ã¾ã—ãŸ: {CommandHistory.RedoDescription}";
+        _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "æº–å‚™å®Œäº†");
     }
 
     [RelayCommand(CanExecute = nameof(CanRedo))]
     private void Redo()
     {
         CommandHistory.Redo();
-        StatusMessage = $"‚â‚è’¼‚µ‚Ü‚µ‚½: {CommandHistory.UndoDescription}";
-        _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "€”õŠ®—¹");
+        StatusMessage = $"ã‚„ã‚Šç›´ã—ã¾ã—ãŸ: {CommandHistory.UndoDescription}";
+        _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "æº–å‚™å®Œäº†");
     }
 
     private bool CanOpenFile() => IsFileOperationEnable && !IsRunning;
-    private bool CanSaveFile() => IsFileOpened && !IsRunning;
+    private bool CanSaveFile() => IsFileOperationEnable && !IsRunning;
     private bool CanSaveFileAs() => IsFileOperationEnable && !IsRunning;
     private bool CanUndo() => !IsRunning && CommandHistory.CanUndo;
     private bool CanRedo() => !IsRunning && CommandHistory.CanRedo;
@@ -301,8 +306,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        
-        _updateTimer.Stop();
+
+        MacroPanelViewModel.PropertyChanged -= OnMacroPanelPropertyChanged;
         MacroPanelViewModel.Dispose();
         _disposed = true;
         

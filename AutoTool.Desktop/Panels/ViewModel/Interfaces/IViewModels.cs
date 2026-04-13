@@ -1,4 +1,5 @@
-﻿using AutoTool.Panels.List.Class;
+﻿using AutoTool.Model;
+using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.ViewModel;
@@ -17,7 +18,7 @@ public interface IListPanelViewModel
     event Action<ICommandListItem?>? SelectedItemChanged;
     event Action<ICommandListItem?>? ItemDoubleClicked;
     
-    void SetCommandHistory(object commandHistory);
+    void SetCommandHistory(CommandHistoryManager commandHistory);
     void Prepare();
     void SetRunningState(bool isRunning);
     void Refresh();
@@ -48,7 +49,6 @@ public interface IEditPanelViewModel
     
     // イベント
     event Action<ICommandListItem?>? ItemEdited;
-    event Action? RefreshRequested;
     
     void Prepare();
     void SetRunningState(bool isRunning);
@@ -102,5 +102,6 @@ public interface IFavoritePanelViewModel
     void Prepare();
     void SetRunningState(bool isRunning);
 }
+
 
 

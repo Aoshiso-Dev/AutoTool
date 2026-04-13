@@ -1,23 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Documents;
 
-namespace AutoTool.Panels.Model.List.Interface
+namespace AutoTool.Panels.Model.List.Interface;
+
+internal interface ICommandList
 {
-    internal interface ICommandList
-    {
-        public ObservableCollection<ICommandListItem> Items { get; }
-        public void Add(ICommandListItem item);
-        public void Remove(ICommandListItem item);
-        public void Clear();
-        public void Move(int oldIndex, int newIndex);
-        public void Copy(int oldIndex, int newIndex);
-        public void Save(string fileName);
-        public void Load(string fileName);
-    }
+    ObservableCollection<ICommandListItem> Items { get; }
+    void Add(ICommandListItem item);
+    void Remove(ICommandListItem item);
+    void Clear();
+    void Move(int oldIndex, int newIndex);
+    void Copy(int oldIndex, int newIndex);
+    void Save(string fileName);
+    void Load(string fileName);
 }
-

@@ -1,4 +1,4 @@
-using AutoTool.Commands.Commands;
+﻿using AutoTool.Commands.Commands;
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
 using AutoTool.Panels.Model.List.Interface;
@@ -48,11 +48,6 @@ public sealed class LoopCompositeCommandBuilder : ICompositeCommandBuilder
         loopCommand.LineNumber = loopItem.LineNumber;
         loopCommand.IsEnabled = loopItem.IsEnable;
         loopCommand.Children = buildChildren(loopCommand, childrenListItems);
-
-        foreach (var child in childrenListItems.Where(x => x.NestLevel == loopItem.NestLevel + 1))
-        {
-            child.IsInLoop = true;
-        }
 
         return loopCommand;
     }

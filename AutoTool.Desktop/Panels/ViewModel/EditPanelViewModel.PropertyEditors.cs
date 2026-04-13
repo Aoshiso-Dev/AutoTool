@@ -1,0 +1,235 @@
+﻿using CommunityToolkit.Mvvm.Input;
+using AutoTool.Commands.Infrastructure;
+using AutoTool.Panels.Attributes;
+using AutoTool.Panels.View;
+
+namespace AutoTool.Panels.ViewModel;
+
+public partial class EditPanelViewModel
+{
+    private void UpdatePropertyGroups()
+    {
+        PropertyGroups.Clear();
+        if (Item == null) return;
+
+        foreach (var group in _metadataProvider.GetGroupedMetadata(Item))
+        {
+            PropertyGroups.Add(group);
+        }
+
+        foreach (var group in PropertyGroups)
+        {
+            foreach (var prop in group.Properties)
+            {
+                SetupPropertyCommands(prop);
+            }
+        }
+    }
+
+    private void SetupPropertyCommands(PropertyMetadata prop)
+    {
+        switch (prop.EditorType)
+        {
+            case EditorType.ImagePicker:
+                prop.BrowseCommand = new RelayCommand(() => BrowseImageForProperty(prop));
+                prop.CaptureCommand = new RelayCommand(() => CaptureImageForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
+                break;
+
+            case EditorType.ColorPicker:
+                prop.PickColorCommand = new RelayCommand(() => PickColorForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => prop.Value = null);
+                break;
+
+            case EditorType.WindowInfo:
+                prop.GetWindowInfoCommand = new RelayCommand(() => GetWindowInfoForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
+                break;
+
+            case EditorType.FilePicker:
+                prop.BrowseCommand = new RelayCommand(() => BrowseFileForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
+                break;
+
+            case EditorType.DirectoryPicker:
+                prop.BrowseCommand = new RelayCommand(() => BrowseDirectoryForProperty(prop));
+                prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
+                break;
+
+            case EditorType.KeyPicker:
+                prop.PickKeyCommand = new RelayCommand(() => PickKeyForProperty(prop));
+                break;
+
+            case EditorType.PointPicker:
+                prop.PickPointCommand = new RelayCommand(() => PickPointForProperty(prop));
+                var yProp = PropertyGroups
+                    .SelectMany(g => g.Properties)
+                    .FirstOrDefault(p => p.PropertyInfo.Name == "Y" && p.Target == prop.Target);
+                prop.RelatedProperty = yProp;
+                break;
+        }
+    }
+
+    private void BrowseImageForProperty(PropertyMetadata prop)
+    {
+        var path = _panelDialogService.SelectImageFile();
+        if (!string.IsNullOrEmpty(path))
+        {
+            prop.Value = _pathResolver.ToRelativePath(path);
+            OnPropertyChanged(nameof(ImagePath));
+            OnPropertyChanged(nameof(PreviewImagePath));
+            OnPropertyChanged(nameof(HasImagePreview));
+            UpdateProperties();
+        }
+    }
+
+    private void CaptureImageForProperty(PropertyMetadata prop)
+    {
+        var cw = new CaptureWindow { Mode = 0 };
+        if (cw.ShowDialog() == true)
+        {
+            var path = _capturePathProvider.CreateCaptureFilePath();
+            var mat = Win32ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion);
+            Win32ScreenCaptureHelper.SaveCapture(mat, path);
+            prop.Value = _pathResolver.ToRelativePath(path);
+            OnPropertyChanged(nameof(ImagePath));
+            OnPropertyChanged(nameof(PreviewImagePath));
+            OnPropertyChanged(nameof(HasImagePreview));
+            UpdateProperties();
+        }
+    }
+
+    private void PickColorForProperty(PropertyMetadata prop)
+    {
+        var w = new ColorPickWindow();
+        w.ShowDialog();
+        if (w.Color.HasValue)
+        {
+            prop.Value = w.Color.Value;
+            UpdateProperties();
+        }
+    }
+
+    private void GetWindowInfoForProperty(PropertyMetadata prop)
+    {
+        var w = new GetWindowInfoWindow();
+        if (w.ShowDialog() == true)
+        {
+            prop.Value = w.WindowTitle;
+
+            var classNameProp = PropertyGroups
+                .SelectMany(g => g.Properties)
+                .FirstOrDefault(p => p.PropertyInfo.Name == "WindowClassName" && p.Target == prop.Target);
+
+            if (classNameProp != null)
+            {
+                classNameProp.Value = w.WindowClassName;
+            }
+
+            UpdateProperties();
+        }
+    }
+
+    private void BrowseFileForProperty(PropertyMetadata prop)
+    {
+        var path = _panelDialogService.SelectModelFile();
+        if (!string.IsNullOrEmpty(path))
+        {
+            prop.Value = _pathResolver.ToRelativePath(path);
+            UpdateProperties();
+        }
+    }
+
+    private void BrowseDirectoryForProperty(PropertyMetadata prop)
+    {
+        var path = _panelDialogService.SelectFolder();
+        if (!string.IsNullOrEmpty(path))
+        {
+            prop.Value = _pathResolver.ToRelativePath(path);
+            UpdateProperties();
+        }
+    }
+
+    private void PickKeyForProperty(PropertyMetadata prop)
+    {
+        var keyPickerWindow = new KeyPickerWindow();
+        if (keyPickerWindow.ShowDialog() == true)
+        {
+            prop.Value = keyPickerWindow.SelectedKey;
+            var allProps = PropertyGroups.SelectMany(g => g.Properties).Where(p => p.Target == prop.Target).ToList();
+            var ctrlProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Ctrl");
+            var altProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Alt");
+            var shiftProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Shift");
+
+            if (ctrlProp != null) ctrlProp.Value = keyPickerWindow.SelectedCtrl;
+            if (altProp != null) altProp.Value = keyPickerWindow.SelectedAlt;
+            if (shiftProp != null) shiftProp.Value = keyPickerWindow.SelectedShift;
+            UpdateProperties();
+        }
+    }
+
+    private void PickPointForProperty(PropertyMetadata prop)
+    {
+        var cw = new CaptureWindow { Mode = 1 };
+        if (cw.ShowDialog() != true) return;
+
+        var absoluteX = (int)cw.SelectedPoint.X;
+        var absoluteY = (int)cw.SelectedPoint.Y;
+
+        var windowTitleProp = PropertyGroups
+            .SelectMany(g => g.Properties)
+            .FirstOrDefault(p => p.PropertyInfo.Name == "WindowTitle" && p.Target == prop.Target);
+        var windowClassNameProp = PropertyGroups
+            .SelectMany(g => g.Properties)
+            .FirstOrDefault(p => p.PropertyInfo.Name == "WindowClassName" && p.Target == prop.Target);
+
+        var windowTitle = windowTitleProp?.Value?.ToString() ?? string.Empty;
+        var windowClassName = windowClassNameProp?.Value?.ToString() ?? string.Empty;
+
+        var (relativeX, relativeY, success, errorMessage) = _windowService.ConvertToRelativeCoordinates(
+            absoluteX, absoluteY, windowTitle, windowClassName);
+
+        if (prop.PropertyInfo.Name == "X")
+        {
+            prop.Value = relativeX;
+            var yProp = PropertyGroups
+                .SelectMany(g => g.Properties)
+                .FirstOrDefault(p => p.PropertyInfo.Name == "Y" && p.Target == prop.Target);
+            if (yProp != null)
+            {
+                yProp.Value = relativeY;
+            }
+            prop.NotifyRelatedValueChanged();
+        }
+        else if (prop.PropertyInfo.Name == "Y")
+        {
+            prop.Value = relativeY;
+            var xProp = PropertyGroups
+                .SelectMany(g => g.Properties)
+                .FirstOrDefault(p => p.PropertyInfo.Name == "X" && p.Target == prop.Target);
+            if (xProp != null)
+            {
+                xProp.Value = relativeX;
+                xProp.NotifyRelatedValueChanged();
+            }
+        }
+
+        UpdateProperties();
+
+        if (!string.IsNullOrEmpty(windowTitle) || !string.IsNullOrEmpty(windowClassName))
+        {
+            if (success)
+            {
+                _notifier.ShowInfo(
+                    $"Relative coordinates set: ({relativeX}, {relativeY})\nWindow: {windowTitle}[{windowClassName}]",
+                    "Coordinates Set");
+            }
+            else
+            {
+                _notifier.ShowWarning(
+                    $"{errorMessage}\nAbsolute coordinates ({relativeX}, {relativeY}) set.",
+                    "Warning");
+            }
+        }
+    }
+}
