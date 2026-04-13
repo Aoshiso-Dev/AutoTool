@@ -53,35 +53,27 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
         SelectedItemType = ItemTypes.FirstOrDefault();
     }
 
-    /// <summary>
-    /// 実行/停止コマンド - 同期メソッドで即座に返す
-    /// </summary>
     [RelayCommand]
-    public void Run()
+    public async Task Run()
     {
         if (IsRunning)
         {
-            // 停止要求を即座に発行
             StopRequested?.Invoke();
+            return;
         }
-        else
+
+        if (RunRequested == null)
         {
-            // 実行要求をfire-and-forget（awaitしない）
-            // Task.Runで別スレッドから実行開始することでUIをブロックしない
-            if (RunRequested != null)
-            {
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        await RunRequested.Invoke();
-                    }
-                    catch
-                    {
-                        // エラーはMacroPanelViewModelで処理される
-                    }
-                });
-            }
+            return;
+        }
+
+        try
+        {
+            await RunRequested.Invoke();
+        }
+        catch
+        {
+            // Errors are handled in MacroPanelViewModel.
         }
     }
 

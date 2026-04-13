@@ -1,4 +1,5 @@
 using AutoTool.Commands.Services;
+using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.ViewModel;
 
@@ -6,43 +7,71 @@ public partial class MacroPanelViewModel
 {
     private void SubscribeToChildViewModelEvents()
     {
-        _buttonPanel.RunRequested += async () =>
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                PrepareAllPanels();
-                SetAllPanelsRunningState(true);
-            });
-
-            await Run();
-        };
-
-        _buttonPanel.StopRequested += () =>
-        {
-            _cts?.Cancel();
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                SetAllPanelsRunningState(false);
-            });
-        };
-
-        _buttonPanel.SaveRequested += () => _listPanel.Save();
-        _buttonPanel.LoadRequested += () =>
-        {
-            _listPanel.Load();
-            _editPanel.SetListCount(_listPanel.GetCount());
-            _commandHistory?.Clear();
-        };
+        _buttonPanel.RunRequested += HandleRunRequestedAsync;
+        _buttonPanel.StopRequested += HandleStopRequested;
+        _buttonPanel.SaveRequested += HandleSaveRequested;
+        _buttonPanel.LoadRequested += HandleLoadRequested;
         _buttonPanel.ClearRequested += HandleClear;
         _buttonPanel.AddRequested += HandleAdd;
         _buttonPanel.UpRequested += HandleUp;
         _buttonPanel.DownRequested += HandleDown;
         _buttonPanel.DeleteRequested += HandleDelete;
 
-        _listPanel.SelectedItemChanged += item => _editPanel.SetItem(item);
+        _listPanel.SelectedItemChanged += HandleSelectedItemChanged;
         _listPanel.ItemDoubleClicked += HandleItemDoubleClick;
 
         _editPanel.ItemEdited += HandleEdit;
+    }
+
+    private void UnsubscribeFromChildViewModelEvents()
+    {
+        _buttonPanel.RunRequested -= HandleRunRequestedAsync;
+        _buttonPanel.StopRequested -= HandleStopRequested;
+        _buttonPanel.SaveRequested -= HandleSaveRequested;
+        _buttonPanel.LoadRequested -= HandleLoadRequested;
+        _buttonPanel.ClearRequested -= HandleClear;
+        _buttonPanel.AddRequested -= HandleAdd;
+        _buttonPanel.UpRequested -= HandleUp;
+        _buttonPanel.DownRequested -= HandleDown;
+        _buttonPanel.DeleteRequested -= HandleDelete;
+
+        _listPanel.SelectedItemChanged -= HandleSelectedItemChanged;
+        _listPanel.ItemDoubleClicked -= HandleItemDoubleClick;
+        _editPanel.ItemEdited -= HandleEdit;
+    }
+
+    private async Task HandleRunRequestedAsync()
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            PrepareAllPanels();
+            SetAllPanelsRunningState(true);
+        });
+
+        await Run();
+    }
+
+    private void HandleStopRequested()
+    {
+        _cts?.Cancel();
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            SetAllPanelsRunningState(false);
+        });
+    }
+
+    private void HandleSaveRequested() => _listPanel.Save();
+
+    private void HandleLoadRequested()
+    {
+        _listPanel.Load();
+        _editPanel.SetListCount(_listPanel.GetCount());
+        _commandHistory?.Clear();
+    }
+
+    private void HandleSelectedItemChanged(ICommandListItem? item)
+    {
+        _editPanel.SetItem(item);
     }
 
     private void RegisterCommandEventHandlers()

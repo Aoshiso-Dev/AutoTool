@@ -137,8 +137,7 @@ public partial class MacroPanelViewModel
         }
         else
         {
-            _listPanel.SetSelectedItem(item);
-            _listPanel.SetSelectedLineNumber(index);
+            _listPanel.ReplaceAt(index, item);
         }
     }
 

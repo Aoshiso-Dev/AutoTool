@@ -93,6 +93,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
 
+        UnsubscribeFromChildViewModelEvents();
         UnsubscribeCommandEventHandlers();
         _cts?.Dispose();
         _disposed = true;

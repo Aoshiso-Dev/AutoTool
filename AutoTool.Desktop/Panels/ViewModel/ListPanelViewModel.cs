@@ -10,6 +10,7 @@ namespace AutoTool.Panels.ViewModel;
 public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 {
     private readonly ICommandRegistry _commandRegistry;
+    private AutoTool.Model.CommandHistoryManager? _commandHistory;
 
     // イベント
     public event Action<ICommandListItem?>? SelectedItemChanged;
@@ -73,7 +74,10 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     /// <summary>
     /// CommandHistoryManagerを設定
     /// </summary>
-    public void SetCommandHistory(AutoTool.Model.CommandHistoryManager commandHistory) { }
+    public void SetCommandHistory(AutoTool.Model.CommandHistoryManager commandHistory)
+    {
+        _commandHistory = commandHistory ?? throw new ArgumentNullException(nameof(commandHistory));
+    }
 
     #region OnChanged
     private void OnSelectedLineNumberChanged()
@@ -278,43 +282,49 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public void Load(string filePath = "")
     {
         CommandList.Load(filePath);
-        SelectedLineNumber = 0;
-        SelectedItem = CommandList.Items.FirstOrDefault();
-
-            // 読み込み後にレジストリを初期化して表示名が正しく表示されるようにする
-            _commandRegistry.Initialize();
-            
-            // CollectionViewを更新して日本語表示名を適用
-            CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-            
-        }
-        #endregion
-
-        #region Call from MainWindowViewModel
-        public int GetCount()
+        if (CommandList.Items.Count > 0)
         {
-            return CommandList.Items.Count;
+            SelectedLineNumber = -1;
+            SelectedLineNumber = 0;
+        }
+        else
+        {
+            SelectedLineNumber = 0;
         }
 
-        public ICommandListItem? GetRunningItem()
-        {
-            return CommandList.Items.FirstOrDefault(x => x.IsRunning == true);
-        }
+        // 読み込み後にレジストリを初期化して表示名が正しく表示されるようにする
+        _commandRegistry.Initialize();
 
-        public ICommandListItem? GetItem(int lineNumber)
-        {
-            return CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber);
-        }
+        // CollectionViewを更新して日本語表示名を適用
+        CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+    }
+    #endregion
 
-        public void SetRunningState(bool isRunning)
-        {
-            IsRunning = isRunning;
-        }
+    #region Call from MainWindowViewModel
+    public int GetCount()
+    {
+        return CommandList.Items.Count;
+    }
 
-        public void SetSelectedItem(ICommandListItem? item)
-        {
-            SelectedItem = item;
-        }
+    public ICommandListItem? GetRunningItem()
+    {
+        return CommandList.Items.FirstOrDefault(x => x.IsRunning == true);
+    }
+
+    public ICommandListItem? GetItem(int lineNumber)
+    {
+        return CommandList.Items.FirstOrDefault(x => x.LineNumber == lineNumber);
+    }
+
+    public void SetRunningState(bool isRunning)
+    {
+        IsRunning = isRunning;
+    }
+
+    public void SetSelectedItem(ICommandListItem? item)
+    {
+        SelectedItem = item;
+    }
 
     public void SetSelectedLineNumber(int lineNumber)
     {
