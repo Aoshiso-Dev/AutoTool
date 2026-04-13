@@ -221,6 +221,38 @@ public class FileManagerTests
     }
 
     [Fact]
+    public void OpenFile_WhenFileExists_ReturnsTrueAndInvokesLoadAction()
+    {
+        var existingPath = Path.Combine(Path.GetTempPath(), $"existing-{Guid.NewGuid()}.macro");
+        File.WriteAllText(existingPath, "test");
+        var picker = new FakeFilePicker { OpenFilePath = existingPath };
+        var store = new FakeRecentFileStore();
+        var loadCalled = false;
+        var manager = CreateFileManager(
+            picker,
+            store,
+            loadAction: _ => loadCalled = true);
+
+        try
+        {
+            var opened = manager.OpenFile();
+
+            Assert.True(opened);
+            Assert.True(loadCalled);
+            Assert.True(manager.IsFileOpened);
+            Assert.Equal(existingPath, manager.CurrentFilePath);
+            Assert.Equal(Path.GetFileName(existingPath), manager.CurrentFileName);
+        }
+        finally
+        {
+            if (File.Exists(existingPath))
+            {
+                File.Delete(existingPath);
+            }
+        }
+    }
+
+    [Fact]
     public void SaveFileAs_WhenPickerCancelled_ReturnsFalseAndKeepsState()
     {
         var picker = new FakeFilePicker { SaveFilePath = null };
@@ -251,7 +283,11 @@ public class FileManagerTests
         Assert.True(store.SaveCalled);
     }
 
-    private static FileManager CreateFileManager(FakeFilePicker picker, FakeRecentFileStore store)
+    private static FileManager CreateFileManager(
+        FakeFilePicker picker,
+        FakeRecentFileStore store,
+        Action<string>? saveAction = null,
+        Action<string>? loadAction = null)
     {
         return new FileManager(
             new FileManager.FileTypeInfo
@@ -262,8 +298,8 @@ public class FileManagerTests
                 RestoreDirectory = true,
                 Title = "Open"
             },
-            _ => { },
-            _ => { },
+            saveAction ?? (_ => { }),
+            loadAction ?? (_ => { }),
             picker,
             store);
     }
