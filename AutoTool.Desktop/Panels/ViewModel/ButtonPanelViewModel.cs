@@ -76,7 +76,7 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
         }
         catch
         {
-            // Errors are handled in MacroPanelViewModel.
+            System.Diagnostics.Debug.WriteLine("RunRequested handler failed.");
         }
     }
 

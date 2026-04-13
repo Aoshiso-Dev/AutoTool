@@ -147,28 +147,29 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public void Add(string itemType)
     {
         var item = _commandRegistry.CreateCommandItem(itemType);
-
-        if (item != null)
+        if (item == null)
         {
-            item.ItemType = itemType;
-
-            if (CommandList.Items.Count != 0 && SelectedLineNumber >= 0)
-            {
-                CommandList.Insert(SelectedLineNumber + 1, item);
-            }
-            else
-            {
-                CommandList.Add(item);
-            }
-
-                SelectedLineNumber = CommandList.Items.IndexOf(item);
-
-                // 追加後にCollectionViewを更新
-                CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
-                
-                System.Diagnostics.Debug.WriteLine($"Added command: {item.ItemType} -> {_commandRegistry.GetDisplayName(item.ItemType)}");
-            }
+            return;
         }
+
+        item.ItemType = itemType;
+
+        if (CommandList.Items.Count != 0 && SelectedLineNumber >= 0)
+        {
+            CommandList.Insert(SelectedLineNumber + 1, item);
+        }
+        else
+        {
+            CommandList.Add(item);
+        }
+
+        SelectedLineNumber = CommandList.Items.IndexOf(item);
+
+        // 追加後にCollectionViewを更新
+        CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+
+        System.Diagnostics.Debug.WriteLine($"Added command: {item.ItemType} -> {_commandRegistry.GetDisplayName(item.ItemType)}");
+    }
 
     /// <summary>
     /// 指定位置にアイテムを挿入（Undo/Redo用）
