@@ -210,10 +210,18 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanOpenFile))]
     private void OpenFile(string filePath)
     {
-        _fileManagers[SelectedTabIndex].OpenFile(filePath);
-        CommandHistory.Clear();
-        StatusMessage = $"ファイルを開きました: {CurrentFileName}";
-        UpdateProperties();
+        try
+        {
+            _fileManagers[SelectedTabIndex].OpenFile(filePath);
+            CommandHistory.Clear();
+            StatusMessage = $"ファイルを開きました: {CurrentFileName}";
+            UpdateProperties();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = "ファイルを開けませんでした";
+            _notifier.ShowError($"ファイルの読み込みに失敗しました。\n{ex.Message}", "読み込みエラー");
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanSaveFile))]
