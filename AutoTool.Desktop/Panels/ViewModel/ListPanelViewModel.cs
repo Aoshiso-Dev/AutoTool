@@ -42,12 +42,18 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         {
             if (value == null)
             {
-                foreach (var item in CommandList.Items)
+                if (SelectedLineNumber != -1)
                 {
-                    item.IsSelected = false;
+                    SelectedLineNumber = -1;
                 }
-                _selectedLineNumber = -1;
-                SelectedItemChanged?.Invoke(null);
+                else
+                {
+                    foreach (var item in CommandList.Items)
+                    {
+                        item.IsSelected = false;
+                    }
+                    SelectedItemChanged?.Invoke(null);
+                }
                 return;
             }
 
