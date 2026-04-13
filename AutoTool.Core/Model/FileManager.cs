@@ -90,12 +90,12 @@ public partial class FileManager : ObservableObject
         }
     }
 
-    public void SaveFileAs()
+    public bool SaveFileAs()
     {
         var filePath = _filePicker.SaveFile(CreateDialogOptions());
         if (string.IsNullOrEmpty(filePath))
         {
-            return;
+            return false;
         }
 
         _saveFunc(filePath);
@@ -104,6 +104,7 @@ public partial class FileManager : ObservableObject
         CurrentFilePath = filePath;
         CurrentFileName = Path.GetFileName(filePath);
         IsFileOpened = true;
+        return true;
     }
 
     private FileDialogOptions CreateDialogOptions() => new(

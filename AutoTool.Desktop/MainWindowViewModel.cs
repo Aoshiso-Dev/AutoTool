@@ -262,7 +262,13 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         try
         {
             StatusMessage = "名前を付けて保存中...";
-            _fileManagers[SelectedTabIndex].SaveFileAs();
+            if (!_fileManagers[SelectedTabIndex].SaveFileAs())
+            {
+                StatusMessage = "保存をキャンセルしました";
+                _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
+                return;
+            }
+
             UpdateProperties();
             
             StatusMessage = $"保存完了: {CurrentFileName}";
