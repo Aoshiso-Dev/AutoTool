@@ -239,6 +239,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
+            if (!TryGetActiveFileManager(out var fileManager))
+            {
+                return;
+            }
+
             // 未保存（新規）状態では「名前を付けて保存」にフォールバック
             if (!IsFileOpened || string.IsNullOrWhiteSpace(CurrentFilePath))
             {
@@ -247,11 +252,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             }
 
             StatusMessage = "保存中...";
-            if (!TryGetActiveFileManager(out var fileManager))
-            {
-                return;
-            }
-
             fileManager.SaveFile();
             UpdateProperties();
             
@@ -270,8 +270,13 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
+            if (!TryGetActiveFileManager(out var fileManager))
+            {
+                return;
+            }
+
             StatusMessage = "名前を付けて保存中...";
-            if (!TryGetActiveFileManager(out var fileManager) || !fileManager.SaveFileAs())
+            if (!fileManager.SaveFileAs())
             {
                 StatusMessage = "保存をキャンセルしました";
                 _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
