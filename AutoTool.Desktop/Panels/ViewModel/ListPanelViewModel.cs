@@ -201,7 +201,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
             
             if (CommandList.Items.Count == 0)
             {
-                SelectedLineNumber = 0;
+                SelectedLineNumber = -1;
             }
             else if (index >= CommandList.Items.Count)
             {
@@ -285,7 +285,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
         if (CommandList.Items.Count == 0)
         {
-            SelectedLineNumber = 0;
+            SelectedLineNumber = -1;
         }
         else if (index == CommandList.Items.Count)
         {
