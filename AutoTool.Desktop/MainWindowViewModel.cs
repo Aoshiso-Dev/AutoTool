@@ -48,8 +48,10 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         get => _selectedTabIndex;
         set
         {
-            SetProperty(ref _selectedTabIndex, value);
-            UpdateProperties();
+            if (SetProperty(ref _selectedTabIndex, value))
+            {
+                UpdateProperties();
+            }
         }
     }
 
