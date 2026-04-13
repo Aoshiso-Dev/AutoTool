@@ -234,6 +234,23 @@ public class FileManagerTests
         Assert.False(store.SaveCalled);
     }
 
+    [Fact]
+    public void SaveFileAs_WhenPathProvided_ReturnsTrueAndUpdatesCurrentFile()
+    {
+        var savePath = Path.Combine(Path.GetTempPath(), $"save-{Guid.NewGuid()}.macro");
+        var picker = new FakeFilePicker { SaveFilePath = savePath };
+        var store = new FakeRecentFileStore();
+        var manager = CreateFileManager(picker, store);
+
+        var saved = manager.SaveFileAs();
+
+        Assert.True(saved);
+        Assert.True(manager.IsFileOpened);
+        Assert.Equal(savePath, manager.CurrentFilePath);
+        Assert.Equal(Path.GetFileName(savePath), manager.CurrentFileName);
+        Assert.True(store.SaveCalled);
+    }
+
     private static FileManager CreateFileManager(FakeFilePicker picker, FakeRecentFileStore store)
     {
         return new FileManager(
