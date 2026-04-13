@@ -37,8 +37,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
          
     private readonly Dictionary<int, FileManager> _fileManagers = [];
 
-    public string AutoToolTitle => IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened 
-        ? $"AutoTool - {CurrentFileName}" 
+    public string AutoToolTitle => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened
+        ? $"AutoTool - {CurrentFileName}"
         : "AutoTool";
 
     private int _selectedTabIndex = TabIndexes.Macro;
@@ -56,35 +56,42 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public bool IsFileOperationEnable => _fileManagers.ContainsKey(SelectedTabIndex);
 
-    public bool IsFileOpened => IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened;
+    public bool IsFileOpened => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened;
 
     public string CurrentFileName
     {
-        get => _fileManagers[SelectedTabIndex].CurrentFileName;
+        get => TryGetActiveFileManager(out var fileManager) ? fileManager.CurrentFileName : string.Empty;
         set
         {
-            _fileManagers[SelectedTabIndex].CurrentFileName = value;
-            OnPropertyChanged();
+            if (TryGetActiveFileManager(out var fileManager))
+            {
+                fileManager.CurrentFileName = value;
+                OnPropertyChanged();
+            }
         }
     }
 
     public string CurrentFilePath
     {
-        get => _fileManagers[SelectedTabIndex].CurrentFilePath;
+        get => TryGetActiveFileManager(out var fileManager) ? fileManager.CurrentFilePath : string.Empty;
         set
         {
-            _fileManagers[SelectedTabIndex].CurrentFilePath = value;
-            OnPropertyChanged();
+            if (TryGetActiveFileManager(out var fileManager))
+            {
+                fileManager.CurrentFilePath = value;
+                OnPropertyChanged();
+            }
         }
     }
 
-    public ObservableCollection<RecentFile>? RecentFiles => _fileManagers[SelectedTabIndex].RecentFiles;
+    public ObservableCollection<RecentFile>? RecentFiles =>
+        TryGetActiveFileManager(out var fileManager) ? fileManager.RecentFiles : null;
 
-    public string MenuItemHeader_SaveFile => IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened 
+    public string MenuItemHeader_SaveFile => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened
         ? $"{CurrentFileName} を保存" 
         : "保存";
 
-    public string MenuItemHeader_SaveFileAs => IsFileOperationEnable && _fileManagers[SelectedTabIndex].IsFileOpened 
+    public string MenuItemHeader_SaveFileAs => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened
         ? $"{CurrentFileName} を名前を付けて保存" 
         : "名前を付けて保存";
 
@@ -209,7 +216,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
-            if (!_fileManagers[SelectedTabIndex].OpenFile(filePath))
+            if (!TryGetActiveFileManager(out var fileManager) || !fileManager.OpenFile(filePath))
             {
                 StatusMessage = "ファイルを開けませんでした";
                 UpdateProperties();
@@ -240,7 +247,12 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             }
 
             StatusMessage = "保存中...";
-            _fileManagers[SelectedTabIndex].SaveFile();
+            if (!TryGetActiveFileManager(out var fileManager))
+            {
+                return;
+            }
+
+            fileManager.SaveFile();
             UpdateProperties();
             
             StatusMessage = $"保存完了: {CurrentFileName}";
@@ -259,7 +271,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         try
         {
             StatusMessage = "名前を付けて保存中...";
-            if (!_fileManagers[SelectedTabIndex].SaveFileAs())
+            if (!TryGetActiveFileManager(out var fileManager) || !fileManager.SaveFileAs())
             {
                 StatusMessage = "保存をキャンセルしました";
                 _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
@@ -299,6 +311,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private bool CanSaveFileAs() => IsFileOperationEnable && !IsRunning;
     private bool CanUndo() => !IsRunning && CommandHistory.CanUndo;
     private bool CanRedo() => !IsRunning && CommandHistory.CanRedo;
+
+    private bool TryGetActiveFileManager(out FileManager fileManager)
+    {
+        return _fileManagers.TryGetValue(SelectedTabIndex, out fileManager!);
+    }
 
     private void SaveFile(string filePath)
     {
