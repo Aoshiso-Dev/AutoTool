@@ -67,6 +67,12 @@ public partial class FileManager : ObservableObject
             }
         }
 
+        if (!File.Exists(filePath))
+        {
+            RemoveFromRecentFiles(filePath);
+            return;
+        }
+
         _loadFunc(filePath);
         AddToRecentFiles(filePath);
 
@@ -135,6 +141,18 @@ public partial class FileManager : ObservableObject
             RecentFiles?.RemoveAt(RecentFiles.Count - 1);
         }
 
+        SaveRecentFiles();
+    }
+
+    private void RemoveFromRecentFiles(string filePath)
+    {
+        var existingItem = RecentFiles?.FirstOrDefault(f => f.FilePath == filePath);
+        if (existingItem == null)
+        {
+            return;
+        }
+
+        RecentFiles?.Remove(existingItem);
         SaveRecentFiles();
     }
 
