@@ -126,7 +126,8 @@ public partial class FileManager : ObservableObject
 
     private void AddToRecentFiles(string filePath)
     {
-        var existingItem = RecentFiles?.FirstOrDefault(f => f.FilePath == filePath);
+        var existingItem = RecentFiles?.FirstOrDefault(f =>
+            string.Equals(f.FilePath, filePath, StringComparison.OrdinalIgnoreCase));
         if (existingItem != null)
         {
             RecentFiles?.Remove(existingItem);
@@ -148,7 +149,8 @@ public partial class FileManager : ObservableObject
 
     private void RemoveFromRecentFiles(string filePath)
     {
-        var existingItem = RecentFiles?.FirstOrDefault(f => f.FilePath == filePath);
+        var existingItem = RecentFiles?.FirstOrDefault(f =>
+            string.Equals(f.FilePath, filePath, StringComparison.OrdinalIgnoreCase));
         if (existingItem == null)
         {
             return;
