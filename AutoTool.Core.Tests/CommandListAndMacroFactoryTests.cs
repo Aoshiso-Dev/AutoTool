@@ -253,6 +253,27 @@ public class FileManagerTests
     }
 
     [Fact]
+    public void OpenFile_WhenMissingPathWithDifferentCase_PrunesRecentEntry()
+    {
+        var actualPath = Path.Combine(Path.GetTempPath(), $"case-{Guid.NewGuid()}.macro");
+        var recentPath = actualPath.ToUpperInvariant();
+        var picker = new FakeFilePicker { OpenFilePath = actualPath };
+        var store = new FakeRecentFileStore
+        {
+            Files = new ObservableCollection<FileManager.RecentFile>
+            {
+                new() { FileName = Path.GetFileName(recentPath), FilePath = recentPath }
+            }
+        };
+        var manager = CreateFileManager(picker, store);
+
+        var opened = manager.OpenFile();
+
+        Assert.False(opened);
+        Assert.Empty(manager.RecentFiles!);
+    }
+
+    [Fact]
     public void SaveFileAs_WhenPickerCancelled_ReturnsFalseAndKeepsState()
     {
         var picker = new FakeFilePicker { SaveFilePath = null };
