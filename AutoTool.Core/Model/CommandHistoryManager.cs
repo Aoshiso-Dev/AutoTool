@@ -19,6 +19,10 @@ public class CommandHistoryManager
 
     public void ExecuteCommand(IUndoRedoCommand command)
     {
+        if (command == null)
+        {
+            throw new ArgumentNullException(nameof(command));
+        }
         command.Execute();
         _undoStack.Push(command);
         _redoStack.Clear();
