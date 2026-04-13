@@ -56,11 +56,6 @@ public partial class FileManager : ObservableObject
         LoadRecentFiles();
     }
 
-    ~FileManager()
-    {
-        SaveRecentFiles();
-    }
-
     public void OpenFile(string filePath = "")
     {
         if (string.IsNullOrEmpty(filePath))
