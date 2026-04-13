@@ -38,7 +38,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
 
     public void Write(params string[] messages)
     {
-        if (_disposed)
+        if (_disposed || _writer.Completion.IsCompleted)
         {
             return;
         }
