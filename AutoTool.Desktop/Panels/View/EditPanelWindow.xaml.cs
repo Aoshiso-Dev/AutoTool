@@ -1,4 +1,10 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
+using WpfNumberBox = Wpf.Ui.Controls.NumberBox;
 using Wpf.Ui.Controls;
 
 namespace AutoTool.Panels.View;
@@ -20,6 +26,7 @@ public partial class EditPanelWindow : FluentWindow
 
     private void OkButton_Click(object sender, RoutedEventArgs e)
     {
+        CommitPendingEdits();
         DialogResult = true;
         Close();
     }
@@ -29,5 +36,41 @@ public partial class EditPanelWindow : FluentWindow
         DialogResult = false;
         Close();
     }
-}
 
+    private void CommitPendingEdits()
+    {
+        // フォーカス中コントロールの編集中テキストを確定させる
+        MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+        UpdateBindingsRecursive(this);
+    }
+
+    private static void UpdateBindingsRecursive(DependencyObject root)
+    {
+        switch (root)
+        {
+            case WpfNumberBox numberBox:
+                BindingOperations.GetBindingExpression(numberBox, WpfNumberBox.ValueProperty)?.UpdateSource();
+                break;
+            case System.Windows.Controls.TextBox textBox:
+                BindingOperations.GetBindingExpression(textBox, System.Windows.Controls.TextBox.TextProperty)?.UpdateSource();
+                break;
+            case System.Windows.Controls.ComboBox comboBox:
+                BindingOperations.GetBindingExpression(comboBox, System.Windows.Controls.ComboBox.SelectedItemProperty)?.UpdateSource();
+                BindingOperations.GetBindingExpression(comboBox, System.Windows.Controls.ComboBox.SelectedValueProperty)?.UpdateSource();
+                BindingOperations.GetBindingExpression(comboBox, System.Windows.Controls.ComboBox.TextProperty)?.UpdateSource();
+                break;
+            case System.Windows.Controls.Slider slider:
+                BindingOperations.GetBindingExpression(slider, System.Windows.Controls.Slider.ValueProperty)?.UpdateSource();
+                break;
+            case ToggleButton toggleButton:
+                BindingOperations.GetBindingExpression(toggleButton, ToggleButton.IsCheckedProperty)?.UpdateSource();
+                break;
+        }
+
+        var childCount = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < childCount; i++)
+        {
+            UpdateBindingsRecursive(VisualTreeHelper.GetChild(root, i));
+        }
+    }
+}

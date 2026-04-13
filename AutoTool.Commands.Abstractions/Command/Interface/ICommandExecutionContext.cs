@@ -1,4 +1,4 @@
-using AutoTool.Commands.Services;
+﻿using AutoTool.Commands.Services;
 using System.Windows.Input;
 using System.Windows.Media;
 

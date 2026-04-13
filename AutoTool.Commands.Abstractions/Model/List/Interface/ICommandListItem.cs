@@ -1,4 +1,4 @@
-using AutoTool.Commands.Interface;
+﻿using AutoTool.Commands.Interface;
 using System.Windows.Media;
 
 namespace AutoTool.Panels.Model.List.Interface

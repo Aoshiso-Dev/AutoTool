@@ -1,4 +1,4 @@
-namespace AutoTool.Commands.Services;
+﻿namespace AutoTool.Commands.Services;
 
 /// <summary>
 /// パス解決のインターフェース

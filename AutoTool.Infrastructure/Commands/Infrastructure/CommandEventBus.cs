@@ -1,4 +1,4 @@
-using AutoTool.Commands.Services;
+﻿using AutoTool.Commands.Services;
 using ICommand = AutoTool.Commands.Interface.ICommand;
 
 namespace AutoTool.Commands.Infrastructure;

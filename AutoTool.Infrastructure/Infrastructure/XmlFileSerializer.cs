@@ -1,4 +1,4 @@
-namespace AutoTool.Infrastructure;
+﻿namespace AutoTool.Infrastructure;
 
 public static class XmlFileSerializer
 {

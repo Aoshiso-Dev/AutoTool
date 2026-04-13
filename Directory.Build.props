@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <ItemGroup>
     <PackageReference Update="System.Drawing.Common" Version="7.0.0" />
   </ItemGroup>

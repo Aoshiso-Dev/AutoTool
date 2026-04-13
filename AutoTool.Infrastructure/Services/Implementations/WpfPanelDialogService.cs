@@ -1,4 +1,4 @@
-using AutoTool.Core.Ports;
+﻿using AutoTool.Core.Ports;
 using Microsoft.Win32;
 
 namespace AutoTool.Infrastructure.Implementations;

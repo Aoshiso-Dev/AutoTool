@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using AutoTool.Infrastructure;
 using AutoTool.Model;
 using AutoTool.Core.Ports;

@@ -8,7 +8,9 @@
         Width="300" Height="150"
         ResizeMode="NoResize"
         Topmost="True"
-        KeyDown="Window_KeyDown">
+        PreviewKeyDown="Window_KeyDown"
+        Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+        Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}">
     
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -20,12 +22,15 @@
         <TextBlock Grid.Row="0" Text="Press a key" 
                    FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,10"/>
         
-        <Border Grid.Row="1" Background="{ui:ThemeResource ControlFillColorDefaultBrush}"
+        <Border Grid.Row="1"
+                Background="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                BorderThickness="1"
                 CornerRadius="8" Padding="16">
             <TextBlock x:Name="KeyDisplayText" Text="(Waiting...)" 
                        FontSize="24" FontWeight="Bold" 
                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"/>
+                       Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
         </Border>
         
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">

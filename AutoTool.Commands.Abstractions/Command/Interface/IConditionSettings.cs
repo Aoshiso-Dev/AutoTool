@@ -1,4 +1,4 @@
-namespace AutoTool.Commands.Interface
+﻿namespace AutoTool.Commands.Interface
 {
     public interface IConditionSettings
     {

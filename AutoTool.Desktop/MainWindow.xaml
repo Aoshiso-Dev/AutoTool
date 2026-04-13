@@ -48,8 +48,7 @@
                     <ui:Button Icon="{ui:SymbolIcon Save24}" 
                                ToolTip="保存 (Ctrl+S)" 
                                Command="{Binding SaveFileCommand}"
-                               Appearance="Transparent"
-                               IsEnabled="{Binding IsFileOpened}"/>
+                               Appearance="Transparent"/>
                     <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
                     <ui:Button Icon="{ui:SymbolIcon ArrowUndo24}" 
                                ToolTip="{Binding CommandHistory.UndoDescription, StringFormat='元に戻す: {0}'}" 

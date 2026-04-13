@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using AutoTool.Core.Ports;
 using AutoTool.Panels.Helpers;
 

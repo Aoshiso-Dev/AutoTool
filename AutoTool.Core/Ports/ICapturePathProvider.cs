@@ -1,4 +1,4 @@
-namespace AutoTool.Core.Ports;
+﻿namespace AutoTool.Core.Ports;
 
 public interface ICapturePathProvider
 {

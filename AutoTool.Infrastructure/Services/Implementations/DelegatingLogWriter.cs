@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using AutoTool.Infrastructure;
 using AutoTool.Core.Ports;
 
