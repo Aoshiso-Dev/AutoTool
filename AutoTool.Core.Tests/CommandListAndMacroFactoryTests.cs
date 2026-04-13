@@ -157,6 +157,13 @@ public class CommandHistoryManagerTests
         public void Execute() { }
         public void Undo() { }
     }
+
+    [Fact]
+    public void ExecuteCommand_Null_ThrowsArgumentNullException()
+    {
+        var manager = new CommandHistoryManager();
+        Assert.Throws<ArgumentNullException>(() => manager.ExecuteCommand(null!));
+    }
 }
 
 internal sealed class FakeMacroFileSerializer : IMacroFileSerializer
