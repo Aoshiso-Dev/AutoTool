@@ -23,6 +23,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IFilePicker _filePicker;
     private readonly IRecentFileStore _recentFileStore;
     private readonly ILogWriter _logWriter;
+    private EventHandler? _commandHistoryChangedHandler;
     private bool _lastKnownIsRunning;
     private bool _disposed;
 
@@ -131,7 +132,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void InitializeCommandHistory()
     {
         MacroPanelViewModel.SetCommandHistory(CommandHistory);
-        CommandHistory.HistoryChanged += (_, _) => UpdateCommandStates();
+        _commandHistoryChangedHandler = (_, _) => UpdateCommandStates();
+        CommandHistory.HistoryChanged += _commandHistoryChangedHandler;
     }
 
     private void UpdateCommandStates()
@@ -306,6 +308,12 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
+
+        if (_commandHistoryChangedHandler != null)
+        {
+            CommandHistory.HistoryChanged -= _commandHistoryChangedHandler;
+            _commandHistoryChangedHandler = null;
+        }
 
         MacroPanelViewModel.PropertyChanged -= OnMacroPanelPropertyChanged;
         MacroPanelViewModel.Dispose();
