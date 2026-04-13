@@ -197,6 +197,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     {
         if (index >= 0 && index < CommandList.Items.Count)
         {
+            var previousLineNumber = SelectedLineNumber;
             CommandList.RemoveAt(index);
             
             if (CommandList.Items.Count == 0)
@@ -211,8 +212,12 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
             {
                 SelectedLineNumber = index;
             }
-            // 同じ index が再設定されたケースでも選択状態を同期
-            OnSelectedLineNumberChanged();
+
+            if (SelectedLineNumber == previousLineNumber)
+            {
+                // 同じ index が再設定されたケースでも選択状態を同期
+                OnSelectedLineNumberChanged();
+            }
         }
     }
 
@@ -280,6 +285,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         }
         if (targetItem == null) return;
 
+        var previousLineNumber = SelectedLineNumber;
         var index = CommandList.Items.IndexOf(targetItem);
         CommandList.Remove(targetItem);
 
@@ -296,8 +302,11 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
             SelectedLineNumber = index;
         }
 
-        // 同じ index が再設定されたケースでも選択状態を同期
-        OnSelectedLineNumberChanged();
+        if (SelectedLineNumber == previousLineNumber)
+        {
+            // 同じ index が再設定されたケースでも選択状態を同期
+            OnSelectedLineNumberChanged();
+        }
     }
 
     public void Clear()
