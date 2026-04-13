@@ -68,7 +68,6 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     public void SetCommandHistory(CommandHistoryManager commandHistory)
     {
         _commandHistory = commandHistory;
-        _listPanel.SetCommandHistory(commandHistory);
     }
 
     public void SaveMacroFile(string filePath) => _listPanel.Save(filePath);

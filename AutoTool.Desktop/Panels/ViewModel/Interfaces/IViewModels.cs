@@ -1,24 +1,18 @@
-﻿using AutoTool.Model;
-using AutoTool.Panels.List.Class;
+﻿using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.ViewModel;
 
-/// <summary>
-/// ListPanelViewModelのインターフェース
-/// </summary>
 public interface IListPanelViewModel
 {
     bool IsRunning { get; set; }
     CommandList CommandList { get; }
     int SelectedLineNumber { get; set; }
     ICommandListItem? SelectedItem { get; set; }
-    
-    // イベント
+
     event Action<ICommandListItem?>? SelectedItemChanged;
     event Action<ICommandListItem?>? ItemDoubleClicked;
-    
-    void SetCommandHistory(CommandHistoryManager commandHistory);
+
     void Prepare();
     void SetRunningState(bool isRunning);
     void Refresh();
@@ -40,16 +34,12 @@ public interface IListPanelViewModel
     void SetSelectedLineNumber(int lineNumber);
 }
 
-/// <summary>
-/// EditPanelViewModelのインターフェース
-/// </summary>
 public interface IEditPanelViewModel
 {
     bool IsRunning { get; set; }
-    
-    // イベント
+
     event Action<ICommandListItem?>? ItemEdited;
-    
+
     void Prepare();
     void SetRunningState(bool isRunning);
     void SetItem(ICommandListItem? item);
@@ -57,14 +47,10 @@ public interface IEditPanelViewModel
     ICommandListItem? GetItem();
 }
 
-/// <summary>
-/// ButtonPanelViewModelのインターフェース
-/// </summary>
 public interface IButtonPanelViewModel
 {
     bool IsRunning { get; set; }
-    
-    // イベント
+
     event Func<Task>? RunRequested;
     event Action? StopRequested;
     event Action? SaveRequested;
@@ -74,34 +60,25 @@ public interface IButtonPanelViewModel
     event Action? UpRequested;
     event Action? DownRequested;
     event Action? DeleteRequested;
-    
+
     void Prepare();
     void SetRunningState(bool isRunning);
 }
 
-/// <summary>
-/// LogPanelViewModelのインターフェース
-/// </summary>
 public interface ILogPanelViewModel
 {
     bool IsRunning { get; set; }
-    
+
     void Prepare();
     void SetRunningState(bool isRunning);
     void WriteLog(string text);
     void WriteLog(string lineNumber, string commandName, string detail);
 }
 
-/// <summary>
-/// FavoritePanelViewModelのインターフェース
-/// </summary>
 public interface IFavoritePanelViewModel
 {
     bool IsRunning { get; set; }
-    
+
     void Prepare();
     void SetRunningState(bool isRunning);
 }
-
-
-

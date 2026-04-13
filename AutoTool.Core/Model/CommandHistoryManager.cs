@@ -12,8 +12,8 @@ public class CommandHistoryManager
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
 
-    public string UndoDescription => CanUndo ? _undoStack.Peek().Description : "ãªã—";
-    public string RedoDescription => CanRedo ? _redoStack.Peek().Description : "ãªã—";
+    public string UndoDescription => CanUndo ? _undoStack.Peek().Description : "‚È‚µ";
+    public string RedoDescription => CanRedo ? _redoStack.Peek().Description : "‚È‚µ";
 
     public event EventHandler? HistoryChanged;
 

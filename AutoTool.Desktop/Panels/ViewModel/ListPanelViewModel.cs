@@ -10,7 +10,6 @@ namespace AutoTool.Panels.ViewModel;
 public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 {
     private readonly ICommandRegistry _commandRegistry;
-    private AutoTool.Model.CommandHistoryManager? _commandHistory;
 
     // イベント
     public event Action<ICommandListItem?>? SelectedItemChanged;
@@ -41,14 +40,37 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         get => CommandList.Items.FirstOrDefault(x => x.IsSelected);
         set
         {
-            if (value == null) return;
-
-            var existingItem = CommandList.Items.FirstOrDefault(x => x.IsSelected);
-            if (existingItem != null)
+            if (value == null)
             {
-                var index = CommandList.Items.IndexOf(existingItem);
-                CommandList.Override(index, value);
-                // Refresh()を削除 - ObservableCollectionが自動的に通知する
+                foreach (var item in CommandList.Items)
+                {
+                    item.IsSelected = false;
+                }
+                SelectedItemChanged?.Invoke(null);
+                return;
+            }
+
+            var index = CommandList.Items.IndexOf(value);
+            if (index < 0 && value.LineNumber > 0)
+            {
+                index = CommandList.Items.ToList().FindIndex(x => x.LineNumber == value.LineNumber);
+            }
+
+            if (index >= 0)
+            {
+                if (!ReferenceEquals(CommandList.Items[index], value))
+                {
+                    CommandList.Override(index, value);
+                }
+
+                SelectedLineNumber = index;
+                return;
+            }
+
+            if (SelectedLineNumber >= 0 && SelectedLineNumber < CommandList.Items.Count)
+            {
+                CommandList.Override(SelectedLineNumber, value);
+                OnSelectedLineNumberChanged();
             }
         }
     }
@@ -71,14 +93,6 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         _commandList = commandList ?? throw new ArgumentNullException(nameof(commandList));
     }
 
-    /// <summary>
-    /// CommandHistoryManagerを設定
-    /// </summary>
-    public void SetCommandHistory(AutoTool.Model.CommandHistoryManager commandHistory)
-    {
-        _commandHistory = commandHistory ?? throw new ArgumentNullException(nameof(commandHistory));
-    }
-
     #region OnChanged
     private void OnSelectedLineNumberChanged()
     {
@@ -92,7 +106,10 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         {
             existingItem.IsSelected = true;
             SelectedItemChanged?.Invoke(existingItem);
+            return;
         }
+
+        SelectedItemChanged?.Invoke(null);
         // Refresh()を削除 - IsSelectedはINotifyPropertyChangedで通知される
     }
 

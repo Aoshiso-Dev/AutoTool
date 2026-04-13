@@ -69,7 +69,10 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
 
         try
         {
-            await RunRequested.Invoke();
+            foreach (var handler in RunRequested.GetInvocationList())
+            {
+                await ((Func<Task>)handler)();
+            }
         }
         catch
         {
