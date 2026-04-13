@@ -46,7 +46,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         try
         {
             var formattedMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] " +
-                                   string.Join(" ", messages.Select(m => m.PadRight(20)));
+                                   string.Join(" ", messages.Select(m => (m ?? string.Empty).PadRight(20)));
 
             if (!_writer.TryWrite(formattedMessage))
             {
