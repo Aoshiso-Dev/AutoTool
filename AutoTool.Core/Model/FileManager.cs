@@ -56,21 +56,21 @@ public partial class FileManager : ObservableObject
         LoadRecentFiles();
     }
 
-    public void OpenFile(string filePath = "")
+    public bool OpenFile(string filePath = "")
     {
         if (string.IsNullOrEmpty(filePath))
         {
             filePath = _filePicker.OpenFile(CreateDialogOptions()) ?? string.Empty;
             if (string.IsNullOrEmpty(filePath))
             {
-                return;
+                return false;
             }
         }
 
         if (!File.Exists(filePath))
         {
             RemoveFromRecentFiles(filePath);
-            return;
+            return false;
         }
 
         _loadFunc(filePath);
@@ -79,6 +79,7 @@ public partial class FileManager : ObservableObject
         CurrentFilePath = filePath;
         CurrentFileName = Path.GetFileName(filePath);
         IsFileOpened = true;
+        return true;
     }
 
     public void SaveFile()

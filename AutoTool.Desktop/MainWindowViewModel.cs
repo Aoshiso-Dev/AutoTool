@@ -212,7 +212,13 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
-            _fileManagers[SelectedTabIndex].OpenFile(filePath);
+            if (!_fileManagers[SelectedTabIndex].OpenFile(filePath))
+            {
+                StatusMessage = "ファイルを開けませんでした";
+                UpdateProperties();
+                return;
+            }
+
             CommandHistory.Clear();
             StatusMessage = $"ファイルを開きました: {CurrentFileName}";
             UpdateProperties();
