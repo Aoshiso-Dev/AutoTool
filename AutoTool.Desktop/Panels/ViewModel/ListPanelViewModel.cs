@@ -303,8 +303,14 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public void Clear()
     {
         CommandList.Clear();
-        SelectedLineNumber = -1;
-        SelectedItemChanged?.Invoke(null);
+        if (SelectedLineNumber != -1)
+        {
+            SelectedLineNumber = -1;
+        }
+        else
+        {
+            SelectedItemChanged?.Invoke(null);
+        }
     }
 
     public void Save(string filePath = "")
@@ -322,8 +328,14 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         }
         else
         {
-            SelectedLineNumber = -1;
-            SelectedItemChanged?.Invoke(null);
+            if (SelectedLineNumber != -1)
+            {
+                SelectedLineNumber = -1;
+            }
+            else
+            {
+                SelectedItemChanged?.Invoke(null);
+            }
         }
 
         // 読み込み後にレジストリを初期化して表示名が正しく表示されるようにする
