@@ -94,6 +94,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
 
         UnsubscribeFromChildViewModelEvents();
         UnsubscribeCommandEventHandlers();
+        _cts?.Cancel();
         _cts?.Dispose();
         _disposed = true;
 
