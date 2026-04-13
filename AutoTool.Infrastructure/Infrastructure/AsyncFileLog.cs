@@ -48,7 +48,10 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
             var formattedMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] " +
                                    string.Join(" ", messages.Select(m => m.PadRight(20)));
 
-            _writer.TryWrite(formattedMessage);
+            if (!_writer.TryWrite(formattedMessage))
+            {
+                _ = EnqueueAsync(formattedMessage);
+            }
         }
         catch (InvalidOperationException)
         {
@@ -168,5 +171,17 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
 
         messages.Clear();
         await writer.FlushAsync(cancellationToken);
+    }
+
+    private async Task EnqueueAsync(string message)
+    {
+        try
+        {
+            await _writer.WriteAsync(message);
+        }
+        catch (Exception)
+        {
+            // Best-effort logging; ignore enqueue failures during shutdown.
+        }
     }
 }
