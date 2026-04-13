@@ -220,6 +220,20 @@ public class FileManagerTests
         Assert.True(store.SaveCalled);
     }
 
+    [Fact]
+    public void SaveFileAs_WhenPickerCancelled_ReturnsFalseAndKeepsState()
+    {
+        var picker = new FakeFilePicker { SaveFilePath = null };
+        var store = new FakeRecentFileStore();
+        var manager = CreateFileManager(picker, store);
+
+        var saved = manager.SaveFileAs();
+
+        Assert.False(saved);
+        Assert.False(manager.IsFileOpened);
+        Assert.False(store.SaveCalled);
+    }
+
     private static FileManager CreateFileManager(FakeFilePicker picker, FakeRecentFileStore store)
     {
         return new FileManager(
