@@ -22,7 +22,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IStatusMessageScheduler _statusMessageScheduler;
     private readonly IFilePicker _filePicker;
     private readonly IRecentFileStore _recentFileStore;
-    private readonly ILogWriter _logWriter;
     private EventHandler? _commandHistoryChangedHandler;
     private bool _lastKnownIsRunning;
     private bool _disposed;
@@ -100,14 +99,12 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IStatusMessageScheduler statusMessageScheduler,
         IFilePicker filePicker,
         IRecentFileStore recentFileStore,
-        ILogWriter logWriter,
         MacroPanelViewModel macroPanelViewModel)
     {
         _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
         _statusMessageScheduler = statusMessageScheduler ?? throw new ArgumentNullException(nameof(statusMessageScheduler));
         _filePicker = filePicker ?? throw new ArgumentNullException(nameof(filePicker));
         _recentFileStore = recentFileStore ?? throw new ArgumentNullException(nameof(recentFileStore));
-        _logWriter = logWriter ?? throw new ArgumentNullException(nameof(logWriter));
         MacroPanelViewModel = macroPanelViewModel ?? throw new ArgumentNullException(nameof(macroPanelViewModel));
 
         InitializeFileManager();
