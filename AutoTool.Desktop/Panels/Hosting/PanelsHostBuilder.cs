@@ -73,6 +73,7 @@ public static class PanelsHostBuilder
         // Panels向けUIサービス
         services.AddSingleton<IPanelDialogService, WpfPanelDialogService>();
         services.AddSingleton<ICapturePathProvider, CapturePathProvider>();
+        services.AddSingleton<IFavoriteMacroStore, XmlFavoriteMacroStore>();
 
         return services;
     }

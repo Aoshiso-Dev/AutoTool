@@ -21,6 +21,9 @@ public partial class MacroPanelViewModel
         _listPanel.ItemDoubleClicked += HandleItemDoubleClick;
 
         _editPanel.ItemEdited += HandleEdit;
+        _favoritePanel.AddRequested += HandleFavoriteAddRequested;
+        _favoritePanel.DeleteRequested += HandleFavoriteDeleteRequested;
+        _favoritePanel.LoadRequested += HandleFavoriteLoadRequested;
     }
 
     private void UnsubscribeFromChildViewModelEvents()
@@ -38,6 +41,9 @@ public partial class MacroPanelViewModel
         _listPanel.SelectedItemChanged -= HandleSelectedItemChanged;
         _listPanel.ItemDoubleClicked -= HandleItemDoubleClick;
         _editPanel.ItemEdited -= HandleEdit;
+        _favoritePanel.AddRequested -= HandleFavoriteAddRequested;
+        _favoritePanel.DeleteRequested -= HandleFavoriteDeleteRequested;
+        _favoritePanel.LoadRequested -= HandleFavoriteLoadRequested;
     }
 
     private async Task HandleRunRequestedAsync()

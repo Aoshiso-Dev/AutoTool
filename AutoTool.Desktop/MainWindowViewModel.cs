@@ -164,8 +164,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                     DefaultExt = "macro",
                     Title = "マクロファイルを開く",
                 },
-                SaveFile,
-                LoadFile,
+                filePath => MacroPanelViewModel.SaveMacroFile(filePath),
+                filePath => MacroPanelViewModel.LoadMacroFile(filePath),
                 _filePicker,
                 _recentFileStore
             )
@@ -320,30 +320,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private bool TryGetActiveFileManager(out FileManager fileManager)
     {
         return _fileManagers.TryGetValue(SelectedTabIndex, out fileManager!);
-    }
-
-    private void SaveFile(string filePath)
-    {
-        if (SelectedTabIndex == TabIndexes.Macro)
-        {
-            MacroPanelViewModel.SaveMacroFile(filePath);
-        }
-        else
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    private void LoadFile(string filePath)
-    {
-        if (SelectedTabIndex == TabIndexes.Macro)
-        {
-            MacroPanelViewModel.LoadMacroFile(filePath);
-        }
-        else
-        {
-            throw new NotImplementedException();
-        }
     }
 
     public void Dispose()

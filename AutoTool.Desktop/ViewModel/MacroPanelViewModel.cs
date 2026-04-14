@@ -1,10 +1,12 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using AutoTool.Commands.Services;
 using AutoTool.Panels.ViewModel;
 using AutoTool.Panels.Model.MacroFactory;
 using AutoTool.Panels.Model.CommandDefinition;
 using AutoTool.Model;
 using AutoTool.Core.Ports;
+using AutoTool.Panels.Serialization;
 
 namespace AutoTool.ViewModel;
 
@@ -14,6 +16,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private readonly ILogWriter _logWriter;
     private readonly ICommandEventBus _commandEventBus;
     private readonly IMacroFactory _macroFactory;
+    private readonly IMacroFileSerializer _macroFileSerializer;
     private readonly ICommandRegistry _commandRegistry;
     private readonly IListPanelViewModel _listPanel;
     private readonly IEditPanelViewModel _editPanel;
@@ -31,6 +34,12 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _selectedListTabIndex;
 
+    [ObservableProperty]
+    private bool _isFavoritePanelOpen;
+
+    [ObservableProperty]
+    private bool _isLogPanelOpen;
+
     // Exposed for view binding without concrete casts.
     public IListPanelViewModel ListPanelViewModel => _listPanel;
     public IEditPanelViewModel EditPanelViewModel => _editPanel;
@@ -43,6 +52,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         ILogWriter logWriter,
         ICommandEventBus commandEventBus,
         IMacroFactory macroFactory,
+        IMacroFileSerializer macroFileSerializer,
         ICommandRegistry commandRegistry,
         IListPanelViewModel listPanelViewModel,
         IEditPanelViewModel editPanelViewModel,
@@ -54,6 +64,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _logWriter = logWriter ?? throw new ArgumentNullException(nameof(logWriter));
         _commandEventBus = commandEventBus ?? throw new ArgumentNullException(nameof(commandEventBus));
         _macroFactory = macroFactory ?? throw new ArgumentNullException(nameof(macroFactory));
+        _macroFileSerializer = macroFileSerializer ?? throw new ArgumentNullException(nameof(macroFileSerializer));
         _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
         _listPanel = listPanelViewModel ?? throw new ArgumentNullException(nameof(listPanelViewModel));
         _editPanel = editPanelViewModel ?? throw new ArgumentNullException(nameof(editPanelViewModel));
@@ -63,6 +74,18 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
 
         SubscribeToChildViewModelEvents();
         RegisterCommandEventHandlers();
+    }
+
+    [RelayCommand]
+    private void ToggleFavoritePanel()
+    {
+        IsFavoritePanelOpen = !IsFavoritePanelOpen;
+    }
+
+    [RelayCommand]
+    private void ToggleLogPanel()
+    {
+        IsLogPanelOpen = !IsLogPanelOpen;
     }
 
     public void SetCommandHistory(CommandHistoryManager commandHistory)

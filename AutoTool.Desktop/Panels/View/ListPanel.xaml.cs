@@ -133,6 +133,66 @@ namespace AutoTool.Panels.View
         }
 
         /// <summary>
+        /// コマンド行の削除ボタンクリック時の処理
+        /// </summary>
+        private void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as FrameworkElement;
+            if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+            {
+                return;
+            }
+
+            if (DataContext is not ListPanelViewModel viewModel)
+            {
+                return;
+            }
+
+            viewModel.SelectedLineNumber = item.LineNumber - 1;
+            viewModel.Delete();
+        }
+
+        /// <summary>
+        /// コマンド行の上移動ボタンクリック時の処理
+        /// </summary>
+        private void MoveUpCommandButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as FrameworkElement;
+            if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+            {
+                return;
+            }
+
+            if (DataContext is not ListPanelViewModel viewModel)
+            {
+                return;
+            }
+
+            viewModel.SelectedLineNumber = item.LineNumber - 1;
+            viewModel.Up();
+        }
+
+        /// <summary>
+        /// コマンド行の下移動ボタンクリック時の処理
+        /// </summary>
+        private void MoveDownCommandButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as FrameworkElement;
+            if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+            {
+                return;
+            }
+
+            if (DataContext is not ListPanelViewModel viewModel)
+            {
+                return;
+            }
+
+            viewModel.SelectedLineNumber = item.LineNumber - 1;
+            viewModel.Down();
+        }
+
+        /// <summary>
         /// ビジュアルツリーから指定した型の子要素を検索
         /// </summary>
         private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject

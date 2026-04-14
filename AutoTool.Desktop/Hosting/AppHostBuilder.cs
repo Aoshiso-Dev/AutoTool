@@ -71,6 +71,7 @@ public static class AutoToolServiceExtensions
 
         // �ŋߎg�����t�@�C���X�g�A
         services.AddSingleton<IRecentFileStore, XmlRecentFileStore>();
+        services.AddSingleton<IFavoriteMacroStore, XmlFavoriteMacroStore>();
 
         // ���O
         services.AddSingleton<AutoTool.Infrastructure.AsyncFileLog>();

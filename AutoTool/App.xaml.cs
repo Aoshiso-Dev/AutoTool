@@ -53,9 +53,22 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        // ホストを停止して破棄
-        _host?.StopAsync().Wait();
-        _host?.Dispose();
+        // UIスレッドの同期コンテキストに依存せず停止処理を完了させる
+        if (_host != null)
+        {
+            try
+            {
+                _host.StopAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Services?.GetService<ILogWriter>()?.Write(ex);
+            }
+            finally
+            {
+                _host.Dispose();
+            }
+        }
 
         base.OnExit(e);
     }
@@ -65,12 +78,30 @@ public partial class App : Application
         var notifier = Services?.GetService<INotifier>();
         var logWriter = Services?.GetService<ILogWriter>();
 
-        notifier?.ShowError("予期しないエラーが発生しました: " + e.Exception.Message, "エラー");
-        logWriter?.Write(e.Exception);
+        var exception = e.Exception;
+        logWriter?.Write(exception);
+
+        if (IsCriticalException(exception))
+        {
+            notifier?.ShowError("致命的なエラーが発生したためアプリケーションを終了します。", "致命的エラー");
+            e.Handled = false;
+            return;
+        }
+
+        notifier?.ShowError("予期しないエラーが発生しました: " + exception.Message, "エラー");
 
         // 例外をハンドル済みとして設定
         e.Handled = true;
     }
+
+    private static bool IsCriticalException(Exception exception) =>
+        exception is OutOfMemoryException
+            or AccessViolationException
+            or AppDomainUnloadedException
+            or BadImageFormatException
+            or CannotUnloadAppDomainException
+            or InvalidProgramException
+            or StackOverflowException;
 }
 
 

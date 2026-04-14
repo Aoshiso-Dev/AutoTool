@@ -1,5 +1,6 @@
-﻿using AutoTool.Panels.List.Class;
+using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.List.Interface;
+using AutoTool.Model;
 
 namespace AutoTool.Panels.ViewModel;
 
@@ -78,7 +79,14 @@ public interface ILogPanelViewModel
 public interface IFavoritePanelViewModel
 {
     bool IsRunning { get; set; }
+    FavoriteMacroEntry? SelectedFavorite { get; set; }
+
+    event Action<string>? AddRequested;
+    event Action<FavoriteMacroEntry>? DeleteRequested;
+    event Action<FavoriteMacroEntry>? LoadRequested;
 
     void Prepare();
     void SetRunningState(bool isRunning);
+    void AddFavorite(FavoriteMacroEntry favorite);
+    void RemoveFavorite(FavoriteMacroEntry favorite);
 }

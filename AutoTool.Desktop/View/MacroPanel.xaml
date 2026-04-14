@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="AutoTool.View.MacroPanel"
+<UserControl x:Class="AutoTool.View.MacroPanel"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -13,35 +13,129 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ボタンパネル -->
         <panels:ButtonPanel Grid.Row="0" DataContext="{Binding ButtonPanelViewModel}" Margin="8"/>
 
-        <!-- メインコンテンツ（上下分割） -->
         <Grid Grid.Row="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" MinHeight="200"/>
-                <RowDefinition Height="5"/>
-                <RowDefinition Height="250" MinHeight="100"/>
-            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-            <!-- リストパネル -->
-            <ui:Card Grid.Row="0" Margin="8,0,8,4" Padding="0" VerticalAlignment="Top">
-                <panels:ListPanel DataContext="{Binding ListPanelViewModel}"/>
-            </ui:Card>
+            <Grid Grid.Column="0" Margin="8,0,8,8" ClipToBounds="True">
+                <Border Background="{ui:ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Stretch">
+                    <panels:ListPanel DataContext="{Binding ListPanelViewModel}"
+                                      VerticalAlignment="Stretch"
+                                      HorizontalAlignment="Stretch"/>
+                </Border>
 
-            <!-- スプリッター -->
-            <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" 
-                          Height="5" Background="Transparent" Cursor="SizeNS"/>
+                <Border HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        Height="220"
+                        Margin="0"
+                        Panel.ZIndex="30">
+                    <Border.RenderTransform>
+                        <TranslateTransform Y="240"/>
+                    </Border.RenderTransform>
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Opacity" Value="0"/>
+                            <Setter Property="IsHitTestVisible" Value="False"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLogPanelOpen}" Value="True">
+                                    <Setter Property="IsHitTestVisible" Value="True"/>
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                 To="0"
+                                                                 Duration="0:0:0.22">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                    <DataTrigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                 To="240"
+                                                                 Duration="0:0:0.2">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseIn"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.ExitActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
 
-            <!-- ログタブ -->
-            <ui:Card Grid.Row="2" Margin="8,4,8,8" Padding="0" VerticalAlignment="Bottom">
-                <TabControl SelectedIndex="{Binding SelectedListTabIndex, Mode=TwoWay}">
-                    <TabItem Header="ログ">
-                        <panels:LogPanel DataContext="{Binding LogPanelViewModel}" Margin="4"/>
-                    </TabItem>
-                </TabControl>
-            </ui:Card>
+                    <ui:Card Padding="8">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                                       Text="ログ"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6"/>
+
+                            <panels:LogPanel Grid.Row="1" DataContext="{Binding LogPanelViewModel}"/>
+                        </Grid>
+                    </ui:Card>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Column="1" Margin="0,0,8,8">
+                <ui:Card Width="340" Padding="0" Margin="8,0,0,0">
+                    <ui:Card.Style>
+                        <Style TargetType="ui:Card">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFavoritePanelOpen}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:Card.Style>
+                    <panels:FavoritePanel DataContext="{Binding FavoritePanelViewModel}"/>
+                </ui:Card>
+            </Grid>
+
+            <StackPanel Grid.ColumnSpan="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,16,16"
+                        Panel.ZIndex="5000">
+                <ui:Button Command="{Binding ToggleFavoritePanelCommand}"
+                           Content="☆"
+                           ToolTip="お気に入りパネルの表示切替"
+                           Width="36"
+                           Height="36"
+                           Appearance="Primary"
+                           Margin="0,0,6,0"/>
+                <ui:Button Command="{Binding ToggleLogPanelCommand}"
+                           Icon="{ui:SymbolIcon Document24}"
+                           ToolTip="ログパネルの表示切替"
+                           Width="36"
+                           Height="36"
+                           Appearance="Secondary"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>
-
