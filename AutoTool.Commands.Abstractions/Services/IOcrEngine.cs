@@ -12,7 +12,6 @@ public sealed class OcrRequest
     public string PageSegmentationMode { get; set; } = "6";
     public string Whitelist { get; set; } = string.Empty;
     public string PreprocessMode { get; set; } = "Gray";
-    public string TesseractPath { get; set; } = "tesseract";
     public string TessdataPath { get; set; } = string.Empty;
 }
 

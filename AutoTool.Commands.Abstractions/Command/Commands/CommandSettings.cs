@@ -188,7 +188,6 @@ public class SetVariableOCRCommandSettings : ICommandSettings, ISetVariableOCRCo
     public string Whitelist { get; set; } = string.Empty;
     public double MinConfidence { get; set; } = 50.0;
     public string PreprocessMode { get; set; } = "Gray";
-    public string TesseractPath { get; set; } = "tesseract";
     public string TessdataPath { get; set; } = string.Empty;
 
     public void Validate()

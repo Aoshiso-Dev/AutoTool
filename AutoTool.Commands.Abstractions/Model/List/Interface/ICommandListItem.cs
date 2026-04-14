@@ -185,7 +185,6 @@ namespace AutoTool.Panels.Model.List.Interface
         string Whitelist { get; set; }
         double MinConfidence { get; set; }
         string PreprocessMode { get; set; }
-        string TesseractPath { get; set; }
         string TessdataPath { get; set; }
     }
 

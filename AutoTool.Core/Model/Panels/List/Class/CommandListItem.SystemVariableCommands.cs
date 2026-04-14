@@ -278,12 +278,7 @@ namespace AutoTool.Panels.List.Class;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("tesseract.exe", EditorType.TextBox, Group = "詳細設定", Order = 1, Description = "既定は 'tesseract'（PATH参照）")]
-        private string _tesseractPath = "tesseract";
-
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("tessdataディレクトリ", EditorType.DirectoryPicker, Group = "詳細設定", Order = 2, Description = "必要な場合のみ指定")]
+        [property: CommandProperty("tessdataディレクトリ", EditorType.DirectoryPicker, Group = "詳細設定", Order = 1, Description = "必要な場合のみ指定")]
         private string _tessdataPath = string.Empty;
 
         new public string Description =>
@@ -307,7 +302,6 @@ namespace AutoTool.Panels.List.Class;
                 Whitelist = item.Whitelist;
                 MinConfidence = item.MinConfidence;
                 PreprocessMode = item.PreprocessMode;
-                TesseractPath = item.TesseractPath;
                 TessdataPath = item.TessdataPath;
             }
         }
@@ -330,7 +324,6 @@ namespace AutoTool.Panels.List.Class;
                     PageSegmentationMode = PageSegmentationMode,
                     Whitelist = Whitelist,
                     PreprocessMode = PreprocessMode,
-                    TesseractPath = TesseractPath,
                     TessdataPath = TessdataPath
                 }, cancellationToken);
 
