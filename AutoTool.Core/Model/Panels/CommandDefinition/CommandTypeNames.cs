@@ -21,4 +21,5 @@ public static class CommandTypeNames
     public const string IfEnd = "IF_End";
     public const string SetVariable = "SetVariable";
     public const string SetVariableAI = "SetVariable_AI";
+    public const string SetVariableOCR = "SetVariable_OCR";
 }

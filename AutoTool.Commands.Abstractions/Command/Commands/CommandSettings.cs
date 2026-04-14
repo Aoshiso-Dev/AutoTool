@@ -174,6 +174,36 @@ public class SetVariableAISettings : ICommandSettings, ISetVariableAICommandSett
     }
 }
 
+public class SetVariableOCRCommandSettings : ICommandSettings, ISetVariableOCRCommandSettings
+{
+    public string Name { get; set; } = string.Empty;
+    public int X { get; set; } = 0;
+    public int Y { get; set; } = 0;
+    public int Width { get; set; } = 300;
+    public int Height { get; set; } = 100;
+    public string WindowTitle { get; set; } = string.Empty;
+    public string WindowClassName { get; set; } = string.Empty;
+    public string Language { get; set; } = "jpn";
+    public string PageSegmentationMode { get; set; } = "6";
+    public string Whitelist { get; set; } = string.Empty;
+    public double MinConfidence { get; set; } = 50.0;
+    public string PreprocessMode { get; set; } = "Gray";
+    public string TesseractPath { get; set; } = "tesseract";
+    public string TessdataPath { get; set; } = string.Empty;
+
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(Name))
+            throw new ArgumentException("変数名は必須です", nameof(Name));
+        if (Width <= 0)
+            throw new ArgumentOutOfRangeException(nameof(Width), "幅は1以上である必要があります");
+        if (Height <= 0)
+            throw new ArgumentOutOfRangeException(nameof(Height), "高さは1以上である必要があります");
+        if (MinConfidence < 0 || MinConfidence > 100)
+            throw new ArgumentOutOfRangeException(nameof(MinConfidence), "最小信頼度は0-100の範囲である必要があります");
+    }
+}
+
 public class IfVariableCommandSettings : ICommandSettings, IIfVariableCommandSettings
 {
     public string Name { get; set; } = string.Empty;

@@ -29,6 +29,7 @@ public static class CommandServiceExtensions
         services.AddTransient<IScreenCapturer, OpenCvScreenCapturer>();
         services.AddTransient<IProcessLauncher, ProcessLauncher>();
         services.AddTransient<IWindowService, Win32WindowService>();
+        services.AddTransient<IOcrEngine, TesseractOcrEngine>();
 
         return services;
     }

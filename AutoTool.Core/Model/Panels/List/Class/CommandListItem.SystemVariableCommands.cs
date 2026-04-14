@@ -3,6 +3,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Commands;
+using AutoTool.Commands.Services;
 using AutoTool.Panels.Model.List.Interface;
 using AutoTool.Panels.Attributes;
 using CommandDef = AutoTool.Panels.Model.CommandDefinition;
@@ -209,6 +210,140 @@ namespace AutoTool.Panels.List.Class;
             context.SetVariable(Name, value);
             context.Log($"AI検出結果: {Name} = {value} (モード: {AIDetectMode}, 検出数: {detections.Count})");
             return Task.FromResult(true);
+        }
+    }
+
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.SetVariableOCR, typeof(SimpleCommand), typeof(ISetVariableOCRCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 5, displaySubPriority: 3, displayNameJa: "変数設定(OCR)", displayNameEn: "Set OCR Variable")]
+    public partial class SetVariableOCRItem : CommandListItem, ISetVariableOCRItem, ISetVariableOCRCommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("変数名", EditorType.TextBox, Group = "変数設定", Order = 1, Description = "結果を格納する変数名")]
+        private string _name = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("X", EditorType.NumberBox, Group = "OCR領域", Order = 1, Description = "OCR領域の左上X座標", Min = 0)]
+        private int _x = 0;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("Y", EditorType.NumberBox, Group = "OCR領域", Order = 2, Description = "OCR領域の左上Y座標", Min = 0)]
+        private int _y = 0;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("幅", EditorType.NumberBox, Group = "OCR領域", Order = 3, Description = "OCR領域の幅", Min = 1)]
+        private int _width = 300;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("高さ", EditorType.NumberBox, Group = "OCR領域", Order = 4, Description = "OCR領域の高さ", Min = 1)]
+        private int _height = 100;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1, Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
+        private string _windowTitle = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2, Description = "ウィンドウのクラス名")]
+        private string _windowClassName = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("言語", EditorType.ComboBox, Group = "OCR設定", Order = 1, Description = "Tesseract OCRの言語", Options = "jpn,jpn+eng,eng")]
+        private string _language = "jpn";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("PSM", EditorType.ComboBox, Group = "OCR設定", Order = 2, Description = "ページ分割モード", Options = "6,7,11,12,13")]
+        private string _pageSegmentationMode = "6";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("最小信頼度", EditorType.Slider, Group = "OCR設定", Order = 3, Description = "この値未満なら空文字を保存", Min = 0.0, Max = 100.0, Step = 1.0)]
+        private double _minConfidence = 50.0;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("前処理", EditorType.ComboBox, Group = "OCR設定", Order = 4, Description = "OCR前の画像前処理", Options = "Gray,Binarize,AdaptiveThreshold,None")]
+        private string _preprocessMode = "Gray";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("文字種制限", EditorType.TextBox, Group = "OCR設定", Order = 5, Description = "空欄で無効。例: 0123456789")]
+        private string _whitelist = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("tesseract.exe", EditorType.TextBox, Group = "詳細設定", Order = 1, Description = "既定は 'tesseract'（PATH参照）")]
+        private string _tesseractPath = "tesseract";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("tessdataディレクトリ", EditorType.DirectoryPicker, Group = "詳細設定", Order = 2, Description = "必要な場合のみ指定")]
+        private string _tessdataPath = string.Empty;
+
+        new public string Description =>
+            $"変数:{Name} / 領域:({X},{Y},{Width},{Height}) / 言語:{Language} / PSM:{PageSegmentationMode} / 最小信頼度:{MinConfidence:F0}";
+
+        public SetVariableOCRItem() { }
+
+        public SetVariableOCRItem(SetVariableOCRItem? item = null) : base(item)
+        {
+            if (item != null)
+            {
+                Name = item.Name;
+                X = item.X;
+                Y = item.Y;
+                Width = item.Width;
+                Height = item.Height;
+                WindowTitle = item.WindowTitle;
+                WindowClassName = item.WindowClassName;
+                Language = item.Language;
+                PageSegmentationMode = item.PageSegmentationMode;
+                Whitelist = item.Whitelist;
+                MinConfidence = item.MinConfidence;
+                PreprocessMode = item.PreprocessMode;
+                TesseractPath = item.TesseractPath;
+                TessdataPath = item.TessdataPath;
+            }
+        }
+
+        public new ICommandListItem Clone() => new SetVariableOCRItem(this);
+
+        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var result = await context.ExtractTextAsync(new OcrRequest
+                {
+                    X = X,
+                    Y = Y,
+                    Width = Width,
+                    Height = Height,
+                    WindowTitle = WindowTitle,
+                    WindowClassName = WindowClassName,
+                    Language = Language,
+                    PageSegmentationMode = PageSegmentationMode,
+                    Whitelist = Whitelist,
+                    PreprocessMode = PreprocessMode,
+                    TesseractPath = TesseractPath,
+                    TessdataPath = TessdataPath
+                }, cancellationToken);
+
+                var value = result.Confidence >= MinConfidence ? result.Text : string.Empty;
+                context.SetVariable(Name, value);
+                context.Log($"OCR結果: {Name} = \"{value}\" (信頼度: {result.Confidence:F1})");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                context.Log($"OCRエラー: {ex.Message}");
+                return false;
+            }
         }
     }
 

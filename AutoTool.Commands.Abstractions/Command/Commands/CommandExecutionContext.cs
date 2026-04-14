@@ -20,6 +20,7 @@ public class CommandExecutionContext : ICommandExecutionContext
     private readonly IScreenCapturer? _screenCapturer;
     private readonly IImageMatcher? _imageMatcher;
     private readonly IObjectDetector? _objectDetector;
+    private readonly IOcrEngine? _ocrEngine;
     private readonly ICommandEventBus _commandEventBus;
     
     public CommandExecutionContext(
@@ -32,6 +33,7 @@ public class CommandExecutionContext : ICommandExecutionContext
         IScreenCapturer? screenCapturer = null,
         IImageMatcher? imageMatcher = null,
         IObjectDetector? objectDetector = null,
+        IOcrEngine? ocrEngine = null,
         ICommandEventBus? commandEventBus = null)
     {
         _command = command;
@@ -43,6 +45,7 @@ public class CommandExecutionContext : ICommandExecutionContext
         _screenCapturer = screenCapturer;
         _imageMatcher = imageMatcher;
         _objectDetector = objectDetector;
+        _ocrEngine = ocrEngine;
         _commandEventBus = commandEventBus ?? NullCommandEventBus.Instance;
     }
     
@@ -115,6 +118,13 @@ public class CommandExecutionContext : ICommandExecutionContext
         if (_objectDetector == null)
             throw new InvalidOperationException("ObjectDetector is not available");
         return _objectDetector.Detect(windowTitle, confThreshold, iouThreshold);
+    }
+
+    public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken)
+    {
+        if (_ocrEngine == null)
+            throw new InvalidOperationException("OcrEngine is not available");
+        return _ocrEngine.ExtractTextAsync(request, cancellationToken);
     }
 
     private sealed class NullCommandEventBus : ICommandEventBus

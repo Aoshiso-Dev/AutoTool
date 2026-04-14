@@ -171,6 +171,24 @@ namespace AutoTool.Panels.Model.List.Interface
         public string Name { get; set; }
     }
 
+    public interface ISetVariableOCRItem : ICommandListItem
+    {
+        string Name { get; set; }
+        int X { get; set; }
+        int Y { get; set; }
+        int Width { get; set; }
+        int Height { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        string Language { get; set; }
+        string PageSegmentationMode { get; set; }
+        string Whitelist { get; set; }
+        double MinConfidence { get; set; }
+        string PreprocessMode { get; set; }
+        string TesseractPath { get; set; }
+        string TessdataPath { get; set; }
+    }
+
     public interface IIfVariableItem : ICommandListItem, IIfItem
     {
         public string Name { get; set; }

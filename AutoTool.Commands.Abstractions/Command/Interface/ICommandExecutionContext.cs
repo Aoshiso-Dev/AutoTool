@@ -68,4 +68,9 @@ public interface ICommandExecutionContext
     /// Detect objects using AI
     /// </summary>
     IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold);
+
+    /// <summary>
+    /// Extract text from a screen region using OCR
+    /// </summary>
+    Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken);
 }

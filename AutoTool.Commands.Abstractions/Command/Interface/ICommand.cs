@@ -33,5 +33,6 @@ public interface IClickImageAICommand : ICommand { new IClickImageAICommandSetti
 public interface IExecuteCommand : ICommand { new IExecuteCommandSettings Settings { get; } }
 public interface ISetVariableCommand : ICommand { new ISetVariableCommandSettings Settings { get; } }
 public interface ISetVariableAICommand : ICommand { new ISetVariableAICommandSettings Settings { get; } }
+public interface ISetVariableOCRCommand : ICommand { new ISetVariableOCRCommandSettings Settings { get; } }
 public interface IIfVariableCommand : ICommand, IIfCommand { new IIfVariableCommandSettings Settings { get; } }
 public interface IScreenshotCommand : ICommand { new IScreenshotCommandSettings Settings { get; } }

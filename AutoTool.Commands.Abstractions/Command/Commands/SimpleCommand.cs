@@ -19,6 +19,7 @@ public class SimpleCommand : BaseCommand
     private readonly IScreenCapturer? _screenCapturer;
     private readonly IImageMatcher? _imageMatcher;
     private readonly IObjectDetector? _objectDetector;
+    private readonly IOcrEngine? _ocrEngine;
 
     public SimpleCommand(
         ICommand? parent, 
@@ -31,7 +32,8 @@ public class SimpleCommand : BaseCommand
         IProcessLauncher? processLauncher = null,
         IScreenCapturer? screenCapturer = null,
         IImageMatcher? imageMatcher = null,
-        IObjectDetector? objectDetector = null)
+        IObjectDetector? objectDetector = null,
+        IOcrEngine? ocrEngine = null)
         : base(parent, settings)
     {
         _item = item ?? throw new ArgumentNullException(nameof(item));
@@ -43,6 +45,7 @@ public class SimpleCommand : BaseCommand
         _screenCapturer = screenCapturer;
         _imageMatcher = imageMatcher;
         _objectDetector = objectDetector;
+        _ocrEngine = ocrEngine;
     }
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
@@ -57,6 +60,7 @@ public class SimpleCommand : BaseCommand
             _screenCapturer,
             _imageMatcher,
             _objectDetector,
+            _ocrEngine,
             CommandEventBus);
         
         return await _item.ExecuteAsync(context, cancellationToken);
