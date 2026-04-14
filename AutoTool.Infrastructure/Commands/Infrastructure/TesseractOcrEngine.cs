@@ -1,51 +1,53 @@
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using OpenCvSharp;
+using Tesseract;
 using AutoTool.Commands.Services;
 
 namespace AutoTool.Commands.Infrastructure;
 
 public sealed class TesseractOcrEngine : IOcrEngine
 {
-    public async Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken)
+    public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (request.Width <= 0) throw new ArgumentOutOfRangeException(nameof(request.Width));
         if (request.Height <= 0) throw new ArgumentOutOfRangeException(nameof(request.Height));
 
-        var tempBase = Path.Combine(Path.GetTempPath(), $"autotool_ocr_{Guid.NewGuid():N}");
-        var imagePath = tempBase + ".png";
-        var outputBase = tempBase + "_out";
-        var txtPath = outputBase + ".txt";
-        var tsvPath = outputBase + ".tsv";
+        using var captured = CaptureTarget(request.WindowTitle, request.WindowClassName);
+        using var roi = CreateRoi(captured, request.X, request.Y, request.Width, request.Height);
+        using var processed = Preprocess(roi, request.PreprocessMode);
+
+        var tempImagePath = Path.Combine(Path.GetTempPath(), $"autotool_ocr_{Guid.NewGuid():N}.png");
 
         try
         {
-            using var captured = CaptureTarget(request.WindowTitle, request.WindowClassName);
-            using var roi = CreateRoi(captured, request.X, request.Y, request.Width, request.Height);
-            using var processed = Preprocess(roi, request.PreprocessMode);
+            Cv2.ImWrite(tempImagePath, processed);
 
-            Cv2.ImWrite(imagePath, processed);
+            var tessdataPath = ResolveTessdataPath(request.TessdataPath);
+            var psm = ParsePageSegMode(request.PageSegmentationMode);
+            var language = string.IsNullOrWhiteSpace(request.Language) ? "jpn" : request.Language;
 
-            await RunTesseractAsync(request, imagePath, outputBase, cancellationToken);
+            using var engine = new TesseractEngine(tessdataPath, language, EngineMode.Default);
+            engine.DefaultPageSegMode = psm;
 
-            var text = File.Exists(txtPath)
-                ? (await File.ReadAllTextAsync(txtPath, cancellationToken)).Trim()
-                : string.Empty;
+            if (!string.IsNullOrWhiteSpace(request.Whitelist))
+            {
+                engine.SetVariable("tessedit_char_whitelist", request.Whitelist);
+            }
 
-            var confidence = File.Exists(tsvPath)
-                ? ParseConfidence(await File.ReadAllTextAsync(tsvPath, cancellationToken))
-                : 0.0;
+            using var pix = Pix.LoadFromFile(tempImagePath);
+            using var page = engine.Process(pix);
 
-            return new OcrExtractionResult(text, confidence);
+            var text = (page.GetText() ?? string.Empty).Trim();
+            var confidence = Math.Clamp(page.GetMeanConfidence() * 100.0, 0.0, 100.0);
+
+            return Task.FromResult(new OcrExtractionResult(text, confidence));
         }
         finally
         {
-            TryDelete(imagePath);
-            TryDelete(txtPath);
-            TryDelete(tsvPath);
+            TryDelete(tempImagePath);
         }
     }
 
@@ -71,7 +73,7 @@ public sealed class TesseractOcrEngine : IOcrEngine
             throw new ArgumentOutOfRangeException(nameof(width), "OCR領域がキャプチャ範囲外です。");
         }
 
-        return new Mat(captured, new Rect(left, top, right - left, bottom - top));
+        return new Mat(captured, new OpenCvSharp.Rect(left, top, right - left, bottom - top));
     }
 
     private static Mat Preprocess(Mat source, string? preprocessMode)
@@ -119,106 +121,33 @@ public sealed class TesseractOcrEngine : IOcrEngine
         return source.Clone();
     }
 
-    private static async Task RunTesseractAsync(
-        OcrRequest request,
-        string imagePath,
-        string outputBase,
-        CancellationToken cancellationToken)
+    private static string ResolveTessdataPath(string? tessdataPath)
     {
-        var psi = new ProcessStartInfo
+        if (!string.IsNullOrWhiteSpace(tessdataPath) && Directory.Exists(tessdataPath))
         {
-            FileName = string.IsNullOrWhiteSpace(request.TesseractPath) ? "tesseract" : request.TesseractPath,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        psi.ArgumentList.Add(imagePath);
-        psi.ArgumentList.Add(outputBase);
-
-        if (!string.IsNullOrWhiteSpace(request.Language))
-        {
-            psi.ArgumentList.Add("-l");
-            psi.ArgumentList.Add(request.Language);
+            return tessdataPath;
         }
 
-        if (!string.IsNullOrWhiteSpace(request.PageSegmentationMode))
+        var candidate = Path.Combine(AppContext.BaseDirectory, "tessdata");
+        if (Directory.Exists(candidate))
         {
-            psi.ArgumentList.Add("--psm");
-            psi.ArgumentList.Add(request.PageSegmentationMode);
+            return candidate;
         }
 
-        if (!string.IsNullOrWhiteSpace(request.TessdataPath))
-        {
-            psi.ArgumentList.Add("--tessdata-dir");
-            psi.ArgumentList.Add(request.TessdataPath);
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Whitelist))
-        {
-            psi.ArgumentList.Add("-c");
-            psi.ArgumentList.Add($"tessedit_char_whitelist={request.Whitelist}");
-        }
-
-        psi.ArgumentList.Add("txt");
-        psi.ArgumentList.Add("tsv");
-
-        using var process = new Process { StartInfo = psi };
-        process.Start();
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken);
-
-        var stdout = await stdoutTask;
-        var stderr = await stderrTask;
-
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException(
-                $"tesseract 実行に失敗しました (exit={process.ExitCode}). {stderr} {stdout}".Trim());
-        }
+        throw new DirectoryNotFoundException(
+            "tessdata ディレクトリが見つかりません。SetVariable_OCR の tessdata設定に学習データフォルダを指定してください。");
     }
 
-    private static double ParseConfidence(string tsvContent)
+    private static PageSegMode ParsePageSegMode(string? pageSegmentationMode)
     {
-        if (string.IsNullOrWhiteSpace(tsvContent))
+        return pageSegmentationMode switch
         {
-            return 0.0;
-        }
-
-        var lines = tsvContent
-            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-            .Skip(1);
-
-        var confidences = new List<double>();
-
-        foreach (var line in lines)
-        {
-            var columns = line.Split('\t');
-            if (columns.Length < 11)
-            {
-                continue;
-            }
-
-            if (!double.TryParse(columns[10], NumberStyles.Float, CultureInfo.InvariantCulture, out var conf))
-            {
-                continue;
-            }
-
-            if (conf >= 0)
-            {
-                confidences.Add(conf);
-            }
-        }
-
-        if (confidences.Count == 0)
-        {
-            return 0.0;
-        }
-
-        return confidences.Average();
+            "7" => PageSegMode.SingleLine,
+            "11" => PageSegMode.SparseText,
+            "12" => PageSegMode.SparseTextOsd,
+            "13" => PageSegMode.RawLine,
+            _ => PageSegMode.SingleBlock
+        };
     }
 
     private static void TryDelete(string path)
@@ -232,7 +161,7 @@ public sealed class TesseractOcrEngine : IOcrEngine
         }
         catch
         {
-            // no-op
+            // ignore cleanup errors
         }
     }
 }
