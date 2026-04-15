@@ -8,6 +8,8 @@ namespace AutoTool.Panels.View;
 
 public partial class ColorPickWindow : Window
 {
+    private bool _hookRegistered;
+
     public Color? Color { get; private set; }
 
     public ColorPickWindow()
@@ -18,18 +20,30 @@ public partial class ColorPickWindow : Window
 
     private void StartHook()
     {
+        if (_hookRegistered)
+        {
+            return;
+        }
+
         Win32MouseHookHelper.LButtonUp += OnLButtonUp;
         Win32MouseHookHelper.RButtonUp += OnRButtonUp;
         Win32MouseHookHelper.MouseMove += OnMouseMove;
         Win32MouseHookHelper.StartHook();
+        _hookRegistered = true;
     }
 
     private void StopHook()
     {
+        if (!_hookRegistered)
+        {
+            return;
+        }
+
         Win32MouseHookHelper.LButtonUp -= OnLButtonUp;
         Win32MouseHookHelper.RButtonUp -= OnRButtonUp;
         Win32MouseHookHelper.MouseMove -= OnMouseMove;
         Win32MouseHookHelper.StopHook();
+        _hookRegistered = false;
     }
 
     private void OnMouseMove(object? sender, Win32MouseHookHelper.MouseEventArgs e)
@@ -55,6 +69,12 @@ public partial class ColorPickWindow : Window
         Color = null;
         DialogResult = false;
         Close();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        StopHook();
+        base.OnClosed(e);
     }
 
     private static System.Windows.Media.Color GetColorAt(System.Drawing.Point cursorPos)

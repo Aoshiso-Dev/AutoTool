@@ -223,7 +223,7 @@ namespace AutoTool.Panels.List.Class;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("X", EditorType.NumberBox, Group = "OCR領域", Order = 1, Description = "OCR領域の左上X座標", Min = 0)]
+        [property: CommandProperty("領域", EditorType.PointPicker, Group = "OCR領域", Order = 1, Description = "PickでOCR領域をドラッグ選択")]
         private int _x = 0;
 
         [ObservableProperty]

@@ -7,6 +7,9 @@
                     xmlns:converter="clr-namespace:AutoTool.Panels.View.Converter">
 
     <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+    <converter:OcrRegionNumberEditorVisibilityConverter x:Key="OcrRegionNumberEditorVisibilityConverter"/>
+    <converter:OcrRegionNumberEditorVisibilityMultiConverter x:Key="OcrRegionNumberEditorVisibilityMultiConverter"/>
+    <converter:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
 
     <Style x:Key="EditorCard" TargetType="Border">
         <Setter Property="Background" Value="{ui:ThemeResource ControlFillColorDefaultBrush}"/>
@@ -46,6 +49,12 @@
 
     <DataTemplate x:Key="NumberBoxEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
         <Border Style="{StaticResource EditorCard}">
+            <Border.Visibility>
+                <MultiBinding Converter="{StaticResource OcrRegionNumberEditorVisibilityMultiConverter}">
+                    <Binding Path="Target.ItemType"/>
+                    <Binding Path="PropertyInfo.Name"/>
+                </MultiBinding>
+            </Border.Visibility>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -193,6 +202,28 @@
                         <TextBlock Text="Y" Style="{StaticResource EditorDescription}" VerticalAlignment="Center"/>
                         <ui:NumberBox Value="{Binding RelatedProperty.IntValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="90" Margin="8,0,0,0"
                                       SpinButtonPlacementMode="Compact"/>
+                        <TextBlock Text="W" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Visibility="{Binding RelatedProperty2, Converter={StaticResource NullToVisibilityConverter}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource EditorDescription}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <ui:NumberBox Value="{Binding RelatedProperty2.IntValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="90" Margin="8,0,0,0"
+                                      SpinButtonPlacementMode="Compact"
+                                      Visibility="{Binding RelatedProperty2, Converter={StaticResource NullToVisibilityConverter}}"/>
+                        <TextBlock Text="H" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Visibility="{Binding RelatedProperty3, Converter={StaticResource NullToVisibilityConverter}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource EditorDescription}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <ui:NumberBox Value="{Binding RelatedProperty3.IntValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="90" Margin="8,0,0,0"
+                                      SpinButtonPlacementMode="Compact"
+                                      Visibility="{Binding RelatedProperty3, Converter={StaticResource NullToVisibilityConverter}}"/>
                     </StackPanel>
                 </StackPanel>
                 <ui:Button Grid.Column="1" Content="Pick" Icon="{ui:SymbolIcon Location24}"

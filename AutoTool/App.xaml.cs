@@ -2,6 +2,7 @@
 using System.Windows.Threading;
 using AutoTool.Hosting;
 using AutoTool.Commands.Services;
+using AutoTool.Commands.Infrastructure;
 using AutoTool.Core.Ports;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -53,6 +54,9 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        // グローバルフックが残っていても必ず解除する
+        Win32MouseHookHelper.StopHook();
+
         // UIスレッドの同期コンテキストに依存せず停止処理を完了させる
         if (_host != null)
         {

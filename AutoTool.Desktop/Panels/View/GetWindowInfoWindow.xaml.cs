@@ -11,6 +11,8 @@ namespace AutoTool.Panels.View
 {
     public partial class GetWindowInfoWindow : Window
     {
+        private bool _hookRegistered;
+
         public string WindowTitle { get; set; } = string.Empty;
         public string WindowClassName { get; set; } = string.Empty;
 
@@ -30,6 +32,7 @@ namespace AutoTool.Panels.View
             Win32MouseHookHelper.LButtonUp += OnMouseUp;
 
             Win32MouseHookHelper.StartHook();
+            _hookRegistered = true;
         }
 
         private void OnMouseDown(object? sender, Win32MouseHookHelper.MouseEventArgs e)
@@ -53,17 +56,33 @@ namespace AutoTool.Panels.View
 
         private void OnMouseUp(object? sender, Win32MouseHookHelper.MouseEventArgs e)
         {
-            Win32MouseHookHelper.StopHook();
-
-            Win32MouseHookHelper.LButtonDown -= OnMouseDown;
-            Win32MouseHookHelper.MouseMove -= OnMouseMove;
-            Win32MouseHookHelper.LButtonUp -= OnMouseUp;
+            StopHook();
 
             WindowTitle = TextBlock_WindowTitle.Text;
             WindowClassName = TextBlock_WindowClassName.Text;
 
             this.DialogResult = true;
             this.Close();
+        }
+
+        private void StopHook()
+        {
+            if (!_hookRegistered)
+            {
+                return;
+            }
+
+            Win32MouseHookHelper.LButtonDown -= OnMouseDown;
+            Win32MouseHookHelper.MouseMove -= OnMouseMove;
+            Win32MouseHookHelper.LButtonUp -= OnMouseUp;
+            Win32MouseHookHelper.StopHook();
+            _hookRegistered = false;
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            StopHook();
+            base.OnClosed(e);
         }
     }
 

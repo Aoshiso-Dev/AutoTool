@@ -66,6 +66,14 @@ public partial class EditPanelViewModel
                     .SelectMany(g => g.Properties)
                     .FirstOrDefault(p => p.PropertyInfo.Name == "Y" && p.Target == prop.Target);
                 prop.RelatedProperty = yProp;
+                var widthProp = PropertyGroups
+                    .SelectMany(g => g.Properties)
+                    .FirstOrDefault(p => p.PropertyInfo.Name == "Width" && p.Target == prop.Target);
+                var heightProp = PropertyGroups
+                    .SelectMany(g => g.Properties)
+                    .FirstOrDefault(p => p.PropertyInfo.Name == "Height" && p.Target == prop.Target);
+                prop.RelatedProperty2 = widthProp;
+                prop.RelatedProperty3 = heightProp;
                 break;
         }
     }
@@ -170,11 +178,23 @@ public partial class EditPanelViewModel
 
     private void PickPointForProperty(PropertyMetadata prop)
     {
-        var cw = new CaptureWindow { Mode = 1 };
+        var allProps = PropertyGroups
+            .SelectMany(g => g.Properties)
+            .Where(p => p.Target == prop.Target)
+            .ToList();
+
+        var yProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Y");
+        var widthProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Width");
+        var heightProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Height");
+        var isRegionPicker = prop.PropertyInfo.Name == "X" && widthProp != null && heightProp != null;
+
+        var cw = new CaptureWindow { Mode = isRegionPicker ? 0 : 1 };
         if (cw.ShowDialog() != true) return;
 
-        var absoluteX = (int)cw.SelectedPoint.X;
-        var absoluteY = (int)cw.SelectedPoint.Y;
+        var absoluteX = isRegionPicker ? (int)cw.SelectedRegion.X : (int)cw.SelectedPoint.X;
+        var absoluteY = isRegionPicker ? (int)cw.SelectedRegion.Y : (int)cw.SelectedPoint.Y;
+        var regionWidth = isRegionPicker ? Math.Max(1, (int)cw.SelectedRegion.Width) : 0;
+        var regionHeight = isRegionPicker ? Math.Max(1, (int)cw.SelectedRegion.Height) : 0;
 
         var windowTitleProp = PropertyGroups
             .SelectMany(g => g.Properties)
@@ -192,12 +212,14 @@ public partial class EditPanelViewModel
         if (prop.PropertyInfo.Name == "X")
         {
             prop.Value = relativeX;
-            var yProp = PropertyGroups
-                .SelectMany(g => g.Properties)
-                .FirstOrDefault(p => p.PropertyInfo.Name == "Y" && p.Target == prop.Target);
             if (yProp != null)
             {
                 yProp.Value = relativeY;
+            }
+            if (isRegionPicker)
+            {
+                widthProp!.Value = regionWidth;
+                heightProp!.Value = regionHeight;
             }
             prop.NotifyRelatedValueChanged();
         }
@@ -220,16 +242,26 @@ public partial class EditPanelViewModel
         {
             if (success)
             {
-                _notifier.ShowInfo(
-                    $"Relative coordinates set: ({relativeX}, {relativeY})\nWindow: {windowTitle}[{windowClassName}]",
-                    "Coordinates Set");
+                var message = isRegionPicker
+                    ? $"Relative region set: ({relativeX}, {relativeY}, {regionWidth}, {regionHeight})\nWindow: {windowTitle}[{windowClassName}]"
+                    : $"Relative coordinates set: ({relativeX}, {relativeY})\nWindow: {windowTitle}[{windowClassName}]";
+
+                _notifier.ShowInfo(message, "Coordinates Set");
             }
             else
             {
-                _notifier.ShowWarning(
-                    $"{errorMessage}\nAbsolute coordinates ({relativeX}, {relativeY}) set.",
-                    "Warning");
+                var message = isRegionPicker
+                    ? $"{errorMessage}\nAbsolute region ({relativeX}, {relativeY}, {regionWidth}, {regionHeight}) set."
+                    : $"{errorMessage}\nAbsolute coordinates ({relativeX}, {relativeY}) set.";
+
+                _notifier.ShowWarning(message, "Warning");
             }
+        }
+        else if (isRegionPicker)
+        {
+            _notifier.ShowInfo(
+                $"Region set: ({relativeX}, {relativeY}, {regionWidth}, {regionHeight})",
+                "Coordinates Set");
         }
     }
 }

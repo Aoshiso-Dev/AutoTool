@@ -197,13 +197,33 @@ public partial class PropertyMetadata : ObservableObject
         set => SetProperty(ref _relatedProperty, value);
     }
 
+    private PropertyMetadata? _relatedProperty2;
+    public PropertyMetadata? RelatedProperty2
+    {
+        get => _relatedProperty2;
+        set => SetProperty(ref _relatedProperty2, value);
+    }
+
+    private PropertyMetadata? _relatedProperty3;
+    public PropertyMetadata? RelatedProperty3
+    {
+        get => _relatedProperty3;
+        set => SetProperty(ref _relatedProperty3, value);
+    }
+
     public int RelatedIntValue => RelatedProperty?.IntValue ?? 0;
+    public int RelatedIntValue2 => RelatedProperty2?.IntValue ?? 0;
+    public int RelatedIntValue3 => RelatedProperty3?.IntValue ?? 0;
 
     public void NotifyRelatedValueChanged()
     {
         NotifyAllValueProperties();
         OnPropertyChanged(nameof(RelatedIntValue));
+        OnPropertyChanged(nameof(RelatedIntValue2));
+        OnPropertyChanged(nameof(RelatedIntValue3));
         RelatedProperty?.NotifyAllValueProperties();
+        RelatedProperty2?.NotifyAllValueProperties();
+        RelatedProperty3?.NotifyAllValueProperties();
     }
 
     private static PropertyInfo? GetBooleanProperty(Type targetType, string propertyName)

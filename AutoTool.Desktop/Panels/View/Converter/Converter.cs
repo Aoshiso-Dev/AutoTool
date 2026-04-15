@@ -233,3 +233,65 @@ public class ProgressToWidthConverter : IValueConverter
     }
 }
 
+public class OcrRegionNumberEditorVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not AutoTool.Panels.Attributes.PropertyMetadata metadata)
+        {
+            return Visibility.Visible;
+        }
+
+        if (metadata.Target.GetType().Name != "SetVariableOCRItem")
+        {
+            return Visibility.Visible;
+        }
+
+        return metadata.PropertyInfo.Name is "Y" or "Width" or "Height"
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}
+
+public class OcrRegionNumberEditorVisibilityMultiConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        var itemType = values.Length > 0 ? values[0]?.ToString() : string.Empty;
+        var propertyName = values.Length > 1 ? values[1]?.ToString() : string.Empty;
+
+        if (string.Equals(itemType, "SetVariable_OCR", StringComparison.Ordinal) &&
+            (string.Equals(propertyName, "Y", StringComparison.Ordinal) ||
+             string.Equals(propertyName, "Width", StringComparison.Ordinal) ||
+             string.Equals(propertyName, "Height", StringComparison.Ordinal)))
+        {
+            return Visibility.Collapsed;
+        }
+
+        return Visibility.Visible;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return Array.Empty<object>();
+    }
+}
+
+public class NullToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value == null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}
+
