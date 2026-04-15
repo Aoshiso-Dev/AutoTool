@@ -53,7 +53,7 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
         SelectedItemType = ItemTypes.FirstOrDefault();
     }
 
-    [RelayCommand]
+    [RelayCommand(AllowConcurrentExecutions = true)]
     public async Task Run()
     {
         if (IsRunning)

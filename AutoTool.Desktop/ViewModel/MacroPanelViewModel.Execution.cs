@@ -74,7 +74,7 @@ public partial class MacroPanelViewModel
             }
 
             _cts = new CancellationTokenSource();
-            await macro.Execute(_cts.Token);
+            await Task.Run(async () => await macro.Execute(_cts.Token), _cts.Token);
         }
         catch (Exception ex)
         {
@@ -116,7 +116,7 @@ public partial class MacroPanelViewModel
         }
         else
         {
-            dispatcher.Invoke(action);
+            _ = dispatcher.BeginInvoke(action);
         }
     }
 
