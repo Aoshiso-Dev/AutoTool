@@ -4,6 +4,8 @@ public static class CommandTypeNames
 {
     public const string Click = "Click";
     public const string ClickImage = "Click_Image";
+    public const string FindImage = "Find_Image";
+    public const string FindText = "Find_Text";
     public const string ClickImageAI = "Click_Image_AI";
     public const string Hotkey = "Hotkey";
     public const string Wait = "Wait";
@@ -15,6 +17,8 @@ public static class CommandTypeNames
     public const string LoopBreak = "Loop_Break";
     public const string IfImageExist = "IF_ImageExist";
     public const string IfImageNotExist = "IF_ImageNotExist";
+    public const string IfTextExist = "IF_TextExist";
+    public const string IfTextNotExist = "IF_TextNotExist";
     public const string IfImageExistAI = "IF_ImageExist_AI";
     public const string IfImageNotExistAI = "IF_ImageNotExist_AI";
     public const string IfVariable = "IF_Variable";

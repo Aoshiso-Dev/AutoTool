@@ -69,6 +69,46 @@ public sealed class IfCompositeCommandBuilder : ICompositeCommandBuilder
                     WindowTitle = notExist.WindowTitle,
                     WindowClassName = notExist.WindowClassName
                 }),
+            IfTextExistItem textExist => _commandFactory.Create<IfTextExistCommand>(
+                parent,
+                new IfTextCommandSettings
+                {
+                    TargetText = textExist.TargetText,
+                    CaseSensitive = textExist.CaseSensitive,
+                    MatchMode = textExist.MatchMode,
+                    X = textExist.X,
+                    Y = textExist.Y,
+                    Width = textExist.Width,
+                    Height = textExist.Height,
+                    MinConfidence = textExist.MinConfidence,
+                    WindowTitle = textExist.WindowTitle,
+                    WindowClassName = textExist.WindowClassName,
+                    Language = textExist.Language,
+                    PageSegmentationMode = textExist.PageSegmentationMode,
+                    Whitelist = textExist.Whitelist,
+                    PreprocessMode = textExist.PreprocessMode,
+                    TessdataPath = textExist.TessdataPath
+                }),
+            IfTextNotExistItem textNotExist => _commandFactory.Create<IfTextNotExistCommand>(
+                parent,
+                new IfTextCommandSettings
+                {
+                    TargetText = textNotExist.TargetText,
+                    CaseSensitive = textNotExist.CaseSensitive,
+                    MatchMode = textNotExist.MatchMode,
+                    X = textNotExist.X,
+                    Y = textNotExist.Y,
+                    Width = textNotExist.Width,
+                    Height = textNotExist.Height,
+                    MinConfidence = textNotExist.MinConfidence,
+                    WindowTitle = textNotExist.WindowTitle,
+                    WindowClassName = textNotExist.WindowClassName,
+                    Language = textNotExist.Language,
+                    PageSegmentationMode = textNotExist.PageSegmentationMode,
+                    Whitelist = textNotExist.Whitelist,
+                    PreprocessMode = textNotExist.PreprocessMode,
+                    TessdataPath = textNotExist.TessdataPath
+                }),
             IfImageExistAIItem existAI => _commandFactory.Create<IfImageExistAICommand>(
                 parent,
                 new AIImageDetectCommandSettings

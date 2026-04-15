@@ -18,12 +18,16 @@ public interface ICommand
 public interface IRootCommand : ICommand { }
 public interface IIfCommand : ICommand { }
 public interface IWaitImageCommand : ICommand { new IWaitImageCommandSettings Settings { get; } }
+public interface IFindImageCommand : ICommand { new IFindImageCommandSettings Settings { get; } }
+public interface IFindTextCommand : ICommand { new IFindTextCommandSettings Settings { get; } }
 public interface IClickImageCommand : ICommand { new IClickImageCommandSettings Settings { get; } }
 public interface IHotkeyCommand : ICommand { new IHotkeyCommandSettings Settings { get; } }
 public interface IClickCommand : ICommand { new IClickCommandSettings Settings { get; } }
 public interface IWaitCommand : ICommand { new IWaitCommandSettings Settings { get; } }
 public interface IIfImageExistCommand : ICommand, IIfCommand { new IIfImageCommandSettings Settings { get; } }
 public interface IIfImageNotExistCommand : ICommand, IIfCommand { new IIfImageCommandSettings Settings { get; } }
+public interface IIfTextExistCommand : ICommand, IIfCommand { new IIfTextCommandSettings Settings { get; } }
+public interface IIfTextNotExistCommand : ICommand, IIfCommand { new IIfTextCommandSettings Settings { get; } }
 public interface ILoopCommand : ICommand { new ILoopCommandSettings Settings { get; } }
 public interface IEndLoopCommand : ICommand { new ILoopEndCommandSettings Settings { get; } }
 public interface ILoopBreakCommand : ICommand { }

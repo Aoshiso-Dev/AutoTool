@@ -18,6 +18,46 @@ namespace AutoTool.Commands.Interface
         string WindowClassName { get; set; }
     }
 
+    public interface IFindImageCommandSettings : ICommandSettings
+    {
+        string ImagePath { get; set; }
+        double Threshold { get; set; }
+        Color? SearchColor { get; set; }
+        int Timeout { get; set; }
+        int Interval { get; set; }
+        bool Strict { get; set; }
+        string FoundVariableName { get; set; }
+        string XVariableName { get; set; }
+        string YVariableName { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+    }
+
+    public interface IFindTextCommandSettings : ICommandSettings
+    {
+        string TargetText { get; set; }
+        bool CaseSensitive { get; set; }
+        string MatchMode { get; set; } // Contains / Equals
+        int X { get; set; }
+        int Y { get; set; }
+        int Width { get; set; }
+        int Height { get; set; }
+        int Timeout { get; set; }
+        int Interval { get; set; }
+        bool Strict { get; set; }
+        double MinConfidence { get; set; }
+        string FoundVariableName { get; set; }
+        string TextVariableName { get; set; }
+        string ConfidenceVariableName { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        string Language { get; set; }
+        string PageSegmentationMode { get; set; }
+        string Whitelist { get; set; }
+        string PreprocessMode { get; set; }
+        string TessdataPath { get; set; }
+    }
+
     public interface IIfImageCommandSettings : ICommandSettings
     {
         string ImagePath { get; set; }
@@ -25,6 +65,25 @@ namespace AutoTool.Commands.Interface
         Color? SearchColor { get; set; }
         string WindowTitle { get; set; }
         string WindowClassName { get; set; }
+    }
+
+    public interface IIfTextCommandSettings : ICommandSettings
+    {
+        string TargetText { get; set; }
+        bool CaseSensitive { get; set; }
+        string MatchMode { get; set; } // Contains / Equals
+        int X { get; set; }
+        int Y { get; set; }
+        int Width { get; set; }
+        int Height { get; set; }
+        double MinConfidence { get; set; }
+        string WindowTitle { get; set; }
+        string WindowClassName { get; set; }
+        string Language { get; set; }
+        string PageSegmentationMode { get; set; }
+        string Whitelist { get; set; }
+        string PreprocessMode { get; set; }
+        string TessdataPath { get; set; }
     }
 
     public interface IClickImageCommandSettings : ICommandSettings

@@ -52,17 +52,26 @@ public class IfImageExistCommand : BaseCommand, IIfCommand, IIfImageExistCommand
             throw new InvalidOperationException("If内に要素がありません。");
         }
 
-        var point = await _imageMatcher.SearchImageAsync(
-            Settings.ImagePath,
-            cancellationToken,
-            Settings.Threshold,
-            Settings.SearchColor,
-            Settings.WindowTitle,
-            Settings.WindowClassName);
+        RaiseDoingCommand("非推奨: IF_ImageExist は将来的に Find_Image + If_Variable へ統合されます。");
+        var result = await FindImageExecutor.ExecuteAsync(
+            new FindImageOptions
+            {
+                ImagePath = Settings.ImagePath,
+                Threshold = Settings.Threshold,
+                SearchColor = Settings.SearchColor,
+                Timeout = 0,
+                Interval = 0,
+                WindowTitle = Settings.WindowTitle,
+                WindowClassName = Settings.WindowClassName
+            },
+            (imagePath, threshold, searchColor, windowTitle, windowClassName, ct) =>
+                _imageMatcher.SearchImageAsync(imagePath, ct, threshold, searchColor, windowTitle, windowClassName),
+            _ => { },
+            cancellationToken);
 
-        if (point != null)
+        if (result.Found && result.Point != null)
         {
-            RaiseDoingCommand($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+            RaiseDoingCommand($"画像が見つかりました。({result.Point.Value.X}, {result.Point.Value.Y})");
             return await ExecuteChildrenAsync(cancellationToken);
         }
 
@@ -93,21 +102,30 @@ public class IfImageNotExistCommand : BaseCommand, IIfCommand, IIfImageNotExistC
             throw new InvalidOperationException("If内に要素がありません。");
         }
 
-        var point = await _imageMatcher.SearchImageAsync(
-            Settings.ImagePath,
-            cancellationToken,
-            Settings.Threshold,
-            Settings.SearchColor,
-            Settings.WindowTitle,
-            Settings.WindowClassName);
+        RaiseDoingCommand("非推奨: IF_ImageNotExist は将来的に Find_Image + If_Variable へ統合されます。");
+        var result = await FindImageExecutor.ExecuteAsync(
+            new FindImageOptions
+            {
+                ImagePath = Settings.ImagePath,
+                Threshold = Settings.Threshold,
+                SearchColor = Settings.SearchColor,
+                Timeout = 0,
+                Interval = 0,
+                WindowTitle = Settings.WindowTitle,
+                WindowClassName = Settings.WindowClassName
+            },
+            (imagePath, threshold, searchColor, windowTitle, windowClassName, ct) =>
+                _imageMatcher.SearchImageAsync(imagePath, ct, threshold, searchColor, windowTitle, windowClassName),
+            _ => { },
+            cancellationToken);
 
-        if (point == null)
+        if (!result.Found)
         {
             RaiseDoingCommand("画像が見つかりませんでした。");
             return await ExecuteChildrenAsync(cancellationToken);
         }
 
-        RaiseDoingCommand($"画像が見つかりました。({point.Value.X}, {point.Value.Y})");
+        RaiseDoingCommand($"画像が見つかりました。({result.Point!.Value.X}, {result.Point.Value.Y})");
         return true;
     }
 }

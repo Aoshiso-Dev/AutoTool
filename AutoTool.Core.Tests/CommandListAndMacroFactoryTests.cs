@@ -12,6 +12,8 @@ using AutoTool.Panels.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace AutoTool.Core.Tests;
 
@@ -128,6 +130,77 @@ public class MacroFactoryTests
         Assert.NotNull(macro);
         Assert.False(waitItem.IsInIf);
         Assert.False(waitItem.IsInLoop);
+    }
+
+    [Fact]
+    public void CreateMacro_WithIfTextExist_BuildsIfTextCommand()
+    {
+        var services = new ServiceCollection();
+        services.AddCommandServices();
+        services.AddSingleton<ICommandFactory, CommandFactory>();
+        services.AddSingleton<ReflectionCommandRegistry>();
+        services.AddSingleton<ICommandRegistry>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
+        services.AddSingleton<ICommandDefinitionProvider>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
+        services.AddTransient<ICompositeCommandBuilder, IfCompositeCommandBuilder>();
+        services.AddTransient<ICompositeCommandBuilder, LoopCompositeCommandBuilder>();
+        services.AddSingleton<IMacroFactory, MacroFactory>();
+
+        using var provider = services.BuildServiceProvider();
+        var registry = provider.GetRequiredService<ICommandRegistry>();
+        registry.Initialize();
+
+        var serializer = new MacroFileSerializer((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>());
+        var list = new CommandList((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>(), serializer);
+
+        var ifItem = new IfTextExistItem
+        {
+            ItemType = CommandTypeNames.IfTextExist,
+            TargetText = "ログイン"
+        };
+        var waitItem = new WaitItem { ItemType = CommandTypeNames.Wait, Wait = 1 };
+        var ifEnd = new IfEndItem { ItemType = CommandTypeNames.IfEnd };
+
+        list.Add(ifItem);
+        list.Add(waitItem);
+        list.Add(ifEnd);
+
+        var factory = provider.GetRequiredService<IMacroFactory>();
+        var macro = factory.CreateMacro(list.Items);
+
+        var topLoop = Assert.IsType<LoopCommand>(macro);
+        var firstChild = Assert.Single(topLoop.Children);
+        Assert.IsType<IfTextExistCommand>(firstChild);
+    }
+
+    [Fact]
+    public void CreateMacro_WithIfTextExistWithoutEnd_ThrowsInvalidOperationException()
+    {
+        var services = new ServiceCollection();
+        services.AddCommandServices();
+        services.AddSingleton<ICommandFactory, CommandFactory>();
+        services.AddSingleton<ReflectionCommandRegistry>();
+        services.AddSingleton<ICommandRegistry>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
+        services.AddSingleton<ICommandDefinitionProvider>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
+        services.AddTransient<ICompositeCommandBuilder, IfCompositeCommandBuilder>();
+        services.AddTransient<ICompositeCommandBuilder, LoopCompositeCommandBuilder>();
+        services.AddSingleton<IMacroFactory, MacroFactory>();
+
+        using var provider = services.BuildServiceProvider();
+        var registry = provider.GetRequiredService<ICommandRegistry>();
+        registry.Initialize();
+
+        var serializer = new MacroFileSerializer((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>());
+        var list = new CommandList((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>(), serializer);
+
+        list.Add(new IfTextExistItem
+        {
+            ItemType = CommandTypeNames.IfTextExist,
+            TargetText = "ログイン"
+        });
+
+        var factory = provider.GetRequiredService<IMacroFactory>();
+        var ex = Assert.Throws<InvalidOperationException>(() => factory.CreateMacro(list.Items));
+        Assert.Contains("生成に失敗", ex.Message);
     }
 }
 
@@ -346,5 +419,93 @@ public class FileManagerTests
             SaveCalled = true;
             Files = files;
         }
+    }
+}
+
+public class FindTextItemTests
+{
+    [Fact]
+    public async Task ExecuteAsync_WhenTextFound_ReturnsTrueAndSetsVariables()
+    {
+        var item = new FindTextItem
+        {
+            TargetText = "ログイン",
+            MatchMode = "Contains",
+            Strict = true,
+            FoundVariableName = "found",
+            TextVariableName = "text",
+            ConfidenceVariableName = "conf",
+            Timeout = 0
+        };
+
+        var context = new FakeCommandExecutionContext(new OcrExtractionResult("ログイン成功", 88.5));
+
+        var result = await item.ExecuteAsync(context, CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal("true", context.GetVariable("found"));
+        Assert.Equal("ログイン成功", context.GetVariable("text"));
+        Assert.Equal("88.5", context.GetVariable("conf"));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenTextNotFoundAndStrictFalse_ReturnsTrue()
+    {
+        var item = new FindTextItem
+        {
+            TargetText = "ログイン",
+            MatchMode = "Contains",
+            Strict = false,
+            Timeout = 0
+        };
+
+        var context = new FakeCommandExecutionContext(new OcrExtractionResult("サインアップ", 90.0));
+
+        var result = await item.ExecuteAsync(context, CancellationToken.None);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenTextNotFoundAndStrictTrue_ReturnsFalse()
+    {
+        var item = new FindTextItem
+        {
+            TargetText = "ログイン",
+            MatchMode = "Equals",
+            Strict = true,
+            Timeout = 0
+        };
+
+        var context = new FakeCommandExecutionContext(new OcrExtractionResult("サインアップ", 95.0));
+
+        var result = await item.ExecuteAsync(context, CancellationToken.None);
+
+        Assert.False(result);
+    }
+
+    private sealed class FakeCommandExecutionContext : ICommandExecutionContext
+    {
+        private readonly OcrExtractionResult _ocrResult;
+        private readonly Dictionary<string, string> _vars = new(StringComparer.Ordinal);
+
+        public FakeCommandExecutionContext(OcrExtractionResult ocrResult)
+        {
+            _ocrResult = ocrResult;
+        }
+
+        public void ReportProgress(int progress) { }
+        public void Log(string message) { }
+        public string? GetVariable(string name) => _vars.TryGetValue(name, out var v) ? v : null;
+        public void SetVariable(string name, string value) => _vars[name] = value;
+        public string ToAbsolutePath(string relativePath) => relativePath;
+        public Task ClickAsync(int x, int y, MouseButton button, string? windowTitle = null, string? windowClassName = null) => Task.CompletedTask;
+        public Task SendHotkeyAsync(Key key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null) => Task.CompletedTask;
+        public Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, Color? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.FromResult<MatchPoint?>(null);
+        public void InitializeAIModel(string modelPath, int inputSize = 640, bool useGpu = true) { }
+        public IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold) => Array.Empty<DetectionResult>();
+        public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken) => Task.FromResult(_ocrResult);
     }
 }

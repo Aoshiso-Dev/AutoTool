@@ -16,6 +16,46 @@ public class WaitImageCommandSettings : ICommandSettings, IWaitImageCommandSetti
     public string WindowClassName { get; set; } = string.Empty;
 }
 
+public class FindImageCommandSettings : ICommandSettings, IFindImageCommandSettings
+{
+    public string ImagePath { get; set; } = string.Empty;
+    public double Threshold { get; set; } = 0.8;
+    public Color? SearchColor { get; set; }
+    public int Timeout { get; set; } = 5000;
+    public int Interval { get; set; } = 500;
+    public bool Strict { get; set; } = false;
+    public string FoundVariableName { get; set; } = string.Empty;
+    public string XVariableName { get; set; } = string.Empty;
+    public string YVariableName { get; set; } = string.Empty;
+    public string WindowTitle { get; set; } = string.Empty;
+    public string WindowClassName { get; set; } = string.Empty;
+}
+
+public class FindTextCommandSettings : ICommandSettings, IFindTextCommandSettings
+{
+    public string TargetText { get; set; } = string.Empty;
+    public bool CaseSensitive { get; set; } = false;
+    public string MatchMode { get; set; } = "Contains";
+    public int X { get; set; } = 0;
+    public int Y { get; set; } = 0;
+    public int Width { get; set; } = 300;
+    public int Height { get; set; } = 100;
+    public int Timeout { get; set; } = 3000;
+    public int Interval { get; set; } = 500;
+    public bool Strict { get; set; } = false;
+    public double MinConfidence { get; set; } = 50.0;
+    public string FoundVariableName { get; set; } = string.Empty;
+    public string TextVariableName { get; set; } = string.Empty;
+    public string ConfidenceVariableName { get; set; } = string.Empty;
+    public string WindowTitle { get; set; } = string.Empty;
+    public string WindowClassName { get; set; } = string.Empty;
+    public string Language { get; set; } = "jpn";
+    public string PageSegmentationMode { get; set; } = "6";
+    public string Whitelist { get; set; } = string.Empty;
+    public string PreprocessMode { get; set; } = "Gray";
+    public string TessdataPath { get; set; } = string.Empty;
+}
+
 public class IfImageCommandSettings : ICommandSettings, IIfImageCommandSettings
 {
     public string ImagePath { get; set; } = string.Empty;
@@ -172,6 +212,25 @@ public class SetVariableAISettings : ICommandSettings, ISetVariableAICommandSett
         if (string.IsNullOrEmpty(ModelPath))
             throw new ArgumentException("モデルパスは必須です", nameof(ModelPath));
     }
+}
+
+public class IfTextCommandSettings : ICommandSettings, IIfTextCommandSettings
+{
+    public string TargetText { get; set; } = string.Empty;
+    public bool CaseSensitive { get; set; } = false;
+    public string MatchMode { get; set; } = "Contains";
+    public int X { get; set; } = 0;
+    public int Y { get; set; } = 0;
+    public int Width { get; set; } = 300;
+    public int Height { get; set; } = 100;
+    public double MinConfidence { get; set; } = 50.0;
+    public string WindowTitle { get; set; } = string.Empty;
+    public string WindowClassName { get; set; } = string.Empty;
+    public string Language { get; set; } = "jpn";
+    public string PageSegmentationMode { get; set; } = "6";
+    public string Whitelist { get; set; } = string.Empty;
+    public string PreprocessMode { get; set; } = "Gray";
+    public string TessdataPath { get; set; } = string.Empty;
 }
 
 public class SetVariableOCRCommandSettings : ICommandSettings, ISetVariableOCRCommandSettings

@@ -75,7 +75,9 @@ public class MacroFactory : IMacroFactory
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error creating command for {item.ItemType} at line {item.LineNumber}: {ex.Message}");
-                throw new InvalidOperationException($"コマンド '{item.ItemType}' (行 {item.LineNumber}) の生成に失敗しました", ex);
+                throw new InvalidOperationException(
+                    $"コマンド '{item.ItemType}' (行 {item.LineNumber}) の生成に失敗しました。原因: {ex.Message}",
+                    ex);
             }
         }
 

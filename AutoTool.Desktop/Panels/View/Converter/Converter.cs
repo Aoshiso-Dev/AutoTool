@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -260,12 +261,21 @@ public class OcrRegionNumberEditorVisibilityConverter : IValueConverter
 
 public class OcrRegionNumberEditorVisibilityMultiConverter : IMultiValueConverter
 {
+    private static readonly HashSet<string> OcrPointPickerItemTypes = new(StringComparer.Ordinal)
+    {
+        "SetVariable_OCR",
+        "Find_Text",
+        "IF_TextExist",
+        "IF_TextNotExist"
+    };
+
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
         var itemType = values.Length > 0 ? values[0]?.ToString() : string.Empty;
         var propertyName = values.Length > 1 ? values[1]?.ToString() : string.Empty;
 
-        if (string.Equals(itemType, "SetVariable_OCR", StringComparison.Ordinal) &&
+        if (itemType != null &&
+            OcrPointPickerItemTypes.Contains(itemType) &&
             (string.Equals(propertyName, "Y", StringComparison.Ordinal) ||
              string.Equals(propertyName, "Width", StringComparison.Ordinal) ||
              string.Equals(propertyName, "Height", StringComparison.Ordinal)))
@@ -294,4 +304,6 @@ public class NullToVisibilityConverter : IValueConverter
         return Binding.DoNothing;
     }
 }
+
+
 

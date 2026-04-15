@@ -37,6 +37,46 @@ namespace AutoTool.Panels.Model.List.Interface
         public string WindowClassName { get; set; }
     }
 
+    public interface IFindImageItem : ICommandListItem
+    {
+        public string ImagePath { get; set; }
+        public double Threshold { get; set; }
+        public Color? SearchColor { get; set; }
+        public int Timeout { get; set; }
+        public int Interval { get; set; }
+        public bool Strict { get; set; }
+        public string FoundVariableName { get; set; }
+        public string XVariableName { get; set; }
+        public string YVariableName { get; set; }
+        public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
+    }
+
+    public interface IFindTextItem : ICommandListItem
+    {
+        public string TargetText { get; set; }
+        public bool CaseSensitive { get; set; }
+        public string MatchMode { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int Timeout { get; set; }
+        public int Interval { get; set; }
+        public bool Strict { get; set; }
+        public double MinConfidence { get; set; }
+        public string FoundVariableName { get; set; }
+        public string TextVariableName { get; set; }
+        public string ConfidenceVariableName { get; set; }
+        public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
+        public string Language { get; set; }
+        public string PageSegmentationMode { get; set; }
+        public string Whitelist { get; set; }
+        public string PreprocessMode { get; set; }
+        public string TessdataPath { get; set; }
+    }
+
     public interface IClickImageItem : ICommandListItem
     {
         public string ImagePath { get; set; }
@@ -94,6 +134,44 @@ namespace AutoTool.Panels.Model.List.Interface
         public Color? SearchColor { get; set; }
         public string WindowTitle { get; set; }
         public string WindowClassName { get; set; }
+    }
+
+    public interface IIfTextExistItem : ICommandListItem, IIfItem
+    {
+        public string TargetText { get; set; }
+        public bool CaseSensitive { get; set; }
+        public string MatchMode { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public double MinConfidence { get; set; }
+        public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
+        public string Language { get; set; }
+        public string PageSegmentationMode { get; set; }
+        public string Whitelist { get; set; }
+        public string PreprocessMode { get; set; }
+        public string TessdataPath { get; set; }
+    }
+
+    public interface IIfTextNotExistItem : ICommandListItem, IIfItem
+    {
+        public string TargetText { get; set; }
+        public bool CaseSensitive { get; set; }
+        public string MatchMode { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public double MinConfidence { get; set; }
+        public string WindowTitle { get; set; }
+        public string WindowClassName { get; set; }
+        public string Language { get; set; }
+        public string PageSegmentationMode { get; set; }
+        public string Whitelist { get; set; }
+        public string PreprocessMode { get; set; }
+        public string TessdataPath { get; set; }
     }
 
     public interface IIfEndItem : ICommandListItem
