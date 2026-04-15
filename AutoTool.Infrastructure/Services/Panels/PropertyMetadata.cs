@@ -34,6 +34,9 @@ public partial class PropertyMetadata : ObservableObject
     private ICommand? _pickColorCommand;
     private ICommand? _getWindowInfoCommand;
     private ICommand? _clearCommand;
+    private string? _helperText;
+    private string? _validationMessage;
+    private bool _hasValidationError;
 
     public ICommand? BrowseCommand
     {
@@ -65,6 +68,24 @@ public partial class PropertyMetadata : ObservableObject
         set => SetProperty(ref _clearCommand, value);
     }
 
+    public string? HelperText
+    {
+        get => _helperText;
+        set => SetProperty(ref _helperText, value);
+    }
+
+    public string? ValidationMessage
+    {
+        get => _validationMessage;
+        set => SetProperty(ref _validationMessage, value);
+    }
+
+    public bool HasValidationError
+    {
+        get => _hasValidationError;
+        set => SetProperty(ref _hasValidationError, value);
+    }
+
     public object? Value
     {
         get => PropertyInfo.GetValue(Target);
@@ -92,6 +113,9 @@ public partial class PropertyMetadata : ObservableObject
         OnPropertyChanged(nameof(HasColor));
         OnPropertyChanged(nameof(KeyValue));
         OnPropertyChanged(nameof(KeyDisplayText));
+        OnPropertyChanged(nameof(HelperText));
+        OnPropertyChanged(nameof(ValidationMessage));
+        OnPropertyChanged(nameof(HasValidationError));
     }
 
     public string StringValue

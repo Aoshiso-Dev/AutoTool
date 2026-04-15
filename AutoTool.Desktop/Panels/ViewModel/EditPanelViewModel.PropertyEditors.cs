@@ -2,6 +2,7 @@
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Panels.Attributes;
 using AutoTool.Panels.View;
+using System.IO;
 
 namespace AutoTool.Panels.ViewModel;
 
@@ -54,6 +55,7 @@ public partial class EditPanelViewModel
             case EditorType.DirectoryPicker:
                 prop.BrowseCommand = new RelayCommand(() => BrowseDirectoryForProperty(prop));
                 prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
+                ConfigureDirectoryPickerMetadata(prop);
                 break;
 
             case EditorType.KeyPicker:
@@ -158,6 +160,64 @@ public partial class EditPanelViewModel
         }
     }
 
+
+    private void ConfigureDirectoryPickerMetadata(PropertyMetadata prop)
+    {
+        if (!string.Equals(prop.PropertyInfo.Name, "TessdataPath", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        prop.HelperText = "未指定の場合は ./tessdata を使用します。";
+        UpdateDirectoryPickerValidation(prop);
+
+        prop.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName is nameof(PropertyMetadata.Value) or nameof(PropertyMetadata.StringValue))
+            {
+                UpdateDirectoryPickerValidation(prop);
+            }
+        };
+    }
+
+    private void UpdateDirectoryPickerValidation(PropertyMetadata prop)
+    {
+        var rawPath = prop.StringValue?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(rawPath))
+        {
+            prop.HasValidationError = false;
+            prop.ValidationMessage = "既定値を使用します。必要な場合のみ指定してください。";
+            return;
+        }
+
+        var absolutePath = _pathResolver.ToAbsolutePath(rawPath);
+        if (!Directory.Exists(absolutePath))
+        {
+            prop.HasValidationError = true;
+            prop.ValidationMessage = $"フォルダが見つかりません: {rawPath}";
+            return;
+        }
+
+        try
+        {
+            var hasTrainedData = Directory.EnumerateFiles(absolutePath, "*.traineddata", SearchOption.TopDirectoryOnly).Any();
+            if (!hasTrainedData)
+            {
+                prop.HasValidationError = true;
+                prop.ValidationMessage = "*.traineddata が見つかりません。tessdata フォルダを選択してください。";
+                return;
+            }
+        }
+        catch
+        {
+            prop.HasValidationError = true;
+            prop.ValidationMessage = "フォルダを確認できませんでした。アクセス権限を確認してください。";
+            return;
+        }
+
+        prop.HasValidationError = false;
+        prop.ValidationMessage = "確認OK: traineddata ファイルを検出しました。";
+    }
     private void PickKeyForProperty(PropertyMetadata prop)
     {
         var keyPickerWindow = new KeyPickerWindow();
@@ -265,3 +325,4 @@ public partial class EditPanelViewModel
         }
     }
 }
+

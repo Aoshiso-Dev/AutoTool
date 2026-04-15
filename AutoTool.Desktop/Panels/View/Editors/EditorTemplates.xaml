@@ -351,6 +351,22 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding HelperText}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding HelperText, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding ValidationMessage}"
+                               Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource EditorDescription}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasValidationError}" Value="True">
+                                        <Setter Property="Foreground" Value="#C42B1C"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <TextBlock Text="{Binding StringValue, TargetNullValue='Not selected'}" 
                                Style="{StaticResource EditorDescription}" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
