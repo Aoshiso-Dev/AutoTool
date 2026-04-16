@@ -70,7 +70,7 @@ public sealed class TesseractOcrEngine : IOcrEngine
 
         if (right <= left || bottom <= top)
         {
-            throw new ArgumentOutOfRangeException(nameof(width), "OCR領域がキャプチャ範囲外です。");
+            throw new ArgumentOutOfRangeException(nameof(width), "OCRキャプチャ範囲が画像の外側です。");
         }
 
         return new Mat(captured, new OpenCvSharp.Rect(left, top, right - left, bottom - top));
@@ -135,7 +135,7 @@ public sealed class TesseractOcrEngine : IOcrEngine
         }
 
         throw new DirectoryNotFoundException(
-            "tessdata ディレクトリが見つかりません。SetVariable_OCR の tessdata設定に学習データフォルダを指定してください。");
+            "tessdata ディレクトリが見つかりません。GetVariable_OCR の tessdata 設定で有効なフォルダを指定してください。");
     }
 
     private static PageSegMode ParsePageSegMode(string? pageSegmentationMode)

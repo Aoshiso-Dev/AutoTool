@@ -86,7 +86,9 @@ internal static class Win32KeyboardInputHelper
         var hWnd = FindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
         if (hWnd == IntPtr.Zero)
         {
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            throw new System.ComponentModel.Win32Exception(
+                Marshal.GetLastWin32Error(),
+                $"Window not found. Title='{windowTitle}', ClassName='{windowClassName}'.");
         }
 
         if (ctrl)
@@ -112,7 +114,9 @@ internal static class Win32KeyboardInputHelper
         var hWnd = FindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
         if (hWnd == IntPtr.Zero)
         {
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            throw new System.ComponentModel.Win32Exception(
+                Marshal.GetLastWin32Error(),
+                $"Window not found. Title='{windowTitle}', ClassName='{windowClassName}'.");
         }
 
         SendMessage(hWnd, WmKeyUp, (IntPtr)KeyInterop.VirtualKeyFromKey(key), IntPtr.Zero);

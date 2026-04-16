@@ -65,7 +65,9 @@ public static class Win32ScreenCaptureHelper
         var hWnd = FindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
         if (hWnd == IntPtr.Zero)
         {
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            throw new System.ComponentModel.Win32Exception(
+                Marshal.GetLastWin32Error(),
+                $"Window not found. Title='{windowTitle}', ClassName='{windowClassName}'.");
         }
 
         if (!GetWindowRect(hWnd, out var rect))
@@ -128,26 +130,31 @@ internal static class OpenCvImageSearchHelper
     {
         return Task.Run(() =>
         {
+            token.ThrowIfCancellationRequested();
+
             if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
             {
                 return (OpenCvSharp.Point?)null;
             }
 
+            token.ThrowIfCancellationRequested();
             using var targetMat = string.IsNullOrWhiteSpace(windowTitle) && string.IsNullOrWhiteSpace(windowClassName)
                 ? Win32ScreenCaptureHelper.CaptureScreen()
                 : Win32ScreenCaptureHelper.CaptureWindow(windowTitle, windowClassName);
 
+            token.ThrowIfCancellationRequested();
             using var templateMat = new Mat(imagePath);
+            token.ThrowIfCancellationRequested();
 
             if (searchColor is null)
             {
-                Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2GRAY);
-                Cv2.CvtColor(templateMat, templateMat, ColorConversionCodes.BGRA2GRAY);
+                EnsureGrayInPlace(targetMat);
+                EnsureGrayInPlace(templateMat);
             }
             else
             {
-                Cv2.CvtColor(targetMat, targetMat, ColorConversionCodes.BGRA2BGR);
-                Cv2.CvtColor(templateMat, templateMat, ColorConversionCodes.BGRA2BGR);
+                EnsureBgrInPlace(targetMat);
+                EnsureBgrInPlace(templateMat);
 
                 var lower = new Scalar(
                     Math.Max(searchColor.Value.R - 20, 0),
@@ -168,8 +175,10 @@ internal static class OpenCvImageSearchHelper
                 Cv2.BitwiseAnd(templateMat, templateMat, templateMat, templateMask);
             }
 
+            token.ThrowIfCancellationRequested();
             using var result = new Mat();
             Cv2.MatchTemplate(targetMat, templateMat, result, TemplateMatchModes.CCoeffNormed);
+            token.ThrowIfCancellationRequested();
             Cv2.MinMaxLoc(result, out _, out var maxVal, out _, out OpenCvSharp.Point maxLoc);
 
             if (maxVal < threshold)
@@ -179,6 +188,40 @@ internal static class OpenCvImageSearchHelper
 
             return new OpenCvSharp.Point(maxLoc.X + templateMat.Width / 2, maxLoc.Y + templateMat.Height / 2);
         }, token);
+    }
+
+    private static void EnsureGrayInPlace(Mat mat)
+    {
+        switch (mat.Channels())
+        {
+            case 1:
+                return;
+            case 3:
+                Cv2.CvtColor(mat, mat, ColorConversionCodes.BGR2GRAY);
+                return;
+            case 4:
+                Cv2.CvtColor(mat, mat, ColorConversionCodes.BGRA2GRAY);
+                return;
+            default:
+                throw new InvalidOperationException($"Unsupported channel count for grayscale conversion: {mat.Channels()}");
+        }
+    }
+
+    private static void EnsureBgrInPlace(Mat mat)
+    {
+        switch (mat.Channels())
+        {
+            case 3:
+                return;
+            case 4:
+                Cv2.CvtColor(mat, mat, ColorConversionCodes.BGRA2BGR);
+                return;
+            case 1:
+                Cv2.CvtColor(mat, mat, ColorConversionCodes.GRAY2BGR);
+                return;
+            default:
+                throw new InvalidOperationException($"Unsupported channel count for BGR conversion: {mat.Channels()}");
+        }
     }
 }
 

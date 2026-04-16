@@ -13,25 +13,28 @@ public class ProcessLauncher : IProcessLauncher
         return StartAsync(programPath, arguments, workingDirectory, false, CancellationToken.None);
     }
 
-    public async Task StartAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken = default)
+    public async Task StartAsync(
+        string programPath,
+        string? arguments,
+        string? workingDirectory,
+        bool waitForExit,
+        CancellationToken cancellationToken = default)
     {
-        await Task.Run(async () =>
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = programPath,
-                Arguments = arguments ?? string.Empty,
-                WorkingDirectory = workingDirectory ?? string.Empty,
-                UseShellExecute = true,
-            };
+        cancellationToken.ThrowIfCancellationRequested();
 
-            var process = Process.Start(startInfo);
-            
-            if (waitForExit && process != null)
-            {
-                await process.WaitForExitAsync(cancellationToken);
-            }
-        }, cancellationToken);
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = programPath,
+            Arguments = arguments ?? string.Empty,
+            WorkingDirectory = workingDirectory ?? string.Empty,
+            UseShellExecute = true
+        };
+
+        using var process = Process.Start(startInfo);
+        if (waitForExit && process != null)
+        {
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 }
 
