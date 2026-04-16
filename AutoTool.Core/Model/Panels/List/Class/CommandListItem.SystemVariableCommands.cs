@@ -58,8 +58,13 @@ namespace AutoTool.Panels.List.Class;
         {
             try
             {
-                await context.ExecuteProgramAsync(ProgramPath, Arguments, WorkingDirectory, WaitForExit, cancellationToken);
-                context.Log($"プログラムを実行しました: {ProgramPath}");
+                var absoluteProgramPath = context.ToAbsolutePath(ProgramPath);
+                var absoluteWorkingDirectory = string.IsNullOrWhiteSpace(WorkingDirectory)
+                    ? WorkingDirectory
+                    : context.ToAbsolutePath(WorkingDirectory);
+
+                await context.ExecuteProgramAsync(absoluteProgramPath, Arguments, absoluteWorkingDirectory, WaitForExit, cancellationToken);
+                context.Log($"プログラムを実行しました: {absoluteProgramPath}");
                 return true;
             }
             catch (Exception ex)
@@ -324,7 +329,9 @@ namespace AutoTool.Panels.List.Class;
                     PageSegmentationMode = PageSegmentationMode,
                     Whitelist = Whitelist,
                     PreprocessMode = PreprocessMode,
-                    TessdataPath = TessdataPath
+                    TessdataPath = string.IsNullOrWhiteSpace(TessdataPath)
+                        ? TessdataPath
+                        : context.ToAbsolutePath(TessdataPath)
                 }, cancellationToken);
 
                 var value = result.Confidence >= MinConfidence ? result.Text : string.Empty;

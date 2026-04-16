@@ -1,31 +1,62 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+using System.Collections.Specialized;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using AutoTool.Panels.ViewModel;
 
-namespace AutoTool.Panels.View
+namespace AutoTool.Panels.View;
+
+public partial class LogPanel : UserControl
 {
-    /// <summary>
-    /// ListPanel.xaml の相互作用ロジック
-    /// </summary>
-    public partial class LogPanel : UserControl
+    private LogPanelViewModel? _viewModel;
+
+    public LogPanel()
     {
-        public LogPanel()
+        InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnDataContextChanged(object sender, System.Windows.DependencyPropertyChangedEventArgs e)
+    {
+        DetachFromViewModel();
+        _viewModel = DataContext as LogPanelViewModel;
+        AttachToViewModel();
+    }
+
+    private void OnUnloaded(object sender, System.Windows.RoutedEventArgs e)
+    {
+        DetachFromViewModel();
+    }
+
+    private void AttachToViewModel()
+    {
+        if (_viewModel == null)
         {
-            InitializeComponent();
+            return;
         }
 
-        private void LogTextBox_TextChanged(object sender, TextChangedEventArgs e) => LogTextBox.ScrollToEnd();
+        _viewModel.LogEntries.CollectionChanged += OnLogEntriesChanged;
+    }
+
+    private void DetachFromViewModel()
+    {
+        if (_viewModel == null)
+        {
+            return;
+        }
+
+        _viewModel.LogEntries.CollectionChanged -= OnLogEntriesChanged;
+        _viewModel = null;
+    }
+
+    private void OnLogEntriesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action != NotifyCollectionChangedAction.Add || e.NewItems == null || e.NewItems.Count == 0)
+        {
+            return;
+        }
+
+        var latest = e.NewItems[^1];
+        Dispatcher.BeginInvoke(() => LogListBox.ScrollIntoView(latest));
     }
 }
 

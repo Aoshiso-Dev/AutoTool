@@ -230,8 +230,6 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
 
     public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
-        context.Log("非推奨: Wait_Image は将来的に Find_Image に統合されます。");
-
         var absolutePath = context.ToAbsolutePath(ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
             new FindImageOptions
@@ -338,8 +336,6 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
 
     public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
-        context.Log("非推奨: Click_Image は将来的に Find_Image + Click に統合されます。");
-
         var absolutePath = context.ToAbsolutePath(ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
             new FindImageOptions

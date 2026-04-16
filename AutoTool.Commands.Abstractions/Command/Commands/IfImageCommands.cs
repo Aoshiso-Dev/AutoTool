@@ -36,27 +36,30 @@ public class IfEndCommand : BaseCommand
 public class IfImageExistCommand : BaseCommand, IIfCommand, IIfImageExistCommand
 {
     private readonly IImageMatcher _imageMatcher;
+    private readonly IPathResolver _pathResolver;
 
     public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings;
 
-    public IfImageExistCommand(ICommand? parent, ICommandSettings settings, IImageMatcher imageMatcher)
+    public IfImageExistCommand(ICommand? parent, ICommandSettings settings, IImageMatcher imageMatcher, IPathResolver pathResolver)
         : base(parent, settings)
     {
         _imageMatcher = imageMatcher ?? throw new ArgumentNullException(nameof(imageMatcher));
+        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
     }
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children == null || !Children.Any())
         {
-            throw new InvalidOperationException("If内に要素がありません。");
+            throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
 
         RaiseDoingCommand("非推奨: IF_ImageExist は将来的に Find_Image + If_Variable へ統合されます。");
+        var absolutePath = _pathResolver.ToAbsolutePath(Settings.ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
             new FindImageOptions
             {
-                ImagePath = Settings.ImagePath,
+                ImagePath = absolutePath,
                 Threshold = Settings.Threshold,
                 SearchColor = Settings.SearchColor,
                 Timeout = 0,
@@ -86,27 +89,30 @@ public class IfImageExistCommand : BaseCommand, IIfCommand, IIfImageExistCommand
 public class IfImageNotExistCommand : BaseCommand, IIfCommand, IIfImageNotExistCommand
 {
     private readonly IImageMatcher _imageMatcher;
+    private readonly IPathResolver _pathResolver;
 
     public new IIfImageCommandSettings Settings => (IIfImageCommandSettings)base.Settings;
 
-    public IfImageNotExistCommand(ICommand? parent, ICommandSettings settings, IImageMatcher imageMatcher)
+    public IfImageNotExistCommand(ICommand? parent, ICommandSettings settings, IImageMatcher imageMatcher, IPathResolver pathResolver)
         : base(parent, settings)
     {
         _imageMatcher = imageMatcher ?? throw new ArgumentNullException(nameof(imageMatcher));
+        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
     }
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children == null || !Children.Any())
         {
-            throw new InvalidOperationException("If内に要素がありません。");
+            throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
 
         RaiseDoingCommand("非推奨: IF_ImageNotExist は将来的に Find_Image + If_Variable へ統合されます。");
+        var absolutePath = _pathResolver.ToAbsolutePath(Settings.ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
             new FindImageOptions
             {
-                ImagePath = Settings.ImagePath,
+                ImagePath = absolutePath,
                 Threshold = Settings.Threshold,
                 SearchColor = Settings.SearchColor,
                 Timeout = 0,
@@ -149,7 +155,7 @@ public class IfVariableCommand : BaseCommand, IIfCommand
     {
         if (Children == null || !Children.Any())
         {
-            throw new InvalidOperationException("If文中に要素がありません。");
+            throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
 
         var actualValue = _variableStore.Get(Settings.Name) ?? "";

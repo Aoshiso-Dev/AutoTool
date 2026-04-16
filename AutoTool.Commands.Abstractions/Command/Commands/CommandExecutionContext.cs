@@ -1,5 +1,6 @@
 ﻿using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
+using System.IO;
 using System.Windows.Input;
 using System.Windows.Media;
 using ICommand = AutoTool.Commands.Interface.ICommand;
@@ -88,42 +89,122 @@ public class CommandExecutionContext : ICommandExecutionContext
     public Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken)
     {
         if (_processLauncher == null)
-            throw new InvalidOperationException("ProcessLauncher is not available");
+            throw new InvalidOperationException("プログラム実行サービスが利用できません。");
+
+        if (string.IsNullOrWhiteSpace(programPath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ProgramPathRequired,
+                    nameof(programPath),
+                    "実行ファイルのパスは必須です。"));
+        }
+
+        if (!File.Exists(programPath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ProgramPathNotFound,
+                    nameof(programPath),
+                    $"実行ファイルが見つかりません: {programPath}"));
+        }
+
         return _processLauncher.StartAsync(programPath, arguments, workingDirectory, waitForExit, cancellationToken);
     }
     
     public Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken)
     {
         if (_screenCapturer == null)
-            throw new InvalidOperationException("ScreenCapturer is not available");
+            throw new InvalidOperationException("画面キャプチャサービスが利用できません。");
         return _screenCapturer.CaptureToFileAsync(filePath, windowTitle, windowClassName, cancellationToken);
     }
     
     public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, Color? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken)
     {
         if (_imageMatcher == null)
-            throw new InvalidOperationException("ImageMatcher is not available");
+            throw new InvalidOperationException("画像検索サービスが利用できません。");
+
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ImagePathRequired,
+                    nameof(imagePath),
+                    "画像パスは必須です。"));
+        }
+
+        if (!File.Exists(imagePath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ImagePathNotFound,
+                    nameof(imagePath),
+                    $"検索画像が見つかりません: {imagePath}"));
+        }
+
         return _imageMatcher.SearchImageAsync(imagePath, cancellationToken, threshold, searchColor, windowTitle, windowClassName);
     }
     
     public void InitializeAIModel(string modelPath, int inputSize = 640, bool useGpu = true)
     {
         if (_objectDetector == null)
-            throw new InvalidOperationException("ObjectDetector is not available");
+            throw new InvalidOperationException("AI検出サービスが利用できません。");
+
+        if (string.IsNullOrWhiteSpace(modelPath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ModelPathRequired,
+                    nameof(modelPath),
+                    "モデルパスは必須です。"));
+        }
+
+        if (!File.Exists(modelPath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ModelPathNotFound,
+                    nameof(modelPath),
+                    $"モデルファイルが見つかりません: {modelPath}"));
+        }
+
         _objectDetector.Initialize(modelPath, inputSize, useGpu);
     }
     
     public IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold)
     {
         if (_objectDetector == null)
-            throw new InvalidOperationException("ObjectDetector is not available");
+            throw new InvalidOperationException("AI検出サービスが利用できません。");
         return _objectDetector.Detect(windowTitle, confThreshold, iouThreshold);
     }
 
     public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken)
     {
         if (_ocrEngine == null)
-            throw new InvalidOperationException("OcrEngine is not available");
+            throw new InvalidOperationException("OCRサービスが利用できません。");
+
+        if (!string.IsNullOrWhiteSpace(request.TessdataPath))
+        {
+            if (!Directory.Exists(request.TessdataPath))
+            {
+                throw new CommandSettingsValidationException(
+                    new CommandValidationIssue(
+                        CommandValidationErrorCodes.TessdataPathNotFound,
+                        nameof(request.TessdataPath),
+                        $"フォルダが見つかりません: {request.TessdataPath}"));
+            }
+
+            var hasTrainedData = Directory.EnumerateFiles(request.TessdataPath, "*.traineddata", SearchOption.TopDirectoryOnly).Any();
+            if (!hasTrainedData)
+            {
+                throw new CommandSettingsValidationException(
+                    new CommandValidationIssue(
+                        CommandValidationErrorCodes.TessdataDataMissing,
+                        nameof(request.TessdataPath),
+                        "*.traineddata が見つかりません。tessdata フォルダを選択してください。"));
+            }
+        }
+
         return _ocrEngine.ExtractTextAsync(request, cancellationToken);
     }
 
@@ -142,3 +223,8 @@ public class CommandExecutionContext : ICommandExecutionContext
         public void PublishProgress(ICommand command, int progress) { }
     }
 }
+
+
+
+
+

@@ -1,5 +1,6 @@
-using AutoTool.Commands.Services;
+﻿using AutoTool.Commands.Services;
 using System.Windows.Media;
+using System.IO;
 
 namespace AutoTool.Commands.Commands;
 
@@ -26,12 +27,13 @@ public static class FindImageExecutor
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(searchAsync);
+        ValidateOptions(options);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var timeout = Math.Max(0, options.Timeout);
         var interval = Math.Max(0, options.Interval);
 
-        // timeout=0 は 1 回だけ即時検索として扱う
+        // timeout=0 は1回だけ検索を実行する
         var runOnce = timeout == 0;
 
         while (runOnce || stopwatch.ElapsedMilliseconds < timeout)
@@ -67,5 +69,53 @@ public static class FindImageExecutor
         }
 
         return new FindImageResult(false, null, (int)stopwatch.ElapsedMilliseconds);
+    }
+
+    private static void ValidateOptions(FindImageOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.ImagePath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ImagePathRequired,
+                    nameof(options.ImagePath),
+                    "画像パスは必須です。"));
+        }
+
+        if (double.IsNaN(options.Threshold) || double.IsInfinity(options.Threshold) || options.Threshold < 0 || options.Threshold > 1)
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ThresholdOutOfRange,
+                    nameof(options.Threshold),
+                    "値は0.0～1.0の範囲で指定してください。"));
+        }
+
+        if (options.Timeout < 0)
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.TimeoutOutOfRange,
+                    nameof(options.Timeout),
+                    "タイムアウトは0以上で指定してください。"));
+        }
+
+        if (options.Interval < 0)
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.IntervalOutOfRange,
+                    nameof(options.Interval),
+                    "検索間隔は0以上で指定してください。"));
+        }
+
+        if (!File.Exists(options.ImagePath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ImagePathNotFound,
+                    nameof(options.ImagePath),
+                    $"検索画像が見つかりません: {options.ImagePath}"));
+        }
     }
 }

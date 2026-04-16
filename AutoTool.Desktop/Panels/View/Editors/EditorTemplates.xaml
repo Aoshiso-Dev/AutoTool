@@ -16,6 +16,14 @@
         <Setter Property="CornerRadius" Value="8"/>
         <Setter Property="Padding" Value="16,12"/>
         <Setter Property="Margin" Value="0,0,0,4"/>
+        <Setter Property="BorderBrush" Value="{ui:ThemeResource ControlStrokeColorSecondaryBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding HasValidationError}" Value="True">
+                <Setter Property="BorderBrush" Value="#EF4444"/>
+                <Setter Property="BorderThickness" Value="2"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style x:Key="EditorLabel" TargetType="TextBlock">
@@ -41,6 +49,9 @@
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
                     <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
                                Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding ValidationMessage}" Style="{StaticResource EditorDescription}"
+                               Foreground="#C42B1C"
+                               Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
                 </StackPanel>
                 <TextBox Grid.Column="1" Text="{Binding StringValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             </Grid>
@@ -65,6 +76,9 @@
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
                     <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
                                Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding ValidationMessage}" Style="{StaticResource EditorDescription}"
+                               Foreground="#C42B1C"
+                               Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
                 </StackPanel>
                 <ui:NumberBox Grid.Column="1" Value="{Binding IntValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                               Minimum="{Binding Min}" Maximum="{Binding Max}"
@@ -89,6 +103,9 @@
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
                     <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
                                Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding ValidationMessage}" Style="{StaticResource EditorDescription}"
+                               Foreground="#C42B1C"
+                               Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
                 </StackPanel>
                 <Slider Grid.Column="1" Value="{Binding DoubleValue, Mode=TwoWay}" 
                         Minimum="{Binding Min}" Maximum="{Binding Max}" 
@@ -113,6 +130,9 @@
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
                     <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
                                Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding ValidationMessage}" Style="{StaticResource EditorDescription}"
+                               Foreground="#C42B1C"
+                               Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
                 </StackPanel>
                 <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding BoolValue, Mode=TwoWay}"/>
             </Grid>
@@ -180,7 +200,7 @@
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
                     <TextBlock Text="{Binding KeyDisplayText}" Style="{StaticResource EditorDescription}"/>
                 </StackPanel>
-                <ui:Button Grid.Column="1" Content="Pick Key" Icon="{ui:SymbolIcon Keyboard24}"
+                <ui:Button Grid.Column="1" Content="キー選択" Icon="{ui:SymbolIcon Keyboard24}"
                            Command="{Binding PickKeyCommand}" Appearance="Primary"/>
             </Grid>
         </Border>
@@ -226,7 +246,7 @@
                                       Visibility="{Binding RelatedProperty3, Converter={StaticResource NullToVisibilityConverter}}"/>
                     </StackPanel>
                 </StackPanel>
-                <ui:Button Grid.Column="1" Content="Pick" Icon="{ui:SymbolIcon Location24}"
+                <ui:Button Grid.Column="1" Content="選択" Icon="{ui:SymbolIcon Location24}"
                            Command="{Binding PickPointCommand}" Appearance="Primary"/>
             </Grid>
         </Border>
@@ -257,14 +277,17 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
-                    <TextBlock Text="{Binding StringValue, TargetNullValue='Not selected'}" 
+                    <TextBlock Text="{Binding StringValue, TargetNullValue='未選択'}" 
                                Style="{StaticResource EditorDescription}" 
                                TextTrimming="CharacterEllipsis" MaxWidth="300"/>
+                    <TextBlock Text="{Binding ValidationMessage}" Style="{StaticResource EditorDescription}"
+                               Foreground="#C42B1C"
+                               Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <ui:Button Content="Browse" Icon="{ui:SymbolIcon FolderOpen24}" 
+                    <ui:Button Content="参照" Icon="{ui:SymbolIcon FolderOpen24}" 
                                Command="{Binding BrowseCommand}" Margin="0,0,4,0"/>
-                    <ui:Button Content="Capture" Icon="{ui:SymbolIcon Screenshot24}" 
+                    <ui:Button Content="キャプチャ" Icon="{ui:SymbolIcon Screenshot24}" 
                                Command="{Binding CaptureCommand}" Appearance="Primary"/>
                 </StackPanel>
             </Grid>
@@ -282,7 +305,7 @@
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
                     <TextBlock Style="{StaticResource EditorDescription}">
                         <TextBlock.Text>
-                            <Binding Path="ColorValue" TargetNullValue="Not set">
+                            <Binding Path="ColorValue" TargetNullValue="未設定">
                                 <Binding.StringFormat>RGB({0})</Binding.StringFormat>
                             </Binding>
                         </TextBlock.Text>
@@ -293,9 +316,9 @@
                             Background="{Binding ColorBrush}"
                             BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
                             BorderThickness="1"/>
-                    <ui:Button Icon="{ui:SymbolIcon Eyedropper24}" ToolTip="Pick Color" 
+                    <ui:Button Icon="{ui:SymbolIcon Eyedropper24}" ToolTip="色を選択" 
                                Command="{Binding PickColorCommand}" Margin="0,0,4,0"/>
-                    <ui:Button Icon="{ui:SymbolIcon Dismiss24}" ToolTip="Clear" 
+                    <ui:Button Icon="{ui:SymbolIcon Dismiss24}" ToolTip="クリア" 
                                Command="{Binding ClearCommand}" Appearance="Secondary"/>
                 </StackPanel>
             </Grid>
@@ -311,13 +334,13 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
-                    <TextBlock Text="{Binding StringValue, TargetNullValue='Not specified'}" 
+                    <TextBlock Text="{Binding StringValue, TargetNullValue='未指定'}" 
                                Style="{StaticResource EditorDescription}"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <ui:Button Content="Get" Icon="{ui:SymbolIcon WindowNew20}" 
+                    <ui:Button Content="取得" Icon="{ui:SymbolIcon WindowNew20}" 
                                Command="{Binding GetWindowInfoCommand}" Margin="0,0,4,0"/>
-                    <ui:Button Icon="{ui:SymbolIcon Dismiss24}" ToolTip="Clear" 
+                    <ui:Button Icon="{ui:SymbolIcon Dismiss24}" ToolTip="クリア" 
                                Command="{Binding ClearCommand}" Appearance="Secondary"/>
                 </StackPanel>
             </Grid>
@@ -333,10 +356,13 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
-                    <TextBlock Text="{Binding StringValue, TargetNullValue='Not selected'}" 
+                    <TextBlock Text="{Binding StringValue, TargetNullValue='未選択'}" 
                                Style="{StaticResource EditorDescription}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding ValidationMessage}" Style="{StaticResource EditorDescription}"
+                               Foreground="#C42B1C"
+                               Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
                 </StackPanel>
-                <ui:Button Grid.Column="1" Content="Browse" Icon="{ui:SymbolIcon FolderOpen24}"
+                <ui:Button Grid.Column="1" Content="参照" Icon="{ui:SymbolIcon FolderOpen24}"
                            Command="{Binding BrowseCommand}"/>
             </Grid>
         </Border>
@@ -367,10 +393,10 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock Text="{Binding StringValue, TargetNullValue='Not selected'}" 
+                    <TextBlock Text="{Binding StringValue, TargetNullValue='未選択'}" 
                                Style="{StaticResource EditorDescription}" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <ui:Button Grid.Column="1" Content="Browse" Icon="{ui:SymbolIcon FolderOpen24}"
+                <ui:Button Grid.Column="1" Content="参照" Icon="{ui:SymbolIcon FolderOpen24}"
                            Command="{Binding BrowseCommand}"/>
             </Grid>
         </Border>

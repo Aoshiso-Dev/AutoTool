@@ -40,7 +40,7 @@ namespace AutoTool.Panels.ViewModel.Helpers
         private static Action<TInterface, TProperty> CreateSetter(Expression<Func<TInterface, TProperty>> propertyExpression)
         {
             if (propertyExpression.Body is not MemberExpression memberExpr)
-                throw new ArgumentException("Expression must be a property access");
+            throw new ArgumentException("式はプロパティアクセスである必要があります。");
 
             var parameter = propertyExpression.Parameters[0];
             var valueParameter = Expression.Parameter(typeof(TProperty), "value");
@@ -110,7 +110,7 @@ namespace AutoTool.Panels.ViewModel.Helpers
         private static Action<TInterface, TProperty> CreateSetter<TInterface>(Expression<Func<TInterface, TProperty>> propertyExpression)
         {
             if (propertyExpression.Body is not MemberExpression memberExpr)
-                throw new ArgumentException("Expression must be a property access");
+            throw new ArgumentException("式はプロパティアクセスである必要があります。");
 
             var parameter = propertyExpression.Parameters[0];
             var valueParameter = Expression.Parameter(typeof(TProperty), "value");

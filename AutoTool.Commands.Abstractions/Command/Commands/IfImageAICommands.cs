@@ -1,5 +1,6 @@
 ﻿using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
+using System.IO;
 
 namespace AutoTool.Commands.Commands;
 
@@ -9,23 +10,35 @@ namespace AutoTool.Commands.Commands;
 public class IfImageExistAICommand : BaseCommand, IIfCommand, IIfImageExistAICommand
 {
     private readonly IObjectDetector _objectDetector;
+    private readonly IPathResolver _pathResolver;
 
     public new IIfImageExistAISettings Settings => (IIfImageExistAISettings)base.Settings;
 
-    public IfImageExistAICommand(ICommand? parent, ICommandSettings settings, IObjectDetector objectDetector)
+    public IfImageExistAICommand(ICommand? parent, ICommandSettings settings, IObjectDetector objectDetector, IPathResolver pathResolver)
         : base(parent, settings)
     {
         _objectDetector = objectDetector ?? throw new ArgumentNullException(nameof(objectDetector));
+        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
     }
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children == null || !Children.Any())
         {
-            throw new InvalidOperationException("If内に要素がありません。");
+            throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
 
-        _objectDetector.Initialize(Settings.ModelPath, 640, true);
+        var absoluteModelPath = _pathResolver.ToAbsolutePath(Settings.ModelPath);
+        if (!File.Exists(absoluteModelPath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ModelPathNotFound,
+                    nameof(Settings.ModelPath),
+                    $"モデルファイルが見つかりません: {Settings.ModelPath}"));
+        }
+
+        _objectDetector.Initialize(absoluteModelPath, 640, true);
 
         var detections = _objectDetector.Detect(
             Settings.WindowTitle,
@@ -59,23 +72,35 @@ public class IfImageExistAICommand : BaseCommand, IIfCommand, IIfImageExistAICom
 public class IfImageNotExistAICommand : BaseCommand, IIfCommand, IIfImageNotExistAICommand
 {
     private readonly IObjectDetector _objectDetector;
+    private readonly IPathResolver _pathResolver;
 
     public new IIfImageNotExistAISettings Settings => (IIfImageNotExistAISettings)base.Settings;
 
-    public IfImageNotExistAICommand(ICommand? parent, ICommandSettings settings, IObjectDetector objectDetector)
+    public IfImageNotExistAICommand(ICommand? parent, ICommandSettings settings, IObjectDetector objectDetector, IPathResolver pathResolver)
         : base(parent, settings)
     {
         _objectDetector = objectDetector ?? throw new ArgumentNullException(nameof(objectDetector));
+        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
     }
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children == null || !Children.Any())
         {
-            throw new InvalidOperationException("If内に要素がありません。");
+            throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
 
-        _objectDetector.Initialize(Settings.ModelPath, 640, true);
+        var absoluteModelPath = _pathResolver.ToAbsolutePath(Settings.ModelPath);
+        if (!File.Exists(absoluteModelPath))
+        {
+            throw new CommandSettingsValidationException(
+                new CommandValidationIssue(
+                    CommandValidationErrorCodes.ModelPathNotFound,
+                    nameof(Settings.ModelPath),
+                    $"モデルファイルが見つかりません: {Settings.ModelPath}"));
+        }
+
+        _objectDetector.Initialize(absoluteModelPath, 640, true);
 
         var detections = _objectDetector.Detect(
             Settings.WindowTitle,
@@ -99,3 +124,8 @@ public class IfImageNotExistAICommand : BaseCommand, IIfCommand, IIfImageNotExis
         return true;
     }
 }
+
+
+
+
+

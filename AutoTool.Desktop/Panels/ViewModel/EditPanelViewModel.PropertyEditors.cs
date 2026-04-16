@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.Input;
+using AutoTool.Commands.Commands;
 using AutoTool.Commands.Infrastructure;
+using AutoTool.Commands.Interface;
 using AutoTool.Panels.Attributes;
 using AutoTool.Panels.View;
-using System.IO;
 
 namespace AutoTool.Panels.ViewModel;
 
@@ -23,8 +24,24 @@ public partial class EditPanelViewModel
             foreach (var prop in group.Properties)
             {
                 SetupPropertyCommands(prop);
+                prop.PropertyChanged += (_, args) =>
+                {
+                    if (args.PropertyName is nameof(PropertyMetadata.Value)
+                        or nameof(PropertyMetadata.StringValue)
+                        or nameof(PropertyMetadata.IntValue)
+                        or nameof(PropertyMetadata.DoubleValue)
+                        or nameof(PropertyMetadata.BoolValue)
+                        or nameof(PropertyMetadata.MouseButtonValue)
+                        or nameof(PropertyMetadata.ColorValue)
+                        or nameof(PropertyMetadata.KeyValue))
+                    {
+                        ValidateCurrentItemSettings();
+                    }
+                };
             }
         }
+
+        ValidateCurrentItemSettings();
     }
 
     private void SetupPropertyCommands(PropertyMetadata prop)
@@ -160,7 +177,6 @@ public partial class EditPanelViewModel
         }
     }
 
-
     private void ConfigureDirectoryPickerMetadata(PropertyMetadata prop)
     {
         if (!string.Equals(prop.PropertyInfo.Name, "TessdataPath", StringComparison.Ordinal))
@@ -169,55 +185,65 @@ public partial class EditPanelViewModel
         }
 
         prop.HelperText = "未指定の場合は ./tessdata を使用します。";
-        UpdateDirectoryPickerValidation(prop);
-
-        prop.PropertyChanged += (_, args) =>
-        {
-            if (args.PropertyName is nameof(PropertyMetadata.Value) or nameof(PropertyMetadata.StringValue))
-            {
-                UpdateDirectoryPickerValidation(prop);
-            }
-        };
     }
 
-    private void UpdateDirectoryPickerValidation(PropertyMetadata prop)
+    private void ValidateCurrentItemSettings()
     {
-        var rawPath = prop.StringValue?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(rawPath))
+        if (Item is not ICommandSettings settings)
+        {
+            ClearValidationState();
+            return;
+        }
+
+        var issues = CommandSettingsValidator.GetIssues(
+            settings,
+            _pathResolver,
+            includeExistenceChecks: true);
+
+        ApplyValidationState(issues);
+    }
+
+    private void ClearValidationState()
+    {
+        HasValidationErrors = false;
+        ValidationSummary = string.Empty;
+
+        foreach (var prop in PropertyGroups.SelectMany(group => group.Properties))
         {
             prop.HasValidationError = false;
-            prop.ValidationMessage = "既定値を使用します。必要な場合のみ指定してください。";
-            return;
+            prop.ValidationMessage = string.Empty;
         }
-
-        var absolutePath = _pathResolver.ToAbsolutePath(rawPath);
-        if (!Directory.Exists(absolutePath))
-        {
-            prop.HasValidationError = true;
-            prop.ValidationMessage = $"フォルダが見つかりません: {rawPath}";
-            return;
-        }
-
-        try
-        {
-            var hasTrainedData = Directory.EnumerateFiles(absolutePath, "*.traineddata", SearchOption.TopDirectoryOnly).Any();
-            if (!hasTrainedData)
-            {
-                prop.HasValidationError = true;
-                prop.ValidationMessage = "*.traineddata が見つかりません。tessdata フォルダを選択してください。";
-                return;
-            }
-        }
-        catch
-        {
-            prop.HasValidationError = true;
-            prop.ValidationMessage = "フォルダを確認できませんでした。アクセス権限を確認してください。";
-            return;
-        }
-
-        prop.HasValidationError = false;
-        prop.ValidationMessage = "確認OK: traineddata ファイルを検出しました。";
     }
+
+    private void ApplyValidationState(IReadOnlyList<CommandValidationIssue> issues)
+    {
+        ClearValidationState();
+        if (issues.Count == 0)
+        {
+            return;
+        }
+
+        HasValidationErrors = true;
+        ValidationSummary = string.Join(
+            Environment.NewLine,
+            issues.Select(i => $"[{i.Code}] {i.Message}"));
+
+        foreach (var issue in issues)
+        {
+            var prop = PropertyGroups
+                .SelectMany(group => group.Properties)
+                .FirstOrDefault(x => string.Equals(x.PropertyInfo.Name, issue.PropertyName, StringComparison.Ordinal));
+
+            if (prop == null)
+            {
+                continue;
+            }
+
+            prop.HasValidationError = true;
+            prop.ValidationMessage = $"[{issue.Code}] {issue.Message}";
+        }
+    }
+
     private void PickKeyForProperty(PropertyMetadata prop)
     {
         var keyPickerWindow = new KeyPickerWindow();
@@ -303,26 +329,25 @@ public partial class EditPanelViewModel
             if (success)
             {
                 var message = isRegionPicker
-                    ? $"Relative region set: ({relativeX}, {relativeY}, {regionWidth}, {regionHeight})\nWindow: {windowTitle}[{windowClassName}]"
-                    : $"Relative coordinates set: ({relativeX}, {relativeY})\nWindow: {windowTitle}[{windowClassName}]";
+                    ? $"ウィンドウ相対領域を設定しました: ({relativeX}, {relativeY}, {regionWidth}, {regionHeight})\nウィンドウ: {windowTitle}[{windowClassName}]"
+                    : $"ウィンドウ相対座標を設定しました: ({relativeX}, {relativeY})\nウィンドウ: {windowTitle}[{windowClassName}]";
 
-                _notifier.ShowInfo(message, "Coordinates Set");
+                _notifier.ShowInfo(message, "座標設定完了");
             }
             else
             {
                 var message = isRegionPicker
-                    ? $"{errorMessage}\nAbsolute region ({relativeX}, {relativeY}, {regionWidth}, {regionHeight}) set."
-                    : $"{errorMessage}\nAbsolute coordinates ({relativeX}, {relativeY}) set.";
+                    ? $"{errorMessage}\n絶対領域 ({relativeX}, {relativeY}, {regionWidth}, {regionHeight}) を設定しました。"
+                    : $"{errorMessage}\n絶対座標 ({relativeX}, {relativeY}) を設定しました。";
 
-                _notifier.ShowWarning(message, "Warning");
+                _notifier.ShowWarning(message, "警告");
             }
         }
         else if (isRegionPicker)
         {
             _notifier.ShowInfo(
-                $"Region set: ({relativeX}, {relativeY}, {regionWidth}, {regionHeight})",
-                "Coordinates Set");
+                $"領域を設定しました: ({relativeX}, {relativeY}, {regionWidth}, {regionHeight})",
+                "座標設定完了");
         }
     }
 }
-

@@ -52,34 +52,52 @@
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="4">
                 
-                <!-- Empty list message -->
+                <!-- 空リスト時のメッセージ -->
                 <StackPanel Visibility="{Binding IsListEmpty, Converter={StaticResource BoolToVisibilityConverter}}" 
                             Margin="0,60" HorizontalAlignment="Center">
                     <ui:SymbolIcon Symbol="DocumentAdd24" FontSize="48" 
                                    Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"/>
-                    <TextBlock Text="Add commands to the list" 
+                    <TextBlock Text="コマンドを追加してください" 
                                Style="{StaticResource SettingLabel}"
                                HorizontalAlignment="Center" Margin="0,16,0,8"/>
-                    <TextBlock Text="Use the Add button to add commands" 
+                    <TextBlock Text="「追加」ボタンからコマンドを登録できます" 
                                Style="{StaticResource SettingDescription}"
                                HorizontalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- No selection message -->
+                <!-- 未選択時のメッセージ -->
                 <StackPanel Visibility="{Binding IsListNotEmptyButNoSelection, Converter={StaticResource BoolToVisibilityConverter}}" 
                             Margin="0,60" HorizontalAlignment="Center">
                     <ui:SymbolIcon Symbol="CursorClick24" FontSize="48" 
                                    Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"/>
-                    <TextBlock Text="Select a command" 
+                    <TextBlock Text="コマンドを選択してください" 
                                Style="{StaticResource SettingLabel}"
                                HorizontalAlignment="Center" Margin="0,16,0,8"/>
-                    <TextBlock Text="Select a command from the list to edit its settings" 
+                    <TextBlock Text="一覧からコマンドを選ぶと設定を編集できます" 
                                Style="{StaticResource SettingDescription}"
                                HorizontalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Dynamic property editors based on metadata -->
                 <StackPanel Visibility="{Binding IsNotNullItem, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <Border Background="#12EF4444"
+                            BorderBrush="#EF4444"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10"
+                            Margin="0,0,0,8"
+                            Visibility="{Binding HasValidationErrors, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel>
+                            <TextBlock Text="入力エラーがあります"
+                                       FontWeight="SemiBold"
+                                       Foreground="#C42B1C"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding ValidationSummary}"
+                                       TextWrapping="Wrap"
+                                       Foreground="#C42B1C"/>
+                        </StackPanel>
+                    </Border>
+
                     <ItemsControl ItemsSource="{Binding PropertyGroups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -99,12 +117,12 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Preview area (for image commands) -->
+        <!-- プレビュー領域（画像系コマンド向け） -->
         <Border Grid.Row="1" Background="{ui:ThemeResource ControlFillColorDefaultBrush}" 
                 CornerRadius="8" Margin="4" Padding="12"
                 Visibility="{Binding HasImagePreview, Converter={StaticResource BoolToVisibilityConverter}}">
             <StackPanel>
-                <TextBlock Text="Preview" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"
+                <TextBlock Text="プレビュー" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"
                            Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"/>
                 <Border CornerRadius="4" Background="{ui:ThemeResource ControlFillColorSecondaryBrush}"
                         MinHeight="100" MaxHeight="200">

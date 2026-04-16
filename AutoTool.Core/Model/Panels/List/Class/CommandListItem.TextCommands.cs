@@ -203,7 +203,9 @@ public partial class FindTextItem : CommandListItem, IFindTextItem, IFindTextCom
                 PageSegmentationMode = PageSegmentationMode,
                 Whitelist = Whitelist,
                 PreprocessMode = PreprocessMode,
-                TessdataPath = TessdataPath
+                TessdataPath = string.IsNullOrWhiteSpace(TessdataPath)
+                    ? TessdataPath
+                    : context.ToAbsolutePath(TessdataPath)
             }, cancellationToken);
 
             var matched = IsMatched(result.Text, result.Confidence);

@@ -14,6 +14,12 @@ public partial class EditPanelViewModel
     [ObservableProperty]
     private ObservableCollection<PropertyGroup> _propertyGroups = new();
 
+    [ObservableProperty]
+    private bool _hasValidationErrors;
+
+    [ObservableProperty]
+    private string _validationSummary = string.Empty;
+
     private ICommandListItem? _item;
     public ICommandListItem? Item
     {

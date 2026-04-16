@@ -1,6 +1,8 @@
 ﻿using AutoTool.Commands.Commands;
 using AutoTool.Commands.Interface;
+using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.MacroFactory;
+using System.Text.RegularExpressions;
 
 namespace AutoTool.ViewModel;
 
@@ -8,17 +10,30 @@ public partial class MacroPanelViewModel
 {
     private void HandleStartCommand(ICommand command)
     {
+        if (IsSyntheticRootLoop(command))
+        {
+            return;
+        }
+
         var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
-        var commandName = command.GetType().Name.Replace("Command", "").PadRight(20, ' ');
+        var commandName = command.GetType().Name.Replace("Command", string.Empty);
+        var commandType = command.GetType().FullName ?? command.GetType().Name;
+        var uiLineLabel = FormatUiLineLabel(command.LineNumber);
+        var uiCommandLabel = GetUiCommandLabel(command);
 
         var settingDict = command.Settings.GetType().GetProperties()
             .ToDictionary(x => x.Name, x => x.GetValue(command.Settings, null));
-        var logString = string.Join(", ", settingDict.Select(s => $"({s.Key} = {s.Value})"));
+        var detailedSettings = string.Join(", ", settingDict.Select(s => $"{s.Key}={FormatLogValue(s.Value)}"));
 
-        _logWriter.Write(lineNumber, commandName, logString);
+        _logWriter.Write(
+            "START",
+            $"Line={lineNumber.Trim()}",
+            $"Command={commandName}",
+            $"CommandType={commandType}",
+            $"Settings=[{detailedSettings}]");
+
         OnUiThread(() =>
         {
-            _logPanel.WriteLog(lineNumber, commandName, logString);
             var commandItem = _listPanel.GetItem(command.LineNumber);
             if (commandItem != null)
             {
@@ -30,6 +45,21 @@ public partial class MacroPanelViewModel
 
     private void HandleFinishCommand(ICommand command)
     {
+        if (IsSyntheticRootLoop(command))
+        {
+            return;
+        }
+
+        var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
+        var commandName = command.GetType().Name.Replace("Command", string.Empty);
+        var uiLineLabel = FormatUiLineLabel(command.LineNumber);
+        var uiCommandLabel = GetUiCommandLabel(command);
+        _logWriter.Write(
+            "FINISH",
+            $"Line={lineNumber.Trim()}",
+            $"Command={commandName}",
+            "Status=Completed");
+
         OnUiThread(() =>
         {
             var commandItem = _listPanel.GetItem(command.LineNumber);
@@ -43,10 +73,23 @@ public partial class MacroPanelViewModel
 
     private void HandleDoingCommand(ICommand command, string detail)
     {
+        if (IsSyntheticRootLoop(command))
+        {
+            return;
+        }
+
         var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
-        var commandName = command.GetType().Name.Replace("Command", "").PadRight(20, ' ');
-        _logWriter.Write(lineNumber, commandName, detail);
-        OnUiThread(() => _logPanel.WriteLog(lineNumber, commandName, detail));
+        var commandName = command.GetType().Name.Replace("Command", string.Empty);
+        var uiLineLabel = FormatUiLineLabel(command.LineNumber);
+        var uiCommandLabel = GetUiCommandLabel(command);
+        _logWriter.Write(
+            "DOING",
+            $"Line={lineNumber.Trim()}",
+            $"Command={commandName}",
+            $"Detail={NormalizeLine(detail)}");
+
+        var briefDetail = ToUiSummary(detail);
+        OnUiThread(() => _logPanel.WriteLog(uiLineLabel, uiCommandLabel, briefDetail));
     }
 
     private void HandleUpdateProgress(ICommand command, int progress)
@@ -82,8 +125,9 @@ public partial class MacroPanelViewModel
             var isCancellation = _cts is { Token.IsCancellationRequested: true };
             if (!isCancellation)
             {
+                AppendRuntimeErrorLog(ex);
                 var message = BuildUserFriendlyErrorMessage(ex);
-                OnUiThread(() => _notifier.ShowError(message, "Error"));
+                OnUiThread(() => _notifier.ShowError(message, "エラー"));
             }
         }
         finally
@@ -120,29 +164,44 @@ public partial class MacroPanelViewModel
         }
     }
 
-    private static string BuildUserFriendlyErrorMessage(Exception ex)
+    private string BuildUserFriendlyErrorMessage(Exception ex)
     {
+        var validationError = FindCommandValidationException(ex);
+        if (validationError != null)
+        {
+            var line = validationError.LineNumber > 0 ? $"（{validationError.LineNumber}行目）" : string.Empty;
+            var propertyHint = string.IsNullOrWhiteSpace(validationError.PropertyName)
+                ? string.Empty
+                : $"\n項目: {ToUserPropertyName(validationError.PropertyName)}";
+            var commandName = ResolveCommandName(validationError);
+
+            return $"設定値が不正です{line}。\nコマンド: {commandName}{propertyHint}\nエラーコード: {validationError.ErrorCode}\n詳細: {validationError.Message}";
+        }
+
         var creationError = FindCommandCreationException(ex);
         if (creationError != null)
         {
             var line = creationError.LineNumber.HasValue ? $"（{creationError.LineNumber}行目）" : string.Empty;
+            var commandName = ToUserCommandName(creationError.ItemType);
+            var commandHint = string.IsNullOrWhiteSpace(commandName) ? string.Empty : $"\n対象コマンド: {commandName}";
             return creationError switch
             {
                 PairMismatchException =>
-                    $"コマンドの組み合わせが不完全です{line}。\n開始した条件/ループに対応する「終了」コマンドを追加してください。",
+                    $"コマンドの組み合わせが不完全です{line}。{commandHint}\n開始した条件/ループに対応する「終了」コマンドを追加してください。",
                 EmptyStructureException =>
-                    $"条件またはループの中身が空です{line}。\n中に実行したいコマンドを1つ以上追加してください。",
+                    $"条件またはループの中身が空です{line}。{commandHint}\n中に実行したいコマンドを1つ以上追加してください。",
                 UnsupportedCommandTypeException =>
-                    $"このコマンドはまだ実行に対応していません{line}。\n別のコマンドを使うか、対応版に更新してください。",
+                    $"このコマンドはまだ実行に対応していません{line}。{commandHint}\n別のコマンドを使うか、対応版に更新してください。",
                 _ =>
-                    $"コマンドの構成に問題があります{line}。\n詳細: {creationError.Message}"
+                    $"コマンドの構成に問題があります{line}。{commandHint}\n詳細: {ReplaceItemTypeNames(creationError.Message)}"
             };
         }
 
-        var rootCause = ex.GetBaseException().Message;
-        return ex.Message == rootCause
-            ? ex.Message
-            : $"{ex.Message}\n原因: {rootCause}";
+        var message = ReplaceItemTypeNames(ex.Message);
+        var rootCause = ReplaceItemTypeNames(ex.GetBaseException().Message);
+        return message == rootCause
+            ? message
+            : $"{message}\n原因: {rootCause}";
     }
 
     private static CommandCreationException? FindCommandCreationException(Exception ex)
@@ -159,4 +218,199 @@ public partial class MacroPanelViewModel
 
         return null;
     }
+
+    private static CommandValidationException? FindCommandValidationException(Exception ex)
+    {
+        Exception? current = ex;
+        while (current != null)
+        {
+            if (current is CommandValidationException validationException)
+            {
+                return validationException;
+            }
+
+            current = current.InnerException;
+        }
+
+        return null;
+    }
+
+    private void AppendRuntimeErrorLog(Exception ex)
+    {
+        var validationError = FindCommandValidationException(ex);
+        if (validationError != null)
+        {
+            var lineLabel = validationError.LineNumber > 0
+                ? FormatUiLineLabel(validationError.LineNumber)
+                : string.Empty;
+
+            _logPanel.WriteLog(
+                lineLabel,
+                ResolveCommandName(validationError),
+                $"エラー [{validationError.ErrorCode}] {NormalizeLine(validationError.Message)}");
+            return;
+        }
+
+        _logPanel.WriteLog(string.Empty, "システム", $"エラー: {NormalizeLine(ex.GetBaseException().Message)}");
+    }
+
+    private string ResolveCommandName(CommandValidationException validationError)
+    {
+        if (validationError.LineNumber > 0)
+        {
+            var commandItem = _listPanel.GetItem(validationError.LineNumber);
+            if (commandItem != null)
+            {
+                var displayName = CommandListItem.GetDisplayNameForType(commandItem.ItemType);
+                if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    return displayName;
+                }
+            }
+        }
+
+        return ToJapaneseCommandName(validationError.CommandName);
+    }
+
+    private static string ToUserPropertyName(string propertyName)
+    {
+        return propertyName switch
+        {
+            "ImagePath" => "検索画像",
+            "ModelPath" => "モデルパス",
+            "ProgramPath" => "実行ファイルパス",
+            "Threshold" => "しきい値",
+            "ConfThreshold" => "信頼度しきい値",
+            "IoUThreshold" => "IoUしきい値",
+            "Timeout" => "タイムアウト",
+            "Interval" => "検索間隔",
+            "Wait" => "待機時間",
+            "Width" => "幅",
+            "Height" => "高さ",
+            "MinConfidence" => "最小信頼度",
+            "MatchMode" => "マッチ方式",
+            "Name" => "変数名",
+            "Operator" => "演算子",
+            "TessdataPath" => "tessdataフォルダ",
+            _ => propertyName
+        };
+    }
+
+    private static string ToJapaneseCommandName(string commandName)
+    {
+        return commandName switch
+        {
+            "WaitImage" => "画像待機",
+            "FindImage" => "画像検索",
+            "ClickImage" => "画像クリック",
+            "IfImageExist" => "条件 - 画像存在判定",
+            "IfImageNotExist" => "条件 - 画像非存在判定",
+            "FindText" => "文字検索",
+            "IfTextExist" => "条件 - 文字存在判定",
+            "IfTextNotExist" => "条件 - 文字非存在判定",
+            "IfVariable" => "条件 - 変数比較",
+            "SetVariable" => "変数設定",
+            "SetVariableAI" => "変数設定(AI検出)",
+            "SetVariableOCR" => "変数設定(OCR)",
+            "Execute" => "プログラム実行",
+            "ClickImageAI" => "画像クリック(AI検出)",
+            "IfImageExistAI" => "条件 - 画像存在判定(AI検出)",
+            "IfImageNotExistAI" => "条件 - 画像非存在判定(AI検出)",
+            "Click" => "クリック",
+            "Hotkey" => "ホットキー",
+            "Wait" => "待機",
+            "Loop" => "ループ",
+            _ => commandName
+        };
+    }
+
+    private static string FormatLogValue(object? value)
+    {
+        if (value == null)
+        {
+            return "<null>";
+        }
+
+        return NormalizeLine(value.ToString() ?? string.Empty);
+    }
+
+    private static string NormalizeLine(string text)
+    {
+        return text
+            .Replace("\r\n", " | ", StringComparison.Ordinal)
+            .Replace('\n', ' ')
+            .Replace('\r', ' ')
+            .Trim();
+    }
+
+    private static string ToUiSummary(string detail)
+    {
+        var normalized = NormalizeLine(detail);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return "実行中";
+        }
+
+        const int maxLength = 48;
+        return normalized.Length > maxLength
+            ? $"{normalized[..maxLength]}..."
+            : normalized;
+    }
+
+    private static string FormatUiLineLabel(int lineNumber) => $"#{lineNumber:00}";
+
+    private static string ToUserCommandName(string? itemType)
+    {
+        if (string.IsNullOrWhiteSpace(itemType))
+        {
+            return string.Empty;
+        }
+
+        var displayName = CommandListItem.GetDisplayNameForType(itemType);
+        return string.Equals(displayName, itemType, StringComparison.Ordinal)
+            ? itemType
+            : displayName;
+    }
+
+    private static string ReplaceItemTypeNames(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        return Regex.Replace(
+            text,
+            @"\b[A-Za-z]+(?:_[A-Za-z0-9]+)+\b",
+            match =>
+            {
+                var displayName = CommandListItem.GetDisplayNameForType(match.Value);
+                return string.Equals(displayName, match.Value, StringComparison.Ordinal)
+                    ? match.Value
+                    : displayName;
+            });
+    }
+
+    private string GetUiCommandLabel(ICommand command)
+    {
+        var commandItem = _listPanel.GetItem(command.LineNumber);
+        if (commandItem != null)
+        {
+            var displayName = CommandListItem.GetDisplayNameForType(commandItem.ItemType);
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                return displayName;
+            }
+        }
+
+        return command.GetType().Name.Replace("Command", string.Empty);
+    }
+
+    private static bool IsSyntheticRootLoop(ICommand command)
+    {
+        return command is LoopCommand
+            && command.LineNumber <= 0
+            && command.Parent is RootCommand;
+    }
 }
+

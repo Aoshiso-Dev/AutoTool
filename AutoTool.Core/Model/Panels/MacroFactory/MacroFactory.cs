@@ -3,6 +3,7 @@ using AutoTool.Commands.Commands;
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
+using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.CommandDefinition;
 using AutoTool.Panels.Model.List.Interface;
 
@@ -75,8 +76,9 @@ public class MacroFactory : IMacroFactory
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error creating command for {item.ItemType} at line {item.LineNumber}: {ex.Message}");
+                var commandName = GetCommandDisplayName(item.ItemType);
                 throw new InvalidOperationException(
-                    $"コマンド '{item.ItemType}' (行 {item.LineNumber}) の生成に失敗しました。原因: {ex.Message}",
+                    $"コマンド '{commandName}' (行 {item.LineNumber}) の生成に失敗しました。原因: {ex.Message}",
                     ex);
             }
         }
@@ -99,8 +101,9 @@ public class MacroFactory : IMacroFactory
         var builder = _compositeBuilders.FirstOrDefault(x => x.CanBuild(item));
         if (builder == null)
         {
+            var commandName = GetCommandDisplayName(item.ItemType);
             throw new UnsupportedCommandTypeException(
-                $"未対応のアイテム型です: {item.GetType().Name} (ItemType: {item.ItemType})",
+                $"未対応のコマンドです: {commandName}",
                 item.LineNumber,
                 item.ItemType);
         }
@@ -127,5 +130,13 @@ public class MacroFactory : IMacroFactory
         {
             set.Add(line);
         }
+    }
+
+    private static string GetCommandDisplayName(string itemType)
+    {
+        var displayName = CommandListItem.GetDisplayNameForType(itemType);
+        return string.Equals(displayName, itemType, StringComparison.Ordinal)
+            ? itemType
+            : displayName;
     }
 }

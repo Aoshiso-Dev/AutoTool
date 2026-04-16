@@ -1,7 +1,7 @@
 ﻿<Window x:Class="AutoTool.Panels.View.ColorPickWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Color Picker"
+        Title="色選択"
         Height="100"
         Width="100"
         WindowStyle="None"

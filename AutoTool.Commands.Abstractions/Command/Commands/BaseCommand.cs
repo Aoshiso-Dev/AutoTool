@@ -52,10 +52,24 @@ public abstract class BaseCommand : ICommand
 
     public virtual async Task<bool> Execute(CancellationToken cancellationToken)
     {
-        OnStartCommand?.Invoke(this, EventArgs.Empty);
-        var result = await DoExecuteAsync(cancellationToken);
-        OnFinishCommand?.Invoke(this, EventArgs.Empty);
-        return result;
+        try
+        {
+            CommandSettingsValidator.Validate(Settings);
+            OnStartCommand?.Invoke(this, EventArgs.Empty);
+            var result = await DoExecuteAsync(cancellationToken);
+            OnFinishCommand?.Invoke(this, EventArgs.Empty);
+            return result;
+        }
+        catch (CommandSettingsValidationException ex)
+        {
+            throw new CommandValidationException(
+                LineNumber,
+                GetType().Name.Replace("Command", string.Empty, StringComparison.Ordinal),
+                ex.ErrorCode,
+                ex.SettingPropertyName,
+                ex.Message,
+                ex);
+        }
     }
 
     protected abstract Task<bool> DoExecuteAsync(CancellationToken cancellationToken);
@@ -106,7 +120,7 @@ public abstract class BaseCommand : ICommand
     {
         if (Children == null || !Children.Any())
         {
-            throw new InvalidOperationException("子要素がありません。");
+            throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
 
         ResetChildrenProgress();
