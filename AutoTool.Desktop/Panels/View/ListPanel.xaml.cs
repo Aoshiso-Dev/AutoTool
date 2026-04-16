@@ -15,204 +15,203 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using AutoTool.Panels.ViewModel;
 
-namespace AutoTool.Panels.View
+namespace AutoTool.Panels.View;
+
+/// <summary>
+/// ListPanel.xaml の相互作用ロジック
+/// </summary>
+public partial class ListPanel : UserControl
 {
-    /// <summary>
-    /// ListPanel.xaml の相互作用ロジック
-    /// </summary>
-    public partial class ListPanel : UserControl
+    private double _savedVerticalOffset = 0;
+    private double _savedHorizontalOffset = 0;
+
+    public ListPanel()
     {
-        private double _savedVerticalOffset = 0;
-        private double _savedHorizontalOffset = 0;
+        InitializeComponent();
+        
+        // DataGridのLoadedイベントでスクロール位置保持を設定
+        this.Loaded += ListPanel_Loaded;
+    }
 
-        public ListPanel()
+    private void ListPanel_Loaded(object sender, RoutedEventArgs e)
+    {
+        // DataGridを取得
+        var dataGrid = FindVisualChild<DataGrid>(this);
+        if (dataGrid is not null)
         {
-            InitializeComponent();
+            // ScrollViewerを取得
+            var scrollViewer = FindVisualChild<ScrollViewer>(dataGrid);
+            if (scrollViewer is not null)
+            {
+                // スクロール位置変更イベントを監視
+                scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
+            }
+
+            // SelectionChangedイベントでスクロール位置を復元
+            dataGrid.SelectionChanged += DataGrid_SelectionChanged;
             
-            // DataGridのLoadedイベントでスクロール位置保持を設定
-            this.Loaded += ListPanel_Loaded;
+            // ダブルクリックイベントを追加
+            dataGrid.MouseDoubleClick += DataGrid_MouseDoubleClick;
         }
+    }
 
-        private void ListPanel_Loaded(object sender, RoutedEventArgs e)
+    private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        // スクロール位置を保存
+        var scrollViewer = sender as ScrollViewer;
+        if (scrollViewer is not null)
         {
-            // DataGridを取得
-            var dataGrid = FindVisualChild<DataGrid>(this);
-            if (dataGrid != null)
-            {
-                // ScrollViewerを取得
-                var scrollViewer = FindVisualChild<ScrollViewer>(dataGrid);
-                if (scrollViewer != null)
-                {
-                    // スクロール位置変更イベントを監視
-                    scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
-                }
-
-                // SelectionChangedイベントでスクロール位置を復元
-                dataGrid.SelectionChanged += DataGrid_SelectionChanged;
-                
-                // ダブルクリックイベントを追加
-                dataGrid.MouseDoubleClick += DataGrid_MouseDoubleClick;
-            }
+            _savedVerticalOffset = scrollViewer.VerticalOffset;
+            _savedHorizontalOffset = scrollViewer.HorizontalOffset;
         }
+    }
 
-        private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // 少し遅延してからスクロール位置を復元
+        Dispatcher.BeginInvoke(new Action(() =>
         {
-            // スクロール位置を保存
-            var scrollViewer = sender as ScrollViewer;
-            if (scrollViewer != null)
-            {
-                _savedVerticalOffset = scrollViewer.VerticalOffset;
-                _savedHorizontalOffset = scrollViewer.HorizontalOffset;
-            }
-        }
-
-        private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            // 少し遅延してからスクロール位置を復元
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                var dataGrid = sender as DataGrid;
-                if (dataGrid != null)
-                {
-                    var scrollViewer = FindVisualChild<ScrollViewer>(dataGrid);
-                    if (scrollViewer != null)
-                    {
-                        // 保存されたスクロール位置に復元
-                        scrollViewer.ScrollToVerticalOffset(_savedVerticalOffset);
-                        scrollViewer.ScrollToHorizontalOffset(_savedHorizontalOffset);
-                    }
-                }
-            }), System.Windows.Threading.DispatcherPriority.Background);
-        }
-
-        private void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            // ヘッダー部分のダブルクリックは無視
             var dataGrid = sender as DataGrid;
-            if (dataGrid == null) return;
-
-            // クリック位置の要素を確認
-            var element = e.OriginalSource as DependencyObject;
-            while (element != null)
+            if (dataGrid is not null)
             {
-                if (element is DataGridColumnHeader)
+                var scrollViewer = FindVisualChild<ScrollViewer>(dataGrid);
+                if (scrollViewer is not null)
                 {
-                    // ヘッダーのダブルクリックは無視
-                    return;
+                    // 保存されたスクロール位置に復元
+                    scrollViewer.ScrollToVerticalOffset(_savedVerticalOffset);
+                    scrollViewer.ScrollToHorizontalOffset(_savedHorizontalOffset);
                 }
-                if (element is DataGridRow)
-                {
-                    // 行のダブルクリック - ViewModelに通知
-                    if (DataContext is ListPanelViewModel viewModel)
-                    {
-                        viewModel.OnItemDoubleClick();
-                    }
-                    return;
-                }
-                element = VisualTreeHelper.GetParent(element);
             }
-        }
+        }), System.Windows.Threading.DispatcherPriority.Background);
+    }
 
-        /// <summary>
-        /// 設定編集ボタンクリック時の処理
-        /// </summary>
-        private void EditSettingsButton_Click(object sender, RoutedEventArgs e)
+    private void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        // ヘッダー部分のダブルクリックは無視
+        var dataGrid = sender as DataGrid;
+        if (dataGrid is null) return;
+
+        // クリック位置の要素を確認
+        var element = e.OriginalSource as DependencyObject;
+        while (element is not null)
         {
-            // クリックされたボタンの行を選択状態にする
-            var button = sender as FrameworkElement;
-            if (button?.DataContext is AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+            if (element is DataGridColumnHeader)
             {
+                // ヘッダーのダブルクリックは無視
+                return;
+            }
+            if (element is DataGridRow)
+            {
+                // 行のダブルクリック - ViewModelに通知
                 if (DataContext is ListPanelViewModel viewModel)
                 {
-                    // 行を選択
-                    viewModel.SelectedLineNumber = item.LineNumber - 1;
-                    // 編集ウィンドウを開く
                     viewModel.OnItemDoubleClick();
                 }
+                return;
             }
+            element = VisualTreeHelper.GetParent(element);
         }
+    }
 
-        /// <summary>
-        /// コマンド行の削除ボタンクリック時の処理
-        /// </summary>
-        private void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// 設定編集ボタンクリック時の処理
+    /// </summary>
+    private void EditSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        // クリックされたボタンの行を選択状態にする
+        var button = sender as FrameworkElement;
+        if (button?.DataContext is AutoTool.Panels.Model.List.Interface.ICommandListItem item)
         {
-            var button = sender as FrameworkElement;
-            if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+            if (DataContext is ListPanelViewModel viewModel)
             {
-                return;
+                // 行を選択
+                viewModel.SelectedLineNumber = item.LineNumber - 1;
+                // 編集ウィンドウを開く
+                viewModel.OnItemDoubleClick();
             }
-
-            if (DataContext is not ListPanelViewModel viewModel)
-            {
-                return;
-            }
-
-            viewModel.SelectedLineNumber = item.LineNumber - 1;
-            viewModel.Delete();
         }
+    }
 
-        /// <summary>
-        /// コマンド行の上移動ボタンクリック時の処理
-        /// </summary>
-        private void MoveUpCommandButton_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// コマンド行の削除ボタンクリック時の処理
+    /// </summary>
+    private void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
+    {
+        var button = sender as FrameworkElement;
+        if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
         {
-            var button = sender as FrameworkElement;
-            if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
-            {
-                return;
-            }
-
-            if (DataContext is not ListPanelViewModel viewModel)
-            {
-                return;
-            }
-
-            viewModel.SelectedLineNumber = item.LineNumber - 1;
-            viewModel.Up();
+            return;
         }
 
-        /// <summary>
-        /// コマンド行の下移動ボタンクリック時の処理
-        /// </summary>
-        private void MoveDownCommandButton_Click(object sender, RoutedEventArgs e)
+        if (DataContext is not ListPanelViewModel viewModel)
         {
-            var button = sender as FrameworkElement;
-            if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
-            {
-                return;
-            }
-
-            if (DataContext is not ListPanelViewModel viewModel)
-            {
-                return;
-            }
-
-            viewModel.SelectedLineNumber = item.LineNumber - 1;
-            viewModel.Down();
+            return;
         }
 
-        /// <summary>
-        /// ビジュアルツリーから指定した型の子要素を検索
-        /// </summary>
-        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        viewModel.SelectedLineNumber = item.LineNumber - 1;
+        viewModel.Delete();
+    }
+
+    /// <summary>
+    /// コマンド行の上移動ボタンクリック時の処理
+    /// </summary>
+    private void MoveUpCommandButton_Click(object sender, RoutedEventArgs e)
+    {
+        var button = sender as FrameworkElement;
+        if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
         {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is T result)
-                {
-                    return result;
-                }
-
-                var childOfChild = FindVisualChild<T>(child);
-                if (childOfChild != null)
-                {
-                    return childOfChild;
-                }
-            }
-            return default;
+            return;
         }
+
+        if (DataContext is not ListPanelViewModel viewModel)
+        {
+            return;
+        }
+
+        viewModel.SelectedLineNumber = item.LineNumber - 1;
+        viewModel.Up();
+    }
+
+    /// <summary>
+    /// コマンド行の下移動ボタンクリック時の処理
+    /// </summary>
+    private void MoveDownCommandButton_Click(object sender, RoutedEventArgs e)
+    {
+        var button = sender as FrameworkElement;
+        if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+        {
+            return;
+        }
+
+        if (DataContext is not ListPanelViewModel viewModel)
+        {
+            return;
+        }
+
+        viewModel.SelectedLineNumber = item.LineNumber - 1;
+        viewModel.Down();
+    }
+
+    /// <summary>
+    /// ビジュアルツリーから指定した型の子要素を検索
+    /// </summary>
+    private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T result)
+            {
+                return result;
+            }
+
+            var childOfChild = FindVisualChild<T>(child);
+            if (childOfChild is not null)
+            {
+                return childOfChild;
+            }
+        }
+        return default;
     }
 }
 

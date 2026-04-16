@@ -15,7 +15,7 @@ public class LoopCommand : BaseCommand, ILoopCommand
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
-        if (Children == null || !Children.Any())
+        if (Children is null || !Children.Any())
         {
             throw new InvalidOperationException("ループ内に要素がありません。");
         }

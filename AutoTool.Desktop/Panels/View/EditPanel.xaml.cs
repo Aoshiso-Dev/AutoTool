@@ -13,17 +13,16 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace AutoTool.Panels.View
+namespace AutoTool.Panels.View;
+
+/// <summary>
+/// EditPanel.xaml の相互作用ロジック
+/// </summary>
+public partial class EditPanel : UserControl
 {
-    /// <summary>
-    /// EditPanel.xaml の相互作用ロジック
-    /// </summary>
-    public partial class EditPanel : UserControl
+    public EditPanel()
     {
-        public EditPanel()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }
 

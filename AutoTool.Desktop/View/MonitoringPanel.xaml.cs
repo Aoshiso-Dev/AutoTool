@@ -9,16 +9,15 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace AutoTool.View
+namespace AutoTool.View;
+
+/// <summary>
+/// Interaction logic for MainWindow.xaml
+/// </summary>
+public partial class MonitoringPanel : UserControl
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    public partial class MonitoringPanel : UserControl
+    public MonitoringPanel()
     {
-        public MonitoringPanel()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

@@ -8,58 +8,57 @@ using CommunityToolkit.Mvvm.Collections;
 using System.Globalization;
 using System.Windows;
 
-namespace AutoTool.View.Converters
+namespace AutoTool.View.Converters;
+
+public class InvertBooleanConverter : IValueConverter
 {
-    public class InvertBooleanConverter : IValueConverter
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        if (value is bool boolValue)
         {
-            if (value is bool boolValue)
-            {
-                return !boolValue;
-            }
-            return value;
+            return !boolValue;
         }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return !boolValue;
-            }
-            return value;
-        }
+        return value;
     }
 
-    public class RunningStatusConverter : IValueConverter
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        if (value is bool boolValue)
         {
-            if (value is bool isRunning)
-                return isRunning ? "実行中" : "停止中";
-            return "不明";
+            return !boolValue;
         }
+        return value;
+    }
+}
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return Binding.DoNothing;
-        }
+public class RunningStatusConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool isRunning)
+            return isRunning ? "実行中" : "停止中";
+        return "不明";
     }
 
-    public class BoolToVisibilityConverter : IValueConverter
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-                return boolValue ? Visibility.Visible : Visibility.Collapsed;
-            return Visibility.Collapsed;
-        }
+        return Binding.DoNothing;
+    }
+}
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is Visibility visibility)
-                return visibility == Visibility.Visible;
-            return false;
-        }
+public class BoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool boolValue)
+            return boolValue ? Visibility.Visible : Visibility.Collapsed;
+        return Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is Visibility visibility)
+            return visibility == Visibility.Visible;
+        return false;
     }
 }

@@ -23,7 +23,7 @@ public sealed class LoopCompositeCommandBuilder : ICompositeCommandBuilder
         Func<ICommand, IEnumerable<ICommandListItem>, IEnumerable<ICommand>> buildChildren)
     {
         var loopItem = (ILoopItem)item;
-        if (loopItem.Pair == null)
+        if (loopItem.Pair is null)
         {
             throw new PairMismatchException($"ループ (行 {loopItem.LineNumber}) に対応するEndLoopがありません", loopItem.LineNumber, loopItem.ItemType);
         }

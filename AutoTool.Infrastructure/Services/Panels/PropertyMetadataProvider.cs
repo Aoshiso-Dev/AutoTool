@@ -14,11 +14,11 @@ public class PropertyMetadataProvider
     /// </summary>
     public IEnumerable<PropertyMetadata> GetMetadata(ICommandListItem? item)
     {
-        if (item == null) yield break;
+        if (item is null) yield break;
         
         var properties = item.GetType()
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.GetCustomAttribute<CommandPropertyAttribute>() != null)
+            .Where(p => p.GetCustomAttribute<CommandPropertyAttribute>() is not null)
             .Select(p => new PropertyMetadata
             {
                 PropertyInfo = p,
@@ -39,7 +39,7 @@ public class PropertyMetadataProvider
     /// </summary>
     public IEnumerable<PropertyGroup> GetGroupedMetadata(ICommandListItem? item)
     {
-        if (item == null) yield break;
+        if (item is null) yield break;
         
         var groups = GetMetadata(item)
             .GroupBy(m => m.Group)
@@ -47,7 +47,7 @@ public class PropertyMetadataProvider
             .Select(g => new PropertyGroup
             {
                 GroupName = g.Key,
-                Properties = g.OrderBy(m => m.Order).ToList()
+                Properties = [.. g.OrderBy(m => m.Order)]
             });
         
         foreach (var group in groups)
@@ -61,11 +61,11 @@ public class PropertyMetadataProvider
     /// </summary>
     public bool HasEditableProperties(ICommandListItem? item)
     {
-        if (item == null) return false;
+        if (item is null) return false;
         
         return item.GetType()
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Any(p => p.GetCustomAttribute<CommandPropertyAttribute>() != null);
+            .Any(p => p.GetCustomAttribute<CommandPropertyAttribute>() is not null);
     }
 }
 

@@ -23,7 +23,7 @@ internal static class BoundingBoxMath
 
     public static List<Detection> Nms(List<Detection> dets, float iouTh)
     {
-        var keep = new List<Detection>();
+        List<Detection> keep = [];
         dets.Sort((a, b) => b.Score.CompareTo(a.Score));
         var removed = new bool[dets.Count];
         for (int i = 0; i < dets.Count; i++)

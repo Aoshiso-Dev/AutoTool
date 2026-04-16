@@ -17,7 +17,7 @@ public partial class EditPanelViewModel
     public void GetWindowInfo()
     {
         var prop = FindProperty(nameof(WindowTitle));
-        if (prop != null)
+        if (prop is not null)
         {
             GetWindowInfoForProperty(prop);
             return;
@@ -37,21 +37,21 @@ public partial class EditPanelViewModel
     public void Browse()
     {
         var prop = FindProperty(nameof(WaitImageItem.ImagePath));
-        if (prop != null)
+        if (prop is not null)
         {
             BrowseImageForProperty(prop);
             return;
         }
 
         var f = _panelDialogService.SelectImageFile();
-        if (f != null) ImagePath = f;
+        if (f is not null) ImagePath = f;
     }
 
     [RelayCommand]
     public void Capture()
     {
         var prop = FindProperty(nameof(WaitImageItem.ImagePath));
-        if (prop != null)
+        if (prop is not null)
         {
             CaptureImageForProperty(prop);
             return;
@@ -71,7 +71,7 @@ public partial class EditPanelViewModel
     public void PickSearchColor()
     {
         var prop = FindProperty(nameof(WaitImageItem.SearchColor));
-        if (prop != null)
+        if (prop is not null)
         {
             PickColorForProperty(prop);
             return;
@@ -88,7 +88,7 @@ public partial class EditPanelViewModel
     public void PickPoint()
     {
         var xProp = FindProperty(nameof(ClickItem.X));
-        if (xProp != null)
+        if (xProp is not null)
         {
             PickPointForProperty(xProp);
             return;
@@ -127,10 +127,10 @@ public partial class EditPanelViewModel
         }
     }
 
-    [RelayCommand] public void BrowseModel() { var f = _panelDialogService.SelectModelFile(); if (f != null) ModelPath = f; }
-    [RelayCommand] public void BrowseProgram() { var f = _panelDialogService.SelectExecutableFile(); if (f != null) ProgramPath = f; }
-    [RelayCommand] public void BrowseWorkingDirectory() { var d = _panelDialogService.SelectFolder(); if (d != null) WorkingDirectory = d; }
-    [RelayCommand] public void BrowseSaveDirectory() { var d = _panelDialogService.SelectFolder(); if (d != null) SaveDirectory = d; }
+    [RelayCommand] public void BrowseModel() { var f = _panelDialogService.SelectModelFile(); if (f is not null) ModelPath = f; }
+    [RelayCommand] public void BrowseProgram() { var f = _panelDialogService.SelectExecutableFile(); if (f is not null) ProgramPath = f; }
+    [RelayCommand] public void BrowseWorkingDirectory() { var d = _panelDialogService.SelectFolder(); if (d is not null) WorkingDirectory = d; }
+    [RelayCommand] public void BrowseSaveDirectory() { var d = _panelDialogService.SelectFolder(); if (d is not null) SaveDirectory = d; }
     #endregion
 
     private PropertyMetadata? FindProperty(string propertyName)

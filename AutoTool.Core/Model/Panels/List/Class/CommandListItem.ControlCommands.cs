@@ -59,7 +59,7 @@ namespace AutoTool.Panels.List.Class;
 
         public IfImageExistItem(IfImageExistItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
@@ -125,7 +125,7 @@ namespace AutoTool.Panels.List.Class;
 
         public IfImageNotExistItem(IfImageNotExistItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 ImagePath = item.ImagePath;
                 Threshold = item.Threshold;
@@ -236,7 +236,7 @@ namespace AutoTool.Panels.List.Class;
 
         public IfTextExistItem(IfTextExistItem? item = null) : base(item)
         {
-            if (item == null)
+            if (item is null)
             {
                 return;
             }
@@ -359,7 +359,7 @@ namespace AutoTool.Panels.List.Class;
 
         public IfTextNotExistItem(IfTextNotExistItem? item = null) : base(item)
         {
-            if (item == null)
+            if (item is null)
             {
                 return;
             }
@@ -440,7 +440,7 @@ namespace AutoTool.Panels.List.Class;
 
         public LoopItem(LoopItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 LoopCount = item.LoopCount;
                 Pair = item.Pair;
@@ -473,7 +473,7 @@ namespace AutoTool.Panels.List.Class;
 
         public LoopEndItem(LoopEndItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 Pair = item.Pair;
             }
@@ -555,7 +555,7 @@ namespace AutoTool.Panels.List.Class;
 
         public IfImageExistAIItem(IfImageExistAIItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
@@ -628,7 +628,7 @@ namespace AutoTool.Panels.List.Class;
         public IfImageNotExistAIItem() { }
         public IfImageNotExistAIItem(IfImageNotExistAIItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;

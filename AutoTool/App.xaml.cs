@@ -58,7 +58,7 @@ public partial class App : Application
         Win32MouseHookHelper.StopHook();
 
         // UIスレッドの同期コンテキストに依存せず停止処理を完了させる
-        if (_host != null)
+        if (_host is not null)
         {
             try
             {

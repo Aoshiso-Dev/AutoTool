@@ -23,7 +23,7 @@ public class IfImageExistAICommand : BaseCommand, IIfCommand, IIfImageExistAICom
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
-        if (Children == null || !Children.Any())
+        if (Children is null || !Children.Any())
         {
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
@@ -85,7 +85,7 @@ public class IfImageNotExistAICommand : BaseCommand, IIfCommand, IIfImageNotExis
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
-        if (Children == null || !Children.Any())
+        if (Children is null || !Children.Any())
         {
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }

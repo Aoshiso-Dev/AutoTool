@@ -22,7 +22,7 @@ public abstract class BaseCommand : ICommand
 
     protected BaseCommand()
     {
-        Children = new List<ICommand>();
+        Children = [];
         Settings = new CommandSettings();
         InitializeEventHandlers();
     }
@@ -30,9 +30,9 @@ public abstract class BaseCommand : ICommand
     protected BaseCommand(ICommand? parent, ICommandSettings settings)
     {
         Parent = parent;
-        NestLevel = parent == null ? 0 : parent.NestLevel + 1;
+        NestLevel = parent is null ? 0 : parent.NestLevel + 1;
         Settings = settings ?? throw new ArgumentNullException(nameof(settings));
-        Children = new List<ICommand>();
+        Children = [];
         InitializeEventHandlers();
     }
 
@@ -118,7 +118,7 @@ public abstract class BaseCommand : ICommand
     /// </summary>
     protected async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
     {
-        if (Children == null || !Children.Any())
+        if (Children is null || !Children.Any())
         {
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }

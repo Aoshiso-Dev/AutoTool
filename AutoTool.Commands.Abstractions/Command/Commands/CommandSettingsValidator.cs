@@ -72,7 +72,7 @@ public static class CommandSettingsValidator
         bool includeExistenceChecks = false)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        var issues = new List<CommandValidationIssue>();
+        List<CommandValidationIssue> issues = [];
 
         if (settings is IWaitImageCommandSettings waitImage)
         {
@@ -311,7 +311,7 @@ public static class CommandSettingsValidator
 
     private static bool TryResolve(IPathResolver? pathResolver, string path, out string absolutePath)
     {
-        if (pathResolver == null)
+        if (pathResolver is null)
         {
             absolutePath = path;
             return false;

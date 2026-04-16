@@ -83,7 +83,7 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
 
     public FindImageItem(FindImageItem? item = null) : base(item)
     {
-        if (item == null)
+        if (item is null)
         {
             return;
         }
@@ -143,7 +143,7 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
             context.SetVariable(FoundVariableName, result.Found ? "true" : "false");
         }
 
-        if (result.Found && result.Point != null)
+        if (result.Found && result.Point is not null)
         {
             if (!string.IsNullOrWhiteSpace(XVariableName))
             {
@@ -209,7 +209,7 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
 
     public WaitImageItem(WaitImageItem? item = null) : base(item)
     {
-        if (item == null)
+        if (item is null)
         {
             return;
         }
@@ -314,7 +314,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
 
     public ClickImageItem(ClickImageItem? item = null) : base(item)
     {
-        if (item == null)
+        if (item is null)
         {
             return;
         }
@@ -352,7 +352,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
             context.ReportProgress,
             cancellationToken);
 
-        if (!result.Found || result.Point == null)
+        if (!result.Found || result.Point is null)
         {
             context.Log("画像が見つかりませんでした。");
             return false;

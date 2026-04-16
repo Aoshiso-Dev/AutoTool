@@ -19,7 +19,7 @@ public class CommandHistoryManager
 
     public void ExecuteCommand(IUndoRedoCommand command)
     {
-        if (command == null)
+        if (command is null)
         {
             throw new ArgumentNullException(nameof(command));
         }

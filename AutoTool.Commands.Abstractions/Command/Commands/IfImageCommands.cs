@@ -49,7 +49,7 @@ public class IfImageExistCommand : BaseCommand, IIfCommand, IIfImageExistCommand
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
-        if (Children == null || !Children.Any())
+        if (Children is null || !Children.Any())
         {
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
@@ -72,7 +72,7 @@ public class IfImageExistCommand : BaseCommand, IIfCommand, IIfImageExistCommand
             _ => { },
             cancellationToken);
 
-        if (result.Found && result.Point != null)
+        if (result.Found && result.Point is not null)
         {
             RaiseDoingCommand($"画像が見つかりました。({result.Point.Value.X}, {result.Point.Value.Y})");
             return await ExecuteChildrenAsync(cancellationToken);
@@ -102,7 +102,7 @@ public class IfImageNotExistCommand : BaseCommand, IIfCommand, IIfImageNotExistC
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
-        if (Children == null || !Children.Any())
+        if (Children is null || !Children.Any())
         {
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
@@ -153,7 +153,7 @@ public class IfVariableCommand : BaseCommand, IIfCommand
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
-        if (Children == null || !Children.Any())
+        if (Children is null || !Children.Any())
         {
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }

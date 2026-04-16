@@ -13,17 +13,16 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace AutoTool.Panels.View
+namespace AutoTool.Panels.View;
+
+/// <summary>
+/// ButtonPanel.xaml の相互作用ロジック
+/// </summary>
+public partial class ButtonPanel : UserControl
 {
-    /// <summary>
-    /// ButtonPanel.xaml の相互作用ロジック
-    /// </summary>
-    public partial class ButtonPanel : UserControl
+    public ButtonPanel()
     {
-        public ButtonPanel()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }
 

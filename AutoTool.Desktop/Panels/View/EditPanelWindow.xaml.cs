@@ -46,26 +46,27 @@ public partial class EditPanelWindow : FluentWindow
 
     private static void UpdateBindingsRecursive(DependencyObject root)
     {
-        switch (root)
+        Action update = root switch
         {
-            case WpfNumberBox numberBox:
-                BindingOperations.GetBindingExpression(numberBox, WpfNumberBox.ValueProperty)?.UpdateSource();
-                break;
-            case System.Windows.Controls.TextBox textBox:
-                BindingOperations.GetBindingExpression(textBox, System.Windows.Controls.TextBox.TextProperty)?.UpdateSource();
-                break;
-            case System.Windows.Controls.ComboBox comboBox:
-                BindingOperations.GetBindingExpression(comboBox, System.Windows.Controls.ComboBox.SelectedItemProperty)?.UpdateSource();
-                BindingOperations.GetBindingExpression(comboBox, System.Windows.Controls.ComboBox.SelectedValueProperty)?.UpdateSource();
-                BindingOperations.GetBindingExpression(comboBox, System.Windows.Controls.ComboBox.TextProperty)?.UpdateSource();
-                break;
-            case System.Windows.Controls.Slider slider:
-                BindingOperations.GetBindingExpression(slider, System.Windows.Controls.Slider.ValueProperty)?.UpdateSource();
-                break;
-            case ToggleButton toggleButton:
-                BindingOperations.GetBindingExpression(toggleButton, ToggleButton.IsCheckedProperty)?.UpdateSource();
-                break;
-        }
+            WpfNumberBox numberBox
+                => () => BindingOperations.GetBindingExpression(numberBox, WpfNumberBox.ValueProperty)?.UpdateSource(),
+            System.Windows.Controls.TextBox textBox
+                => () => BindingOperations.GetBindingExpression(textBox, System.Windows.Controls.TextBox.TextProperty)?.UpdateSource(),
+            System.Windows.Controls.ComboBox comboBox
+                => () =>
+                {
+                    BindingOperations.GetBindingExpression(comboBox, System.Windows.Controls.ComboBox.SelectedItemProperty)?.UpdateSource();
+                    BindingOperations.GetBindingExpression(comboBox, System.Windows.Controls.ComboBox.SelectedValueProperty)?.UpdateSource();
+                    BindingOperations.GetBindingExpression(comboBox, System.Windows.Controls.ComboBox.TextProperty)?.UpdateSource();
+                },
+            System.Windows.Controls.Slider slider
+                => () => BindingOperations.GetBindingExpression(slider, System.Windows.Controls.Slider.ValueProperty)?.UpdateSource(),
+            ToggleButton toggleButton
+                => () => BindingOperations.GetBindingExpression(toggleButton, ToggleButton.IsCheckedProperty)?.UpdateSource(),
+            _ => static () => { }
+        };
+
+        update();
 
         var childCount = VisualTreeHelper.GetChildrenCount(root);
         for (var i = 0; i < childCount; i++)

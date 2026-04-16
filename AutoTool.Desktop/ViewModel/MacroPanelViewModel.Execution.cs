@@ -35,7 +35,7 @@ public partial class MacroPanelViewModel
         OnUiThread(() =>
         {
             var commandItem = _listPanel.GetItem(command.LineNumber);
-            if (commandItem != null)
+            if (commandItem is not null)
             {
                 commandItem.Progress = 0;
                 commandItem.IsRunning = true;
@@ -63,7 +63,7 @@ public partial class MacroPanelViewModel
         OnUiThread(() =>
         {
             var commandItem = _listPanel.GetItem(command.LineNumber);
-            if (commandItem != null)
+            if (commandItem is not null)
             {
                 commandItem.Progress = 0;
                 commandItem.IsRunning = false;
@@ -97,7 +97,7 @@ public partial class MacroPanelViewModel
         OnUiThread(() =>
         {
             var commandItem = _listPanel.GetItem(command.LineNumber);
-            if (commandItem != null)
+            if (commandItem is not null)
             {
                 commandItem.Progress = progress;
             }
@@ -111,7 +111,7 @@ public partial class MacroPanelViewModel
         try
         {
             var macro = _macroFactory.CreateMacro(listItems) as LoopCommand;
-            if (macro == null)
+            if (macro is null)
             {
                 throw new InvalidOperationException("マクロの生成に失敗しました。");
             }
@@ -167,7 +167,7 @@ public partial class MacroPanelViewModel
     private string BuildUserFriendlyErrorMessage(Exception ex)
     {
         var validationError = FindCommandValidationException(ex);
-        if (validationError != null)
+        if (validationError is not null)
         {
             var line = validationError.LineNumber > 0 ? $"（{validationError.LineNumber}行目）" : string.Empty;
             var propertyHint = string.IsNullOrWhiteSpace(validationError.PropertyName)
@@ -179,7 +179,7 @@ public partial class MacroPanelViewModel
         }
 
         var creationError = FindCommandCreationException(ex);
-        if (creationError != null)
+        if (creationError is not null)
         {
             var line = creationError.LineNumber.HasValue ? $"（{creationError.LineNumber}行目）" : string.Empty;
             var commandName = ToUserCommandName(creationError.ItemType);
@@ -207,7 +207,7 @@ public partial class MacroPanelViewModel
     private static CommandCreationException? FindCommandCreationException(Exception ex)
     {
         Exception? current = ex;
-        while (current != null)
+        while (current is not null)
         {
             if (current is CommandCreationException creationException)
             {
@@ -222,7 +222,7 @@ public partial class MacroPanelViewModel
     private static CommandValidationException? FindCommandValidationException(Exception ex)
     {
         Exception? current = ex;
-        while (current != null)
+        while (current is not null)
         {
             if (current is CommandValidationException validationException)
             {
@@ -238,7 +238,7 @@ public partial class MacroPanelViewModel
     private void AppendRuntimeErrorLog(Exception ex)
     {
         var validationError = FindCommandValidationException(ex);
-        if (validationError != null)
+        if (validationError is not null)
         {
             var lineLabel = validationError.LineNumber > 0
                 ? FormatUiLineLabel(validationError.LineNumber)
@@ -259,7 +259,7 @@ public partial class MacroPanelViewModel
         if (validationError.LineNumber > 0)
         {
             var commandItem = _listPanel.GetItem(validationError.LineNumber);
-            if (commandItem != null)
+            if (commandItem is not null)
             {
                 var displayName = CommandListItem.GetDisplayNameForType(commandItem.ItemType);
                 if (!string.IsNullOrWhiteSpace(displayName))
@@ -326,7 +326,7 @@ public partial class MacroPanelViewModel
 
     private static string FormatLogValue(object? value)
     {
-        if (value == null)
+        if (value is null)
         {
             return "<null>";
         }
@@ -394,7 +394,7 @@ public partial class MacroPanelViewModel
     private string GetUiCommandLabel(ICommand command)
     {
         var commandItem = _listPanel.GetItem(command.LineNumber);
-        if (commandItem != null)
+        if (commandItem is not null)
         {
             var displayName = CommandListItem.GetDisplayNameForType(commandItem.ItemType);
             if (!string.IsNullOrWhiteSpace(displayName))

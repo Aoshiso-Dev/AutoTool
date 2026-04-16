@@ -27,7 +27,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
 
     private bool _isUpdating;
 
-    private static readonly string[] IsPropertyNames = {
+    private static readonly string[] IsPropertyNames = [
         nameof(IsListNotEmpty), nameof(IsListEmpty), nameof(IsListNotEmptyButNoSelection),
         nameof(IsNotNullItem), nameof(IsWaitImageItem),
         nameof(IsClickImageItem), nameof(IsClickImageAIItem), nameof(IsHotkeyItem),
@@ -36,9 +36,9 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         nameof(IsIfImageNotExistItem), nameof(IsEndIfItem), nameof(IsIfImageExistAIItem),
         nameof(IsIfImageNotExistAIItem), nameof(IsExecuteProgramItem), nameof(IsSetVariableItem),
         nameof(IsSetVariableAIItem), nameof(IsIfVariableItem), nameof(IsScreenshotItem)
-    };
+    ];
 
-    private static readonly string[] AllPropertyNames = {
+    private static readonly string[] AllPropertyNames = [
         nameof(SelectedItemType), nameof(WindowTitle), nameof(WindowTitleText),
         nameof(WindowClassName), nameof(WindowClassNameText), nameof(ImagePath),
         nameof(Threshold), nameof(SearchColor), nameof(Timeout), nameof(Interval),
@@ -50,7 +50,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName),
         nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue),
         nameof(SaveDirectory), nameof(Comment)
-    };
+    ];
 
     private void UpdateIsProperties()
     {

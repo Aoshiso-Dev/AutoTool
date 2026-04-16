@@ -101,21 +101,16 @@ public static class Win32MouseHookHelper
             var hookStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
             var args = new MouseEventArgs(hookStruct.Point.X, hookStruct.Point.Y, 0, 0);
 
-            switch ((int)wParam)
+            var handler = ((int)wParam) switch
             {
-                case WmLButtonDown:
-                    LButtonDown?.Invoke(null, args);
-                    break;
-                case WmLButtonUp:
-                    LButtonUp?.Invoke(null, args);
-                    break;
-                case WmRButtonUp:
-                    RButtonUp?.Invoke(null, args);
-                    break;
-                case WmMouseMove:
-                    MouseMove?.Invoke(null, args);
-                    break;
-            }
+                WmLButtonDown => LButtonDown,
+                WmLButtonUp => LButtonUp,
+                WmRButtonUp => RButtonUp,
+                WmMouseMove => MouseMove,
+                _ => null
+            };
+
+            handler?.Invoke(null, args);
         }
 
         return CallNextHookEx(_hookId, nCode, wParam, lParam);

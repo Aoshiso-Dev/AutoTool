@@ -190,7 +190,7 @@ public partial class PropertyMetadata : ObservableObject
             var alt = cache.Alt?.GetValue(Target) as bool? ?? false;
             var shift = cache.Shift?.GetValue(Target) as bool? ?? false;
 
-            var keys = new List<string>();
+            List<string> keys = [];
             if (ctrl) keys.Add("Ctrl");
             if (alt) keys.Add("Alt");
             if (shift) keys.Add("Shift");
@@ -262,5 +262,5 @@ public partial class PropertyMetadata : ObservableObject
 public class PropertyGroup
 {
     public string GroupName { get; init; } = string.Empty;
-    public List<PropertyMetadata> Properties { get; init; } = new();
+    public List<PropertyMetadata> Properties { get; init; } = [];
 }

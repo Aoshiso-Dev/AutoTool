@@ -16,7 +16,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
     private bool _isRunning;
 
     [ObservableProperty]
-    private ObservableCollection<FavoriteMacroEntry> _favoriteList = new();
+    private ObservableCollection<FavoriteMacroEntry> _favoriteList = [];
 
     [ObservableProperty]
     private FavoriteMacroEntry? _selectedFavorite;
@@ -50,7 +50,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
     [RelayCommand(CanExecute = nameof(CanLoadSelectedFavorite))]
     private void LoadSelectedFavorite()
     {
-        if (SelectedFavorite == null)
+        if (SelectedFavorite is null)
         {
             return;
         }
@@ -61,7 +61,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
     [RelayCommand(CanExecute = nameof(CanDeleteSelectedFavorite))]
     private void DeleteSelectedFavorite()
     {
-        if (SelectedFavorite == null)
+        if (SelectedFavorite is null)
         {
             return;
         }
@@ -70,8 +70,8 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
     }
 
     private bool CanAddFavorite() => !IsRunning && !string.IsNullOrWhiteSpace(FavoriteName);
-    private bool CanLoadSelectedFavorite() => !IsRunning && SelectedFavorite != null;
-    private bool CanDeleteSelectedFavorite() => !IsRunning && SelectedFavorite != null;
+    private bool CanLoadSelectedFavorite() => !IsRunning && SelectedFavorite is not null;
+    private bool CanDeleteSelectedFavorite() => !IsRunning && SelectedFavorite is not null;
 
     partial void OnFavoriteNameChanged(string value)
     {
@@ -94,7 +94,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
     public void AddFavorite(FavoriteMacroEntry favorite)
     {
         var existing = FavoriteList.FirstOrDefault(x => string.Equals(x.Name, favorite.Name, StringComparison.OrdinalIgnoreCase));
-        if (existing != null)
+        if (existing is not null)
         {
             if (!string.IsNullOrWhiteSpace(existing.SnapshotPath) && File.Exists(existing.SnapshotPath))
             {
@@ -111,7 +111,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
     public void RemoveFavorite(FavoriteMacroEntry favorite)
     {
         var existing = FavoriteList.FirstOrDefault(x => x.SnapshotPath == favorite.SnapshotPath);
-        if (existing == null)
+        if (existing is null)
         {
             return;
         }
@@ -145,7 +145,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
 
     private void LoadFavorites()
     {
-        FavoriteList = _favoriteMacroStore.Load(GetFavoritesStoragePath()) ?? new ObservableCollection<FavoriteMacroEntry>();
+        FavoriteList = _favoriteMacroStore.Load(GetFavoritesStoragePath()) ?? [];
     }
 
     private void SaveFavorites()

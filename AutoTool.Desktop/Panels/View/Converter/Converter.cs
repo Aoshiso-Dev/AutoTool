@@ -50,7 +50,7 @@ public class BoolToVisibilityMultiConverter : IMultiValueConverter
     /// </summary>
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
-        return Array.Empty<object>();
+        return [];
     }
 }
 
@@ -274,7 +274,7 @@ public class OcrRegionNumberEditorVisibilityMultiConverter : IMultiValueConverte
         var itemType = values.Length > 0 ? values[0]?.ToString() : string.Empty;
         var propertyName = values.Length > 1 ? values[1]?.ToString() : string.Empty;
 
-        if (itemType != null &&
+        if (itemType is not null &&
             OcrPointPickerItemTypes.Contains(itemType) &&
             (string.Equals(propertyName, "Y", StringComparison.Ordinal) ||
              string.Equals(propertyName, "Width", StringComparison.Ordinal) ||
@@ -288,7 +288,7 @@ public class OcrRegionNumberEditorVisibilityMultiConverter : IMultiValueConverte
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
-        return Array.Empty<object>();
+        return [];
     }
 }
 
@@ -296,7 +296,7 @@ public class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        return value == null ? Visibility.Collapsed : Visibility.Visible;
+        return value is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

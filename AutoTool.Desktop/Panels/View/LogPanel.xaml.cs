@@ -29,7 +29,7 @@ public partial class LogPanel : UserControl
 
     private void AttachToViewModel()
     {
-        if (_viewModel == null)
+        if (_viewModel is null)
         {
             return;
         }
@@ -39,7 +39,7 @@ public partial class LogPanel : UserControl
 
     private void DetachFromViewModel()
     {
-        if (_viewModel == null)
+        if (_viewModel is null)
         {
             return;
         }
@@ -50,7 +50,7 @@ public partial class LogPanel : UserControl
 
     private void OnLogEntriesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (e.Action != NotifyCollectionChangedAction.Add || e.NewItems == null || e.NewItems.Count == 0)
+        if (e.Action != NotifyCollectionChangedAction.Add || e.NewItems is null || e.NewItems.Count == 0)
         {
             return;
         }

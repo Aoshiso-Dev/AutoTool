@@ -51,7 +51,7 @@ public static class FindImageExecutor
                 options.WindowClassName,
                 cancellationToken);
 
-            if (point != null)
+            if (point is not null)
             {
                 reportProgress?.Invoke(100);
                 return new FindImageResult(true, point, (int)stopwatch.ElapsedMilliseconds);

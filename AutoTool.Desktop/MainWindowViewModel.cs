@@ -201,7 +201,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void OpenAppDir()
     {
         var appDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-        if (appDir != null)
+        if (appDir is not null)
         {
             System.Diagnostics.Process.Start("EXPLORER.EXE", appDir);
         }
@@ -326,7 +326,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
 
-        if (_commandHistoryChangedHandler != null)
+        if (_commandHistoryChangedHandler is not null)
         {
             CommandHistory.HistoryChanged -= _commandHistoryChangedHandler;
             _commandHistoryChangedHandler = null;

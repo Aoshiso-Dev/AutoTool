@@ -7,7 +7,7 @@ public partial class MacroPanelViewModel
 {
     private void HandleClear()
     {
-        if (_commandHistory != null)
+        if (_commandHistory is not null)
         {
             var clearCommand = new ClearAllCommand(
                 _listPanel.CommandList.Items.ToList(),
@@ -26,10 +26,10 @@ public partial class MacroPanelViewModel
 
     private void HandleAdd(string itemType)
     {
-        if (_commandHistory != null)
+        if (_commandHistory is not null)
         {
             var newItem = _commandRegistry.CreateCommandItem(itemType);
-            if (newItem != null)
+            if (newItem is not null)
             {
                 var targetIndex = _listPanel.SelectedLineNumber + 1;
                 var addCommand = new AddItemCommand(
@@ -54,7 +54,7 @@ public partial class MacroPanelViewModel
         var fromIndex = _listPanel.SelectedLineNumber;
         var toIndex = fromIndex - 1;
 
-        if (toIndex >= 0 && _commandHistory != null)
+        if (toIndex >= 0 && _commandHistory is not null)
         {
             var moveCommand = new MoveItemCommand(
                 fromIndex,
@@ -74,7 +74,7 @@ public partial class MacroPanelViewModel
         var fromIndex = _listPanel.SelectedLineNumber;
         var toIndex = fromIndex + 1;
 
-        if (toIndex < _listPanel.GetCount() && _commandHistory != null)
+        if (toIndex < _listPanel.GetCount() && _commandHistory is not null)
         {
             var moveCommand = new MoveItemCommand(
                 fromIndex,
@@ -94,12 +94,12 @@ public partial class MacroPanelViewModel
         var selectedItem = _listPanel.SelectedItem;
         var selectedIndex = _listPanel.SelectedLineNumber;
 
-        if (selectedItem == null && selectedIndex >= 0 && selectedIndex < _listPanel.GetCount())
+        if (selectedItem is null && selectedIndex >= 0 && selectedIndex < _listPanel.GetCount())
         {
             selectedItem = _listPanel.GetItem(selectedIndex + 1);
         }
 
-        if (selectedItem != null && _commandHistory != null)
+        if (selectedItem is not null && _commandHistory is not null)
         {
             var removeCommand = new RemoveItemCommand(
                 selectedItem.Clone(),
@@ -119,13 +119,13 @@ public partial class MacroPanelViewModel
 
     private void HandleEdit(ICommandListItem? item)
     {
-        if (item == null) return;
+        if (item is null) return;
         if (_isEditDialogOpen) return;
 
         var oldItem = _listPanel.SelectedItem;
         var index = item.LineNumber - 1;
 
-        if (oldItem != null && _commandHistory != null)
+        if (oldItem is not null && _commandHistory is not null)
         {
             var editCommand = new EditItemCommand(
                 oldItem,
@@ -143,7 +143,7 @@ public partial class MacroPanelViewModel
 
     private void HandleItemDoubleClick(ICommandListItem? item)
     {
-        if (item == null || IsRunning) return;
+        if (item is null || IsRunning) return;
 
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
@@ -163,7 +163,7 @@ public partial class MacroPanelViewModel
                 var result = editWindow.ShowDialog();
                 if (result == true)
                 {
-                    if (_commandHistory != null)
+                    if (_commandHistory is not null)
                     {
                         var editCommand = new EditItemCommand(
                             backup,
@@ -180,7 +180,7 @@ public partial class MacroPanelViewModel
                 }
 
                 var current = _listPanel.GetItem(index + 1);
-                if (current != null)
+                if (current is not null)
                 {
                     _editPanel.SetItem(current);
                 }

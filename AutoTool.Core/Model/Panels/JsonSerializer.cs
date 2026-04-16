@@ -80,7 +80,7 @@ internal sealed class CommandListItemConverter : JsonConverter<ICommandListItem>
         }
 
         var targetType = _definitionProvider.GetItemType(typeName);
-        if (targetType != null)
+        if (targetType is not null)
         {
             return (ICommandListItem?)JsonSerializer.Deserialize(jsonObject.GetRawText(), targetType, options)
                    ?? throw new JsonException($"Failed to deserialize {typeName}");
@@ -99,21 +99,16 @@ internal sealed class CommandListItemConverter : JsonConverter<ICommandListItem>
 
     private static void ClearPairReferences(ICommandListItem value)
     {
-        switch (value)
+        Action clear = value switch
         {
-            case IIfItem ifItem:
-                ifItem.Pair = null;
-                break;
-            case IIfEndItem endIfItem:
-                endIfItem.Pair = null;
-                break;
-            case ILoopItem loopItem:
-                loopItem.Pair = null;
-                break;
-            case ILoopEndItem endLoopItem:
-                endLoopItem.Pair = null;
-                break;
-        }
+            IIfItem ifItem => () => ifItem.Pair = null,
+            IIfEndItem endIfItem => () => endIfItem.Pair = null,
+            ILoopItem loopItem => () => loopItem.Pair = null,
+            ILoopEndItem endLoopItem => () => endLoopItem.Pair = null,
+            _ => static () => { }
+        };
+
+        clear();
     }
 }
 

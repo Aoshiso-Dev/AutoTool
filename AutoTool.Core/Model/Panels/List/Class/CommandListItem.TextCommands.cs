@@ -144,7 +144,7 @@ public partial class FindTextItem : CommandListItem, IFindTextItem, IFindTextCom
 
     public FindTextItem(FindTextItem? item = null) : base(item)
     {
-        if (item == null)
+        if (item is null)
         {
             return;
         }

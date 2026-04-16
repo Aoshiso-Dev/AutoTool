@@ -88,7 +88,7 @@ public class CommandExecutionContext : ICommandExecutionContext
     
     public Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken)
     {
-        if (_processLauncher == null)
+        if (_processLauncher is null)
             throw new InvalidOperationException("プログラム実行サービスが利用できません。");
 
         if (string.IsNullOrWhiteSpace(programPath))
@@ -114,14 +114,14 @@ public class CommandExecutionContext : ICommandExecutionContext
     
     public Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken)
     {
-        if (_screenCapturer == null)
+        if (_screenCapturer is null)
             throw new InvalidOperationException("画面キャプチャサービスが利用できません。");
         return _screenCapturer.CaptureToFileAsync(filePath, windowTitle, windowClassName, cancellationToken);
     }
     
     public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, Color? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken)
     {
-        if (_imageMatcher == null)
+        if (_imageMatcher is null)
             throw new InvalidOperationException("画像検索サービスが利用できません。");
 
         if (string.IsNullOrWhiteSpace(imagePath))
@@ -147,7 +147,7 @@ public class CommandExecutionContext : ICommandExecutionContext
     
     public void InitializeAIModel(string modelPath, int inputSize = 640, bool useGpu = true)
     {
-        if (_objectDetector == null)
+        if (_objectDetector is null)
             throw new InvalidOperationException("AI検出サービスが利用できません。");
 
         if (string.IsNullOrWhiteSpace(modelPath))
@@ -173,14 +173,14 @@ public class CommandExecutionContext : ICommandExecutionContext
     
     public IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold)
     {
-        if (_objectDetector == null)
+        if (_objectDetector is null)
             throw new InvalidOperationException("AI検出サービスが利用できません。");
         return _objectDetector.Detect(windowTitle, confThreshold, iouThreshold);
     }
 
     public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken)
     {
-        if (_ocrEngine == null)
+        if (_ocrEngine is null)
             throw new InvalidOperationException("OCRサービスが利用できません。");
 
         if (!string.IsNullOrWhiteSpace(request.TessdataPath))

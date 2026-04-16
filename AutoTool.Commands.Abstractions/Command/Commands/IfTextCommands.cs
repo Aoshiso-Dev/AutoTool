@@ -19,7 +19,7 @@ public class IfTextExistCommand : BaseCommand, IIfCommand, IIfTextExistCommand
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
-        if (Children == null || !Children.Any())
+        if (Children is null || !Children.Any())
         {
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
@@ -69,7 +69,7 @@ public class IfTextNotExistCommand : BaseCommand, IIfCommand, IIfTextNotExistCom
 
     protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
-        if (Children == null || !Children.Any())
+        if (Children is null || !Children.Any())
         {
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }

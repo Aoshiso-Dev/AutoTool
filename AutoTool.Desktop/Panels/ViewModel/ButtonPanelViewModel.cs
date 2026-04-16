@@ -14,7 +14,7 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
     private bool _isRunning;
 
     [ObservableProperty]
-    private ObservableCollection<CommandDisplayItem> _itemTypes = new();
+    private ObservableCollection<CommandDisplayItem> _itemTypes = [];
 
     [ObservableProperty]
     private CommandDisplayItem? _selectedItemType;
@@ -62,7 +62,7 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
             return;
         }
 
-        if (RunRequested == null)
+        if (RunRequested is null)
         {
             return;
         }
@@ -92,7 +92,7 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
     [RelayCommand]
     public void Add() 
     {
-        if (SelectedItemType != null)
+        if (SelectedItemType is not null)
         {
             AddRequested?.Invoke(SelectedItemType.TypeName);
         }

@@ -12,7 +12,7 @@ public partial class EditPanelViewModel
     private void UpdatePropertyGroups()
     {
         PropertyGroups.Clear();
-        if (Item == null) return;
+        if (Item is null) return;
 
         foreach (var group in _metadataProvider.GetGroupedMetadata(Item))
         {
@@ -46,40 +46,38 @@ public partial class EditPanelViewModel
 
     private void SetupPropertyCommands(PropertyMetadata prop)
     {
-        switch (prop.EditorType)
+        Action setup = prop.EditorType switch
         {
-            case EditorType.ImagePicker:
+            EditorType.ImagePicker => () =>
+            {
                 prop.BrowseCommand = new RelayCommand(() => BrowseImageForProperty(prop));
                 prop.CaptureCommand = new RelayCommand(() => CaptureImageForProperty(prop));
                 prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
-                break;
-
-            case EditorType.ColorPicker:
+            },
+            EditorType.ColorPicker => () =>
+            {
                 prop.PickColorCommand = new RelayCommand(() => PickColorForProperty(prop));
                 prop.ClearCommand = new RelayCommand(() => prop.Value = null);
-                break;
-
-            case EditorType.WindowInfo:
+            },
+            EditorType.WindowInfo => () =>
+            {
                 prop.GetWindowInfoCommand = new RelayCommand(() => GetWindowInfoForProperty(prop));
                 prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
-                break;
-
-            case EditorType.FilePicker:
+            },
+            EditorType.FilePicker => () =>
+            {
                 prop.BrowseCommand = new RelayCommand(() => BrowseFileForProperty(prop));
                 prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
-                break;
-
-            case EditorType.DirectoryPicker:
+            },
+            EditorType.DirectoryPicker => () =>
+            {
                 prop.BrowseCommand = new RelayCommand(() => BrowseDirectoryForProperty(prop));
                 prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
                 ConfigureDirectoryPickerMetadata(prop);
-                break;
-
-            case EditorType.KeyPicker:
-                prop.PickKeyCommand = new RelayCommand(() => PickKeyForProperty(prop));
-                break;
-
-            case EditorType.PointPicker:
+            },
+            EditorType.KeyPicker => () => prop.PickKeyCommand = new RelayCommand(() => PickKeyForProperty(prop)),
+            EditorType.PointPicker => () =>
+            {
                 prop.PickPointCommand = new RelayCommand(() => PickPointForProperty(prop));
                 var yProp = PropertyGroups
                     .SelectMany(g => g.Properties)
@@ -93,8 +91,11 @@ public partial class EditPanelViewModel
                     .FirstOrDefault(p => p.PropertyInfo.Name == "Height" && p.Target == prop.Target);
                 prop.RelatedProperty2 = widthProp;
                 prop.RelatedProperty3 = heightProp;
-                break;
-        }
+            },
+            _ => static () => { }
+        };
+
+        setup();
     }
 
     private void BrowseImageForProperty(PropertyMetadata prop)
@@ -148,7 +149,7 @@ public partial class EditPanelViewModel
                 .SelectMany(g => g.Properties)
                 .FirstOrDefault(p => p.PropertyInfo.Name == "WindowClassName" && p.Target == prop.Target);
 
-            if (classNameProp != null)
+            if (classNameProp is not null)
             {
                 classNameProp.Value = w.WindowClassName;
             }
@@ -234,7 +235,7 @@ public partial class EditPanelViewModel
                 .SelectMany(group => group.Properties)
                 .FirstOrDefault(x => string.Equals(x.PropertyInfo.Name, issue.PropertyName, StringComparison.Ordinal));
 
-            if (prop == null)
+            if (prop is null)
             {
                 continue;
             }
@@ -255,9 +256,9 @@ public partial class EditPanelViewModel
             var altProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Alt");
             var shiftProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Shift");
 
-            if (ctrlProp != null) ctrlProp.Value = keyPickerWindow.SelectedCtrl;
-            if (altProp != null) altProp.Value = keyPickerWindow.SelectedAlt;
-            if (shiftProp != null) shiftProp.Value = keyPickerWindow.SelectedShift;
+            if (ctrlProp is not null) ctrlProp.Value = keyPickerWindow.SelectedCtrl;
+            if (altProp is not null) altProp.Value = keyPickerWindow.SelectedAlt;
+            if (shiftProp is not null) shiftProp.Value = keyPickerWindow.SelectedShift;
             UpdateProperties();
         }
     }
@@ -272,7 +273,7 @@ public partial class EditPanelViewModel
         var yProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Y");
         var widthProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Width");
         var heightProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Height");
-        var isRegionPicker = prop.PropertyInfo.Name == "X" && widthProp != null && heightProp != null;
+        var isRegionPicker = prop.PropertyInfo.Name == "X" && widthProp is not null && heightProp is not null;
 
         var cw = new CaptureWindow { Mode = isRegionPicker ? 0 : 1 };
         if (cw.ShowDialog() != true) return;
@@ -298,7 +299,7 @@ public partial class EditPanelViewModel
         if (prop.PropertyInfo.Name == "X")
         {
             prop.Value = relativeX;
-            if (yProp != null)
+            if (yProp is not null)
             {
                 yProp.Value = relativeY;
             }
@@ -315,7 +316,7 @@ public partial class EditPanelViewModel
             var xProp = PropertyGroups
                 .SelectMany(g => g.Properties)
                 .FirstOrDefault(p => p.PropertyInfo.Name == "X" && p.Target == prop.Target);
-            if (xProp != null)
+            if (xProp is not null)
             {
                 xProp.Value = relativeX;
                 xProp.NotifyRelatedValueChanged();

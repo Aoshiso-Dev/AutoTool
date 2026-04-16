@@ -65,7 +65,7 @@ public partial class KeyPickerWindow : Window
 
     private static string BuildDisplayText(Key key, bool ctrl, bool alt, bool shift)
     {
-        var keys = new List<string>();
+        List<string> keys = [];
         if (ctrl) keys.Add("Ctrl");
         if (alt) keys.Add("Alt");
         if (shift) keys.Add("Shift");

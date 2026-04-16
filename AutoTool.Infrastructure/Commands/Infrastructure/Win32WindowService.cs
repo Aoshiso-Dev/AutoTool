@@ -70,7 +70,7 @@ public class Win32WindowService : IWindowService
         }
 
         var windowRect = GetWindowRect(windowHandle);
-        if (windowRect == null)
+        if (windowRect is null)
         {
             return (absoluteX, absoluteY, false, "ウィンドウの位置情報が取得できませんでした。");
         }

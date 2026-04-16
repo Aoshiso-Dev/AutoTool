@@ -31,7 +31,7 @@ public class ProcessLauncher : IProcessLauncher
         };
 
         using var process = Process.Start(startInfo);
-        if (waitForExit && process != null)
+        if (waitForExit && process is not null)
         {
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         }

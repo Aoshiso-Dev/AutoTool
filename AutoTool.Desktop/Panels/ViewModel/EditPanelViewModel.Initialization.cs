@@ -73,7 +73,7 @@ public partial class EditPanelViewModel
 
     private void OnSelectedItemTypeChanged(string typeName)
     {
-        if (string.IsNullOrEmpty(typeName) || Item == null)
+        if (string.IsNullOrEmpty(typeName) || Item is null)
             return;
 
         var lineNumber = Item.LineNumber;
@@ -82,7 +82,7 @@ public partial class EditPanelViewModel
         try
         {
             var newItem = _commandRegistry.CreateCommandItem(typeName);
-            if (newItem != null)
+            if (newItem is not null)
             {
                 newItem.LineNumber = lineNumber;
                 newItem.IsSelected = isSelected;

@@ -1,11 +1,10 @@
 ﻿using System;
 
-namespace AutoTool.Core.Ports
+namespace AutoTool.Core.Ports;
+
+public interface ILogWriter
 {
-    public interface ILogWriter
-    {
-        void Write(params string[] messages);
-        void Write(Exception exception);
-    }
+    void Write(params string[] messages);
+    void Write(Exception exception);
 }
 

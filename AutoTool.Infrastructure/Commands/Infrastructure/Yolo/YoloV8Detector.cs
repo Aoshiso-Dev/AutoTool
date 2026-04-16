@@ -68,7 +68,7 @@ public sealed class YoloV8Detector : IDisposable
     /// </summary>
     public List<Detection> Detect(Mat frameBgr, float confTh = 0.25f, float iouTh = 0.45f)
     {
-        if (frameBgr == null || frameBgr.Empty())
+        if (frameBgr is null || frameBgr.Empty())
             throw new ArgumentException("frameBgr is empty");
 
         // 1) Letterbox
@@ -119,10 +119,10 @@ public sealed class YoloV8Detector : IDisposable
         System.Diagnostics.Debug.WriteLine($"[YOLO] blob shape={string.Join("x", shape)} len={inputData.Length} range=({min:F3},{max:F3})");
 
         // 6) Tensor 構築 (NCHW)
-        var tensor = new DenseTensor<float>(new[] { shape[0], shape[1], shape[2], shape[3] });
+        var tensor = new DenseTensor<float>([shape[0], shape[1], shape[2], shape[3]]);
         inputData.CopyTo(tensor.Buffer.Span);
 
-        var inputs = new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor(_inputName, tensor) };
+        List<NamedOnnxValue> inputs = [NamedOnnxValue.CreateFromTensor(_inputName, tensor)];
         using var results = _session.Run(inputs);
 
         var output = results.First(r => r.Name == _outputName).AsTensor<float>();
@@ -218,7 +218,7 @@ public sealed class YoloV8Detector : IDisposable
 
         static float Sigmoid(float x) => 1f / (1f + MathF.Exp(-x));
 
-        var dets = new List<Detection>(256);
+        List<Detection> dets = new(256);
 
         void AddDet(float cx, float cy, float w, float h, float score, int cls)
         {

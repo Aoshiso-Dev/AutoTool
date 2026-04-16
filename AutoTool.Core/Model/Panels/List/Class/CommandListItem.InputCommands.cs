@@ -51,7 +51,7 @@ namespace AutoTool.Panels.List.Class;
             {
                 var target = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]";
 
-                var keys = new List<string>();
+                List<string> keys = [];
 
                 if (Ctrl) keys.Add("Ctrl");
                 if (Alt) keys.Add("Alt");
@@ -66,7 +66,7 @@ namespace AutoTool.Panels.List.Class;
 
         public HotkeyItem(HotkeyItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 Ctrl = item.Ctrl;
                 Alt = item.Alt;
@@ -86,7 +86,7 @@ namespace AutoTool.Panels.List.Class;
         {
             await context.SendHotkeyAsync(Key, Ctrl, Alt, Shift, WindowTitle, WindowClassName);
             
-            var keys = new List<string>();
+            List<string> keys = [];
             if (Ctrl) keys.Add("Ctrl");
             if (Alt) keys.Add("Alt");
             if (Shift) keys.Add("Shift");
@@ -134,7 +134,7 @@ namespace AutoTool.Panels.List.Class;
 
         public ClickItem(ClickItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 X = item.X;
                 Y = item.Y;
@@ -176,7 +176,7 @@ namespace AutoTool.Panels.List.Class;
 
         public WaitItem(WaitItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 Wait = item.Wait;
             }

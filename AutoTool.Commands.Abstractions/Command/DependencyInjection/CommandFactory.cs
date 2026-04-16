@@ -26,13 +26,13 @@ public class CommandFactory : ICommandFactory
 
     public ICommand Create(Type commandType, ICommand? parent, ICommandSettings settings)
     {
-        return Create(commandType, parent, settings, Array.Empty<object>());
+        return Create(commandType, parent, settings, []);
     }
 
     public ICommand Create(Type commandType, ICommand? parent, ICommandSettings settings, params object[] explicitArguments)
     {
         ArgumentNullException.ThrowIfNull(commandType);
-        explicitArguments ??= Array.Empty<object>();
+        explicitArguments ??= [];
 
         if (commandType == typeof(RootCommand))
         {
@@ -68,7 +68,7 @@ public class CommandFactory : ICommandFactory
                 else
                 {
                     var service = _serviceProvider.GetService(paramType);
-                    if (service != null)
+                    if (service is not null)
                     {
                         args[i] = service;
                     }
@@ -95,7 +95,7 @@ public class CommandFactory : ICommandFactory
     {
         foreach (var candidate in explicitArguments)
         {
-            if (candidate == null)
+            if (candidate is null)
             {
                 continue;
             }
@@ -113,7 +113,7 @@ public class CommandFactory : ICommandFactory
 
     private ICommand AttachEventBus(ICommand command)
     {
-        if (command is BaseCommand baseCommand && _commandEventBus != null)
+        if (command is BaseCommand baseCommand && _commandEventBus is not null)
         {
             baseCommand.SetEventBus(_commandEventBus);
         }

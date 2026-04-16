@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace AutoTool.Core.Ports
+namespace AutoTool.Core.Ports;
+
+public interface IStatusMessageScheduler
 {
-    public interface IStatusMessageScheduler
-    {
-        void Schedule(TimeSpan delay, Action action);
-    }
+    void Schedule(TimeSpan delay, Action action);
 }
 

@@ -192,36 +192,28 @@ internal static class OpenCvImageSearchHelper
 
     private static void EnsureGrayInPlace(Mat mat)
     {
-        switch (mat.Channels())
+        Action<Mat> convert = mat.Channels() switch
         {
-            case 1:
-                return;
-            case 3:
-                Cv2.CvtColor(mat, mat, ColorConversionCodes.BGR2GRAY);
-                return;
-            case 4:
-                Cv2.CvtColor(mat, mat, ColorConversionCodes.BGRA2GRAY);
-                return;
-            default:
-                throw new InvalidOperationException($"Unsupported channel count for grayscale conversion: {mat.Channels()}");
-        }
+            1 => static (Mat _) => { },
+            3 => static (Mat m) => Cv2.CvtColor(m, m, ColorConversionCodes.BGR2GRAY),
+            4 => static (Mat m) => Cv2.CvtColor(m, m, ColorConversionCodes.BGRA2GRAY),
+            _ => static (Mat m) => throw new InvalidOperationException($"Unsupported channel count for grayscale conversion: {m.Channels()}")
+        };
+
+        convert(mat);
     }
 
     private static void EnsureBgrInPlace(Mat mat)
     {
-        switch (mat.Channels())
+        Action<Mat> convert = mat.Channels() switch
         {
-            case 3:
-                return;
-            case 4:
-                Cv2.CvtColor(mat, mat, ColorConversionCodes.BGRA2BGR);
-                return;
-            case 1:
-                Cv2.CvtColor(mat, mat, ColorConversionCodes.GRAY2BGR);
-                return;
-            default:
-                throw new InvalidOperationException($"Unsupported channel count for BGR conversion: {mat.Channels()}");
-        }
+            3 => static (Mat _) => { },
+            4 => static (Mat m) => Cv2.CvtColor(m, m, ColorConversionCodes.BGRA2BGR),
+            1 => static (Mat m) => Cv2.CvtColor(m, m, ColorConversionCodes.GRAY2BGR),
+            _ => static (Mat m) => throw new InvalidOperationException($"Unsupported channel count for BGR conversion: {m.Channels()}")
+        };
+
+        convert(mat);
     }
 }
 

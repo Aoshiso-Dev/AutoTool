@@ -77,7 +77,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
             await using var fileStream = new FileStream(_logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, 4096);
             await using var streamWriter = new StreamWriter(fileStream);
 
-            var bufferedMessages = new List<string>(FlushBatchSize);
+            List<string> bufferedMessages = new(FlushBatchSize);
 
             await foreach (var logMessage in _reader.ReadAllAsync(cancellationToken))
             {

@@ -40,7 +40,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         get => CommandList.Items.FirstOrDefault(x => x.IsSelected);
         set
         {
-            if (value == null)
+            if (value is null)
             {
                 if (SelectedLineNumber != -1)
                 {
@@ -116,7 +116,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         }
 
         var existingItem = CommandList.Items.FirstOrDefault(x => x.LineNumber == SelectedLineNumber + 1);
-        if (existingItem != null)
+        if (existingItem is not null)
         {
             existingItem.IsSelected = true;
             SelectedItemChanged?.Invoke(existingItem);
@@ -135,7 +135,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         }
         
         var cmd = CommandList.Items.FirstOrDefault(x => x.LineNumber == ExecutedLineNumber);
-        if (cmd != null)
+        if (cmd is not null)
         {
             cmd.IsRunning = true;
             // Refresh()を削除 - IsRunningはINotifyPropertyChangedで通知される
@@ -153,7 +153,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public void Add(string itemType)
     {
         var item = _commandRegistry.CreateCommandItem(itemType);
-        if (item == null)
+        if (item is null)
         {
             return;
         }
@@ -279,11 +279,11 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public void Delete()
     {
         var targetItem = SelectedItem;
-        if (targetItem == null && SelectedLineNumber >= 0 && SelectedLineNumber < CommandList.Items.Count)
+        if (targetItem is null && SelectedLineNumber >= 0 && SelectedLineNumber < CommandList.Items.Count)
         {
             targetItem = CommandList.Items[SelectedLineNumber];
         }
-        if (targetItem == null) return;
+        if (targetItem is null) return;
 
         var previousLineNumber = SelectedLineNumber;
         var index = CommandList.Items.IndexOf(targetItem);

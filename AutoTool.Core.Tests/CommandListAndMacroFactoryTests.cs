@@ -216,11 +216,11 @@ public class CommandHistoryManagerTests
             manager.ExecuteCommand(new TestUndoRedoCommand($"cmd-{i}"));
         }
 
-        var history = manager.GetHistoryDetails();
+        var (UndoHistory, RedoHistory) = manager.GetHistoryDetails();
 
-        Assert.Equal(50, history.UndoHistory.Length);
-        Assert.Contains("cmd-11", history.UndoHistory);
-        Assert.DoesNotContain("cmd-1", history.UndoHistory);
+        Assert.Equal(50, UndoHistory.Length);
+        Assert.Contains("cmd-11", UndoHistory);
+        Assert.DoesNotContain("cmd-1", UndoHistory);
     }
 
     private sealed class TestUndoRedoCommand : IUndoRedoCommand
@@ -279,10 +279,10 @@ public class FileManagerTests
         var picker = new FakeFilePicker { OpenFilePath = missingPath };
         var store = new FakeRecentFileStore
         {
-            Files = new ObservableCollection<FileManager.RecentFile>
-            {
+            Files =
+            [
                 new() { FileName = Path.GetFileName(missingPath), FilePath = missingPath }
-            }
+            ]
         };
         var manager = CreateFileManager(picker, store);
 
@@ -333,10 +333,10 @@ public class FileManagerTests
         var picker = new FakeFilePicker { OpenFilePath = actualPath };
         var store = new FakeRecentFileStore
         {
-            Files = new ObservableCollection<FileManager.RecentFile>
-            {
+            Files =
+            [
                 new() { FileName = Path.GetFileName(recentPath), FilePath = recentPath }
-            }
+            ]
         };
         var manager = CreateFileManager(picker, store);
 
@@ -409,7 +409,7 @@ public class FileManagerTests
 
     private sealed class FakeRecentFileStore : IRecentFileStore
     {
-        public ObservableCollection<FileManager.RecentFile>? Files { get; set; } = new();
+        public ObservableCollection<FileManager.RecentFile>? Files { get; set; } = [];
         public bool SaveCalled { get; private set; }
 
         public ObservableCollection<FileManager.RecentFile>? Load(string key) => Files;
@@ -505,7 +505,7 @@ public class FindTextItemTests
         public Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, Color? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.FromResult<MatchPoint?>(null);
         public void InitializeAIModel(string modelPath, int inputSize = 640, bool useGpu = true) { }
-        public IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold) => Array.Empty<DetectionResult>();
+        public IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold) => [];
         public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken) => Task.FromResult(_ocrResult);
     }
 }

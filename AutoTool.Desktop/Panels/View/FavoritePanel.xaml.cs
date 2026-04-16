@@ -13,17 +13,16 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace AutoTool.Panels.View
+namespace AutoTool.Panels.View;
+
+/// <summary>
+/// ListPanel.xaml の相互作用ロジック
+/// </summary>
+public partial class FavoritePanel : UserControl
 {
-    /// <summary>
-    /// ListPanel.xaml の相互作用ロジック
-    /// </summary>
-    public partial class FavoritePanel : UserControl
+    public FavoritePanel()
     {
-        public FavoritePanel()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }
 

@@ -41,7 +41,7 @@ namespace AutoTool.Panels.List.Class;
         public ExecuteItem() { }
         public ExecuteItem(ExecuteItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 ProgramPath = item.ProgramPath;
                 Arguments = item.Arguments;
@@ -95,7 +95,7 @@ namespace AutoTool.Panels.List.Class;
         public SetVariableItem() { }
         public SetVariableItem(SetVariableItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 Name = item.Name;
                 Value = item.Value;
@@ -163,7 +163,7 @@ namespace AutoTool.Panels.List.Class;
         public SetVariableAIItem() { }
         public SetVariableAIItem(SetVariableAIItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
@@ -185,34 +185,17 @@ namespace AutoTool.Panels.List.Class;
             context.InitializeAIModel(absoluteModelPath, 640, true);
 
             var detections = context.DetectAI(WindowTitle, (float)ConfThreshold, (float)IoUThreshold);
-            
-            string value;
-            switch (AIDetectMode)
-            {
-                case "Class":
-                    value = detections.Count > 0 ? detections[0].ClassId.ToString() : "-1";
-                    break;
-                case "Count":
-                    value = detections.Count.ToString();
-                    break;
-                case "X":
-                    value = detections.Count > 0 ? (detections[0].Rect.X + detections[0].Rect.Width / 2).ToString() : "-1";
-                    break;
-                case "Y":
-                    value = detections.Count > 0 ? (detections[0].Rect.Y + detections[0].Rect.Height / 2).ToString() : "-1";
-                    break;
-                case "Width":
-                    value = detections.Count > 0 ? detections[0].Rect.Width.ToString() : "-1";
-                    break;
-                case "Height":
-                    value = detections.Count > 0 ? detections[0].Rect.Height.ToString() : "-1";
-                    break;
-                default:
-                    value = "0";
-                    break;
-            }
-            
-            context.SetVariable(Name, value);
+        string value = AIDetectMode switch
+        {
+            "Class" => detections.Count > 0 ? detections[0].ClassId.ToString() : "-1",
+            "Count" => detections.Count.ToString(),
+            "X" => detections.Count > 0 ? (detections[0].Rect.X + detections[0].Rect.Width / 2).ToString() : "-1",
+            "Y" => detections.Count > 0 ? (detections[0].Rect.Y + detections[0].Rect.Height / 2).ToString() : "-1",
+            "Width" => detections.Count > 0 ? detections[0].Rect.Width.ToString() : "-1",
+            "Height" => detections.Count > 0 ? detections[0].Rect.Height.ToString() : "-1",
+            _ => "0",
+        };
+        context.SetVariable(Name, value);
             context.Log($"AI検出結果: {Name} = {value} (モード: {AIDetectMode}, 検出数: {detections.Count})");
             return Task.FromResult(true);
         }
@@ -293,7 +276,7 @@ namespace AutoTool.Panels.List.Class;
 
         public SetVariableOCRItem(SetVariableOCRItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 Name = item.Name;
                 X = item.X;
@@ -378,7 +361,7 @@ namespace AutoTool.Panels.List.Class;
         public IfVariableItem() { }
         public IfVariableItem(IfVariableItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 Name = item.Name;
                 Operator = item.Operator;
@@ -417,7 +400,7 @@ namespace AutoTool.Panels.List.Class;
         public ScreenshotItem() { }
         public ScreenshotItem(ScreenshotItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 SaveDirectory = item.SaveDirectory;
                 WindowTitle = item.WindowTitle;
@@ -507,7 +490,7 @@ namespace AutoTool.Panels.List.Class;
         public ClickImageAIItem() { }
         public ClickImageAIItem(ClickImageAIItem? item = null) : base(item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;

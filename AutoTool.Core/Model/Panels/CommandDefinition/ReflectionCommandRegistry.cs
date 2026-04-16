@@ -79,7 +79,7 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
 
     public CommandCreationResult CreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider)
     {
-        if (item?.ItemType == null)
+        if (item?.ItemType is null)
         {
             return CommandCreationResult.Fail(CommandCreationFailureReason.MissingItemType, "ItemType is empty.");
         }
@@ -93,7 +93,7 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
         }
 
         var commandFactory = serviceProvider?.GetService(typeof(ICommandFactory)) as ICommandFactory;
-        if (commandFactory == null)
+        if (commandFactory is null)
         {
             return CommandCreationResult.Fail(
                 CommandCreationFailureReason.CommandFactoryUnavailable,
@@ -114,7 +114,7 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
             else
             {
                 var bindingAttr = entry.Metadata.ItemType.GetCustomAttribute<SimpleCommandBindingAttribute>();
-                if (bindingAttr == null)
+                if (bindingAttr is null)
                 {
                     return CommandCreationResult.Fail(
                         CommandCreationFailureReason.MissingCommandBinding,
@@ -211,16 +211,16 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
             "ExecuteAsync",
             BindingFlags.Public | BindingFlags.Instance,
             null,
-            new[] { typeof(ICommandExecutionContext), typeof(CancellationToken) },
+            [typeof(ICommandExecutionContext), typeof(CancellationToken)],
             null);
 
-        return method != null && method.DeclaringType != typeof(CommandListItem);
+        return method is not null && method.DeclaringType != typeof(CommandListItem);
     }
 
     private static Func<ICommandListItem> CreateItemFactory(Type itemType)
     {
         var ctor = itemType.GetConstructor(Type.EmptyTypes);
-        if (ctor == null)
+        if (ctor is null)
         {
             throw new InvalidOperationException($"Type {itemType.Name} does not have a parameterless constructor");
         }

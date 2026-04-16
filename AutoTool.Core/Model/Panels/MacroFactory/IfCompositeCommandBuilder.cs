@@ -24,7 +24,7 @@ public sealed class IfCompositeCommandBuilder : ICompositeCommandBuilder
         Func<ICommand, IEnumerable<ICommandListItem>, IEnumerable<ICommand>> buildChildren)
     {
         var ifItem = (IIfItem)item;
-        if (ifItem.Pair == null)
+        if (ifItem.Pair is null)
         {
             throw new PairMismatchException($"If文 (行 {ifItem.LineNumber}) に対応するEndIfがありません", ifItem.LineNumber, ifItem.ItemType);
         }

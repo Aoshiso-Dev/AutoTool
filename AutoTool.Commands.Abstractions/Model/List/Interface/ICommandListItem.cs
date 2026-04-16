@@ -1,283 +1,282 @@
 ﻿using AutoTool.Commands.Interface;
 using System.Windows.Media;
 
-namespace AutoTool.Panels.Model.List.Interface
+namespace AutoTool.Panels.Model.List.Interface;
+
+public interface ICommandListItem
 {
-    public interface ICommandListItem
-    {
-        public bool IsEnable { get; set; }
-        public int LineNumber { get; set; }
-        public bool IsRunning { get; set; }
-        public bool IsSelected { get; set; }
-        public string ItemType { get; set; }
-        public string Description { get; set; }
-        public string Comment { get; set; }
-        public int NestLevel { get; set; }
-        public bool IsInLoop { get; set; }
-        public bool IsInIf { get; set; }
-        public int Progress { get; set; }
+    public bool IsEnable { get; set; }
+    public int LineNumber { get; set; }
+    public bool IsRunning { get; set; }
+    public bool IsSelected { get; set; }
+    public string ItemType { get; set; }
+    public string Description { get; set; }
+    public string Comment { get; set; }
+    public int NestLevel { get; set; }
+    public bool IsInLoop { get; set; }
+    public bool IsInIf { get; set; }
+    public int Progress { get; set; }
 
-        ICommandListItem Clone();
-        
-        /// <summary>
-        /// Execute the command logic (override in derived classes)
-        /// </summary>
-        Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
-            => Task.FromResult(true);
-    }
+    ICommandListItem Clone();
+    
+    /// <summary>
+    /// Execute the command logic (override in derived classes)
+    /// </summary>
+    Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        => Task.FromResult(true);
+}
 
-    public interface IWaitImageItem : ICommandListItem
-    {
-        public string ImagePath { get; set; }
-        public double Threshold { get; set; }
-        public Color? SearchColor { get; set; }
-        public int Timeout { get; set; }
-        public int Interval { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-    }
+public interface IWaitImageItem : ICommandListItem
+{
+    public string ImagePath { get; set; }
+    public double Threshold { get; set; }
+    public Color? SearchColor { get; set; }
+    public int Timeout { get; set; }
+    public int Interval { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+}
 
-    public interface IFindImageItem : ICommandListItem
-    {
-        public string ImagePath { get; set; }
-        public double Threshold { get; set; }
-        public Color? SearchColor { get; set; }
-        public int Timeout { get; set; }
-        public int Interval { get; set; }
-        public bool Strict { get; set; }
-        public string FoundVariableName { get; set; }
-        public string XVariableName { get; set; }
-        public string YVariableName { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-    }
+public interface IFindImageItem : ICommandListItem
+{
+    public string ImagePath { get; set; }
+    public double Threshold { get; set; }
+    public Color? SearchColor { get; set; }
+    public int Timeout { get; set; }
+    public int Interval { get; set; }
+    public bool Strict { get; set; }
+    public string FoundVariableName { get; set; }
+    public string XVariableName { get; set; }
+    public string YVariableName { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+}
 
-    public interface IFindTextItem : ICommandListItem
-    {
-        public string TargetText { get; set; }
-        public bool CaseSensitive { get; set; }
-        public string MatchMode { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public int Timeout { get; set; }
-        public int Interval { get; set; }
-        public bool Strict { get; set; }
-        public double MinConfidence { get; set; }
-        public string FoundVariableName { get; set; }
-        public string TextVariableName { get; set; }
-        public string ConfidenceVariableName { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-        public string Language { get; set; }
-        public string PageSegmentationMode { get; set; }
-        public string Whitelist { get; set; }
-        public string PreprocessMode { get; set; }
-        public string TessdataPath { get; set; }
-    }
+public interface IFindTextItem : ICommandListItem
+{
+    public string TargetText { get; set; }
+    public bool CaseSensitive { get; set; }
+    public string MatchMode { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public int Timeout { get; set; }
+    public int Interval { get; set; }
+    public bool Strict { get; set; }
+    public double MinConfidence { get; set; }
+    public string FoundVariableName { get; set; }
+    public string TextVariableName { get; set; }
+    public string ConfidenceVariableName { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+    public string Language { get; set; }
+    public string PageSegmentationMode { get; set; }
+    public string Whitelist { get; set; }
+    public string PreprocessMode { get; set; }
+    public string TessdataPath { get; set; }
+}
 
-    public interface IClickImageItem : ICommandListItem
-    {
-        public string ImagePath { get; set; }
-        public double Threshold { get; set; }
-        public Color? SearchColor { get; set; }
-        public int Timeout { get; set; }
-        public int Interval { get; set; }
-        public System.Windows.Input.MouseButton Button { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-    }
+public interface IClickImageItem : ICommandListItem
+{
+    public string ImagePath { get; set; }
+    public double Threshold { get; set; }
+    public Color? SearchColor { get; set; }
+    public int Timeout { get; set; }
+    public int Interval { get; set; }
+    public System.Windows.Input.MouseButton Button { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+}
 
-    public interface IHotkeyItem : ICommandListItem
-    {
-        public bool Ctrl { get; set; }
-        public bool Alt { get; set; }
-        public bool Shift { get; set; }
-        public System.Windows.Input.Key Key { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-    }
+public interface IHotkeyItem : ICommandListItem
+{
+    public bool Ctrl { get; set; }
+    public bool Alt { get; set; }
+    public bool Shift { get; set; }
+    public System.Windows.Input.Key Key { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+}
 
-    public interface IClickItem : ICommandListItem
-    {
-        public System.Windows.Input.MouseButton Button { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-    }
+public interface IClickItem : ICommandListItem
+{
+    public System.Windows.Input.MouseButton Button { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+}
 
-    public interface IWaitItem : ICommandListItem
-    {
-        public int Wait { get; set; }
-    }
+public interface IWaitItem : ICommandListItem
+{
+    public int Wait { get; set; }
+}
 
-    public interface IIfItem : ICommandListItem
-    {
-        public ICommandListItem? Pair { get; set; }
-    }
+public interface IIfItem : ICommandListItem
+{
+    public ICommandListItem? Pair { get; set; }
+}
 
-    public interface IIfImageExistItem : ICommandListItem, IIfItem
-    {
-        public string ImagePath { get; set; }
-        public double Threshold { get; set; }
-        public Color? SearchColor { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-    }
+public interface IIfImageExistItem : ICommandListItem, IIfItem
+{
+    public string ImagePath { get; set; }
+    public double Threshold { get; set; }
+    public Color? SearchColor { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+}
 
-    public interface IIfImageNotExistItem : ICommandListItem, IIfItem
-    {
-        public string ImagePath { get; set; }
-        public double Threshold { get; set; }
-        public Color? SearchColor { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-    }
+public interface IIfImageNotExistItem : ICommandListItem, IIfItem
+{
+    public string ImagePath { get; set; }
+    public double Threshold { get; set; }
+    public Color? SearchColor { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+}
 
-    public interface IIfTextExistItem : ICommandListItem, IIfItem
-    {
-        public string TargetText { get; set; }
-        public bool CaseSensitive { get; set; }
-        public string MatchMode { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public double MinConfidence { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-        public string Language { get; set; }
-        public string PageSegmentationMode { get; set; }
-        public string Whitelist { get; set; }
-        public string PreprocessMode { get; set; }
-        public string TessdataPath { get; set; }
-    }
+public interface IIfTextExistItem : ICommandListItem, IIfItem
+{
+    public string TargetText { get; set; }
+    public bool CaseSensitive { get; set; }
+    public string MatchMode { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public double MinConfidence { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+    public string Language { get; set; }
+    public string PageSegmentationMode { get; set; }
+    public string Whitelist { get; set; }
+    public string PreprocessMode { get; set; }
+    public string TessdataPath { get; set; }
+}
 
-    public interface IIfTextNotExistItem : ICommandListItem, IIfItem
-    {
-        public string TargetText { get; set; }
-        public bool CaseSensitive { get; set; }
-        public string MatchMode { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public double MinConfidence { get; set; }
-        public string WindowTitle { get; set; }
-        public string WindowClassName { get; set; }
-        public string Language { get; set; }
-        public string PageSegmentationMode { get; set; }
-        public string Whitelist { get; set; }
-        public string PreprocessMode { get; set; }
-        public string TessdataPath { get; set; }
-    }
+public interface IIfTextNotExistItem : ICommandListItem, IIfItem
+{
+    public string TargetText { get; set; }
+    public bool CaseSensitive { get; set; }
+    public string MatchMode { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public double MinConfidence { get; set; }
+    public string WindowTitle { get; set; }
+    public string WindowClassName { get; set; }
+    public string Language { get; set; }
+    public string PageSegmentationMode { get; set; }
+    public string Whitelist { get; set; }
+    public string PreprocessMode { get; set; }
+    public string TessdataPath { get; set; }
+}
 
-    public interface IIfEndItem : ICommandListItem
-    {
-        public ICommandListItem? Pair { get; set; }
-    }
+public interface IIfEndItem : ICommandListItem
+{
+    public ICommandListItem? Pair { get; set; }
+}
 
-    public interface ILoopItem : ICommandListItem
-    {
-        public int LoopCount { get; set; }
-        public ICommandListItem? Pair { get; set; }
-    }
+public interface ILoopItem : ICommandListItem
+{
+    public int LoopCount { get; set; }
+    public ICommandListItem? Pair { get; set; }
+}
 
-    public interface ILoopEndItem : ICommandListItem
-    {
-        public ICommandListItem? Pair { get; set; }
-    }
+public interface ILoopEndItem : ICommandListItem
+{
+    public ICommandListItem? Pair { get; set; }
+}
 
-    public interface ILoopBreakItem : ICommandListItem
-    {
-    }
+public interface ILoopBreakItem : ICommandListItem
+{
+}
 
-    public interface IIfImageExistAIItem : ICommandListItem
-    {
-        string WindowTitle { get; set; }
-        string WindowClassName { get; set; }
-        string ModelPath { get; set; }
-        int ClassID { get; set; }
-        double ConfThreshold { get; set; }
-        double IoUThreshold { get; set; }
-    }
-    public interface IIfImageNotExistAIItem : ICommandListItem
-    {
-        string WindowTitle { get; set; }
-        string WindowClassName { get; set; }
-        string ModelPath { get; set; }
-        int ClassID { get; set; }
-        double ConfThreshold { get; set; }
-        double IoUThreshold { get; set; }
-    }
+public interface IIfImageExistAIItem : ICommandListItem
+{
+    string WindowTitle { get; set; }
+    string WindowClassName { get; set; }
+    string ModelPath { get; set; }
+    int ClassID { get; set; }
+    double ConfThreshold { get; set; }
+    double IoUThreshold { get; set; }
+}
+public interface IIfImageNotExistAIItem : ICommandListItem
+{
+    string WindowTitle { get; set; }
+    string WindowClassName { get; set; }
+    string ModelPath { get; set; }
+    int ClassID { get; set; }
+    double ConfThreshold { get; set; }
+    double IoUThreshold { get; set; }
+}
 
-    public interface IClickImageAIItem : ICommandListItem
-    {
-        string WindowTitle { get; set; }
-        string WindowClassName { get; set; }
-        string ModelPath { get; set; }
-        int ClassID { get; set; }
-        double ConfThreshold { get; set; }
-        double IoUThreshold { get; set; }
-        System.Windows.Input.MouseButton Button { get; set; }
-    }
+public interface IClickImageAIItem : ICommandListItem
+{
+    string WindowTitle { get; set; }
+    string WindowClassName { get; set; }
+    string ModelPath { get; set; }
+    int ClassID { get; set; }
+    double ConfThreshold { get; set; }
+    double IoUThreshold { get; set; }
+    System.Windows.Input.MouseButton Button { get; set; }
+}
 
-    public interface IExecuteItem : ICommandListItem
-    {
-        public string ProgramPath { get; set; }
-        public string Arguments { get; set; }
-        public string WorkingDirectory { get; set; }
-        public bool WaitForExit { get; set; }
-    }
+public interface IExecuteItem : ICommandListItem
+{
+    public string ProgramPath { get; set; }
+    public string Arguments { get; set; }
+    public string WorkingDirectory { get; set; }
+    public bool WaitForExit { get; set; }
+}
 
-    public interface ISetVariableItem : ICommandListItem
-    {
-        public string Name { get; set; }
-        public string Value { get; set; }
-    }
+public interface ISetVariableItem : ICommandListItem
+{
+    public string Name { get; set; }
+    public string Value { get; set; }
+}
 
-    public interface ISetVariableAIItem : ICommandListItem
-    {
-        string WindowTitle { get; set; }
-        string AIDetectMode { get; set; }
-        string WindowClassName { get; set; }
-        string ModelPath { get; set; }
-        double ConfThreshold { get; set; }
-        double IoUThreshold { get; set; }
-        public string Name { get; set; }
-    }
+public interface ISetVariableAIItem : ICommandListItem
+{
+    string WindowTitle { get; set; }
+    string AIDetectMode { get; set; }
+    string WindowClassName { get; set; }
+    string ModelPath { get; set; }
+    double ConfThreshold { get; set; }
+    double IoUThreshold { get; set; }
+    public string Name { get; set; }
+}
 
-    public interface ISetVariableOCRItem : ICommandListItem
-    {
-        string Name { get; set; }
-        int X { get; set; }
-        int Y { get; set; }
-        int Width { get; set; }
-        int Height { get; set; }
-        string WindowTitle { get; set; }
-        string WindowClassName { get; set; }
-        string Language { get; set; }
-        string PageSegmentationMode { get; set; }
-        string Whitelist { get; set; }
-        double MinConfidence { get; set; }
-        string PreprocessMode { get; set; }
-        string TessdataPath { get; set; }
-    }
+public interface ISetVariableOCRItem : ICommandListItem
+{
+    string Name { get; set; }
+    int X { get; set; }
+    int Y { get; set; }
+    int Width { get; set; }
+    int Height { get; set; }
+    string WindowTitle { get; set; }
+    string WindowClassName { get; set; }
+    string Language { get; set; }
+    string PageSegmentationMode { get; set; }
+    string Whitelist { get; set; }
+    double MinConfidence { get; set; }
+    string PreprocessMode { get; set; }
+    string TessdataPath { get; set; }
+}
 
-    public interface IIfVariableItem : ICommandListItem, IIfItem
-    {
-        public string Name { get; set; }
-        public string Operator { get; set; }
-        public string Value { get; set; }
-    }
+public interface IIfVariableItem : ICommandListItem, IIfItem
+{
+    public string Name { get; set; }
+    public string Operator { get; set; }
+    public string Value { get; set; }
+}
 
-    // Screenshot item interface for panel editing
-    public interface IScreenshotItem : ICommandListItem
-    {
-        string SaveDirectory { get; set; }
-        string WindowTitle { get; set; }
-        string WindowClassName { get; set; }
-    }
+// Screenshot item interface for panel editing
+public interface IScreenshotItem : ICommandListItem
+{
+    string SaveDirectory { get; set; }
+    string WindowTitle { get; set; }
+    string WindowClassName { get; set; }
 }

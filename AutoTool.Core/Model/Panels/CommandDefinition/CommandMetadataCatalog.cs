@@ -45,7 +45,7 @@ public static class CommandMetadataCatalog
 
     public static bool TryGetByItemType(Type itemType, out CommandMetadata metadata)
     {
-        if (itemType == null)
+        if (itemType is null)
         {
             metadata = null!;
             return false;
@@ -59,7 +59,7 @@ public static class CommandMetadataCatalog
         var assembly = Assembly.GetExecutingAssembly();
         var items = assembly.GetTypes()
             .Select(t => new { Type = t, Attr = t.GetCustomAttribute<CommandDefinitionAttribute>() })
-            .Where(x => x.Attr != null)
+            .Where(x => x.Attr is not null)
             .Select(x => new CommandMetadata
             {
                 TypeName = x.Attr!.TypeName,

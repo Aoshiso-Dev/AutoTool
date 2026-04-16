@@ -116,7 +116,7 @@ public partial class FileManager : ObservableObject
 
     private void LoadRecentFiles()
     {
-        RecentFiles = _recentFileStore.Load(GetRecentFilesKey()) ?? new ObservableCollection<RecentFile>();
+        RecentFiles = _recentFileStore.Load(GetRecentFilesKey()) ?? [];
     }
 
     private void SaveRecentFiles()
@@ -128,7 +128,7 @@ public partial class FileManager : ObservableObject
     {
         var existingItem = RecentFiles?.FirstOrDefault(f =>
             string.Equals(f.FilePath, filePath, StringComparison.OrdinalIgnoreCase));
-        if (existingItem != null)
+        if (existingItem is not null)
         {
             RecentFiles?.Remove(existingItem);
         }
@@ -151,7 +151,7 @@ public partial class FileManager : ObservableObject
     {
         var existingItem = RecentFiles?.FirstOrDefault(f =>
             string.Equals(f.FilePath, filePath, StringComparison.OrdinalIgnoreCase));
-        if (existingItem == null)
+        if (existingItem is null)
         {
             return;
         }

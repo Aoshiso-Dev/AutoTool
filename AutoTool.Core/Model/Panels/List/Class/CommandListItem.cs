@@ -109,7 +109,7 @@ namespace AutoTool.Panels.List.Class;
 
         public CommandListItem(CommandListItem? item)
         {
-            if (item != null)
+            if (item is not null)
             {
                 IsEnable = item.IsEnable;
                 IsRunning = item.IsRunning;
@@ -145,7 +145,7 @@ namespace AutoTool.Panels.List.Class;
             }
 
             IsEnable = value;
-            if (pair != null)
+            if (pair is not null)
             {
                 pair.IsEnable = value;
             }

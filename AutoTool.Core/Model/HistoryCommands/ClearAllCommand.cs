@@ -15,7 +15,7 @@ public class ClearAllCommand : IUndoRedoCommand
         Action clearAction,
         Action<IEnumerable<ICommandListItem>> restoreAction)
     {
-        _savedItems = items.Select(item => item.Clone()).ToList();
+        _savedItems = [.. items.Select(item => item.Clone())];
         _clearAction = clearAction;
         _restoreAction = restoreAction;
     }

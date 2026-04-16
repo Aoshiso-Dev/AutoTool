@@ -12,7 +12,7 @@ namespace AutoTool.Panels.ViewModel;
 public partial class EditPanelViewModel
 {
     [ObservableProperty]
-    private ObservableCollection<PropertyGroup> _propertyGroups = new();
+    private ObservableCollection<PropertyGroup> _propertyGroups = [];
 
     [ObservableProperty]
     private bool _hasValidationErrors;
@@ -28,10 +28,10 @@ public partial class EditPanelViewModel
         {
             if (!SetProperty(ref _item, value)) return;
 
-            if (value != null)
+            if (value is not null)
             {
                 var displayItem = ItemTypes.FirstOrDefault(x => x.TypeName == value.ItemType);
-                if (displayItem != null && _selectedItemTypeObj != displayItem)
+                if (displayItem is not null && _selectedItemTypeObj != displayItem)
                 {
                     _selectedItemTypeObj = displayItem;
                     OnPropertyChanged(nameof(SelectedItemTypeObj));
@@ -63,8 +63,8 @@ public partial class EditPanelViewModel
 
     public bool IsListNotEmpty => ListCount > 0;
     public bool IsListEmpty => ListCount == 0;
-    public bool IsListNotEmptyButNoSelection => ListCount > 0 && Item == null;
-    public bool IsNotNullItem => Item != null;
+    public bool IsListNotEmptyButNoSelection => ListCount > 0 && Item is null;
+    public bool IsNotNullItem => Item is not null;
     public bool IsWaitImageItem => Item is WaitImageItem;
     public bool IsClickImageItem => Item is ClickImageItem;
     public bool IsClickImageAIItem => Item is ClickImageAIItem;
@@ -212,7 +212,7 @@ public partial class EditPanelViewModel
         get => Item?.Comment ?? string.Empty;
         set
         {
-            if (Item != null && Item.Comment != value)
+            if (Item is not null && Item.Comment != value)
             {
                 Item.Comment = value;
                 UpdateProperties();
@@ -221,10 +221,10 @@ public partial class EditPanelViewModel
     }
 
     public Brush SearchColorBrush => new SolidColorBrush(SearchColor ?? Color.FromArgb(0, 0, 0, 0));
-    public string SearchColorText => SearchColor != null ? $"R:{SearchColor.Value.R:D3} G:{SearchColor.Value.G:D3} B:{SearchColor.Value.B:D3}" : "指定なし";
-    public Brush SearchColorTextColor => SearchColor != null ? new SolidColorBrush(Color.FromArgb(255, (byte)(255 - SearchColor.Value.R), (byte)(255 - SearchColor.Value.G), (byte)(255 - SearchColor.Value.B))) : new SolidColorBrush(Colors.Black);
+    public string SearchColorText => SearchColor is not null ? $"R:{SearchColor.Value.R:D3} G:{SearchColor.Value.G:D3} B:{SearchColor.Value.B:D3}" : "指定なし";
+    public Brush SearchColorTextColor => SearchColor is not null ? new SolidColorBrush(Color.FromArgb(255, (byte)(255 - SearchColor.Value.R), (byte)(255 - SearchColor.Value.G), (byte)(255 - SearchColor.Value.B))) : new SolidColorBrush(Colors.Black);
 
-    [ObservableProperty] private ObservableCollection<CommandDisplayItem> _itemTypes = new();
+    [ObservableProperty] private ObservableCollection<CommandDisplayItem> _itemTypes = [];
 
     private CommandDisplayItem? _selectedItemTypeObj;
     public CommandDisplayItem? SelectedItemTypeObj
@@ -232,7 +232,7 @@ public partial class EditPanelViewModel
         get => _selectedItemTypeObj;
         set
         {
-            if (SetProperty(ref _selectedItemTypeObj, value) && value != null)
+            if (SetProperty(ref _selectedItemTypeObj, value) && value is not null)
             {
                 OnSelectedItemTypeChanged(value.TypeName);
             }
@@ -244,13 +244,13 @@ public partial class EditPanelViewModel
         get => Item?.ItemType ?? "None";
         set
         {
-            if (Item == null) return;
+            if (Item is null) return;
             if (Item.ItemType == value) return;
             OnSelectedItemTypeChanged(value);
         }
     }
 
-    [ObservableProperty] private ObservableCollection<MouseButton> _mouseButtons = new();
+    [ObservableProperty] private ObservableCollection<MouseButton> _mouseButtons = [];
     public MouseButton SelectedMouseButton
     {
         get => MouseButton;
@@ -263,9 +263,9 @@ public partial class EditPanelViewModel
         }
     }
 
-    [ObservableProperty] private ObservableCollection<string> _operators = new();
+    [ObservableProperty] private ObservableCollection<string> _operators = [];
     public string SelectedOperator { get => CompareOperator; set { CompareOperator = value; } }
 
-    [ObservableProperty] private ObservableCollection<string> _aIDetectModes = new();
+    [ObservableProperty] private ObservableCollection<string> _aIDetectModes = [];
     public string SelectedAIDetectMode { get => AIDetectMode; set { AIDetectMode = value; } }
 }

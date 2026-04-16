@@ -56,8 +56,8 @@ public class MacroFactory : IMacroFactory
 
     private IEnumerable<ICommand> ListItemToCommand(ICommand parent, IEnumerable<ICommandListItem> items)
     {
-        var commands = new List<ICommand>();
-        var skippedLines = new HashSet<int>();
+        List<ICommand> commands = [];
+        HashSet<int> skippedLines = [];
         foreach (var item in items)
         {
             if (skippedLines.Contains(item.LineNumber)) continue;
@@ -67,7 +67,7 @@ public class MacroFactory : IMacroFactory
             try
             {
                 var command = CreateCommand(parent, item, items);
-                if (command != null)
+                if (command is not null)
                 {
                     commands.Add(command);
                     MarkChildLinesAsSkipped(item, skippedLines);
@@ -91,7 +91,7 @@ public class MacroFactory : IMacroFactory
         _commandRegistry.Initialize();
 
         var simpleResult = _commandRegistry.CreateSimple(parent, item, _serviceProvider);
-        if (simpleResult.Success && simpleResult.Command != null)
+        if (simpleResult.Success && simpleResult.Command is not null)
         {
             return simpleResult.Command;
         }
@@ -99,7 +99,7 @@ public class MacroFactory : IMacroFactory
         Debug.WriteLine($"Simple command creation skipped ({simpleResult.FailureReason}): {simpleResult.Message}");
 
         var builder = _compositeBuilders.FirstOrDefault(x => x.CanBuild(item));
-        if (builder == null)
+        if (builder is null)
         {
             var commandName = GetCommandDisplayName(item.ItemType);
             throw new UnsupportedCommandTypeException(
@@ -113,15 +113,16 @@ public class MacroFactory : IMacroFactory
 
     private static void MarkChildLinesAsSkipped(ICommandListItem item, ISet<int> skippedLines)
     {
-        switch (item)
+        Action mark = item switch
         {
-            case IIfItem ifItem when ifItem.Pair != null:
-                MarkRange(ifItem.LineNumber + 1, ifItem.Pair.LineNumber, skippedLines);
-                break;
-            case ILoopItem loopItem when loopItem.Pair != null:
-                MarkRange(loopItem.LineNumber + 1, loopItem.Pair.LineNumber, skippedLines);
-                break;
-        }
+            IIfItem ifItem when ifItem.Pair is not null
+                => () => MarkRange(ifItem.LineNumber + 1, ifItem.Pair.LineNumber, skippedLines),
+            ILoopItem loopItem when loopItem.Pair is not null
+                => () => MarkRange(loopItem.LineNumber + 1, loopItem.Pair.LineNumber, skippedLines),
+            _ => static () => { }
+        };
+
+        mark();
     }
 
     private static void MarkRange(int fromInclusive, int toInclusive, ISet<int> set)
