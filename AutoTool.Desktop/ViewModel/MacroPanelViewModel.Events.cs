@@ -57,8 +57,14 @@ public partial class MacroPanelViewModel
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
             PrepareAllPanels();
-            SetAllPanelsRunningState(true);
         });
+
+        if (!ValidateBeforeRun())
+        {
+            return;
+        }
+
+        System.Windows.Application.Current.Dispatcher.Invoke(() => SetAllPanelsRunningState(true));
 
         await Run();
     }

@@ -8,6 +8,7 @@ using AutoTool.Application.Files;
 using AutoTool.Application.History;
 using AutoTool.Application.Ports;
 using AutoTool.Automation.Runtime.Serialization;
+using System.Collections.ObjectModel;
 
 namespace AutoTool.Desktop.ViewModel;
 
@@ -19,6 +20,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private readonly IMacroFactory _macroFactory;
     private readonly IMacroFileSerializer _macroFileSerializer;
     private readonly ICommandRegistry _commandRegistry;
+    private readonly IPathResolver _pathResolver;
     private readonly TimeProvider _timeProvider;
     private readonly IListPanelViewModel _listPanel;
     private readonly IEditPanelViewModel _editPanel;
@@ -47,7 +49,15 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private bool _isLogPanelOpen;
 
     [ObservableProperty]
+    private bool _isPreflightPanelOpen;
+
+    [ObservableProperty]
+    private string _preflightSummary = "実行前チェックは未実行です。";
+
+    [ObservableProperty]
     private double _favoritePanelWidth = 340;
+
+    public ObservableCollection<PreflightIssueItem> PreflightIssues { get; } = [];
 
     // Exposed for view binding without concrete casts.
     public IListPanelViewModel ListPanelViewModel => _listPanel;
@@ -63,6 +73,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         IMacroFactory macroFactory,
         IMacroFileSerializer macroFileSerializer,
         ICommandRegistry commandRegistry,
+        IPathResolver pathResolver,
         TimeProvider timeProvider,
         IListPanelViewModel listPanelViewModel,
         IEditPanelViewModel editPanelViewModel,
@@ -76,6 +87,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(macroFactory);
         ArgumentNullException.ThrowIfNull(macroFileSerializer);
         ArgumentNullException.ThrowIfNull(commandRegistry);
+        ArgumentNullException.ThrowIfNull(pathResolver);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(listPanelViewModel);
         ArgumentNullException.ThrowIfNull(editPanelViewModel);
@@ -89,6 +101,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _macroFactory = macroFactory;
         _macroFileSerializer = macroFileSerializer;
         _commandRegistry = commandRegistry;
+        _pathResolver = pathResolver;
         _timeProvider = timeProvider;
         _listPanel = listPanelViewModel;
         _editPanel = editPanelViewModel;
@@ -110,6 +123,12 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private void ToggleLogPanel()
     {
         IsLogPanelOpen = !IsLogPanelOpen;
+    }
+
+    [RelayCommand]
+    private void TogglePreflightPanel()
+    {
+        IsPreflightPanelOpen = !IsPreflightPanelOpen;
     }
 
     public void SetCommandHistory(CommandHistoryManager commandHistory)

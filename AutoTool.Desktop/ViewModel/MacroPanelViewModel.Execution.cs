@@ -1,6 +1,7 @@
 ﻿using AutoTool.Commands.Commands;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
+using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Automation.Runtime.Lists;
 using AutoTool.Automation.Runtime.Diagnostics;
 using AutoTool.Automation.Runtime.MacroFactory;
@@ -154,6 +155,90 @@ public partial class MacroPanelViewModel
                 SetRunningState(false);
             });
         }
+    }
+
+    private bool ValidateBeforeRun()
+    {
+        var report = BuildPreflightReport();
+        ApplyPreflightReport(report);
+
+        if (report.BlockingCount <= 0)
+        {
+            return true;
+        }
+
+        OnUiThread(() =>
+        {
+            IsPreflightPanelOpen = true;
+            _logPanel.WriteLog(string.Empty, "システム", $"実行前チェックで {report.BlockingCount} 件の要修正項目が見つかったため、実行を中止しました。");
+            _notifier.ShowWarning(
+                $"実行前チェックで {report.BlockingCount} 件の要修正項目が見つかりました。\n一覧を確認して修正後に再実行してください。",
+                "実行前チェック");
+        });
+
+        return false;
+    }
+
+    private PreflightValidationReport BuildPreflightReport()
+    {
+        var items = _listPanel.CommandList.Items.Where(static x => x.IsEnable).ToList();
+        List<PreflightIssueItem> issues = [];
+
+        if (items.Count == 0)
+        {
+            issues.Add(new PreflightIssueItem(
+                Level: "要修正",
+                Line: "-",
+                CommandName: "システム",
+                PropertyName: "コマンド構成",
+                Message: "有効なコマンドがありません。1つ以上追加してください。"));
+
+            return new PreflightValidationReport(items.Count, issues);
+        }
+
+        foreach (var item in items)
+        {
+            if (item is not ICommandSettings settings)
+            {
+                continue;
+            }
+
+            var commandName = CommandListItem.GetDisplayNameForType(item.ItemType);
+            var lineLabel = item.LineNumber > 0 ? FormatUiLineLabel(item.LineNumber) : "-";
+            var validationIssues = CommandSettingsValidator.GetIssues(
+                settings,
+                _pathResolver,
+                includeExistenceChecks: true);
+
+            foreach (var issue in validationIssues)
+            {
+                issues.Add(new PreflightIssueItem(
+                    Level: "要修正",
+                    Line: lineLabel,
+                    CommandName: commandName,
+                    PropertyName: ToUserPropertyName(issue.PropertyName),
+                    Message: $"[{issue.Code}] {NormalizeLine(issue.Message)}"));
+            }
+        }
+
+        return new PreflightValidationReport(items.Count, issues);
+    }
+
+    private void ApplyPreflightReport(PreflightValidationReport report)
+    {
+        OnUiThread(() =>
+        {
+            PreflightIssues.Clear();
+            foreach (var issue in report.Issues)
+            {
+                PreflightIssues.Add(issue);
+            }
+
+            var now = _timeProvider.GetLocalNow();
+            PreflightSummary = report.BlockingCount > 0
+                ? $"実行前チェック: 要修正 {report.BlockingCount} 件 / 対象 {report.TargetCount} コマンド ({now:yyyy/MM/dd HH:mm:ss})"
+                : $"実行前チェック: 問題なし / 対象 {report.TargetCount} コマンド ({now:yyyy/MM/dd HH:mm:ss})";
+        });
     }
 
     private static void OnUiThread(Action action)
@@ -418,5 +503,10 @@ public partial class MacroPanelViewModel
         return command is LoopCommand
             && command.LineNumber <= 0
             && command.Parent is RootCommand;
+    }
+
+    private sealed record PreflightValidationReport(int TargetCount, IReadOnlyList<PreflightIssueItem> Issues)
+    {
+        public int BlockingCount => Issues.Count(x => x.Level == "要修正");
     }
 }

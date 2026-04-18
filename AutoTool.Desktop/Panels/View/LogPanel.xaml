@@ -8,7 +8,7 @@
              mc:Ignorable="d"
              d:DesignHeight="220" d:DesignWidth="800">
 
-    <Grid>
+    <Grid Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -25,7 +25,7 @@
                  Grid.Row="1"
                  ItemsSource="{Binding FilteredLogEntries}"
                  BorderThickness="0"
-                 Background="Transparent"
+                 Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  FontFamily="Cascadia Code, Consolas, Courier New"
@@ -45,7 +45,7 @@
                             CornerRadius="4"
                             BorderThickness="2,0,0,0"
                             BorderBrush="#5B5B5B"
-                            Background="{ui:ThemeResource ControlFillColorSecondaryBrush}">
+                            Background="{ui:ThemeResource ControlFillColorDefaultBrush}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="138"/>
@@ -76,19 +76,19 @@
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Level}" Value="{x:Static shared:LogEntryLevel.Start}">
                                         <Setter Property="BorderBrush" Value="#3B82F6"/>
-                                        <Setter Property="Background" Value="#123B82F6"/>
+                                        <Setter Property="Background" Value="#1F3B82F6"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Level}" Value="{x:Static shared:LogEntryLevel.Success}">
                                         <Setter Property="BorderBrush" Value="#10B981"/>
-                                        <Setter Property="Background" Value="#1210B981"/>
+                                        <Setter Property="Background" Value="#1F10B981"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Level}" Value="{x:Static shared:LogEntryLevel.Warning}">
                                         <Setter Property="BorderBrush" Value="#F59E0B"/>
-                                        <Setter Property="Background" Value="#12F59E0B"/>
+                                        <Setter Property="Background" Value="#1FF59E0B"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Level}" Value="{x:Static shared:LogEntryLevel.Error}">
                                         <Setter Property="BorderBrush" Value="#EF4444"/>
-                                        <Setter Property="Background" Value="#12EF4444"/>
+                                        <Setter Property="Background" Value="#1FEF4444"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>

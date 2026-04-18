@@ -47,6 +47,122 @@
                 </Border>
 
                 <Border HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
+                        MaxHeight="240"
+                        Margin="0,0,0,0"
+                        Panel.ZIndex="35">
+                    <Border.RenderTransform>
+                        <TranslateTransform Y="-260"/>
+                    </Border.RenderTransform>
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Opacity" Value="0"/>
+                            <Setter Property="IsHitTestVisible" Value="False"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPreflightPanelOpen}" Value="True">
+                                    <Setter Property="IsHitTestVisible" Value="True"/>
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                 To="0"
+                                                                 Duration="0:0:0.2">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                    <DataTrigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                 To="-260"
+                                                                 Duration="0:0:0.18">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseIn"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.ExitActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+
+                    <Border Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}"
+                            BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <Grid Margin="10,10,10,18">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0"
+                                           Text="実行前チェック"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"/>
+
+                                <TextBlock Grid.Row="1"
+                                           Text="{Binding PreflightSummary}"
+                                           Margin="0,4,0,8"
+                                           Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
+
+                                <Border Grid.Row="2"
+                                        Background="{ui:ThemeResource ControlFillColorDefaultBrush}"
+                                        BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="6">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding PreflightIssues}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
+                                                            BorderThickness="0,0,0,1"
+                                                            Padding="0,4">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="58"/>
+                                                                <ColumnDefinition Width="130"/>
+                                                                <ColumnDefinition Width="100"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="{Binding Line}"
+                                                                       FontWeight="SemiBold"/>
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{Binding CommandName}"
+                                                                       Margin="8,0,0,0"/>
+                                                            <TextBlock Grid.Column="2"
+                                                                       Text="{Binding PropertyName}"
+                                                                       Margin="8,0,0,0"
+                                                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
+                                                            <TextBlock Grid.Column="3"
+                                                                       Text="{Binding Message}"
+                                                                       Margin="8,0,0,0"
+                                                                       TextWrapping="Wrap"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Border>
+
+                <Border HorizontalAlignment="Stretch"
                         VerticalAlignment="Bottom"
                         Height="220"
                         Margin="0"
@@ -94,22 +210,27 @@
                         </Style>
                     </Border.Style>
 
-                    <ui:Card Padding="8">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
+                    <Border Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}"
+                            BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <Grid Margin="8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0"
-                                       Text="ログ"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="0"
+                                           Text="ログ"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,6"/>
 
-                            <panels:LogPanel Grid.Row="1" DataContext="{Binding LogPanelViewModel}"/>
+                                <panels:LogPanel Grid.Row="1" DataContext="{Binding LogPanelViewModel}"/>
+                            </Grid>
                         </Grid>
-                    </ui:Card>
+                    </Border>
                 </Border>
             </Grid>
 
@@ -165,6 +286,13 @@
                            Icon="{ui:SymbolIcon Document24}"
                            ToolTip="ログパネルの表示切替"
                            Width="36"
+                           Height="36"
+                           Appearance="Secondary"
+                           Margin="0,0,6,0"/>
+                <ui:Button Command="{Binding TogglePreflightPanelCommand}"
+                           Content="診断"
+                           ToolTip="実行前チェックパネルの表示切替"
+                           Width="56"
                            Height="36"
                            Appearance="Secondary"/>
             </StackPanel>
