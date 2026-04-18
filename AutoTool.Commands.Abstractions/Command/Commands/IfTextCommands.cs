@@ -46,7 +46,7 @@ public class IfTextExistCommand : BaseCommand, IIfCommand, IIfTextExistCommand
         var matched = TextMatchEvaluator.IsMatched(result.Text, result.Confidence, Settings);
         if (matched)
         {
-            RaiseDoingCommand($"文字が見つかりました。Text=\"{result.Text}\" confidence={result.Confidence:F1}");
+            RaiseDoingCommand($"文字が見つかりました。抽出文字列=\"{result.Text}\" / 信頼度={result.Confidence:F1}");
             return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -102,7 +102,7 @@ public class IfTextNotExistCommand : BaseCommand, IIfCommand, IIfTextNotExistCom
             return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        RaiseDoingCommand($"文字が見つかりました。Text=\"{result.Text}\" confidence={result.Confidence:F1}");
+        RaiseDoingCommand($"文字が見つかりました。抽出文字列=\"{result.Text}\" / 信頼度={result.Confidence:F1}");
         return true;
     }
 }

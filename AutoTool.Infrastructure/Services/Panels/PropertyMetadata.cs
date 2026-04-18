@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
 using System.Windows.Input;
+using System.Windows.Media;
+using AutoTool.Commands.Model.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AutoTool.Panels.Attributes;
@@ -109,11 +111,11 @@ public partial class PropertyMetadata : ObservableObject
         set => Value = value;
     }
 
-    public MouseButton[] MouseButtonOptions { get; } = Enum.GetValues<MouseButton>();
+    public CommandMouseButton[] MouseButtonOptions { get; } = Enum.GetValues<CommandMouseButton>();
 
-    public MouseButton MouseButtonValue
+    public CommandMouseButton MouseButtonValue
     {
-        get => Value is MouseButton mb ? mb : MouseButton.Left;
+        get => Value is CommandMouseButton mb ? mb : CommandMouseButton.Left;
         set
         {
             Value = value;
@@ -121,20 +123,25 @@ public partial class PropertyMetadata : ObservableObject
         }
     }
 
-    public System.Windows.Media.Color? ColorValue
+    public Color? ColorValue
     {
-        get => Value as System.Windows.Media.Color?;
-        set => Value = value;
+        get => Value switch
+        {
+            CommandColor c => Color.FromArgb(c.A, c.R, c.G, c.B),
+            Color c => c,
+            _ => null
+        };
+        set => Value = value.HasValue ? new CommandColor(value.Value.A, value.Value.R, value.Value.G, value.Value.B) : null;
     }
 
-    public System.Windows.Media.SolidColorBrush? ColorBrush =>
-        ColorValue.HasValue ? new System.Windows.Media.SolidColorBrush(ColorValue.Value) : null;
+    public SolidColorBrush? ColorBrush =>
+        ColorValue.HasValue ? new SolidColorBrush(ColorValue.Value) : null;
 
     public bool HasColor => ColorValue.HasValue;
 
-    public Key KeyValue
+    public CommandKey KeyValue
     {
-        get => Value is Key k ? k : Key.None;
+        get => Value is CommandKey k ? k : CommandKey.None;
         set => Value = value;
     }
 
@@ -142,7 +149,7 @@ public partial class PropertyMetadata : ObservableObject
     {
         get
         {
-            if (KeyValue == Key.None)
+            if (KeyValue == CommandKey.None)
             {
                 return "None";
             }

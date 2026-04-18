@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AutoTool.Commands\AutoTool.Commands.csproj" />
+    <ProjectReference Include="..\AutoTool.Infrastructure\AutoTool.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

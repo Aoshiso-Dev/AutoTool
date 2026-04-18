@@ -1,53 +1,47 @@
 ﻿namespace AutoTool.Panels.Attributes;
 
 /// <summary>
-/// �R�}���h�v���p�e�B��UI����t�^���鑮��
+/// コマンドプロパティに UI 編集メタデータを付与する属性。
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
 public class CommandPropertyAttribute : Attribute
 {
-    /// <summary>�\����</summary>
+    /// <summary>表示名</summary>
     public string DisplayName { get; }
-    
-    /// <summary>�G�f�B�^�̎��</summary>
+
+    /// <summary>エディタ種別</summary>
     public EditorType EditorType { get; }
-    
-    /// <summary>�O���[�v���i�����O���[�v�͓����J�[�h�ɕ\���j</summary>
-    public string Group { get; set; } = "��{�ݒ�";
-    
-    /// <summary>�\�������i�O���[�v��ł̏����j</summary>
+
+    /// <summary>グループ名（同じグループは同カードに表示）</summary>
+    public string Group { get; set; } = "基本設定";
+
+    /// <summary>表示順（グループ内）</summary>
     public int Order { get; set; } = 0;
-    
-    /// <summary>�����</summary>
+
+    /// <summary>説明文</summary>
     public string? Description { get; set; }
-    
-    /// <summary>�ŏ��l�iNumberBox, Slider�p�j</summary>
+
+    /// <summary>最小値（NumberBox / Slider）</summary>
     public double Min { get; set; } = 0;
-    
-    /// <summary>�ő�l�iNumberBox, Slider�p�j</summary>
+
+    /// <summary>最大値（NumberBox / Slider）</summary>
     public double Max { get; set; } = double.MaxValue;
-    
-    /// <summary>�X�e�b�v�l�iSlider�p�j</summary>
+
+    /// <summary>ステップ値（Slider）</summary>
     public double Step { get; set; } = 1;
-    
-    /// <summary>�P�ʁi�\���p�j</summary>
+
+    /// <summary>単位（表示用）</summary>
     public string? Unit { get; set; }
-    
-    /// <summary>�R���{�{�b�N�X�̑I����i�J���}��؂�j</summary>
+
+    /// <summary>コンボボックス選択肢（カンマ区切り）</summary>
     public string? Options { get; set; }
-    
-    /// <summary>�t�@�C���t�B���^�[�iFilePicker�p�j</summary>
+
+    /// <summary>ファイルフィルター（FilePicker）</summary>
     public string? FileFilter { get; set; }
-    
-    /// <summary>
-    /// �R�}���h�v���p�e�B������쐬
-    /// </summary>
-    /// <param name="displayName">�\����</param>
-    /// <param name="editorType">�G�f�B�^�̎��</param>
+
     public CommandPropertyAttribute(string displayName, EditorType editorType)
     {
         DisplayName = displayName;
         EditorType = editorType;
     }
 }
-

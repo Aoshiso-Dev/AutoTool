@@ -333,7 +333,7 @@ public partial class MacroPanelViewModel
     {
         if (value is null)
         {
-            return "<null>";
+            return "（null）";
         }
 
         return NormalizeLine(value.ToString() ?? string.Empty);

@@ -81,7 +81,7 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
     {
         if (item?.ItemType is null)
         {
-            return CommandCreationResult.Fail(CommandCreationFailureReason.MissingItemType, "ItemType is empty.");
+            return CommandCreationResult.Fail(CommandCreationFailureReason.MissingItemType, "ItemType が空です。");
         }
 
         Initialize();
@@ -89,7 +89,7 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
         {
             return CommandCreationResult.Fail(
                 CommandCreationFailureReason.UnknownItemType,
-                $"Unknown item type: {item.ItemType}");
+                $"未知の ItemType です: {item.ItemType}");
         }
 
         var commandFactory = serviceProvider?.GetService(typeof(ICommandFactory)) as ICommandFactory;
@@ -97,7 +97,7 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
         {
             return CommandCreationResult.Fail(
                 CommandCreationFailureReason.CommandFactoryUnavailable,
-                "ICommandFactory is not available.");
+                "ICommandFactory が利用できません。");
         }
 
         try
@@ -118,7 +118,7 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
                 {
                     return CommandCreationResult.Fail(
                         CommandCreationFailureReason.MissingCommandBinding,
-                        $"No binding attribute for item type {entry.Metadata.ItemType.Name}.");
+                        $"item type {entry.Metadata.ItemType.Name} にバインディング属性がありません。");
                 }
 
                 command = commandFactory.Create(
@@ -136,7 +136,7 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
         {
             return CommandCreationResult.Fail(
                 CommandCreationFailureReason.FactoryException,
-                $"Command creation failed: {ex.Message}");
+                $"コマンド生成に失敗しました: {ex.Message}");
         }
     }
 
@@ -222,7 +222,7 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
         var ctor = itemType.GetConstructor(Type.EmptyTypes);
         if (ctor is null)
         {
-            throw new InvalidOperationException($"Type {itemType.Name} does not have a parameterless constructor");
+            throw new InvalidOperationException($"型 {itemType.Name} に引数なしコンストラクタがありません。");
         }
 
         return () => (ICommandListItem)Activator.CreateInstance(itemType)!;

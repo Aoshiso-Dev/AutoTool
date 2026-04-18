@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Threading;
 

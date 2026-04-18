@@ -5,12 +5,12 @@ using System.Reflection;
 namespace AutoTool.Panels.Helpers;
 
 /// <summary>
-/// �t�@�C���p�X�̑��΃p�X�E��΃p�X�ϊ���s���w���p�[�N���X
+/// アプリ基準の相対/絶対パス変換を行うヘルパー。
 /// </summary>
 public static class ApplicationPathResolver
 {
     /// <summary>
-    /// AutoTool.exe������f�B���N�g���̃p�X��擾
+    /// 実行ファイルがあるディレクトリを取得する。
     /// </summary>
     public static string GetApplicationDirectory()
     {
@@ -18,11 +18,11 @@ public static class ApplicationPathResolver
     }
 
     /// <summary>
-    /// ��΃p�X�𑊑΃p�X�ɕϊ�����
-    /// ���΃p�X�ɕϊ��ł��Ȃ��ꍇ�͐�΃p�X��Ԃ�
+    /// 絶対パスをアプリ基準の相対パスへ変換する。
+    /// 変換できない場合は元の絶対パスを返す。
     /// </summary>
-    /// <param name="absolutePath">��΃p�X</param>
-    /// <returns>���΃p�X�܂��͐�΃p�X</returns>
+    /// <param name="absolutePath">絶対パス</param>
+    /// <returns>相対パス、または変換不能時は絶対パス</returns>
     public static string ToRelativePath(string absolutePath)
     {
         if (string.IsNullOrEmpty(absolutePath))
@@ -36,32 +36,32 @@ public static class ApplicationPathResolver
             
             if (uri1.Scheme != uri2.Scheme)
             {
-                // �X�L�[�����قȂ�ꍇ�i��F�l�b�g���[�N�p�X�j�͐�΃p�X��Ԃ�
+                // スキームが異なる場合（例: ネットワークパス）はそのまま返す。
                 return absolutePath;
             }
 
             var relativeUri = uri1.MakeRelativeUri(uri2);
             var relativePath = Uri.UnescapeDataString(relativeUri.ToString());
             
-            // �p�X��؂蕶���𐳋K��
+            // 区切り文字を OS 形式に正規化する。
             relativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
             
             return relativePath;
         }
         catch (Exception ex)
         {
-            // �ϊ��Ɏ��s�����ꍇ�͐�΃p�X��Ԃ�
-            System.Diagnostics.Debug.WriteLine($"���΃p�X�ϊ��Ɏ��s: {ex.Message}");
+            // 変換に失敗したら入力値を返す。
+            System.Diagnostics.Debug.WriteLine($"相対パス変換に失敗: {ex.Message}");
             return absolutePath;
         }
     }
 
     /// <summary>
-    /// ���΃p�X���΃p�X�ɕϊ�����
-    /// ���ɐ�΃p�X�̏ꍇ�͂��̂܂ܕԂ�
+    /// 相対パスをアプリ基準の絶対パスへ変換する。
+    /// すでに絶対パスの場合はそのまま返す。
     /// </summary>
-    /// <param name="relativePath">���΃p�X�܂��͐�΃p�X</param>
-    /// <returns>��΃p�X</returns>
+    /// <param name="relativePath">相対パスまたは絶対パス</param>
+    /// <returns>絶対パス</returns>
     public static string ToAbsolutePath(string relativePath)
     {
         if (string.IsNullOrEmpty(relativePath))
@@ -69,29 +69,29 @@ public static class ApplicationPathResolver
 
         try
         {
-            // ���ɐ�΃p�X�̏ꍇ�͂��̂܂ܕԂ�
+            // すでに絶対パスなら変換不要。
             if (Path.IsPathRooted(relativePath))
                 return relativePath;
 
             var appDirectory = GetApplicationDirectory();
             var absolutePath = Path.Combine(appDirectory, relativePath);
             
-            // �p�X�𐳋K��
+            // パスを正規化する。
             return Path.GetFullPath(absolutePath);
         }
         catch (Exception ex)
         {
-            // �ϊ��Ɏ��s�����ꍇ�͌��̃p�X��Ԃ�
-            System.Diagnostics.Debug.WriteLine($"��΃p�X�ϊ��Ɏ��s: {ex.Message}");
+            // 変換に失敗したら入力値を返す。
+            System.Diagnostics.Debug.WriteLine($"絶対パス変換に失敗: {ex.Message}");
             return relativePath;
         }
     }
 
     /// <summary>
-    /// �t�@�C�������݂��邩�`�F�b�N�i���΃p�X�Ή��j
+    /// ファイルが存在するか確認する（相対パス対応）。
     /// </summary>
-    /// <param name="filePath">�t�@�C���p�X�i���΂܂��͐�΁j</param>
-    /// <returns>�t�@�C�������݂��邩�ǂ���</returns>
+    /// <param name="filePath">ファイルパス（相対/絶対）</param>
+    /// <returns>存在すれば true</returns>
     public static bool FileExists(string filePath)
     {
         if (string.IsNullOrEmpty(filePath))
@@ -109,10 +109,10 @@ public static class ApplicationPathResolver
     }
 
     /// <summary>
-    /// �f�B���N�g�������݂��邩�`�F�b�N�i���΃p�X�Ή��j
+    /// ディレクトリが存在するか確認する（相対パス対応）。
     /// </summary>
-    /// <param name="directoryPath">�f�B���N�g���p�X�i���΂܂��͐�΁j</param>
-    /// <returns>�f�B���N�g�������݂��邩�ǂ���</returns>
+    /// <param name="directoryPath">ディレクトリパス（相対/絶対）</param>
+    /// <returns>存在すれば true</returns>
     public static bool DirectoryExists(string directoryPath)
     {
         if (string.IsNullOrEmpty(directoryPath))

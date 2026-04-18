@@ -1,4 +1,4 @@
-using AutoTool.Panels.Model.List.Interface;
+﻿using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Model;
 

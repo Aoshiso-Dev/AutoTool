@@ -4,7 +4,7 @@ using AutoTool.Commands.Services;
 namespace AutoTool.Commands.Commands;
 
 /// <summary>
-/// 郢ｧ・ｳ郢晄ｧｭﾎｦ郢晏ｳｨ繝ｻ陜難ｽｺ陟手ｼ斐￠郢晢ｽｩ郢ｧ・ｹ
+/// コマンド実行の共通基底クラス
 /// </summary>
 public abstract class BaseCommand : ICommand
 {
@@ -78,7 +78,7 @@ public abstract class BaseCommand : ICommand
     public bool CanExecute() => true;
 
     /// <summary>
-    /// 郢晢ｽｭ郢ｧ・ｰ郢晢ｽ｡郢昴・縺晉ｹ晢ｽｼ郢ｧ・ｸ郢ｧ蝣､蛹ｱ髯ｦ蠕鯉ｼ邵ｺ・ｾ邵ｺ繝ｻ
+    /// 実行中ログを発行する
     /// </summary>
     protected void RaiseDoingCommand(string message)
     {
@@ -86,7 +86,7 @@ public abstract class BaseCommand : ICommand
     }
 
     /// <summary>
-    /// 鬨ｾ・ｲ隰仙干・定撻・ｱ陷ｻ鄙ｫ・邵ｺ・ｾ邵ｺ繝ｻ
+    /// 経過時間から進捗率を通知する
     /// </summary>
     protected void ReportProgress(double elapsedMilliseconds, double totalMilliseconds)
     {
@@ -104,7 +104,7 @@ public abstract class BaseCommand : ICommand
     }
 
     /// <summary>
-    /// 陝・・縺慕ｹ晄ｧｭﾎｦ郢晏ｳｨ繝ｻ鬨ｾ・ｲ隰仙干・堤ｹ晢ｽｪ郢ｧ・ｻ郢昴・繝ｨ邵ｺ蜉ｱ竏ｪ邵ｺ繝ｻ
+    /// 子コマンドの進捗を 0 にリセットする
     /// </summary>
     protected void ResetChildrenProgress()
     {
@@ -115,13 +115,13 @@ public abstract class BaseCommand : ICommand
     }
 
     /// <summary>
-    /// 陝・・縺慕ｹ晄ｧｭﾎｦ郢晏ｳｨ・帝ｬ・・竊楢楜貅ｯ・｡蠕鯉ｼ邵ｺ・ｾ邵ｺ繝ｻ
+    /// 子コマンドを順次実行する
     /// </summary>
     protected async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
-            throw new InvalidOperationException("No child commands are configured. Add at least one command before executing children.");
+            throw new InvalidOperationException("子コマンドが構成されていません。実行前に1つ以上のコマンドを追加してください。");
         }
 
         ResetChildrenProgress();

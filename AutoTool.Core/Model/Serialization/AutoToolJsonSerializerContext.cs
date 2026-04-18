@@ -1,11 +1,9 @@
-using System.Text.Json.Serialization;
-using AutoTool.Model;
+﻿using System.Text.Json.Serialization;
 using AutoTool.Panels.List.Class;
 
 namespace AutoTool.Serialization;
 
 [JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(WindowSettings))]
 [JsonSerializable(typeof(CommandListItem))]
 [JsonSerializable(typeof(WaitImageItem))]
 [JsonSerializable(typeof(FindImageItem))]

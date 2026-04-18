@@ -1,5 +1,5 @@
-﻿// �V�����R�}���h�ǉ��e���v���[�g
-// ���̃t�@�C����R�s�[���ĐV�����R�}���h��ȒP�ɒǉ��ł��܂�
+﻿// 新規コマンド追加テンプレート
+// このファイルをコピーして新しいコマンドを簡単に追加できます
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using AutoTool.Panels.List.Class;
@@ -11,23 +11,23 @@ using AutoTool.Panels.Model.CommandDefinition;
 namespace AutoTool.Panels.List.Class;
 
 // ============================================
-// �V�����R�}���h�̒ǉ��菇:
-// 1. ���L�̃e���v���[�g��R�s�[
-// 2. �N���X����ύX�i��FMyNewCommandItem�j
-// 3. CommandDefinition�����̃p�����[�^��ύX
-// 4. �K�v�ȃv���p�e�B��ǉ�
-// 5. Description�v���p�e�B�����
+// 新規コマンドの追加手順:
+// 1. 下記のテンプレートをコピー
+// 2. クラス名を変更（例: MyNewCommandItem）
+// 3. CommandDefinition 属性のパラメータを変更
+// 4. 必要なプロパティを追加
+// 5. Description プロパティを実装
 // 
-// �����ňȉ�����������܂��F
-// - ItemType.GetTypes()�Ɏ����ǉ�
-// - EditPanelViewModel�̑I����X�g�Ɏ����ǉ�
-// - �t�@�N�g���ł̎��������Ή�
-// - �V���A���C�[�[�V�����Ή�
+// これで以下が自動的に反映されます:
+// - ItemType.GetTypes() に自動追加
+// - EditPanelViewModel の選択リストに自動追加
+// - ファクトリでの生成処理に対応
+// - シリアライゼーションに対応
 // ============================================
 
 /*
 /// <summary>
-/// �V�����R�}���h�̃A�C�e��
+/// 新規コマンドのアイテム
 /// </summary>
 [SimpleCommandBinding(typeof(MyNewCommand), typeof(IMyNewCommandSettings))]
 [CommandDefinition("MyNewCommand", typeof(MyNewCommand), typeof(IMyNewCommandSettings), CommandCategory.Action)]
@@ -37,7 +37,7 @@ public partial class MyNewCommandItem : CommandListItem, IMyNewCommandItem, IMyN
     [NotifyPropertyChangedFor(nameof(Description))]
     private string _myProperty = string.Empty;
 
-    // Description�v���p�e�B�͕K�{
+    // Description プロパティは必須
     public new string Description => $"MyNewCommand: {MyProperty}";
 
     public MyNewCommandItem() { }
@@ -58,7 +58,7 @@ public partial class MyNewCommandItem : CommandListItem, IMyNewCommandItem, IMyN
 */
 
 /*
-// �Ή�����C���^�[�t�F�[�X��Command.Interface�ɒǉ�
+// 対応するインターフェースを Command.Interface に追加
 public interface IMyNewCommandItem : ICommandListItem
 {
     string MyProperty { get; set; }
@@ -76,7 +76,7 @@ public interface IMyNewCommand : ICommand
 */
 
 /*
-// �Ή�����Command������Command.Class�ɒǉ�
+// 対応する Command 実装を Command.Class に追加
 public class MyNewCommand : BaseCommand, ICommand, IMyNewCommand
 {
     new public IMyNewCommandSettings Settings => (IMyNewCommandSettings)base.Settings;
@@ -85,10 +85,9 @@ public class MyNewCommand : BaseCommand, ICommand, IMyNewCommand
 
     protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
-        // �R�}���h�̎���
-        OnDoingCommand?.Invoke(this, $"MyNewCommand����s���܂���: {Settings.MyProperty}");
+        // コマンドの実行
+        OnDoingCommand?.Invoke(this, $"MyNewCommand を実行しました: {Settings.MyProperty}");
         return true;
     }
 }
 */
-

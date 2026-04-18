@@ -3,38 +3,38 @@
 namespace AutoTool.Panels.Model.CommandDefinition;
 
 /// <summary>
-/// �R�}���h��`�p�̑����B���̑�����t�����N���X���玩���I�ɃR�}���h�^�C�v�����������
+/// コマンド定義メタデータを表す属性。
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class CommandDefinitionAttribute : Attribute
 {
     /// <summary>
-    /// �R�}���h�^�C�v��
+    /// コマンド種別名
     /// </summary>
     public string TypeName { get; }
     
     /// <summary>
-    /// �R�}���h�����N���X�^
+    /// 実行コマンド型
     /// </summary>
     public Type CommandType { get; }
     
     /// <summary>
-    /// �ݒ�C���^�[�t�F�[�X�^
+    /// 設定インターフェース型
     /// </summary>
     public Type SettingsType { get; }
     
     /// <summary>
-    /// �R�}���h����
+    /// コマンドカテゴリ
     /// </summary>
     public CommandCategory Category { get; }
     
     /// <summary>
-    /// If���n�R�}���h���ǂ���
+    /// If 開始コマンドかどうか
     /// </summary>
     public bool IsIfCommand { get; }
     
     /// <summary>
-    /// ���[�v�n�R�}���h���ǂ���
+    /// Loop 開始コマンドかどうか
     /// </summary>
     public bool IsLoopCommand { get; }
     
@@ -91,14 +91,14 @@ public class CommandDefinitionAttribute : Attribute
 }
 
 /// <summary>
-/// �R�}���h�̃J�e�S��
+/// コマンドカテゴリ
 /// </summary>
 public enum CommandCategory
 {
-    Action,        // ��{�A�N�V����
-    Control,       // ����\��
-    AI,           // AI�֘A
-    System,       // �V�X�e��
-    Variable      // �ϐ�
+    Action,   // 基本アクション
+    Control,  // 制御構文
+    AI,       // AI 関連
+    System,   // システム操作
+    Variable  // 変数操作
 }
 

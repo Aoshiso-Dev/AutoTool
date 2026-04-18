@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
@@ -8,7 +8,7 @@ using AutoTool.Commands.Threading;
 namespace AutoTool.Commands.Infrastructure;
 
 /// <summary>
-/// �v���Z�X�N���T�[�r�X�̎���
+/// プロセス起動サービスの実装
 /// </summary>
 public class ProcessLauncher(TimeProvider? timeProvider = null) : IProcessLauncher
 {
@@ -74,23 +74,7 @@ public class ProcessLauncher(TimeProvider? timeProvider = null) : IProcessLaunch
         Task stdoutTask = PumpReaderAsync(process.StandardOutput, isError: false, channel.Writer, cancellationToken);
         Task stderrTask = PumpReaderAsync(process.StandardError, isError: true, channel.Writer, cancellationToken);
 
-        _ = Task.Run(async () =>
-        {
-            Exception? completionError = null;
-            try
-            {
-                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-                await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                completionError = ex;
-            }
-            finally
-            {
-                channel.Writer.TryComplete(completionError);
-            }
-        }, CancellationToken.None);
+        _ = CompleteChannelWhenExitedAsync(process, stdoutTask, stderrTask, channel.Writer, cancellationToken);
 
         await foreach (var line in channel.Reader.ReadAllAsync().ConfigureAwaitFalse(cancellationToken))
         {
@@ -115,6 +99,29 @@ public class ProcessLauncher(TimeProvider? timeProvider = null) : IProcessLaunch
             await writer.WriteAsync(
                 new ProcessOutputLine(line, isError, _timeProvider.GetUtcNow()),
                 cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task CompleteChannelWhenExitedAsync(
+        Process process,
+        Task stdoutTask,
+        Task stderrTask,
+        ChannelWriter<ProcessOutputLine> writer,
+        CancellationToken cancellationToken)
+    {
+        Exception? completionError = null;
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            completionError = ex;
+        }
+        finally
+        {
+            writer.TryComplete(completionError);
         }
     }
 }

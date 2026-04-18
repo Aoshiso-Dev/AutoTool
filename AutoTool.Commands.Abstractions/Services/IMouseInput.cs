@@ -1,4 +1,4 @@
-﻿using System.Windows.Input;
+﻿using AutoTool.Commands.Model.Input;
 
 namespace AutoTool.Commands.Services;
 
@@ -15,5 +15,5 @@ public interface IMouseInput
     /// <param name="button">マウスボタン</param>
     /// <param name="windowTitle">対象ウィンドウのタイトル（オプション）</param>
     /// <param name="windowClassName">対象ウィンドウのクラス名（オプション）</param>
-    Task ClickAsync(int x, int y, MouseButton button, string? windowTitle = null, string? windowClassName = null);
+    Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null);
 }

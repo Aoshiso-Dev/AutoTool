@@ -1,6 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System.Windows.Input;
-using System.Windows.Media;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Commands;
 using AutoTool.Panels.Model.List.Interface;

@@ -1,4 +1,4 @@
-﻿using System.Windows.Input;
+﻿using AutoTool.Commands.Model.Input;
 
 namespace AutoTool.Commands.Services;
 
@@ -16,5 +16,5 @@ public interface IKeyboardInput
     /// <param name="shift">Shiftキー押下</param>
     /// <param name="windowTitle">対象ウィンドウのタイトル（オプション）</param>
     /// <param name="windowClassName">対象ウィンドウのクラス名（オプション）</param>
-    Task SendKeyAsync(Key key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null);
+    Task SendKeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null);
 }

@@ -53,7 +53,7 @@ public class IfImageExistAICommand : BaseCommand, IIfCommand, IIfImageExistAICom
 
             if (best.ClassId == Settings.ClassID)
             {
-                RaiseDoingCommand($"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) ClassId: {best.ClassId}");
+                RaiseDoingCommand($"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) / クラスID: {best.ClassId}");
                 return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
             }
         }

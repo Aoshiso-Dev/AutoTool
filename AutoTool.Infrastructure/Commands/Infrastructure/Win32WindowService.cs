@@ -1,11 +1,11 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Runtime.InteropServices;
 using AutoTool.Commands.Services;
 
 namespace AutoTool.Commands.Infrastructure;
 
 /// <summary>
-/// Win32 API��g�p�����E�B���h�E����T�[�r�X�̎���
+/// Win32 API を使ったウィンドウ操作サービスの実装
 /// </summary>
 public partial class Win32WindowService : IWindowService
 {
@@ -61,13 +61,13 @@ public partial class Win32WindowService : IWindowService
         var windowHandle = GetWindowHandle(windowTitle, windowClassName);
         if (windowHandle == IntPtr.Zero)
         {
-            return (absoluteX, absoluteY, false, "�w�肳�ꂽ�E�B���h�E��������܂���B");
+            return (absoluteX, absoluteY, false, "指定したウィンドウが見つかりません。");
         }
 
         var windowRect = GetWindowRect(windowHandle);
         if (windowRect is null)
         {
-            return (absoluteX, absoluteY, false, "�E�B���h�E�̈ʒu��񂪎擾�ł��܂���ł����B");
+            return (absoluteX, absoluteY, false, "ウィンドウ位置の取得に失敗しました。");
         }
 
         var relativeX = absoluteX - windowRect.Value.Left;

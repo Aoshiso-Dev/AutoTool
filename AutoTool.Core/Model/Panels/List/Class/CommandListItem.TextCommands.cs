@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.Services;
@@ -214,7 +214,7 @@ public partial class FindTextItem : CommandListItem, IFindTextItem, IFindTextCom
             if (matched)
             {
                 context.ReportProgress(100);
-                context.Log($"文字が見つかりました。text=\"{result.Text}\" confidence={result.Confidence:F1}");
+                context.Log($"文字が見つかりました。抽出文字列=\"{result.Text}\" / 信頼度={result.Confidence:F1}");
                 return true;
             }
 

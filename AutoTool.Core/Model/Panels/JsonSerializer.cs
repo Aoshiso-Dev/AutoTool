@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text.Json;
 using AutoTool.Panels.Model.List.Interface;
@@ -7,7 +7,7 @@ using AutoTool.Serialization;
 namespace AutoTool.Panels.Serialization;
 
 /// <summary>
-/// �}�N���t�@�C���̃V���A���C�Y/�f�V���A���C�Y��s���w���p�[�N���X
+/// マクロファイルのシリアライズ/デシリアライズを行うインターフェース
 /// </summary>
 public interface IMacroFileSerializer
 {
@@ -16,7 +16,7 @@ public interface IMacroFileSerializer
 }
 
 /// <summary>
-/// �}�N���t�@�C���̃V���A���C�Y/�f�V���A���C�Y��s���T�[�r�X
+/// マクロファイルのシリアライズ/デシリアライズ実装
 /// </summary>
 public sealed class MacroFileSerializer : IMacroFileSerializer
 {

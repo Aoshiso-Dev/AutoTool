@@ -1,6 +1,5 @@
-﻿using AutoTool.Commands.Services;
-using System.Windows.Input;
-using System.Windows.Media;
+﻿using AutoTool.Commands.Model.Input;
+using AutoTool.Commands.Services;
 
 namespace AutoTool.Commands.Interface;
 
@@ -9,6 +8,11 @@ namespace AutoTool.Commands.Interface;
 /// </summary>
 public interface ICommandExecutionContext
 {
+    /// <summary>
+    /// Get current local time from the configured time source
+    /// </summary>
+    DateTimeOffset GetLocalNow();
+
     /// <summary>
     /// Report progress (0-100)
     /// </summary>
@@ -37,12 +41,12 @@ public interface ICommandExecutionContext
     /// <summary>
     /// Mouse click service
     /// </summary>
-    Task ClickAsync(int x, int y, MouseButton button, string? windowTitle = null, string? windowClassName = null);
+    Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null);
     
     /// <summary>
     /// Send hotkey
     /// </summary>
-    Task SendHotkeyAsync(Key key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null);
+    Task SendHotkeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null);
     
     /// <summary>
     /// Execute a program
@@ -57,7 +61,7 @@ public interface ICommandExecutionContext
     /// <summary>
     /// Search for an image on screen
     /// </summary>
-    Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, Color? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken);
+    Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, CommandColor? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken);
     
     /// <summary>
     /// Initialize AI detection model

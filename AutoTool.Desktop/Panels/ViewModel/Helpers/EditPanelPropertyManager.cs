@@ -1,5 +1,4 @@
-﻿using System.Windows.Input;
-using System.Windows.Media;
+﻿using AutoTool.Commands.Model.Input;
 using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.List.Interface;
 using AutoTool.Panels.ViewModel.Helpers;
@@ -18,18 +17,18 @@ public class EditPanelPropertyManager
     // 画像関連
     public MultiInterfacePropertyAccessor<string> ImagePath { get; }
     public MultiInterfacePropertyAccessor<double> Threshold { get; }
-    public MultiInterfacePropertyAccessor<Color?> SearchColor { get; }
+    public MultiInterfacePropertyAccessor<CommandColor?> SearchColor { get; }
 
     // タイミング関連
     public MultiInterfacePropertyAccessor<int> Timeout { get; }
     public MultiInterfacePropertyAccessor<int> Interval { get; }
 
     // マウス・キーボード関連
-    public MultiInterfacePropertyAccessor<System.Windows.Input.MouseButton> MouseButton { get; }
+    public MultiInterfacePropertyAccessor<CommandMouseButton> MouseButton { get; }
     public PropertyAccessor<IHotkeyItem, bool> Ctrl { get; }
     public PropertyAccessor<IHotkeyItem, bool> Alt { get; }
     public PropertyAccessor<IHotkeyItem, bool> Shift { get; }
-    public PropertyAccessor<IHotkeyItem, Key> Key { get; }
+    public PropertyAccessor<IHotkeyItem, CommandKey> Key { get; }
 
     // 座標関連
     public PropertyAccessor<IClickItem, int> X { get; }
@@ -105,7 +104,7 @@ public class EditPanelPropertyManager
             .AddInterface<IIfImageExistItem>(x => x.Threshold)
             .AddInterface<IIfImageNotExistItem>(x => x.Threshold);
 
-        SearchColor = new MultiInterfacePropertyAccessor<Color?>(null)
+        SearchColor = new MultiInterfacePropertyAccessor<CommandColor?>(null)
             .AddInterface<IWaitImageItem>(x => x.SearchColor)
             .AddInterface<IClickImageItem>(x => x.SearchColor)
             .AddInterface<IIfImageExistItem>(x => x.SearchColor)
@@ -121,7 +120,7 @@ public class EditPanelPropertyManager
             .AddInterface<IClickImageItem>(x => x.Interval);
 
         // マウス・キーボード関連の初期化
-        MouseButton = new MultiInterfacePropertyAccessor<System.Windows.Input.MouseButton>(System.Windows.Input.MouseButton.Left)
+        MouseButton = new MultiInterfacePropertyAccessor<CommandMouseButton>(CommandMouseButton.Left)
             .AddInterface<IClickImageItem>(x => x.Button)
             .AddInterface<IClickItem>(x => x.Button)
             .AddInterface<IClickImageAIItem>(x => x.Button);
@@ -129,7 +128,7 @@ public class EditPanelPropertyManager
         Ctrl = new PropertyAccessor<IHotkeyItem, bool>(x => x.Ctrl, false);
         Alt = new PropertyAccessor<IHotkeyItem, bool>(x => x.Alt, false);
         Shift = new PropertyAccessor<IHotkeyItem, bool>(x => x.Shift, false);
-        Key = new PropertyAccessor<IHotkeyItem, Key>(x => x.Key, System.Windows.Input.Key.Escape);
+        Key = new PropertyAccessor<IHotkeyItem, CommandKey>(x => x.Key, CommandKey.Escape);
 
         // 座標関連の初期化
         X = new PropertyAccessor<IClickItem, int>(x => x.X, 0);

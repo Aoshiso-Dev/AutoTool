@@ -1,6 +1,5 @@
-﻿using System.Windows.Media;
+﻿using AutoTool.Commands.Model.Input;
 using AutoTool.Commands.Services;
-using Color = System.Windows.Media.Color;
 
 namespace AutoTool.Commands.Infrastructure;
 
@@ -13,7 +12,7 @@ public class OpenCvImageMatcher : IImageMatcher
         string imagePath,
         CancellationToken cancellationToken,
         double threshold = 0.9,
-        Color? searchColor = null,
+        CommandColor? searchColor = null,
         string? windowTitle = null,
         string? windowClassName = null)
     {

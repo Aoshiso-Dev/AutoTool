@@ -1,4 +1,4 @@
-namespace AutoTool.Commands.Infrastructure;
+﻿namespace AutoTool.Commands.Infrastructure;
 
 public sealed class CommandEventBusOptions
 {

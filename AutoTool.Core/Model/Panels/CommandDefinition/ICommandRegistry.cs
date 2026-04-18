@@ -27,63 +27,63 @@ public sealed record CommandCreationResult(
 }
 
 /// <summary>
-/// �R�}���h���W�X�g���̃C���^�[�t�F�[�X
+/// コマンドレジストリのインターフェース
 /// </summary>
 public interface ICommandRegistry
 {
     /// <summary>
-    /// ������
+    /// 初期化
     /// </summary>
     void Initialize();
 
     /// <summary>
-    /// ���ׂẴR�}���h�^�C�v����擾
+    /// すべてのコマンド種別名を取得
     /// </summary>
     IEnumerable<string> GetAllTypeNames();
 
     /// <summary>
-    /// �����t�����ꂽ�R�}���h�^�C�v����擾
+    /// 表示順に並んだコマンド種別名を取得
     /// </summary>
     IEnumerable<string> GetOrderedTypeNames();
 
     /// <summary>
-    /// �R�}���h�A�C�e����쐬
+    /// コマンドアイテムを作成
     /// </summary>
     ICommandListItem? CreateCommandItem(string typeName);
 
     /// <summary>
-    /// �P���R�}���h��쐬
+    /// 単純コマンドを作成
     /// </summary>
     bool TryCreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider, out ICommand? command);
     CommandCreationResult CreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider);
 
     /// <summary>
-    /// If�n�R�}���h���ǂ�������
+    /// If 開始コマンドか判定
     /// </summary>
     bool IsIfCommand(string typeName);
 
     /// <summary>
-    /// ���[�v�n�R�}���h���ǂ�������
+    /// Loop 開始コマンドか判定
     /// </summary>
     bool IsLoopCommand(string typeName);
 
     /// <summary>
-    /// �I���n�R�}���h���ǂ�������
+    /// 終了コマンドか判定
     /// </summary>
     bool IsEndCommand(string typeName);
 
     /// <summary>
-    /// �J�n�n�R�}���h���ǂ�������
+    /// 開始コマンドか判定
     /// </summary>
     bool IsStartCommand(string typeName);
 
     /// <summary>
-    /// �\������擾
+    /// 表示名を取得
     /// </summary>
     string GetDisplayName(string typeName, string language = "ja");
 
     /// <summary>
-    /// �J�e�S������擾
+    /// カテゴリ名を取得
     /// </summary>
     string GetCategoryName(string typeName, string language = "ja");
 }

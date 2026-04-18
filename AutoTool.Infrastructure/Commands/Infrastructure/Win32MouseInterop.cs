@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace AutoTool.Commands.Infrastructure;
 
@@ -89,7 +89,7 @@ public static partial class Win32MouseInterop
             var hWnd = Win32NativeGuards.ThrowIfZero(
                 NativeFindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle),
                 nameof(NativeFindWindow),
-                $"Window not found: {windowTitle}");
+                $"ウィンドウが見つかりません: {windowTitle}");
 
             Win32NativeGuards.ThrowIfFalse(NativeGetWindowRect(hWnd, out var rect), nameof(NativeGetWindowRect));
 

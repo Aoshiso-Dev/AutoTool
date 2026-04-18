@@ -176,7 +176,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         // 追加後にCollectionViewを更新
         CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
 
-        System.Diagnostics.Debug.WriteLine($"Added command: {item.ItemType} -> {_commandRegistry.GetDisplayName(item.ItemType)}");
+        System.Diagnostics.Debug.WriteLine($"コマンドを追加しました: {item.ItemType} -> {_commandRegistry.GetDisplayName(item.ItemType)}");
     }
 
     /// <summary>

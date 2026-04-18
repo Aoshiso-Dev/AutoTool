@@ -1,4 +1,4 @@
-namespace AutoTool.Commands.Commands;
+﻿namespace AutoTool.Commands.Commands;
 
 public sealed class CommandValidationException : Exception
 {

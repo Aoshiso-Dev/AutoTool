@@ -1,4 +1,4 @@
-﻿using System.Windows.Media;
+﻿using AutoTool.Commands.Model.Input;
 
 namespace AutoTool.Commands.Services;
 
@@ -21,7 +21,7 @@ public interface IImageMatcher
         string imagePath,
         CancellationToken cancellationToken,
         double threshold = 0.9,
-        Color? searchColor = null,
+        CommandColor? searchColor = null,
         string? windowTitle = null,
         string? windowClassName = null);
 }

@@ -2,6 +2,7 @@
 using AutoTool.Panels.Model.CommandDefinition;
 using AutoTool.Panels.ViewModel.Shared;
 using AutoTool.Commands.Services;
+using AutoTool.Commands.Model.Input;
 using AutoTool.Panels.Services;
 using AutoTool.Core.Ports;
 
@@ -55,7 +56,7 @@ public partial class EditPanelViewModel
 
     private void InitializeMouseButtons()
     {
-        foreach (var button in Enum.GetValues<System.Windows.Input.MouseButton>())
+        foreach (var button in Enum.GetValues<CommandMouseButton>())
         {
             MouseButtons.Add(button);
         }

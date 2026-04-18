@@ -1,5 +1,5 @@
-﻿using AutoTool.Commands.Interface;
-using System.Windows.Media;
+﻿using AutoTool.Commands.Model.Input;
+using AutoTool.Commands.Interface;
 
 namespace AutoTool.Commands.Commands;
 
@@ -9,7 +9,7 @@ public class WaitImageCommandSettings : ICommandSettings, IWaitImageCommandSetti
 {
     public string ImagePath { get; set; } = string.Empty;
     public double Threshold { get; set; } = 0.8;
-    public Color? SearchColor { get; set; }
+    public CommandColor? SearchColor { get; set; }
     public int Timeout { get; set; } = 5000;
     public int Interval { get; set; } = 500;
     public string WindowTitle { get; set; } = string.Empty;
@@ -20,7 +20,7 @@ public class FindImageCommandSettings : ICommandSettings, IFindImageCommandSetti
 {
     public string ImagePath { get; set; } = string.Empty;
     public double Threshold { get; set; } = 0.8;
-    public Color? SearchColor { get; set; }
+    public CommandColor? SearchColor { get; set; }
     public int Timeout { get; set; } = 5000;
     public int Interval { get; set; } = 500;
     public bool Strict { get; set; } = false;
@@ -60,7 +60,7 @@ public class IfImageCommandSettings : ICommandSettings, IIfImageCommandSettings
 {
     public string ImagePath { get; set; } = string.Empty;
     public double Threshold { get; set; } = 0.8;
-    public Color? SearchColor { get; set; } = null;
+    public CommandColor? SearchColor { get; set; } = null;
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;
 
@@ -77,10 +77,10 @@ public class ClickImageCommandSettings : ICommandSettings, IClickImageCommandSet
 {
     public string ImagePath { get; set; } = string.Empty;
     public double Threshold { get; set; } = 0.8;
-    public Color? SearchColor { get; set; }
+    public CommandColor? SearchColor { get; set; }
     public int Timeout { get; set; } = 5000;
     public int Interval { get; set; } = 500;
-    public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
+    public CommandMouseButton Button { get; set; } = CommandMouseButton.Left;
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;
 }
@@ -90,14 +90,14 @@ public class HotkeyCommandSettings : ICommandSettings, IHotkeyCommandSettings
     public bool Ctrl { get; set; }
     public bool Alt { get; set; }
     public bool Shift { get; set; }
-    public System.Windows.Input.Key Key { get; set; } = System.Windows.Input.Key.Escape;
+    public CommandKey Key { get; set; } = CommandKey.Escape;
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;
 }
 
 public class ClickCommandSettings : ICommandSettings, IClickCommandSettings
 {
-    public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
+    public CommandMouseButton Button { get; set; } = CommandMouseButton.Left;
     public int X { get; set; }
     public int Y { get; set; }
     public string WindowTitle { get; set; } = string.Empty;
@@ -277,7 +277,7 @@ public class ClickImageAICommandSettings : ICommandSettings, IClickImageAIComman
     public string WindowClassName { get; set; } = string.Empty;
     public double ConfThreshold { get; set; } = 0.5;
     public double IoUThreshold { get; set; } = 0.25;
-    public System.Windows.Input.MouseButton Button { get; set; } = System.Windows.Input.MouseButton.Left;
+    public CommandMouseButton Button { get; set; } = CommandMouseButton.Left;
 
     public void Validate()
     {

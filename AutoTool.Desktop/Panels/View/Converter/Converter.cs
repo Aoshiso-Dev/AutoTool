@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 using AutoTool.Panels.Model.CommandDefinition;
+using AutoTool.Commands.Model.Input;
 
 namespace AutoTool.Panels.View.Converter;
 
@@ -72,8 +73,8 @@ public class NumberToBooleanConverter : IValueConverter
 
 public class BooleanToTextConverter : IValueConverter
 {
-    public string TrueText { get; set; } = "True";
-    public string FalseText { get; set; } = "False";
+    public string TrueText { get; set; } = "有効";
+    public string FalseText { get; set; } = "無効";
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -109,14 +110,14 @@ public class KeyToStringConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        return value is System.Windows.Input.Key key ? key.ToString() : string.Empty;
+        return value is CommandKey key ? key.ToString() : string.Empty;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is string str && Enum.TryParse<System.Windows.Input.Key>(str, out var key))
+        if (value is string str && Enum.TryParse<CommandKey>(str, out var key))
             return key;
-        return System.Windows.Input.Key.None;
+        return CommandKey.None;
     }
 }
 

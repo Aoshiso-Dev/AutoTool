@@ -3,37 +3,40 @@
 namespace AutoTool.Panels.Model.MacroFactory;
 
 /// <summary>
-/// �R�}���h�������̗�O���N���X
+/// コマンド生成時の例外基底クラス
 /// </summary>
 public abstract class CommandCreationException : Exception
 {
     public int? LineNumber { get; }
     public string? ItemType { get; }
 
-    protected CommandCreationException(string message, int? lineNumber = null, string? itemType = null) 
+    protected CommandCreationException(string message, int? lineNumber = null, string? itemType = null)
         : base(message)
     {
+        ArgumentNullException.ThrowIfNull(message);
         LineNumber = lineNumber;
         ItemType = itemType;
     }
 
-    protected CommandCreationException(string message, Exception innerException, int? lineNumber = null, string? itemType = null) 
+    protected CommandCreationException(string message, Exception innerException, int? lineNumber = null, string? itemType = null)
         : base(message, innerException)
     {
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(innerException);
         LineNumber = lineNumber;
         ItemType = itemType;
     }
 
     public override string ToString()
     {
-        var location = LineNumber.HasValue ? $" (�s {LineNumber})" : "";
+        var location = LineNumber.HasValue ? $" (行 {LineNumber})" : "";
         var type = !string.IsNullOrEmpty(ItemType) ? $" [{ItemType}]" : "";
         return $"{GetType().Name}{type}{location}: {Message}";
     }
 }
 
 /// <summary>
-/// �y�A�֌W���������Ȃ��ꍇ�̗�O
+/// ペア関係が成立しない場合の例外
 /// </summary>
 public class PairMismatchException : CommandCreationException
 {
@@ -42,7 +45,7 @@ public class PairMismatchException : CommandCreationException
 }
 
 /// <summary>
-/// ��̍\���́iIf��Loop��ɗv�f���Ȃ��j�̗�O
+/// 空の構造（If/Loop 内に要素がない）の例外
 /// </summary>
 public class EmptyStructureException : CommandCreationException
 {
@@ -51,11 +54,10 @@ public class EmptyStructureException : CommandCreationException
 }
 
 /// <summary>
-/// ���Ή��̃R�}���h�^�̗�O
+/// 未対応のコマンド型の例外
 /// </summary>
 public class UnsupportedCommandTypeException : CommandCreationException
 {
     public UnsupportedCommandTypeException(string message, int? lineNumber = null, string? itemType = null)
         : base(message, lineNumber, itemType) { }
 }
-

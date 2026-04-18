@@ -4,15 +4,15 @@ using AutoTool.Panels.Model.List.Interface;
 namespace AutoTool.Panels.Model.MacroFactory;
 
 /// <summary>
-/// �}�N���t�@�N�g���̃C���^�[�t�F�[�X
+/// マクロ生成のインターフェース
 /// </summary>
 public interface IMacroFactory
 {
     /// <summary>
-    /// �R�}���h���X�g�A�C�e������}�N����쐬���܂�
+    /// コマンドアイテム列から実行可能なマクロを生成する
     /// </summary>
-    /// <param name="items">�R�}���h���X�g�A�C�e��</param>
-    /// <returns>���s�\�ȃ}�N���R�}���h</returns>
+    /// <param name="items">コマンドアイテム列</param>
+    /// <returns>実行可能なルートコマンド</returns>
     ICommand CreateMacro(IEnumerable<ICommandListItem> items);
 }
 

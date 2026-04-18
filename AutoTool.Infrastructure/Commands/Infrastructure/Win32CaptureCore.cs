@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
@@ -43,7 +43,7 @@ internal static partial class Win32CaptureCore
         {
             throw new Win32Exception(
                 Marshal.GetLastPInvokeError(),
-                $"Window not found. Title='{windowTitle}', ClassName='{windowClassName}'.");
+                $"ウィンドウが見つかりません。Title='{windowTitle}', ClassName='{windowClassName}'。");
         }
 
         if (!NativeGetWindowRect(hWnd, out var rect))
@@ -55,11 +55,11 @@ internal static partial class Win32CaptureCore
         var height = rect.Bottom - rect.Top;
         if (width <= 0 || height <= 0)
         {
-            throw new InvalidOperationException("Window size is invalid.");
+            throw new InvalidOperationException("ウィンドウサイズが不正です。");
         }
 
         return CaptureWindowBitmap(hWnd, width, height, preferPrintWindow)
-            ?? throw new InvalidOperationException("Failed to capture target window.");
+            ?? throw new InvalidOperationException("対象ウィンドウのキャプチャに失敗しました。");
     }
 
     public static Bitmap? TryCaptureWindowByTitle(string windowTitle)

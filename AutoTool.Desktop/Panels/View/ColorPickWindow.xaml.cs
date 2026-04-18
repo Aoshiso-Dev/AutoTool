@@ -1,9 +1,9 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows;
 using System.Windows.Media;
 using AutoTool.Commands.Infrastructure;
+using AutoTool.Commands.Model.Input;
 using AutoTool.Commands.Threading;
-using Color = System.Windows.Media.Color;
 
 namespace AutoTool.Panels.View;
 
@@ -12,7 +12,7 @@ public partial class ColorPickWindow : Window
     private bool _hookRegistered;
     private CancellationTokenSource? _hookSubscriptionCts;
 
-    public Color? Color { get; private set; }
+    public CommandColor? Color { get; private set; }
 
     public ColorPickWindow()
     {
@@ -79,7 +79,8 @@ public partial class ColorPickWindow : Window
         Top = cursorPos.Y + 10;
 
         Color = GetColorAt(cursorPos);
-        ColorPreview.Fill = new SolidColorBrush(Color ?? Colors.Transparent);
+        ColorPreview.Fill = new SolidColorBrush(
+            Color is { } c ? System.Windows.Media.Color.FromArgb(c.A, c.R, c.G, c.B) : Colors.Transparent);
     }
 
     private void OnLButtonUp()
@@ -103,14 +104,13 @@ public partial class ColorPickWindow : Window
         base.OnClosed(e);
     }
 
-    private static System.Windows.Media.Color GetColorAt(System.Drawing.Point cursorPos)
+    private static CommandColor GetColorAt(System.Drawing.Point cursorPos)
     {
         using var bitmap = new Bitmap(1, 1);
         using var graphics = Graphics.FromImage(bitmap);
         graphics.CopyFromScreen(cursorPos.X, cursorPos.Y, 0, 0, new System.Drawing.Size(1, 1));
 
         var drawingColor = bitmap.GetPixel(0, 0);
-        return System.Windows.Media.Color.FromArgb(drawingColor.A, drawingColor.R, drawingColor.G, drawingColor.B);
+        return new CommandColor(drawingColor.A, drawingColor.R, drawingColor.G, drawingColor.B);
     }
 }
-

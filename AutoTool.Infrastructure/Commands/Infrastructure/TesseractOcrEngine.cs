@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using OpenCvSharp;
 using Tesseract;
 using AutoTool.Commands.Services;

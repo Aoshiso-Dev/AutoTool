@@ -3,19 +3,18 @@
 namespace AutoTool.Panels.Model.CommandDefinition;
 
 /// <summary>
-/// �P���ȃR�}���h�o�C���f�B���O�p�̑���
-/// ���̑������t�����A�C�e���́A�����I�ɃR�}���h�t�@�N�g���ŏ��������
+/// コマンドアイテムと実行コマンドを結び付ける属性。
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class SimpleCommandBindingAttribute : Attribute
 {
     /// <summary>
-    /// �R�}���h�����N���X�^
+    /// 実行コマンド型
     /// </summary>
     public Type CommandType { get; }
     
     /// <summary>
-    /// �ݒ�C���^�[�t�F�[�X�^
+    /// 設定インターフェース型
     /// </summary>
     public Type SettingsType { get; }
 

@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace AutoTool.Serialization;
 
@@ -16,14 +16,4 @@ public static class AutoToolJsonOptionsFactory
         return options;
     }
 
-    public static JsonSerializerOptions CreateWindowSettingsOptions()
-    {
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = true
-        };
-
-        options.TypeInfoResolverChain.Insert(0, AutoToolJsonSerializerContext.Default);
-        return options;
-    }
 }

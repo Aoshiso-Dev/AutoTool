@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace AutoTool.Commands.Infrastructure;
@@ -12,7 +12,7 @@ internal static class Win32NativeGuards
             return;
         }
 
-        throw new Win32Exception(Marshal.GetLastPInvokeError(), $"{apiName} failed.");
+        throw new Win32Exception(Marshal.GetLastPInvokeError(), $"{apiName} の呼び出しに失敗しました。");
     }
 
     public static IntPtr ThrowIfZero(IntPtr handle, string apiName, string? detail = null)
@@ -23,6 +23,6 @@ internal static class Win32NativeGuards
         }
 
         var suffix = string.IsNullOrWhiteSpace(detail) ? string.Empty : $" {detail}";
-        throw new Win32Exception(Marshal.GetLastPInvokeError(), $"{apiName} failed.{suffix}");
+        throw new Win32Exception(Marshal.GetLastPInvokeError(), $"{apiName} の呼び出しに失敗しました。{suffix}");
     }
 }

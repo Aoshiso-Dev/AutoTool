@@ -53,7 +53,7 @@ public class MacroFactory(
         {
             if (skippedLines.Contains(item.LineNumber)) continue;
             if (!item.IsEnable) continue;
-            Debug.WriteLine($"Create: {item.LineNumber}, {item.ItemType}");
+            Debug.WriteLine($"コマンド生成: 行={item.LineNumber}, 種別={item.ItemType}");
 
             try
             {
@@ -66,7 +66,7 @@ public class MacroFactory(
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error creating command for {item.ItemType} at line {item.LineNumber}: {ex.Message}");
+                Debug.WriteLine($"コマンド生成エラー: 種別={item.ItemType}, 行={item.LineNumber}, 詳細={ex.Message}");
                 var commandName = GetCommandDisplayName(item.ItemType);
                 throw new InvalidOperationException(
                     $"コマンド '{commandName}' (行 {item.LineNumber}) の生成に失敗しました。原因: {ex.Message}",
@@ -87,7 +87,7 @@ public class MacroFactory(
             return simpleResult.Command;
         }
 
-        Debug.WriteLine($"Simple command creation skipped ({simpleResult.FailureReason}): {simpleResult.Message}");
+        Debug.WriteLine($"シンプルコマンド生成をスキップ: 理由={simpleResult.FailureReason}, 詳細={simpleResult.Message}");
 
         var builder = _compositeBuilders.FirstOrDefault(x => x.CanBuild(item));
         if (builder is null)

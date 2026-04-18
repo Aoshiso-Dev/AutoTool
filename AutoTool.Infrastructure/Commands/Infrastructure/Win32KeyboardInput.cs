@@ -1,4 +1,4 @@
-﻿using System.Windows.Input;
+﻿using AutoTool.Commands.Model.Input;
 using AutoTool.Commands.Services;
 
 namespace AutoTool.Commands.Infrastructure;
@@ -8,9 +8,10 @@ namespace AutoTool.Commands.Infrastructure;
 /// </summary>
 public class Win32KeyboardInput : IKeyboardInput
 {
-    public Task SendKeyAsync(Key key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null)
+    public Task SendKeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null)
     {
-        return Task.Run(() => Win32KeyboardInputHelper.KeyPress(key, ctrl, alt, shift, windowTitle ?? string.Empty, windowClassName ?? string.Empty));
+        Win32KeyboardInputHelper.KeyPress(key, ctrl, alt, shift, windowTitle ?? string.Empty, windowClassName ?? string.Empty);
+        return Task.CompletedTask;
     }
 }
 

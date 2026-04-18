@@ -1,4 +1,4 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using System.Collections.Generic;
 using AutoTool.Commands.Threading;
 using AutoTool.Core.Diagnostics;
@@ -66,8 +66,8 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
 
     public void Write(Exception ex)
     {
-        Write($"Exception: {ExceptionDetailsFormatter.FormatDetailed(ex)}");
-        Write($"StackTrace: {ex.StackTrace}");
+        Write($"例外: {ExceptionDetailsFormatter.FormatDetailed(ex)}");
+        Write($"スタックトレース: {ex.StackTrace}");
     }
 
     public void WriteStructured(string category, string eventName, IReadOnlyDictionary<string, object?> fields)
@@ -119,11 +119,11 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
                 }
                 catch (IOException ioEx)
                 {
-                    Console.WriteLine($"���O�̏������݂Ɏ��s���܂���: {ioEx.Message}");
+                    WriteFallbackError("ProcessLogQueue", "FlushIOException", ioEx);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"���O�����ŃG���[���������܂���: {ex.Message}");
+                    WriteFallbackError("ProcessLogQueue", "FlushUnexpectedError", ex);
                 }
             }
 
@@ -138,7 +138,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"���O�����ŃG���[���������܂���: {ex.Message}");
+            WriteFallbackError("ProcessLogQueue", "UnhandledException", ex);
         }
     }
 
@@ -150,7 +150,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Log dispose error: {ex.Message}");
+            WriteFallbackError("Dispose", "SyncDisposeError", ex);
         }
     }
 
@@ -181,7 +181,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Log dispose error: {ex.Message}");
+            WriteFallbackError("DisposeAsync", "AsyncDisposeError", ex);
         }
         finally
         {
@@ -217,10 +217,16 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
     {
         if (value is null)
         {
-            return "<null>";
+            return "（null）";
         }
 
         return value.ToString()?.Replace("\r", "\\r").Replace("\n", "\\n") ?? string.Empty;
+    }
+
+    private static void WriteFallbackError(string stage, string eventName, Exception exception)
+    {
+        System.Diagnostics.Debug.WriteLine(
+            $"STRUCT Category=AsyncFileLog Event={eventName} Stage={stage} ExceptionType={exception.GetType().Name} Message={FormatStructuredValue(exception.Message)}");
     }
 }
 

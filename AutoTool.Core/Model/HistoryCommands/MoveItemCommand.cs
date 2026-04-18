@@ -1,4 +1,4 @@
-namespace AutoTool.Model;
+﻿namespace AutoTool.Model;
 
 public class MoveItemCommand : IUndoRedoCommand
 {

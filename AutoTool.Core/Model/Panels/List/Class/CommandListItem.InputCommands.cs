@@ -1,6 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System.Windows.Input;
-using System.Windows.Media;
+﻿using AutoTool.Commands.Model.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Commands;
 using AutoTool.Panels.Model.List.Interface;
@@ -31,7 +30,7 @@ namespace AutoTool.Panels.List.Class;
         [NotifyPropertyChangedFor(nameof(Description))]
         [property: CommandProperty("キー", EditorType.KeyPicker, Group = "キー設定", Order = 1,
                          Description = "押すキー")]
-        private System.Windows.Input.Key _key = System.Windows.Input.Key.Escape;
+        private CommandKey _key = CommandKey.Escape;
         
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -114,7 +113,7 @@ namespace AutoTool.Panels.List.Class;
         [NotifyPropertyChangedFor(nameof(Description))]
         [property: CommandProperty("マウスボタン", EditorType.MouseButtonPicker, Group = "クリック設定", Order = 1,
                          Description = "クリックに使用するボタン")]
-        private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+        private CommandMouseButton _button = CommandMouseButton.Left;
         
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]

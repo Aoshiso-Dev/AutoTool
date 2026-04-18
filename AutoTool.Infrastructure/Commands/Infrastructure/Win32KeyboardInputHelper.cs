@@ -1,4 +1,5 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
+using AutoTool.Commands.Model.Input;
 using System.Windows.Input;
 
 namespace AutoTool.Commands.Infrastructure;
@@ -22,7 +23,7 @@ internal static partial class Win32KeyboardInputHelper
     private const int VkControl = 0x11;
     private const int VkShift = 0x10;
 
-    public static void KeyPress(Key key, bool ctrl = false, bool alt = false, bool shift = false, string windowTitle = "", string windowClassName = "")
+    public static void KeyPress(CommandKey key, bool ctrl = false, bool alt = false, bool shift = false, string windowTitle = "", string windowClassName = "")
     {
         if (string.IsNullOrWhiteSpace(windowTitle) && string.IsNullOrWhiteSpace(windowClassName))
         {
@@ -35,21 +36,21 @@ internal static partial class Win32KeyboardInputHelper
         KeyUpToWindow(key, ctrl, alt, shift, windowTitle, windowClassName);
     }
 
-    private static void KeyPressGlobal(Key key, bool ctrl, bool alt, bool shift)
+    private static void KeyPressGlobal(CommandKey key, bool ctrl, bool alt, bool shift)
     {
         if (ctrl)
         {
-            KeyDownGlobal(Key.LeftCtrl);
+            KeyDownGlobal(CommandKey.LeftCtrl);
         }
 
         if (alt)
         {
-            KeyDownGlobal(Key.LeftAlt);
+            KeyDownGlobal(CommandKey.LeftAlt);
         }
 
         if (shift)
         {
-            KeyDownGlobal(Key.LeftShift);
+            KeyDownGlobal(CommandKey.LeftShift);
         }
 
         KeyDownGlobal(key);
@@ -57,38 +58,38 @@ internal static partial class Win32KeyboardInputHelper
 
         if (ctrl)
         {
-            KeyUpGlobal(Key.LeftCtrl);
+            KeyUpGlobal(CommandKey.LeftCtrl);
         }
 
         if (alt)
         {
-            KeyUpGlobal(Key.LeftAlt);
+            KeyUpGlobal(CommandKey.LeftAlt);
         }
 
         if (shift)
         {
-            KeyUpGlobal(Key.LeftShift);
+            KeyUpGlobal(CommandKey.LeftShift);
         }
     }
 
-    private static void KeyDownGlobal(Key key)
+    private static void KeyDownGlobal(CommandKey key)
     {
-        NativeKeybdEvent((byte)KeyInterop.VirtualKeyFromKey(key), 0, KeyEventfKeyDown, UIntPtr.Zero);
+        NativeKeybdEvent((byte)KeyInterop.VirtualKeyFromKey(ToWpfKey(key)), 0, KeyEventfKeyDown, UIntPtr.Zero);
     }
 
-    private static void KeyUpGlobal(Key key)
+    private static void KeyUpGlobal(CommandKey key)
     {
-        NativeKeybdEvent((byte)KeyInterop.VirtualKeyFromKey(key), 0, KeyEventfKeyUp, UIntPtr.Zero);
+        NativeKeybdEvent((byte)KeyInterop.VirtualKeyFromKey(ToWpfKey(key)), 0, KeyEventfKeyUp, UIntPtr.Zero);
     }
 
-    private static void KeyDownToWindow(Key key, bool ctrl, bool alt, bool shift, string windowTitle, string windowClassName)
+    private static void KeyDownToWindow(CommandKey key, bool ctrl, bool alt, bool shift, string windowTitle, string windowClassName)
     {
         var hWnd = NativeFindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
         if (hWnd == IntPtr.Zero)
         {
             throw new System.ComponentModel.Win32Exception(
                 Marshal.GetLastPInvokeError(),
-                $"Window not found. Title='{windowTitle}', ClassName='{windowClassName}'.");
+                $"ウィンドウが見つかりません。Title='{windowTitle}', ClassName='{windowClassName}'。");
         }
 
         if (ctrl)
@@ -106,20 +107,20 @@ internal static partial class Win32KeyboardInputHelper
             NativeSendMessage(hWnd, WmKeyDown, (IntPtr)VkShift, IntPtr.Zero);
         }
 
-        NativeSendMessage(hWnd, WmKeyDown, (IntPtr)KeyInterop.VirtualKeyFromKey(key), IntPtr.Zero);
+        NativeSendMessage(hWnd, WmKeyDown, (IntPtr)KeyInterop.VirtualKeyFromKey(ToWpfKey(key)), IntPtr.Zero);
     }
 
-    private static void KeyUpToWindow(Key key, bool ctrl, bool alt, bool shift, string windowTitle, string windowClassName)
+    private static void KeyUpToWindow(CommandKey key, bool ctrl, bool alt, bool shift, string windowTitle, string windowClassName)
     {
         var hWnd = NativeFindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
         if (hWnd == IntPtr.Zero)
         {
             throw new System.ComponentModel.Win32Exception(
                 Marshal.GetLastPInvokeError(),
-                $"Window not found. Title='{windowTitle}', ClassName='{windowClassName}'.");
+                $"ウィンドウが見つかりません。Title='{windowTitle}', ClassName='{windowClassName}'。");
         }
 
-        NativeSendMessage(hWnd, WmKeyUp, (IntPtr)KeyInterop.VirtualKeyFromKey(key), IntPtr.Zero);
+        NativeSendMessage(hWnd, WmKeyUp, (IntPtr)KeyInterop.VirtualKeyFromKey(ToWpfKey(key)), IntPtr.Zero);
 
         if (ctrl)
         {
@@ -135,5 +136,15 @@ internal static partial class Win32KeyboardInputHelper
         {
             NativeSendMessage(hWnd, WmKeyUp, (IntPtr)VkShift, IntPtr.Zero);
         }
+    }
+
+    private static Key ToWpfKey(CommandKey key)
+    {
+        if (Enum.TryParse<Key>(key.ToString(), ignoreCase: false, out var wpfKey))
+        {
+            return wpfKey;
+        }
+
+        return Key.None;
     }
 }

@@ -1,5 +1,5 @@
-﻿using AutoTool.Commands.Interface;
-using System.Windows.Media;
+﻿using AutoTool.Commands.Model.Input;
+using AutoTool.Commands.Interface;
 
 namespace AutoTool.Panels.Model.List.Interface;
 
@@ -30,7 +30,7 @@ public interface IWaitImageItem : ICommandListItem
 {
     public string ImagePath { get; set; }
     public double Threshold { get; set; }
-    public Color? SearchColor { get; set; }
+    public CommandColor? SearchColor { get; set; }
     public int Timeout { get; set; }
     public int Interval { get; set; }
     public string WindowTitle { get; set; }
@@ -41,7 +41,7 @@ public interface IFindImageItem : ICommandListItem
 {
     public string ImagePath { get; set; }
     public double Threshold { get; set; }
-    public Color? SearchColor { get; set; }
+    public CommandColor? SearchColor { get; set; }
     public int Timeout { get; set; }
     public int Interval { get; set; }
     public bool Strict { get; set; }
@@ -81,10 +81,10 @@ public interface IClickImageItem : ICommandListItem
 {
     public string ImagePath { get; set; }
     public double Threshold { get; set; }
-    public Color? SearchColor { get; set; }
+    public CommandColor? SearchColor { get; set; }
     public int Timeout { get; set; }
     public int Interval { get; set; }
-    public System.Windows.Input.MouseButton Button { get; set; }
+    public CommandMouseButton Button { get; set; }
     public string WindowTitle { get; set; }
     public string WindowClassName { get; set; }
 }
@@ -94,14 +94,14 @@ public interface IHotkeyItem : ICommandListItem
     public bool Ctrl { get; set; }
     public bool Alt { get; set; }
     public bool Shift { get; set; }
-    public System.Windows.Input.Key Key { get; set; }
+    public CommandKey Key { get; set; }
     public string WindowTitle { get; set; }
     public string WindowClassName { get; set; }
 }
 
 public interface IClickItem : ICommandListItem
 {
-    public System.Windows.Input.MouseButton Button { get; set; }
+    public CommandMouseButton Button { get; set; }
     public int X { get; set; }
     public int Y { get; set; }
     public string WindowTitle { get; set; }
@@ -122,7 +122,7 @@ public interface IIfImageExistItem : ICommandListItem, IIfItem
 {
     public string ImagePath { get; set; }
     public double Threshold { get; set; }
-    public Color? SearchColor { get; set; }
+    public CommandColor? SearchColor { get; set; }
     public string WindowTitle { get; set; }
     public string WindowClassName { get; set; }
 }
@@ -131,7 +131,7 @@ public interface IIfImageNotExistItem : ICommandListItem, IIfItem
 {
     public string ImagePath { get; set; }
     public double Threshold { get; set; }
-    public Color? SearchColor { get; set; }
+    public CommandColor? SearchColor { get; set; }
     public string WindowTitle { get; set; }
     public string WindowClassName { get; set; }
 }
@@ -221,7 +221,7 @@ public interface IClickImageAIItem : ICommandListItem
     int ClassID { get; set; }
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
-    System.Windows.Input.MouseButton Button { get; set; }
+    CommandMouseButton Button { get; set; }
 }
 
 public interface IExecuteItem : ICommandListItem

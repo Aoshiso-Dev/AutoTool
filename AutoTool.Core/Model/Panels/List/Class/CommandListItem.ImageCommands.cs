@@ -1,5 +1,5 @@
+﻿using AutoTool.Commands.Model.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
-using System.Windows.Media;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Commands;
 using AutoTool.Panels.Model.List.Interface;
@@ -27,7 +27,7 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
     [NotifyPropertyChangedFor(nameof(Description))]
     [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
                      Description = "特定の色を強調して検索")]
-    private Color? _searchColor = null;
+    private CommandColor? _searchColor = null;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
@@ -77,7 +77,7 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
                      Description = "ウィンドウのクラス名")]
     private string _windowClassName = string.Empty;
 
-    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / Strict:{Strict}";
+    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / 厳密失敗:{Strict}";
 
     public FindImageItem() { }
 
@@ -128,11 +128,11 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
 
         if (result.Found)
         {
-            context.Log($"画像が見つかりました。({result.Point!.Value.X}, {result.Point!.Value.Y}) / elapsed={result.ElapsedMilliseconds}ms");
+            context.Log($"画像が見つかりました。({result.Point!.Value.X}, {result.Point!.Value.Y}) / 経過時間={result.ElapsedMilliseconds}ms");
             return true;
         }
 
-        context.Log($"画像が見つかりませんでした。elapsed={result.ElapsedMilliseconds}ms");
+        context.Log($"画像が見つかりませんでした。経過時間={result.ElapsedMilliseconds}ms");
         return !Strict;
     }
 
@@ -177,7 +177,7 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
     [NotifyPropertyChangedFor(nameof(Description))]
     [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
                      Description = "特定の色を強調して検索")]
-    private Color? _searchColor = null;
+    private CommandColor? _searchColor = null;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
@@ -276,7 +276,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
     [NotifyPropertyChangedFor(nameof(Description))]
     [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
                      Description = "特定の色を強調して検索")]
-    private Color? _searchColor = null;
+    private CommandColor? _searchColor = null;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
@@ -294,7 +294,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
     [NotifyPropertyChangedFor(nameof(Description))]
     [property: CommandProperty("マウスボタン", EditorType.MouseButtonPicker, Group = "クリック設定", Order = 1,
                      Description = "クリックに使用するボタン")]
-    private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+    private CommandMouseButton _button = CommandMouseButton.Left;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]

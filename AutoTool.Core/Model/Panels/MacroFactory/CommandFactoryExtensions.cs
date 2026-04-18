@@ -3,50 +3,55 @@
 namespace AutoTool.Panels.Model.MacroFactory;
 
 /// <summary>
-/// �R�}���h�t�@�N�g���p�̊g�����\�b�h�Q
+/// コマンドファクトリ向けの拡張メソッド集
 /// </summary>
 public static class CommandFactoryExtensions
 {
     /// <summary>
-    /// �w�肵���s�ԍ��͈͓�̎q�v�f��擾����
+    /// 指定した行番号の範囲内にある子要素を取得します
     /// </summary>
     public static IEnumerable<ICommandListItem> GetChildrenBetween(
         this IEnumerable<ICommandListItem> items,
         int startLine,
         int endLine)
     {
+        ArgumentNullException.ThrowIfNull(items);
         return items.Where(x => x.LineNumber > startLine && x.LineNumber < endLine);
     }
 
     /// <summary>
-    /// �w�肵���l�X�g���x���̗v�f��擾����
+    /// 指定したネストレベルの要素を取得します
     /// </summary>
     public static IEnumerable<ICommandListItem> GetByNestLevel(
         this IEnumerable<ICommandListItem> items,
         int nestLevel)
     {
+        ArgumentNullException.ThrowIfNull(items);
         return items.Where(x => x.NestLevel == nestLevel);
     }
 
     /// <summary>
-    /// �L���ȗv�f�݂̂�擾����
+    /// 有効な要素のみを取得します
     /// </summary>
     public static IEnumerable<ICommandListItem> GetEnabled(
         this IEnumerable<ICommandListItem> items)
     {
+        ArgumentNullException.ThrowIfNull(items);
         return items.Where(x => x.IsEnable);
     }
 
     /// <summary>
-    /// �y�A�֌W�̌���
+    /// ペア関係を検証します
     /// </summary>
     public static void ValidatePair(this ICommandListItem item, string commandType)
     {
+        ArgumentNullException.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(commandType);
+
         if (item is IIfItem ifItem && ifItem.Pair is null)
-            throw new InvalidOperationException($"{commandType} (�s {item.LineNumber}) �ɑΉ�����EndIf������܂���");
+            throw new InvalidOperationException($"{commandType} (行 {item.LineNumber}) に対応する EndIf がありません");
 
         if (item is ILoopItem loopItem && loopItem.Pair is null)
-            throw new InvalidOperationException($"{commandType} (�s {item.LineNumber}) �ɑΉ�����EndLoop������܂���");
+            throw new InvalidOperationException($"{commandType} (行 {item.LineNumber}) に対応する EndLoop がありません");
     }
 }
-

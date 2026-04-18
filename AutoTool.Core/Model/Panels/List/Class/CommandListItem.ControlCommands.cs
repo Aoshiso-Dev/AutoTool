@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System.Windows.Input;
-using System.Windows.Media;
+using AutoTool.Commands.Model.Input;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Commands;
 using AutoTool.Panels.Model.List.Interface;
@@ -34,7 +33,7 @@ namespace AutoTool.Panels.List.Class;
         [NotifyPropertyChangedFor(nameof(Description))]
         [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
                          Description = "特定の色を強調して検索")]
-        private Color? _searchColor = null;
+        private CommandColor? _searchColor = null;
         
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -101,7 +100,7 @@ namespace AutoTool.Panels.List.Class;
         [NotifyPropertyChangedFor(nameof(Description))]
         [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
                          Description = "特定の色を強調して検索")]
-        private Color? _searchColor = null;
+        private CommandColor? _searchColor = null;
         
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]

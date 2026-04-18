@@ -11,7 +11,7 @@ namespace AutoTool.Panels.ViewModel;
 public partial class EditPanelViewModel
 {
     #region Commands
-    [RelayCommand] private void Enter(KeyEventArgs e) { if (e.Key == Key.Enter) UpdateProperties(); }
+    [RelayCommand] private void Enter(KeyEventArgs e) { if (e.Key == System.Windows.Input.Key.Enter) UpdateProperties(); }
 
     [RelayCommand]
     public void GetWindowInfo()

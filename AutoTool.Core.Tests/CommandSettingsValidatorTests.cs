@@ -1,4 +1,4 @@
-using AutoTool.Commands.Commands;
+﻿using AutoTool.Commands.Commands;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
 using System.IO;

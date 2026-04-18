@@ -82,7 +82,7 @@ public static class YoloWin
 
     private static void EnsureReady()
     {
-        if (_detector is null) throw new InvalidOperationException("YoloWin.Init() を先に呼んでください");
+        if (_detector is null) throw new InvalidOperationException("YOLO 検出器が初期化されていません。先に Init(...) を呼び出してください。");
     }
 }
 
@@ -120,7 +120,7 @@ public sealed record DetectionResult(IReadOnlyList<Detection> Detections, Mat? A
     /// <summary>描画済み画像を保存します（<paramref name="path"/> が .png / .jpg など）。</summary>
     public void SaveAnnotated(string path)
     {
-        if (AnnotatedBgr is null) throw new InvalidOperationException("draw=false で呼び出されています");
+        if (AnnotatedBgr is null) throw new InvalidOperationException("描画済み画像は生成されていません。draw=true で検出を実行してください。");
         Cv2.ImWrite(path, AnnotatedBgr);
     }
 }

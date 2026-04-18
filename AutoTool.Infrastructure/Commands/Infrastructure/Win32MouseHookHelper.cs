@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
@@ -248,7 +248,7 @@ public static partial class Win32MouseHookHelper
                 var dropped = Interlocked.Increment(ref _droppedEventCount);
                 if (dropped is 1 || dropped % 100 == 0)
                 {
-                    Trace.TraceWarning($"Win32MouseHookHelper dropped events. dropped={dropped}, subscribers={SubscriberCount}");
+                    Trace.TraceWarning($"Win32MouseHookHelper でイベントを破棄しました。dropped={dropped}, subscribers={SubscriberCount}");
                 }
             }
         }

@@ -1,9 +1,8 @@
+﻿using AutoTool.Commands.Model.Input;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
 using AutoTool.Commands.Threading;
 using System.IO;
-using System.Windows.Input;
-using System.Windows.Media;
 using ICommand = AutoTool.Commands.Interface.ICommand;
 
 namespace AutoTool.Commands.Commands;
@@ -13,6 +12,7 @@ namespace AutoTool.Commands.Commands;
 /// </summary>
 public class CommandExecutionContext : ICommandExecutionContext
 {
+    private readonly TimeProvider _timeProvider;
     private readonly ICommand _command;
     private readonly IVariableStore _variableStore;
     private readonly IPathResolver _pathResolver;
@@ -36,8 +36,16 @@ public class CommandExecutionContext : ICommandExecutionContext
         IImageMatcher? imageMatcher = null,
         IObjectDetector? objectDetector = null,
         IOcrEngine? ocrEngine = null,
-        ICommandEventBus? commandEventBus = null)
+        ICommandEventBus? commandEventBus = null,
+        TimeProvider? timeProvider = null)
     {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(variableStore);
+        ArgumentNullException.ThrowIfNull(pathResolver);
+        ArgumentNullException.ThrowIfNull(mouseInput);
+        ArgumentNullException.ThrowIfNull(keyboardInput);
+
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _command = command;
         _variableStore = variableStore;
         _pathResolver = pathResolver;
@@ -50,6 +58,8 @@ public class CommandExecutionContext : ICommandExecutionContext
         _ocrEngine = ocrEngine;
         _commandEventBus = commandEventBus ?? NullCommandEventBus.Instance;
     }
+
+    public DateTimeOffset GetLocalNow() => _timeProvider.GetLocalNow();
     
     public void ReportProgress(int progress)
     {
@@ -77,12 +87,12 @@ public class CommandExecutionContext : ICommandExecutionContext
         return _pathResolver.ToAbsolutePath(relativePath);
     }
     
-    public Task ClickAsync(int x, int y, MouseButton button, string? windowTitle = null, string? windowClassName = null)
+    public Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null)
     {
         return _mouseInput.ClickAsync(x, y, button, windowTitle, windowClassName);
     }
     
-    public Task SendHotkeyAsync(Key key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null)
+    public Task SendHotkeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null)
     {
         return _keyboardInput.SendKeyAsync(key, ctrl, alt, shift, windowTitle, windowClassName);
     }
@@ -90,7 +100,7 @@ public class CommandExecutionContext : ICommandExecutionContext
     public Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken)
     {
         if (_processLauncher is null)
-            throw new InvalidOperationException("・ｽv・ｽ・ｽ・ｽO・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽs・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
+            throw new InvalidOperationException("プロセス起動サービスが構成されていません。");
 
         if (string.IsNullOrWhiteSpace(programPath))
         {
@@ -98,7 +108,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ProgramPathRequired,
                     nameof(programPath),
-                    "・ｽ・ｽ・ｽs・ｽt・ｽ@・ｽC・ｽ・ｽ・ｽﾌパ・ｽX・ｽﾍ必・ｽ{・ｽﾅゑｿｽ・ｽB"));
+                    "実行ファイルのパスは必須です。"));
         }
 
         if (!File.Exists(programPath))
@@ -107,7 +117,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ProgramPathNotFound,
                     nameof(programPath),
-                    $"・ｽ・ｽ・ｽs・ｽt・ｽ@・ｽC・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽ: {programPath}"));
+                    $"実行ファイルが見つかりません: {programPath}"));
         }
 
         return waitForExit
@@ -123,7 +133,7 @@ public class CommandExecutionContext : ICommandExecutionContext
     {
         if (_processLauncher is null)
         {
-            throw new InvalidOperationException("・ｽv・ｽ・ｽ・ｽO・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽs・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
+            throw new InvalidOperationException("プロセス起動サービスが構成されていません。");
         }
 
         await foreach (var line in _processLauncher
@@ -140,14 +150,14 @@ public class CommandExecutionContext : ICommandExecutionContext
     public Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken)
     {
         if (_screenCapturer is null)
-            throw new InvalidOperationException("・ｽ・ｽﾊキ・ｽ・ｽ・ｽv・ｽ`・ｽ・ｽ・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
+            throw new InvalidOperationException("スクリーンキャプチャサービスが構成されていません。");
         return _screenCapturer.CaptureToFileAsync(filePath, windowTitle, windowClassName, cancellationToken);
     }
     
-    public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, Color? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken)
+    public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, CommandColor? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken)
     {
         if (_imageMatcher is null)
-            throw new InvalidOperationException("・ｽ鞫懶ｿｽ・ｽ・ｽ・ｽ・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
+            throw new InvalidOperationException("画像検索サービスが構成されていません。");
 
         if (string.IsNullOrWhiteSpace(imagePath))
         {
@@ -155,7 +165,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ImagePathRequired,
                     nameof(imagePath),
-                    "・ｽ鞫懶ｿｽp・ｽX・ｽﾍ必・ｽ{・ｽﾅゑｿｽ・ｽB"));
+                    "画像パスは必須です。"));
         }
 
         if (!File.Exists(imagePath))
@@ -164,7 +174,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ImagePathNotFound,
                     nameof(imagePath),
-                    $"・ｽ・ｽ・ｽ・ｽ・ｽ鞫懶ｿｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽ: {imagePath}"));
+                    $"画像ファイルが見つかりません: {imagePath}"));
         }
 
         return _imageMatcher.SearchImageAsync(imagePath, cancellationToken, threshold, searchColor, windowTitle, windowClassName);
@@ -173,7 +183,7 @@ public class CommandExecutionContext : ICommandExecutionContext
     public void InitializeAIModel(string modelPath, int inputSize = 640, bool useGpu = true)
     {
         if (_objectDetector is null)
-            throw new InvalidOperationException("AI・ｽ・ｽ・ｽo・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
+            throw new InvalidOperationException("AI検出サービスが構成されていません。");
 
         if (string.IsNullOrWhiteSpace(modelPath))
         {
@@ -181,7 +191,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ModelPathRequired,
                     nameof(modelPath),
-                    "・ｽ・ｽ・ｽf・ｽ・ｽ・ｽp・ｽX・ｽﾍ必・ｽ{・ｽﾅゑｿｽ・ｽB"));
+                    "モデルファイルのパスは必須です。"));
         }
 
         if (!File.Exists(modelPath))
@@ -190,7 +200,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ModelPathNotFound,
                     nameof(modelPath),
-                    $"・ｽ・ｽ・ｽf・ｽ・ｽ・ｽt・ｽ@・ｽC・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽ: {modelPath}"));
+                    $"モデルファイルが見つかりません: {modelPath}"));
         }
 
         _objectDetector.Initialize(modelPath, inputSize, useGpu);
@@ -199,14 +209,14 @@ public class CommandExecutionContext : ICommandExecutionContext
     public IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold)
     {
         if (_objectDetector is null)
-            throw new InvalidOperationException("AI・ｽ・ｽ・ｽo・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
+            throw new InvalidOperationException("AI検出サービスが構成されていません。");
         return _objectDetector.Detect(windowTitle, confThreshold, iouThreshold);
     }
 
     public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken)
     {
         if (_ocrEngine is null)
-            throw new InvalidOperationException("OCR・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
+            throw new InvalidOperationException("OCRサービスが構成されていません。");
 
         if (!string.IsNullOrWhiteSpace(request.TessdataPath))
         {
@@ -216,7 +226,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                     new CommandValidationIssue(
                         CommandValidationErrorCodes.TessdataPathNotFound,
                         nameof(request.TessdataPath),
-                        $"・ｽt・ｽH・ｽ・ｽ・ｽ_・ｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽ: {request.TessdataPath}"));
+                        $"tessdata フォルダが見つかりません: {request.TessdataPath}"));
             }
 
             var hasTrainedData = Directory.EnumerateFiles(request.TessdataPath, "*.traineddata", SearchOption.TopDirectoryOnly).Any();
@@ -226,7 +236,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                     new CommandValidationIssue(
                         CommandValidationErrorCodes.TessdataDataMissing,
                         nameof(request.TessdataPath),
-                        "*.traineddata ・ｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽBtessdata ・ｽt・ｽH・ｽ・ｽ・ｽ_・ｽ・ｽI・ｽ・ｽ・ｽ・ｽﾄゑｿｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽB"));
+                        "*.traineddata が見つかりません。tessdata フォルダを確認してください。"));
             }
         }
 

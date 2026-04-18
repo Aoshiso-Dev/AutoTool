@@ -1,6 +1,6 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.IO;
-using Color = System.Windows.Media.Color;
+using AutoTool.Commands.Model.Input;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 
@@ -45,7 +45,7 @@ internal static class OpenCvImageSearchHelper
         string imagePath,
         CancellationToken token,
         double threshold = 0.8,
-        Color? searchColor = null,
+        CommandColor? searchColor = null,
         string windowTitle = "",
         string windowClassName = "")
     {
@@ -118,7 +118,7 @@ internal static class OpenCvImageSearchHelper
             1 => static (Mat _) => { },
             3 => static (Mat m) => Cv2.CvtColor(m, m, ColorConversionCodes.BGR2GRAY),
             4 => static (Mat m) => Cv2.CvtColor(m, m, ColorConversionCodes.BGRA2GRAY),
-            _ => static (Mat m) => throw new InvalidOperationException($"Unsupported channel count for grayscale conversion: {m.Channels()}")
+            _ => static (Mat m) => throw new InvalidOperationException($"グレースケール変換で未対応のチャネル数です: {m.Channels()}")
         };
 
         convert(mat);
@@ -131,7 +131,7 @@ internal static class OpenCvImageSearchHelper
             3 => static (Mat _) => { },
             4 => static (Mat m) => Cv2.CvtColor(m, m, ColorConversionCodes.BGRA2BGR),
             1 => static (Mat m) => Cv2.CvtColor(m, m, ColorConversionCodes.GRAY2BGR),
-            _ => static (Mat m) => throw new InvalidOperationException($"Unsupported channel count for BGR conversion: {m.Channels()}")
+            _ => static (Mat m) => throw new InvalidOperationException($"BGR変換で未対応のチャネル数です: {m.Channels()}")
         };
 
         convert(mat);

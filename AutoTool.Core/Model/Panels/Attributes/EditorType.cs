@@ -1,50 +1,49 @@
 ﻿namespace AutoTool.Panels.Attributes;
 
 /// <summary>
-/// �v���p�e�B�G�f�B�^�̎��
+/// プロパティ編集に使用する UI エディタ種別。
 /// </summary>
 public enum EditorType
 {
-    /// <summary>�e�L�X�g����</summary>
+    /// <summary>単一行テキスト入力</summary>
     TextBox,
-    
-    /// <summary>���l���́i�����j</summary>
+
+    /// <summary>数値入力</summary>
     NumberBox,
-    
-    /// <summary>�X���C�_�[�i�͈͎w��j</summary>
+
+    /// <summary>スライダー入力</summary>
     Slider,
-    
-    /// <summary>�`�F�b�N�{�b�N�X</summary>
+
+    /// <summary>チェックボックス</summary>
     CheckBox,
-    
-    /// <summary>�R���{�{�b�N�X�i�I��j</summary>
+
+    /// <summary>コンボボックス</summary>
     ComboBox,
-    
-    /// <summary>�摜�t�@�C���I��</summary>
+
+    /// <summary>画像ファイル選択</summary>
     ImagePicker,
-    
-    /// <summary>�F�I��</summary>
+
+    /// <summary>色選択</summary>
     ColorPicker,
-    
-    /// <summary>�L�[����</summary>
+
+    /// <summary>キー選択</summary>
     KeyPicker,
-    
-    /// <summary>���W�I��</summary>
+
+    /// <summary>座標選択</summary>
     PointPicker,
-    
-    /// <summary>�E�B���h�E���擾</summary>
+
+    /// <summary>ウィンドウ情報取得</summary>
     WindowInfo,
-    
-    /// <summary>�t�@�C���I��</summary>
+
+    /// <summary>ファイル選択</summary>
     FilePicker,
-    
-    /// <summary>�f�B���N�g���I��</summary>
+
+    /// <summary>ディレクトリ選択</summary>
     DirectoryPicker,
-    
-    /// <summary>�}�E�X�{�^���I��</summary>
+
+    /// <summary>マウスボタン選択</summary>
     MouseButtonPicker,
-    
-    /// <summary>�����s�e�L�X�g</summary>
+
+    /// <summary>複数行テキスト入力</summary>
     MultiLineTextBox
 }
-

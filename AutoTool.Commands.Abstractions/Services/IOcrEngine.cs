@@ -1,4 +1,4 @@
-namespace AutoTool.Commands.Services;
+﻿namespace AutoTool.Commands.Services;
 
 public sealed class OcrRequest
 {

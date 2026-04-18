@@ -1,6 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System.Windows.Input;
-using System.Windows.Media;
+﻿using AutoTool.Commands.Model.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.Services;
@@ -423,7 +422,7 @@ namespace AutoTool.Panels.List.Class;
                     System.IO.Directory.CreateDirectory(dir);
                 }
 
-                var fileName = $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                var fileName = $"screenshot_{context.GetLocalNow():yyyyMMdd_HHmmss}.png";
                 var filePath = System.IO.Path.Combine(dir, fileName);
 
                 await context.TakeScreenshotAsync(filePath, WindowTitle, WindowClassName, cancellationToken).ConfigureAwait(false);
@@ -482,7 +481,7 @@ namespace AutoTool.Panels.List.Class;
         [NotifyPropertyChangedFor(nameof(Description))]
         [property: CommandProperty("マウスボタン", EditorType.MouseButtonPicker, Group = "クリック設定", Order = 1,
                          Description = "クリックに使用するボタン")]
-        private System.Windows.Input.MouseButton _button = System.Windows.Input.MouseButton.Left;
+        private CommandMouseButton _button = CommandMouseButton.Left;
 
         new public string Description =>
             $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / モデル:{System.IO.Path.GetFileName(ModelPath)} / クラスID:{ClassID} / 閾値:{ConfThreshold} / ボタン:{Button}";
@@ -519,7 +518,7 @@ namespace AutoTool.Panels.List.Class;
                 int centerY = best.Rect.Y + best.Rect.Height / 2;
 
                 await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName).ConfigureAwait(false);
-                context.Log($"AI画像クリックしました。({centerX}, {centerY}) ClassId: {best.ClassId}, Score: {best.Score:F2}");
+                context.Log($"AI画像をクリックしました。({centerX}, {centerY}) / クラスID: {best.ClassId} / スコア: {best.Score:F2}");
                 return true;
             }
 

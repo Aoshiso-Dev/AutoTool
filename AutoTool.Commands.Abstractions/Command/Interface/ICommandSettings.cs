@@ -1,7 +1,5 @@
-﻿using System;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
+﻿using AutoTool.Commands.Model.Input;
+using System;
 
 namespace AutoTool.Commands.Interface;
 
@@ -11,7 +9,7 @@ public interface IWaitImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
     double Threshold { get; set; }
-    Color? SearchColor { get; set; }
+    CommandColor? SearchColor { get; set; }
     int Timeout { get; set; }
     int Interval { get; set; }
     string WindowTitle { get; set; }
@@ -22,7 +20,7 @@ public interface IFindImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
     double Threshold { get; set; }
-    Color? SearchColor { get; set; }
+    CommandColor? SearchColor { get; set; }
     int Timeout { get; set; }
     int Interval { get; set; }
     bool Strict { get; set; }
@@ -62,7 +60,7 @@ public interface IIfImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
     double Threshold { get; set; }
-    Color? SearchColor { get; set; }
+    CommandColor? SearchColor { get; set; }
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
 }
@@ -90,10 +88,10 @@ public interface IClickImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
     double Threshold { get; set; }
-    Color? SearchColor { get; set; }
+    CommandColor? SearchColor { get; set; }
     int Timeout { get; set; }
     int Interval { get; set; }
-    MouseButton Button { get; set; }
+    CommandMouseButton Button { get; set; }
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
 }
@@ -103,14 +101,14 @@ public interface IHotkeyCommandSettings : ICommandSettings
     bool Ctrl { get; set; }
     bool Alt { get; set; }
     bool Shift { get; set; }
-    Key Key { get; set; }
+    CommandKey Key { get; set; }
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
 }
 
 public interface IClickCommandSettings : ICommandSettings
 {
-    MouseButton Button { get; set; }
+    CommandMouseButton Button { get; set; }
     int X { get; set; }
     int Y { get; set; }
     string WindowTitle { get; set; }
@@ -138,12 +136,12 @@ public interface IIfWaitImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
     double Threshold { get; set; }
-    Color? SearchColor { get; set; }
+    CommandColor? SearchColor { get; set; }
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
 }
 
-// Align to actual usage in Items/Commands (YOLO by ClassId)
+// Items/Commands 側の実装に合わせた定義（YOLO の ClassId 判定）
 public interface IIfImageExistAISettings : ICommandSettings
 {
     string ModelPath { get; set; }
@@ -224,7 +222,7 @@ public interface IClickImageAICommandSettings : ICommandSettings
     string WindowClassName { get; set; }
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
-    MouseButton Button { get; set; }
+    CommandMouseButton Button { get; set; }
 }
 
 // Screenshot command

@@ -1,11 +1,12 @@
 ﻿using System.Windows;
 using System.Windows.Input;
+using AutoTool.Commands.Model.Input;
 
 namespace AutoTool.Panels.View;
 
 public partial class KeyPickerWindow : Window
 {
-    public Key SelectedKey { get; private set; } = Key.None;
+    public CommandKey SelectedKey { get; private set; } = CommandKey.None;
     public bool SelectedCtrl { get; private set; }
     public bool SelectedAlt { get; private set; }
     public bool SelectedShift { get; private set; }
@@ -44,8 +45,8 @@ public partial class KeyPickerWindow : Window
         SelectedCtrl = modifiers.HasFlag(ModifierKeys.Control);
         SelectedAlt = modifiers.HasFlag(ModifierKeys.Alt);
         SelectedShift = modifiers.HasFlag(ModifierKeys.Shift);
-        SelectedKey = key;
-        KeyDisplayText.Text = BuildDisplayText(key, SelectedCtrl, SelectedAlt, SelectedShift);
+        SelectedKey = ToCommandKey(key);
+        KeyDisplayText.Text = BuildDisplayText(SelectedKey, SelectedCtrl, SelectedAlt, SelectedShift);
         OkButton.IsEnabled = true;
         
         e.Handled = true;
@@ -63,7 +64,7 @@ public partial class KeyPickerWindow : Window
         Close();
     }
 
-    private static string BuildDisplayText(Key key, bool ctrl, bool alt, bool shift)
+    private static string BuildDisplayText(CommandKey key, bool ctrl, bool alt, bool shift)
     {
         List<string> keys = [];
         if (ctrl) keys.Add("Ctrl");
@@ -72,5 +73,10 @@ public partial class KeyPickerWindow : Window
         keys.Add(key.ToString());
         return string.Join(" + ", keys);
     }
+    private static CommandKey ToCommandKey(Key key)
+    {
+        return Enum.TryParse<CommandKey>(key.ToString(), out var commandKey)
+            ? commandKey
+            : CommandKey.None;
+    }
 }
-

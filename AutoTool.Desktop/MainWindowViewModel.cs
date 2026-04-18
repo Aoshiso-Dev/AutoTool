@@ -299,7 +299,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void Undo()
     {
         CommandHistory.Undo();
-        StatusMessage = $"Undo: {CommandHistory.RedoDescription}";
+        StatusMessage = $"元に戻す: {CommandHistory.RedoDescription}";
         _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
     }
 
@@ -307,7 +307,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void Redo()
     {
         CommandHistory.Redo();
-        StatusMessage = $"Redo: {CommandHistory.UndoDescription}";
+        StatusMessage = $"やり直し: {CommandHistory.UndoDescription}";
         _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
     }
 

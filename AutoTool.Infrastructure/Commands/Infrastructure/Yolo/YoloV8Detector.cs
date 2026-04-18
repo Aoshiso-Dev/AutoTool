@@ -69,7 +69,7 @@ public sealed class YoloV8Detector : IDisposable
     public List<Detection> Detect(Mat frameBgr, float confTh = 0.25f, float iouTh = 0.45f)
     {
         if (frameBgr is null || frameBgr.Empty())
-            throw new ArgumentException("frameBgr is empty");
+            throw new ArgumentException("入力フレーム(frameBgr) が空です。", nameof(frameBgr));
 
         // 1) Letterbox
         var lb = Letterbox(frameBgr, new Size(_inputSize, _inputSize), 32);
@@ -91,7 +91,7 @@ public sealed class YoloV8Detector : IDisposable
             crop: false);
 
         if (blob.Empty())
-            throw new InvalidOperationException("BlobFromImage returned empty Mat.");
+            throw new InvalidOperationException("BlobFromImage の結果が空です。入力画像を確認してください。");
 
         // Blob shape 調査
         // OpenCV の 4D blob: N,C,H,W
@@ -116,7 +116,7 @@ public sealed class YoloV8Detector : IDisposable
         // 値域ログ
         float min = inputData.Min();
         float max = inputData.Max();
-        System.Diagnostics.Debug.WriteLine($"[YOLO] blob shape={string.Join("x", shape)} len={inputData.Length} range=({min:F3},{max:F3})");
+        System.Diagnostics.Debug.WriteLine($"[YOLO] blob 形状={string.Join("x", shape)} / 要素数={inputData.Length} / 値域=({min:F3},{max:F3})");
 
         // 6) Tensor 構築 (NCHW)
         var tensor = new DenseTensor<float>([shape[0], shape[1], shape[2], shape[3]]);
@@ -127,13 +127,13 @@ public sealed class YoloV8Detector : IDisposable
 
         var output = results.First(r => r.Name == _outputName).AsTensor<float>();
         var outDims = output.Dimensions.ToArray();
-        System.Diagnostics.Debug.WriteLine($"[YOLO] output dims={string.Join("x", outDims)} len={output.Length}");
+        System.Diagnostics.Debug.WriteLine($"[YOLO] 出力次元={string.Join("x", outDims)} / 要素数={output.Length}");
 
         // 7) 後処理
         int origW = frameBgr.Cols, origH = frameBgr.Rows;
         var dets = ParseDetections(output, confTh, lb, origW, origH);
         dets = BoundingBoxMath.Nms(dets, iouTh);
-        System.Diagnostics.Debug.WriteLine($"[YOLO] det count={dets.Count}");
+        System.Diagnostics.Debug.WriteLine($"[YOLO] 検出件数={dets.Count}");
 
         return dets;
     }
@@ -141,7 +141,7 @@ public sealed class YoloV8Detector : IDisposable
     private static unsafe void CopyMatToArray(Mat m, float[] dst)
     {
         if (m.Type() != MatType.CV_32F)
-            throw new ArgumentException($"Blob MatType must be CV_32F but was {m.Type()}");
+            throw new ArgumentException($"Blob の MatType は CV_32F が必要ですが、実際は {m.Type()} です。", nameof(m));
         if (dst.Length == 0) return;
 
         // Mat のデータは NCHW 連続領域
@@ -155,7 +155,7 @@ public sealed class YoloV8Detector : IDisposable
         var dst = new Mat();
         if (ch == 4) Cv2.CvtColor(src, dst, ColorConversionCodes.BGRA2BGR);
         else if (ch == 1) Cv2.CvtColor(src, dst, ColorConversionCodes.GRAY2BGR);
-        else throw new NotSupportedException($"Unsupported channel count: {ch}");
+        else throw new NotSupportedException($"未対応のチャネル数です: {ch}");
         return dst;
     }
 
@@ -302,7 +302,7 @@ public sealed class YoloV8Detector : IDisposable
             }
         }
 
-        System.Diagnostics.Debug.WriteLine($"[YOLO] parsed det(before NMS)={dets.Count}");
+        System.Diagnostics.Debug.WriteLine($"[YOLO] NMS前の検出件数={dets.Count}");
         return dets;
     }
 

@@ -137,7 +137,7 @@ public partial class MacroPanelViewModel
         var delta = dropped - _lastObservedDroppedCommandEvents;
         _lastObservedDroppedCommandEvents = dropped;
 
-        var detail = $"Warning: dropped command events (+{delta}, total {dropped})";
+        var detail = $"警告: コマンドイベントの取りこぼしが発生しました (+{delta}, 累計 {dropped})";
         _logWriter.WriteStructured(
             "CommandEventBus",
             "DropDetected",
@@ -148,7 +148,7 @@ public partial class MacroPanelViewModel
                 ["SubscriberCount"] = _commandEventBus.SubscriberCount
             });
 
-        OnUiThread(() => _logPanel.WriteLog(string.Empty, "System", detail));
+        OnUiThread(() => _logPanel.WriteLog(string.Empty, "システム", detail));
     }
 
     private void PrepareAllPanels()

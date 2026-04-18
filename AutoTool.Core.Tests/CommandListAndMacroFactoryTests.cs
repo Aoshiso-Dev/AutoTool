@@ -1,6 +1,7 @@
 ﻿using AutoTool.Commands.Commands;
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
+using AutoTool.Commands.Model.Input;
 using AutoTool.Commands.Services;
 using AutoTool.Core.Ports;
 using AutoTool.Model;
@@ -13,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace AutoTool.Core.Tests;
 
@@ -494,16 +494,17 @@ public class FindTextItemTests
             _ocrResult = ocrResult;
         }
 
+        public DateTimeOffset GetLocalNow() => DateTimeOffset.Parse("2026-01-01T00:00:00+09:00");
         public void ReportProgress(int progress) { }
         public void Log(string message) { }
         public string? GetVariable(string name) => _vars.TryGetValue(name, out var v) ? v : null;
         public void SetVariable(string name, string value) => _vars[name] = value;
         public string ToAbsolutePath(string relativePath) => relativePath;
-        public Task ClickAsync(int x, int y, MouseButton button, string? windowTitle = null, string? windowClassName = null) => Task.CompletedTask;
-        public Task SendHotkeyAsync(Key key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null) => Task.CompletedTask;
+        public Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null) => Task.CompletedTask;
+        public Task SendHotkeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null) => Task.CompletedTask;
         public Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, Color? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.FromResult<MatchPoint?>(null);
+        public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, CommandColor? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.FromResult<MatchPoint?>(null);
         public void InitializeAIModel(string modelPath, int inputSize = 640, bool useGpu = true) { }
         public IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold) => [];
         public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken) => Task.FromResult(_ocrResult);

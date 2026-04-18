@@ -1,4 +1,4 @@
-namespace AutoTool.Commands.Services;
+﻿namespace AutoTool.Commands.Services;
 
 public sealed record ProcessOutputLine(string Text, bool IsError, DateTimeOffset Timestamp);
 

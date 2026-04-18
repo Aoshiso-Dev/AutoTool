@@ -1,5 +1,5 @@
 ﻿using AutoTool.Commands.Services;
-using System.Windows.Media;
+using AutoTool.Commands.Model.Input;
 using System.IO;
 
 namespace AutoTool.Commands.Commands;
@@ -8,7 +8,7 @@ public sealed record FindImageOptions
 {
     public required string ImagePath { get; init; }
     public double Threshold { get; init; } = 0.8;
-    public Color? SearchColor { get; init; }
+    public CommandColor? SearchColor { get; init; }
     public int Timeout { get; init; }
     public int Interval { get; init; } = 500;
     public string WindowTitle { get; init; } = string.Empty;
@@ -21,7 +21,7 @@ public static class FindImageExecutor
 {
     public static async Task<FindImageResult> ExecuteAsync(
         FindImageOptions options,
-        Func<string, double, Color?, string?, string?, CancellationToken, Task<MatchPoint?>> searchAsync,
+        Func<string, double, CommandColor?, string?, string?, CancellationToken, Task<MatchPoint?>> searchAsync,
         Action<int>? reportProgress,
         CancellationToken cancellationToken)
     {

@@ -7,7 +7,8 @@ using ICommand = AutoTool.Commands.Interface.ICommand;
 namespace AutoTool.Commands.Infrastructure;
 
 /// <summary>
-/// ICommandEventBus 縺ｮ譌｢螳壼ｮ溯｣・/// </summary>
+/// ICommandEventBus の標準実装
+/// </summary>
 public sealed class CommandEventBus : ICommandEventBus
 {
     private readonly object _gate = new();
@@ -143,11 +144,9 @@ public sealed class CommandEventBus : ICommandEventBus
                         || dropped % _options.DropWarningInterval == 0))
                 {
                     System.Diagnostics.Trace.TraceWarning(
-                        $"CommandEventBus dropped events. dropped={dropped}, subscribers={SubscriberCount}");
+                        $"CommandEventBus でイベントを破棄しました。dropped={dropped}, subscribers={SubscriberCount}");
                 }
             }
         }
     }
 }
-
-
