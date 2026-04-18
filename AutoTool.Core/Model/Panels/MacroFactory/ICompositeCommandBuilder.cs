@@ -3,13 +3,22 @@ using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.Model.MacroFactory;
 
+public enum CompositeCommandKind
+{
+    If,
+    Loop
+}
+
 public interface ICompositeCommandBuilder
 {
-    bool CanBuild(ICommandListItem item);
+    CompositeCommandKind Kind { get; }
 
     ICommand Build(
         ICommand parent,
         ICommandListItem item,
-        IEnumerable<ICommandListItem> items,
-        Func<ICommand, IEnumerable<ICommandListItem>, IEnumerable<ICommand>> buildChildren);
+        int itemIndex,
+        IReadOnlyList<ICommandListItem> items,
+        int startIndex,
+        int endIndex,
+        Func<ICommand, int, int, IEnumerable<ICommand>> buildChildren);
 }

@@ -10,13 +10,16 @@ public sealed class IfCompositeCommandBuilder(ICommandFactory commandFactory) : 
 {
     private readonly ICommandFactory _commandFactory = EnsureNotNull(commandFactory);
 
-    public bool CanBuild(ICommandListItem item) => item is IIfItem;
+    public CompositeCommandKind Kind => CompositeCommandKind.If;
 
     public ICommand Build(
         ICommand parent,
         ICommandListItem item,
-        IEnumerable<ICommandListItem> items,
-        Func<ICommand, IEnumerable<ICommandListItem>, IEnumerable<ICommand>> buildChildren)
+        int itemIndex,
+        IReadOnlyList<ICommandListItem> items,
+        int startIndex,
+        int endIndex,
+        Func<ICommand, int, int, IEnumerable<ICommand>> buildChildren)
     {
         var ifItem = (IIfItem)item;
         if (ifItem.Pair is null)
@@ -24,18 +27,19 @@ public sealed class IfCompositeCommandBuilder(ICommandFactory commandFactory) : 
             throw new PairMismatchException($"If文 (行 {ifItem.LineNumber}) に対応するEndIfがありません", ifItem.LineNumber, ifItem.ItemType);
         }
 
-        var endIfItem = ifItem.Pair;
-        var childrenListItems = items
-            .Where(x => x.LineNumber > ifItem.LineNumber && x.LineNumber < endIfItem.LineNumber)
-            .ToList();
+        var endIfIndex = FindIndexByLineNumber(items, ifItem.Pair.LineNumber, itemIndex + 1, endIndex);
+        if (endIfIndex < 0)
+        {
+            throw new PairMismatchException($"If文 (行 {ifItem.LineNumber}) のEndIf位置を特定できません", ifItem.LineNumber, ifItem.ItemType);
+        }
 
-        if (childrenListItems.Count == 0)
+        if (endIfIndex - itemIndex <= 1)
         {
             throw new EmptyStructureException($"If文 (行 {ifItem.LineNumber}) 内にコマンドがありません", ifItem.LineNumber, ifItem.ItemType);
         }
 
         var ifCommand = CreateIfCommandInstance(parent, ifItem);
-        ifCommand.Children = buildChildren(ifCommand, childrenListItems);
+        ifCommand.Children = buildChildren(ifCommand, itemIndex + 1, endIfIndex - 1);
 
         return ifCommand;
     }
@@ -140,6 +144,25 @@ public sealed class IfCompositeCommandBuilder(ICommandFactory commandFactory) : 
         command.LineNumber = ifItem.LineNumber;
         command.IsEnabled = ifItem.IsEnable;
         return command;
+    }
+
+    private static int FindIndexByLineNumber(IReadOnlyList<ICommandListItem> items, int targetLineNumber, int fromIndex, int toIndex)
+    {
+        for (var i = fromIndex; i <= toIndex; i++)
+        {
+            var lineNumber = items[i].LineNumber;
+            if (lineNumber == targetLineNumber)
+            {
+                return i;
+            }
+
+            if (lineNumber > targetLineNumber)
+            {
+                break;
+            }
+        }
+
+        return -1;
     }
 
     private static ICommandFactory EnsureNotNull(ICommandFactory value)

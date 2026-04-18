@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Linq.Expressions;
+using System.Reflection;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
@@ -7,14 +8,18 @@ using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.Model.CommandDefinition;
 
-public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefinitionProvider
+public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = null) : ICommandRegistry, ICommandDefinitionProvider
 {
     private sealed class Entry
     {
         public required CommandMetadata Metadata { get; init; }
         public required Func<ICommandListItem> ItemFactory { get; init; }
+        public required bool HasExecuteAsyncOverride { get; init; }
+        public required bool IsCompositeStart { get; init; }
+        public required Type CommandType { get; init; }
     }
 
+    private readonly ICommandFactory? _commandFactory = commandFactory;
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
     private bool _initialized;
     private readonly object _initializeLock = new();
@@ -29,10 +34,14 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
 
             foreach (var metadata in CommandMetadataCatalog.GetAll())
             {
+                var hasExecuteAsyncOverride = HasExecuteAsyncOverride(metadata.ItemType);
                 _entries[metadata.TypeName] = new Entry
                 {
                     Metadata = metadata,
-                    ItemFactory = CreateItemFactory(metadata.ItemType)
+                    ItemFactory = CreateItemFactory(metadata.ItemType),
+                    HasExecuteAsyncOverride = hasExecuteAsyncOverride,
+                    IsCompositeStart = metadata.IsIfCommand || metadata.IsLoopCommand,
+                    CommandType = hasExecuteAsyncOverride ? typeof(SimpleCommand) : metadata.CommandType
                 };
             }
 
@@ -70,14 +79,14 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
         return item;
     }
 
-    public bool TryCreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider, out ICommand? command)
+    public bool TryCreateSimple(ICommand parent, ICommandListItem item, out ICommand? command)
     {
-        var result = CreateSimple(parent, item, serviceProvider);
+        var result = CreateSimple(parent, item);
         command = result.Command;
         return result.Success;
     }
 
-    public CommandCreationResult CreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider)
+    public CommandCreationResult CreateSimple(ICommand parent, ICommandListItem item)
     {
         if (item?.ItemType is null)
         {
@@ -92,8 +101,14 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
                 $"未知の ItemType です: {item.ItemType}");
         }
 
-        var commandFactory = serviceProvider?.GetService(typeof(ICommandFactory)) as ICommandFactory;
-        if (commandFactory is null)
+        if (entry.IsCompositeStart)
+        {
+            return CommandCreationResult.Fail(
+                CommandCreationFailureReason.MissingCommandBinding,
+                $"item type {entry.Metadata.ItemType.Name} は複合コマンドとして処理されます。");
+        }
+
+        if (_commandFactory is null)
         {
             return CommandCreationResult.Fail(
                 CommandCreationFailureReason.CommandFactoryUnavailable,
@@ -102,31 +117,12 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
 
         try
         {
-            ICommand command;
-            if (HasExecuteAsyncOverride(item.GetType()))
-            {
-                command = commandFactory.Create(
-                    typeof(SimpleCommand),
-                    parent,
-                    item as ICommandSettings ?? new CommandSettings(),
-                    item);
-            }
-            else
-            {
-                var bindingAttr = entry.Metadata.ItemType.GetCustomAttribute<SimpleCommandBindingAttribute>();
-                if (bindingAttr is null)
-                {
-                    return CommandCreationResult.Fail(
-                        CommandCreationFailureReason.MissingCommandBinding,
-                        $"item type {entry.Metadata.ItemType.Name} にバインディング属性がありません。");
-                }
-
-                command = commandFactory.Create(
-                    bindingAttr.CommandType,
-                    parent,
-                    item as ICommandSettings ?? new CommandSettings(),
-                    item);
-            }
+            var settings = item as ICommandSettings ?? new CommandSettings();
+            var command = _commandFactory.Create(
+                entry.CommandType,
+                parent,
+                settings,
+                item);
 
             command.LineNumber = item.LineNumber;
             command.IsEnabled = item.IsEnable;
@@ -225,7 +221,8 @@ public sealed class ReflectionCommandRegistry : ICommandRegistry, ICommandDefini
             throw new InvalidOperationException($"型 {itemType.Name} に引数なしコンストラクタがありません。");
         }
 
-        return () => (ICommandListItem)Activator.CreateInstance(itemType)!;
+        var body = Expression.Convert(Expression.New(ctor), typeof(ICommandListItem));
+        return Expression.Lambda<Func<ICommandListItem>>(body).Compile();
     }
 
     private static string GetJapaneseCategoryName(CommandCategory category)

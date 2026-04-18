@@ -54,8 +54,8 @@ public interface ICommandRegistry
     /// <summary>
     /// 単純コマンドを作成
     /// </summary>
-    bool TryCreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider, out ICommand? command);
-    CommandCreationResult CreateSimple(ICommand parent, ICommandListItem item, IServiceProvider? serviceProvider);
+    bool TryCreateSimple(ICommand parent, ICommandListItem item, out ICommand? command);
+    CommandCreationResult CreateSimple(ICommand parent, ICommandListItem item);
 
     /// <summary>
     /// If 開始コマンドか判定

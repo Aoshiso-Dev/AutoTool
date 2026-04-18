@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Linq.Expressions;
+using System.Reflection;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
@@ -8,11 +10,71 @@ namespace AutoTool.Commands.DependencyInjection;
 /// <summary>
 /// DI コンテナを利用したコマンドファクトリ
 /// </summary>
-public class CommandFactory(IServiceProvider serviceProvider) : ICommandFactory
+public class CommandFactory(IServiceProvider serviceProvider, ICommandEventBus? commandEventBus = null) : ICommandFactory
 {
+    private enum ParameterSource
+    {
+        ParentCommand,
+        CommandSettings,
+        ExplicitOrService
+    }
+
+    private sealed class ParameterPlan
+    {
+        public required Type ParameterType { get; init; }
+        public required ParameterSource Source { get; init; }
+        public required bool HasDefaultValue { get; init; }
+        public object? DefaultValue { get; init; }
+        public Func<IServiceProvider, object?>? ServiceResolver { get; init; }
+    }
+
+    private sealed class ConstructorPlan
+    {
+        public required ConstructorInfo Constructor { get; init; }
+        public required IReadOnlyList<ParameterPlan> Parameters { get; init; }
+        public required Func<object?[], ICommand> Activator { get; init; }
+    }
+
+    private sealed class ExplicitArgumentResolver
+    {
+        private readonly IReadOnlyList<object> _arguments;
+        private readonly Dictionary<Type, object?> _cache = new();
+
+        public ExplicitArgumentResolver(IEnumerable<object> explicitArguments)
+        {
+            _arguments = explicitArguments
+                .Where(static x => x is not null)
+                .ToArray();
+        }
+
+        public bool TryResolve(Type parameterType, out object? argument)
+        {
+            if (_cache.TryGetValue(parameterType, out argument))
+            {
+                return argument is not null;
+            }
+
+            foreach (var candidate in _arguments)
+            {
+                if (parameterType.IsInstanceOfType(candidate))
+                {
+                    _cache[parameterType] = candidate;
+                    argument = candidate;
+                    return true;
+                }
+            }
+
+            _cache[parameterType] = null;
+            argument = null;
+            return false;
+        }
+    }
+
+    private static readonly ConcurrentDictionary<Type, IReadOnlyList<ConstructorPlan>> ConstructorPlanCache = new();
+    private static readonly ConcurrentDictionary<Type, Func<IServiceProvider, object?>> ServiceResolverCache = new();
+
     private readonly IServiceProvider _serviceProvider = EnsureNotNull(serviceProvider);
-    private readonly ICommandEventBus? _commandEventBus =
-        serviceProvider.GetService(typeof(ICommandEventBus)) as ICommandEventBus;
+    private readonly ICommandEventBus? _commandEventBus = commandEventBus;
 
     public TCommand Create<TCommand>(ICommand? parent, ICommandSettings settings) where TCommand : ICommand
     {
@@ -27,6 +89,7 @@ public class CommandFactory(IServiceProvider serviceProvider) : ICommandFactory
     public ICommand Create(Type commandType, ICommand? parent, ICommandSettings settings, params object[] explicitArguments)
     {
         ArgumentNullException.ThrowIfNull(commandType);
+        ArgumentNullException.ThrowIfNull(settings);
         explicitArguments ??= [];
 
         if (commandType == typeof(RootCommand))
@@ -34,76 +97,157 @@ public class CommandFactory(IServiceProvider serviceProvider) : ICommandFactory
             return AttachEventBus(new RootCommand());
         }
 
-        var constructors = commandType.GetConstructors()
-            .OrderByDescending(c => c.GetParameters().Length)
-            .ToList();
-
-        foreach (var constructor in constructors)
+        var constructorPlans = ConstructorPlanCache.GetOrAdd(commandType, BuildConstructorPlans);
+        var explicitArgumentResolver = new ExplicitArgumentResolver(explicitArguments);
+        Dictionary<Type, object?> resolvedServices = [];
+        foreach (var constructorPlan in constructorPlans)
         {
-            var parameters = constructor.GetParameters();
-            var args = new object?[parameters.Length];
+            var args = new object?[constructorPlan.Parameters.Count];
             var allResolved = true;
 
-            for (int i = 0; i < parameters.Length; i++)
+            for (var i = 0; i < constructorPlan.Parameters.Count; i++)
             {
-                var paramType = parameters[i].ParameterType;
+                var parameterPlan = constructorPlan.Parameters[i];
+                switch (parameterPlan.Source)
+                {
+                    case ParameterSource.ParentCommand:
+                        args[i] = parent;
+                        break;
+                    case ParameterSource.CommandSettings:
+                        args[i] = settings;
+                        break;
+                    case ParameterSource.ExplicitOrService:
+                        if (explicitArgumentResolver.TryResolve(parameterPlan.ParameterType, out var explicitArg))
+                        {
+                            args[i] = explicitArg;
+                            break;
+                        }
 
-                if (paramType == typeof(ICommand) || paramType.IsAssignableTo(typeof(ICommand)))
-                {
-                    args[i] = parent;
-                }
-                else if (paramType == typeof(ICommandSettings) || paramType.IsAssignableTo(typeof(ICommandSettings)))
-                {
-                    args[i] = settings;
-                }
-                else if (TryResolveExplicitArgument(explicitArguments, paramType, out var explicitArg))
-                {
-                    args[i] = explicitArg;
-                }
-                else
-                {
-                    var service = _serviceProvider.GetService(paramType);
-                    if (service is not null)
-                    {
-                        args[i] = service;
-                    }
-                    else
-                    {
+                        if (TryResolveService(parameterPlan, resolvedServices, out var service))
+                        {
+                            args[i] = service;
+                            break;
+                        }
+
+                        if (parameterPlan.HasDefaultValue)
+                        {
+                            args[i] = parameterPlan.DefaultValue;
+                            break;
+                        }
+
                         allResolved = false;
                         break;
-                    }
+                    default:
+                        allResolved = false;
+                        break;
+                }
+
+                if (!allResolved)
+                {
+                    break;
                 }
             }
 
-            if (allResolved)
+            if (!allResolved)
             {
-                var command = (ICommand)constructor.Invoke(args);
-                return AttachEventBus(command);
+                continue;
             }
+
+            var command = constructorPlan.Activator(args);
+            return AttachEventBus(command);
         }
 
         throw new InvalidOperationException(
             $"コマンド {commandType.Name} を生成できませんでした。必要なコンストラクタ引数が解決できていません。");
     }
 
-    private static bool TryResolveExplicitArgument(IEnumerable<object> explicitArguments, Type paramType, out object? argument)
+    private bool TryResolveService(
+        ParameterPlan parameterPlan,
+        IDictionary<Type, object?> resolvedServices,
+        out object? service)
     {
-        foreach (var candidate in explicitArguments)
+        if (resolvedServices.TryGetValue(parameterPlan.ParameterType, out service))
         {
-            if (candidate is null)
-            {
-                continue;
-            }
-
-            if (paramType.IsInstanceOfType(candidate))
-            {
-                argument = candidate;
-                return true;
-            }
+            return service is not null;
         }
 
-        argument = null;
-        return false;
+        var resolver = parameterPlan.ServiceResolver ?? CreateServiceResolver(parameterPlan.ParameterType);
+        service = resolver(_serviceProvider);
+        resolvedServices[parameterPlan.ParameterType] = service;
+        return service is not null;
+    }
+
+    private static IReadOnlyList<ConstructorPlan> BuildConstructorPlans(Type commandType)
+    {
+        return commandType
+            .GetConstructors()
+            .OrderByDescending(static c => c.GetParameters().Length)
+            .Select(static constructor => new ConstructorPlan
+            {
+                Constructor = constructor,
+                Parameters = constructor
+                    .GetParameters()
+                    .Select(static p => new ParameterPlan
+                    {
+                        ParameterType = p.ParameterType,
+                        Source = ResolveParameterSource(p.ParameterType),
+                        HasDefaultValue = p.HasDefaultValue,
+                        DefaultValue = p.DefaultValue,
+                        ServiceResolver = ResolveParameterSource(p.ParameterType) == ParameterSource.ExplicitOrService
+                            ? CreateServiceResolver(p.ParameterType)
+                            : null
+                    })
+                    .ToArray(),
+                Activator = CreateActivator(constructor)
+            })
+            .ToArray();
+    }
+
+    private static Func<IServiceProvider, object?> CreateServiceResolver(Type serviceType)
+    {
+        return ServiceResolverCache.GetOrAdd(serviceType, static type =>
+        {
+            var provider = Expression.Parameter(typeof(IServiceProvider), "provider");
+            var getServiceMethod = typeof(IServiceProvider).GetMethod(
+                nameof(IServiceProvider.GetService),
+                [typeof(Type)])
+                ?? throw new InvalidOperationException("IServiceProvider.GetService(Type) が見つかりません。");
+            var body = Expression.Convert(
+                Expression.Call(provider, getServiceMethod, Expression.Constant(type, typeof(Type))),
+                typeof(object));
+
+            return Expression.Lambda<Func<IServiceProvider, object?>>(body, provider).Compile();
+        });
+    }
+
+    private static Func<object?[], ICommand> CreateActivator(ConstructorInfo constructor)
+    {
+        var argsParam = Expression.Parameter(typeof(object[]), "args");
+        var parameters = constructor.GetParameters();
+
+        var arguments = parameters
+            .Select((p, i) => Expression.Convert(
+                Expression.ArrayIndex(argsParam, Expression.Constant(i)),
+                p.ParameterType))
+            .ToArray();
+
+        var body = Expression.Convert(Expression.New(constructor, arguments), typeof(ICommand));
+        return Expression.Lambda<Func<object?[], ICommand>>(body, argsParam).Compile();
+    }
+
+    private static ParameterSource ResolveParameterSource(Type parameterType)
+    {
+        if (parameterType == typeof(ICommand) || parameterType.IsAssignableTo(typeof(ICommand)))
+        {
+            return ParameterSource.ParentCommand;
+        }
+
+        if (parameterType == typeof(ICommandSettings) || parameterType.IsAssignableTo(typeof(ICommandSettings)))
+        {
+            return ParameterSource.CommandSettings;
+        }
+
+        return ParameterSource.ExplicitOrService;
     }
 
     private ICommand AttachEventBus(ICommand command)

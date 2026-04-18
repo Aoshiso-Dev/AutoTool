@@ -9,13 +9,16 @@ public sealed class LoopCompositeCommandBuilder(ICommandFactory commandFactory) 
 {
     private readonly ICommandFactory _commandFactory = EnsureNotNull(commandFactory);
 
-    public bool CanBuild(ICommandListItem item) => item is ILoopItem;
+    public CompositeCommandKind Kind => CompositeCommandKind.Loop;
 
     public ICommand Build(
         ICommand parent,
         ICommandListItem item,
-        IEnumerable<ICommandListItem> items,
-        Func<ICommand, IEnumerable<ICommandListItem>, IEnumerable<ICommand>> buildChildren)
+        int itemIndex,
+        IReadOnlyList<ICommandListItem> items,
+        int startIndex,
+        int endIndex,
+        Func<ICommand, int, int, IEnumerable<ICommand>> buildChildren)
     {
         var loopItem = (ILoopItem)item;
         if (loopItem.Pair is null)
@@ -23,28 +26,47 @@ public sealed class LoopCompositeCommandBuilder(ICommandFactory commandFactory) 
             throw new PairMismatchException($"ループ (行 {loopItem.LineNumber}) に対応するEndLoopがありません", loopItem.LineNumber, loopItem.ItemType);
         }
 
-        var endLoopItem = loopItem.Pair;
-        var childrenListItems = items
-            .Where(x => x.LineNumber > loopItem.LineNumber && x.LineNumber < endLoopItem.LineNumber)
-            .ToList();
+        var endLoopIndex = FindIndexByLineNumber(items, loopItem.Pair.LineNumber, itemIndex + 1, endIndex);
+        if (endLoopIndex < 0)
+        {
+            throw new PairMismatchException($"ループ (行 {loopItem.LineNumber}) のEndLoop位置を特定できません", loopItem.LineNumber, loopItem.ItemType);
+        }
 
-        if (childrenListItems.Count == 0)
+        if (endLoopIndex - itemIndex <= 1)
         {
             throw new EmptyStructureException($"ループ (行 {loopItem.LineNumber}) 内にコマンドがありません", loopItem.LineNumber, loopItem.ItemType);
         }
 
-        var endLoopCommand = parent.Children.FirstOrDefault(x => x.LineNumber == endLoopItem.LineNumber) as LoopEndCommand;
         var loopCommand = _commandFactory.Create<LoopCommand>(parent, new LoopCommandSettings
         {
             LoopCount = loopItem.LoopCount,
-            Pair = endLoopCommand
+            Pair = null
         });
 
         loopCommand.LineNumber = loopItem.LineNumber;
         loopCommand.IsEnabled = loopItem.IsEnable;
-        loopCommand.Children = buildChildren(loopCommand, childrenListItems);
+        loopCommand.Children = buildChildren(loopCommand, itemIndex + 1, endLoopIndex - 1);
 
         return loopCommand;
+    }
+
+    private static int FindIndexByLineNumber(IReadOnlyList<ICommandListItem> items, int targetLineNumber, int fromIndex, int toIndex)
+    {
+        for (var i = fromIndex; i <= toIndex; i++)
+        {
+            var lineNumber = items[i].LineNumber;
+            if (lineNumber == targetLineNumber)
+            {
+                return i;
+            }
+
+            if (lineNumber > targetLineNumber)
+            {
+                break;
+            }
+        }
+
+        return -1;
     }
 
     private static ICommandFactory EnsureNotNull(ICommandFactory value)

@@ -2,7 +2,6 @@
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
-using AutoTool.Commands.Services;
 using AutoTool.Panels.List.Class;
 using AutoTool.Panels.Model.CommandDefinition;
 using AutoTool.Panels.Model.List.Interface;
@@ -10,62 +9,79 @@ using AutoTool.Panels.Model.List.Interface;
 namespace AutoTool.Panels.Model.MacroFactory;
 
 public class MacroFactory(
-    IServiceProvider serviceProvider,
     ICommandRegistry commandRegistry,
     ICommandFactory commandFactory,
-    ICommandEventBus commandEventBus,
     IEnumerable<ICompositeCommandBuilder> compositeBuilders) : IMacroFactory
 {
-    private readonly IServiceProvider _serviceProvider = EnsureNotNull(serviceProvider);
     private readonly ICommandRegistry _commandRegistry = EnsureNotNull(commandRegistry);
     private readonly ICommandFactory _commandFactory = EnsureNotNull(commandFactory);
-    private readonly ICommandEventBus _commandEventBus = EnsureNotNull(commandEventBus);
     private readonly IReadOnlyList<ICompositeCommandBuilder> _compositeBuilders = EnsureNotNull(compositeBuilders).ToList();
+    private readonly object _builderMapLock = new();
+    private Dictionary<string, ICompositeCommandBuilder>? _builderByType;
 
     public ICommand CreateMacro(IEnumerable<ICommandListItem> items)
     {
-        var cloneItems = items.Select(x => x.Clone()).ToList();
+        _commandRegistry.Initialize();
+        EnsureBuilderMapInitialized();
+
+        var sourceItems = MaterializeItems(items);
+        var stopwatch = Stopwatch.StartNew();
+        MacroBuildMetrics metrics = new();
+
         var rootCommand = _commandFactory.Create<RootCommand>(null, new CommandSettings());
         var root = _commandFactory.Create<LoopCommand>(rootCommand, new LoopCommandSettings { LoopCount = 1 });
-        root.Children = ListItemToCommand(root, cloneItems);
-        AttachEventBusRecursive(root);
+
+        if (sourceItems.Count == 0)
+        {
+            root.Children = [];
+            LogMetrics(metrics, stopwatch.ElapsedMilliseconds, 0);
+            return root;
+        }
+
+        root.Children = ListItemToCommand(root, sourceItems, 0, sourceItems.Count - 1, metrics);
+        LogMetrics(metrics, stopwatch.ElapsedMilliseconds, sourceItems.Count);
         return root;
     }
 
-    private void AttachEventBusRecursive(ICommand command)
+    private IEnumerable<ICommand> ListItemToCommand(
+        ICommand parent,
+        IReadOnlyList<ICommandListItem> items,
+        int startIndex,
+        int endIndex,
+        MacroBuildMetrics metrics)
     {
-        if (command is BaseCommand baseCommand)
+        if (startIndex > endIndex)
         {
-            baseCommand.SetEventBus(_commandEventBus);
+            return [];
         }
 
-        foreach (var child in command.Children)
-        {
-            AttachEventBusRecursive(child);
-        }
-    }
-
-    private IEnumerable<ICommand> ListItemToCommand(ICommand parent, IEnumerable<ICommandListItem> items)
-    {
         List<ICommand> commands = [];
-        HashSet<int> skippedLines = [];
-        foreach (var item in items)
+        var skipUntilLine = int.MinValue;
+
+        for (var index = startIndex; index <= endIndex; index++)
         {
-            if (skippedLines.Contains(item.LineNumber)) continue;
+            var item = items[index];
+            if (item.LineNumber <= skipUntilLine) continue;
             if (!item.IsEnable) continue;
             Debug.WriteLine($"コマンド生成: 行={item.LineNumber}, 種別={item.ItemType}");
 
             try
             {
-                var command = CreateCommand(parent, item, items);
-                if (command is not null)
+                var command = CreateCommand(parent, item, index, items, startIndex, endIndex, metrics);
+                if (command is null)
                 {
-                    commands.Add(command);
-                    MarkChildLinesAsSkipped(item, skippedLines);
+                    continue;
+                }
+
+                commands.Add(command);
+                if (TryGetSkipUntilLine(item, out var pairLineNumber) && pairLineNumber > skipUntilLine)
+                {
+                    skipUntilLine = pairLineNumber;
                 }
             }
             catch (Exception ex)
             {
+                metrics.RecordFailure(CommandCreationFailureReason.FactoryException);
                 Debug.WriteLine($"コマンド生成エラー: 種別={item.ItemType}, 行={item.LineNumber}, 詳細={ex.Message}");
                 var commandName = GetCommandDisplayName(item.ItemType);
                 throw new InvalidOperationException(
@@ -77,20 +93,26 @@ public class MacroFactory(
         return commands;
     }
 
-    private ICommand? CreateCommand(ICommand parent, ICommandListItem item, IEnumerable<ICommandListItem> items)
+    private ICommand? CreateCommand(
+        ICommand parent,
+        ICommandListItem item,
+        int itemIndex,
+        IReadOnlyList<ICommandListItem> items,
+        int startIndex,
+        int endIndex,
+        MacroBuildMetrics metrics)
     {
-        _commandRegistry.Initialize();
-
-        var simpleResult = _commandRegistry.CreateSimple(parent, item, _serviceProvider);
+        var simpleResult = _commandRegistry.CreateSimple(parent, item);
         if (simpleResult.Success && simpleResult.Command is not null)
         {
+            metrics.RecordSimpleSuccess();
             return simpleResult.Command;
         }
 
+        metrics.RecordSimpleFallback(simpleResult.FailureReason);
         Debug.WriteLine($"シンプルコマンド生成をスキップ: 理由={simpleResult.FailureReason}, 詳細={simpleResult.Message}");
 
-        var builder = _compositeBuilders.FirstOrDefault(x => x.CanBuild(item));
-        if (builder is null)
+        if (!TryGetCompositeBuilder(item.ItemType, out var builder))
         {
             var commandName = GetCommandDisplayName(item.ItemType);
             throw new UnsupportedCommandTypeException(
@@ -99,29 +121,118 @@ public class MacroFactory(
                 item.ItemType);
         }
 
-        return builder.Build(parent, item, items, (p, children) => ListItemToCommand(p, children));
+        metrics.RecordCompositeBuild();
+        return builder.Build(
+            parent,
+            item,
+            itemIndex,
+            items,
+            startIndex,
+            endIndex,
+            (p, childStart, childEnd) => ListItemToCommand(p, items, childStart, childEnd, metrics));
     }
 
-    private static void MarkChildLinesAsSkipped(ICommandListItem item, ISet<int> skippedLines)
+    private IReadOnlyList<ICommandListItem> MaterializeItems(IEnumerable<ICommandListItem> items)
     {
-        Action mark = item switch
+        ArgumentNullException.ThrowIfNull(items);
+
+        if (items is IReadOnlyList<ICommandListItem> readOnlyList && IsSortedByLineNumber(readOnlyList))
         {
-            IIfItem ifItem when ifItem.Pair is not null
-                => () => MarkRange(ifItem.LineNumber + 1, ifItem.Pair.LineNumber, skippedLines),
-            ILoopItem loopItem when loopItem.Pair is not null
-                => () => MarkRange(loopItem.LineNumber + 1, loopItem.Pair.LineNumber, skippedLines),
-            _ => static () => { }
+            return readOnlyList;
+        }
+
+        return items
+            .OrderBy(static x => x.LineNumber)
+            .ToList();
+    }
+
+    private static bool IsSortedByLineNumber(IReadOnlyList<ICommandListItem> items)
+    {
+        for (var i = 1; i < items.Count; i++)
+        {
+            if (items[i - 1].LineNumber > items[i].LineNumber)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void EnsureBuilderMapInitialized()
+    {
+        if (_builderByType is not null)
+        {
+            return;
+        }
+
+        lock (_builderMapLock)
+        {
+            if (_builderByType is not null)
+            {
+                return;
+            }
+
+            var ifBuilder = _compositeBuilders.FirstOrDefault(static x => x.Kind == CompositeCommandKind.If);
+            var loopBuilder = _compositeBuilders.FirstOrDefault(static x => x.Kind == CompositeCommandKind.Loop);
+
+            Dictionary<string, ICompositeCommandBuilder> map = new(StringComparer.Ordinal);
+            foreach (var typeName in _commandRegistry.GetAllTypeNames())
+            {
+                if (_commandRegistry.IsIfCommand(typeName) && ifBuilder is not null)
+                {
+                    map[typeName] = ifBuilder;
+                }
+                else if (_commandRegistry.IsLoopCommand(typeName) && loopBuilder is not null)
+                {
+                    map[typeName] = loopBuilder;
+                }
+            }
+
+            _builderByType = map;
+        }
+    }
+
+    private bool TryGetCompositeBuilder(string itemType, out ICompositeCommandBuilder builder)
+    {
+        EnsureBuilderMapInitialized();
+        if (_builderByType is not null && _builderByType.TryGetValue(itemType, out builder!))
+        {
+            return true;
+        }
+
+        builder = null!;
+        return false;
+    }
+
+    private static void LogMetrics(MacroBuildMetrics metrics, long elapsedMilliseconds, int totalItems)
+    {
+        if (totalItems <= 0)
+        {
+            return;
+        }
+
+        var fallbackSummary = metrics.SimpleFallbacks.Count == 0
+            ? "なし"
+            : string.Join(", ",
+                metrics.SimpleFallbacks
+                    .OrderBy(static x => x.Key)
+                    .Select(static x => $"{x.Key}={x.Value}"));
+
+        Debug.WriteLine(
+            $"マクロ生成メトリクス: Items={totalItems}, ElapsedMs={elapsedMilliseconds}, SimpleSuccess={metrics.SimpleSuccess}, CompositeBuild={metrics.CompositeBuild}, SimpleFallback={metrics.SimpleFallbackTotal}, Failures={metrics.Failures}, Reasons=[{fallbackSummary}]");
+    }
+
+    private static bool TryGetSkipUntilLine(ICommandListItem item, out int lineNumber)
+    {
+        lineNumber = item switch
+        {
+            IIfItem ifItem when ifItem.Pair is not null => ifItem.Pair.LineNumber,
+            ILoopItem loopItem when loopItem.Pair is not null => loopItem.Pair.LineNumber,
+            _ => -1
         };
 
-        mark();
-    }
-
-    private static void MarkRange(int fromInclusive, int toInclusive, ISet<int> set)
-    {
-        for (var line = fromInclusive; line <= toInclusive; line++)
-        {
-            set.Add(line);
-        }
+        return lineNumber >= 0;
     }
 
     private static string GetCommandDisplayName(string itemType)
@@ -136,5 +247,44 @@ public class MacroFactory(
     {
         ArgumentNullException.ThrowIfNull(value);
         return value;
+    }
+
+    private sealed class MacroBuildMetrics
+    {
+        public int SimpleSuccess { get; private set; }
+        public int CompositeBuild { get; private set; }
+        public int SimpleFallbackTotal { get; private set; }
+        public int Failures { get; private set; }
+        public Dictionary<CommandCreationFailureReason, int> SimpleFallbacks { get; } = new();
+
+        public void RecordSimpleSuccess() => SimpleSuccess++;
+
+        public void RecordCompositeBuild() => CompositeBuild++;
+
+        public void RecordSimpleFallback(CommandCreationFailureReason reason)
+        {
+            SimpleFallbackTotal++;
+            if (SimpleFallbacks.TryGetValue(reason, out var count))
+            {
+                SimpleFallbacks[reason] = count + 1;
+            }
+            else
+            {
+                SimpleFallbacks[reason] = 1;
+            }
+        }
+
+        public void RecordFailure(CommandCreationFailureReason reason)
+        {
+            Failures++;
+            if (SimpleFallbacks.TryGetValue(reason, out var count))
+            {
+                SimpleFallbacks[reason] = count + 1;
+            }
+            else
+            {
+                SimpleFallbacks[reason] = 1;
+            }
+        }
     }
 }

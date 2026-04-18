@@ -19,6 +19,16 @@ dotnet build .\AutoTool.sln -c Debug
 dotnet run --project .\AutoTool\AutoTool.csproj
 ```
 
+## パフォーマンス計測（コマンド生成）
+
+コマンド生成（`MacroFactory.CreateMacro`）のベンチマークは次で実行できます。
+
+```powershell
+dotnet run -c Release --project .\AutoTool.Core.Benchmarks\AutoTool.Core.Benchmarks.csproj -- --filter *MacroFactoryBenchmarks*
+```
+
+既定では `100 / 1000 / 10000` 件のコマンド規模で計測します。
+
 ## ソリューション構成（要点）
 
 - `AutoTool`: アプリ起動エントリ（WPF WinExe）
@@ -28,6 +38,7 @@ dotnet run --project .\AutoTool\AutoTool.csproj
 - `AutoTool.Commands.Abstractions`: コマンド実行の契約・基底型
 - `AutoTool.Commands`: コマンド層
 - `AutoTool.Core.Tests`: コアロジックのテスト
+- `AutoTool.Core.Benchmarks`: コマンド生成パフォーマンス計測
 
 ## 対応環境
 

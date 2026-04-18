@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoTool.Commands.Abstracti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoTool.Core.Tests", "AutoTool.Core.Tests\AutoTool.Core.Tests.csproj", "{6410B310-2649-44BA-8311-5CA74E79573D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoTool.Core.Benchmarks", "AutoTool.Core.Benchmarks\AutoTool.Core.Benchmarks.csproj", "{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -111,6 +113,18 @@ Global
 		{6410B310-2649-44BA-8311-5CA74E79573D}.Release|x64.Build.0 = Release|Any CPU
 		{6410B310-2649-44BA-8311-5CA74E79573D}.Release|x86.ActiveCfg = Release|Any CPU
 		{6410B310-2649-44BA-8311-5CA74E79573D}.Release|x86.Build.0 = Release|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Debug|x64.Build.0 = Debug|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Debug|x86.Build.0 = Debug|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Release|x64.ActiveCfg = Release|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Release|x64.Build.0 = Release|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Release|x86.ActiveCfg = Release|Any CPU
+		{BAFFABBE-7F4C-4388-A861-04624FAEDE6F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
