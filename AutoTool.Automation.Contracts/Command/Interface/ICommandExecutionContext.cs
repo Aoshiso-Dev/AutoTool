@@ -41,7 +41,7 @@ public interface ICommandExecutionContext
     /// <summary>
     /// Mouse click service
     /// </summary>
-    Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null);
+    Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent", bool simulateMouseMove = false);
     
     /// <summary>
     /// Send hotkey

@@ -92,6 +92,9 @@ public interface IClickImageCommandSettings : ICommandSettings
     int Timeout { get; set; }
     int Interval { get; set; }
     CommandMouseButton Button { get; set; }
+    int HoldDurationMs { get; set; }
+    string ClickInjectionMode { get; set; }
+    bool SimulateMouseMove { get; set; }
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
 }
@@ -109,6 +112,9 @@ public interface IHotkeyCommandSettings : ICommandSettings
 public interface IClickCommandSettings : ICommandSettings
 {
     CommandMouseButton Button { get; set; }
+    int HoldDurationMs { get; set; }
+    string ClickInjectionMode { get; set; }
+    bool SimulateMouseMove { get; set; }
     int X { get; set; }
     int Y { get; set; }
     string WindowTitle { get; set; }
@@ -223,6 +229,9 @@ public interface IClickImageAICommandSettings : ICommandSettings
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
     CommandMouseButton Button { get; set; }
+    int HoldDurationMs { get; set; }
+    string ClickInjectionMode { get; set; }
+    bool SimulateMouseMove { get; set; }
 }
 
 // Screenshot command

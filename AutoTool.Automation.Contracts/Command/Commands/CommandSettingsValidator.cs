@@ -11,6 +11,8 @@ public static class CommandValidationErrorCodes
     public const string ThresholdOutOfRange = "E_THRESHOLD_RANGE";
     public const string TimeoutOutOfRange = "E_TIMEOUT_RANGE";
     public const string IntervalOutOfRange = "E_INTERVAL_RANGE";
+    public const string HoldDurationOutOfRange = "E_HOLD_DURATION_RANGE";
+    public const string ClickInjectionModeInvalid = "E_CLICK_INJECTION_MODE_INVALID";
     public const string WidthOutOfRange = "E_WIDTH_RANGE";
     public const string HeightOutOfRange = "E_HEIGHT_RANGE";
     public const string ConfidenceOutOfRange = "E_CONFIDENCE_RANGE";
@@ -52,6 +54,11 @@ public static class CommandSettingsValidator
     private static readonly HashSet<string> SupportedTextMatchModes = new(StringComparer.Ordinal)
     {
         "Contains", "Equals"
+    };
+
+    private static readonly HashSet<string> SupportedClickInjectionModes = new(StringComparer.Ordinal)
+    {
+        "MouseEvent", "SendInput"
     };
 
     public static void Validate(
@@ -102,6 +109,14 @@ public static class CommandSettingsValidator
             ValidateProbability(clickImage.Threshold, nameof(clickImage.Threshold), issues);
             ValidateNonNegative(clickImage.Timeout, nameof(clickImage.Timeout), CommandValidationErrorCodes.TimeoutOutOfRange, "タイムアウトは0以上で指定してください。", issues);
             ValidateNonNegative(clickImage.Interval, nameof(clickImage.Interval), CommandValidationErrorCodes.IntervalOutOfRange, "検索間隔は0以上で指定してください。", issues);
+            ValidateNonNegative(clickImage.HoldDurationMs, nameof(clickImage.HoldDurationMs), CommandValidationErrorCodes.HoldDurationOutOfRange, "押下維持時間は0以上で指定してください。", issues);
+            ValidateClickInjectionMode(clickImage.ClickInjectionMode, nameof(clickImage.ClickInjectionMode), issues);
+        }
+
+        if (settings is IClickCommandSettings click)
+        {
+            ValidateNonNegative(click.HoldDurationMs, nameof(click.HoldDurationMs), CommandValidationErrorCodes.HoldDurationOutOfRange, "押下維持時間は0以上で指定してください。", issues);
+            ValidateClickInjectionMode(click.ClickInjectionMode, nameof(click.ClickInjectionMode), issues);
         }
 
         if (settings is IFindTextCommandSettings findText)
@@ -176,6 +191,8 @@ public static class CommandSettingsValidator
             ValidateModelPath(clickImageAi.ModelPath, nameof(clickImageAi.ModelPath), pathResolver, includeExistenceChecks, issues);
             ValidateProbability(clickImageAi.ConfThreshold, nameof(clickImageAi.ConfThreshold), issues);
             ValidateProbability(clickImageAi.IoUThreshold, nameof(clickImageAi.IoUThreshold), issues);
+            ValidateNonNegative(clickImageAi.HoldDurationMs, nameof(clickImageAi.HoldDurationMs), CommandValidationErrorCodes.HoldDurationOutOfRange, "押下維持時間は0以上で指定してください。", issues);
+            ValidateClickInjectionMode(clickImageAi.ClickInjectionMode, nameof(clickImageAi.ClickInjectionMode), issues);
         }
 
         if (settings is IIfImageExistAISettings ifImageExistAi)
@@ -275,6 +292,14 @@ public static class CommandSettingsValidator
         if (double.IsNaN(value) || double.IsInfinity(value) || value < 0 || value > 1)
         {
             Add(issues, CommandValidationErrorCodes.ThresholdOutOfRange, propertyName, "値は0.0～1.0の範囲で指定してください。");
+        }
+    }
+
+    private static void ValidateClickInjectionMode(string mode, string propertyName, ICollection<CommandValidationIssue> issues)
+    {
+        if (string.IsNullOrWhiteSpace(mode) || !SupportedClickInjectionModes.Contains(mode))
+        {
+            Add(issues, CommandValidationErrorCodes.ClickInjectionModeInvalid, propertyName, $"未対応のクリック注入方式です: {mode}");
         }
     }
 

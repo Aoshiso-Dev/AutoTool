@@ -483,8 +483,26 @@ namespace AutoTool.Automation.Runtime.Lists;
                          Description = "クリックに使用するボタン")]
         private CommandMouseButton _button = CommandMouseButton.Left;
 
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("押下維持時間", EditorType.NumberBox, Group = "クリック設定", Order = 2,
+                         Description = "マウス押下から離すまでの待機時間", Unit = "ミリ秒", Min = 0)]
+        private int _holdDurationMs = 20;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("注入方式", EditorType.ComboBox, Group = "クリック設定", Order = 3,
+                         Description = "クリック入力の送信方式", Options = "MouseEvent,SendInput")]
+        private string _clickInjectionMode = "MouseEvent";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("移動シミュレート", EditorType.CheckBox, Group = "クリック設定", Order = 4,
+                         Description = "クリック前にマウス移動を段階的にシミュレートする")]
+        private bool _simulateMouseMove = false;
+
         new public string Description =>
-            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / モデル:{System.IO.Path.GetFileName(ModelPath)} / クラスID:{ClassID} / 閾値:{ConfThreshold} / ボタン:{Button}";
+            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / モデル:{System.IO.Path.GetFileName(ModelPath)} / クラスID:{ClassID} / 閾値:{ConfThreshold} / ボタン:{Button} / 押下維持:{HoldDurationMs}ms / 方式:{ClickInjectionMode} / 移動シミュレート:{(SimulateMouseMove ? "ON" : "OFF")}";
 
         public ClickImageAIItem() { }
         public ClickImageAIItem(ClickImageAIItem? item = null) : base(item)
@@ -498,6 +516,9 @@ namespace AutoTool.Automation.Runtime.Lists;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
                 Button = item.Button;
+                HoldDurationMs = item.HoldDurationMs;
+                ClickInjectionMode = item.ClickInjectionMode;
+                SimulateMouseMove = item.SimulateMouseMove;
             }
         }
 
@@ -517,7 +538,7 @@ namespace AutoTool.Automation.Runtime.Lists;
                 int centerX = best.Rect.X + best.Rect.Width / 2;
                 int centerY = best.Rect.Y + best.Rect.Height / 2;
 
-                await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName).ConfigureAwait(false);
+                await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName, HoldDurationMs, ClickInjectionMode, SimulateMouseMove).ConfigureAwait(false);
                 context.Log($"AI画像をクリックしました。({centerX}, {centerY}) / クラスID: {best.ClassId} / スコア: {best.Score:F2}");
                 return true;
             }

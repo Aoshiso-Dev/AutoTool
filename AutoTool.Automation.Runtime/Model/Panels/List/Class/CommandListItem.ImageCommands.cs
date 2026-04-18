@@ -298,6 +298,24 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("押下維持時間", EditorType.NumberBox, Group = "クリック設定", Order = 2,
+                     Description = "マウス押下から離すまでの待機時間", Unit = "ミリ秒", Min = 0)]
+    private int _holdDurationMs = 20;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("注入方式", EditorType.ComboBox, Group = "クリック設定", Order = 3,
+                     Description = "クリック入力の送信方式", Options = "MouseEvent,SendInput")]
+    private string _clickInjectionMode = "MouseEvent";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("移動シミュレート", EditorType.CheckBox, Group = "クリック設定", Order = 4,
+                     Description = "クリック前にマウス移動を段階的にシミュレートする")]
+    private bool _simulateMouseMove = false;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
     [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
                      Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
     private string _windowTitle = string.Empty;
@@ -308,7 +326,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
                      Description = "ウィンドウのクラス名")]
     private string _windowClassName = string.Empty;
 
-    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button}";
+    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button} / 押下維持:{HoldDurationMs}ms / 方式:{ClickInjectionMode} / 移動シミュレート:{(SimulateMouseMove ? "ON" : "OFF")}";
 
     public ClickImageItem() { }
 
@@ -325,6 +343,9 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
         Timeout = item.Timeout;
         Interval = item.Interval;
         Button = item.Button;
+        HoldDurationMs = item.HoldDurationMs;
+        ClickInjectionMode = item.ClickInjectionMode;
+        SimulateMouseMove = item.SimulateMouseMove;
         WindowTitle = item.WindowTitle;
         WindowClassName = item.WindowClassName;
     }
@@ -358,7 +379,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
             return false;
         }
 
-        await context.ClickAsync(result.Point.Value.X, result.Point.Value.Y, Button, WindowTitle, WindowClassName).ConfigureAwait(false);
+        await context.ClickAsync(result.Point.Value.X, result.Point.Value.Y, Button, WindowTitle, WindowClassName, HoldDurationMs, ClickInjectionMode, SimulateMouseMove).ConfigureAwait(false);
         context.Log($"画像をクリックしました。({result.Point.Value.X}, {result.Point.Value.Y})");
         return true;
     }

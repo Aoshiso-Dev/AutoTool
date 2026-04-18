@@ -88,6 +88,21 @@ public partial class SampleItem : CommandListItem, IClickImageItem, IClickImageC
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("押下維持時間", EditorType.NumberBox, Group = "クリック設定", Order = 2, Min = 0, Unit = "ミリ秒")]
+    private int _holdDurationMs = 20;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("注入方式", EditorType.ComboBox, Group = "クリック設定", Order = 3, Options = "MouseEvent,SendInput")]
+    private string _clickInjectionMode = "MouseEvent";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("移動シミュレート", EditorType.CheckBox, Group = "クリック設定", Order = 4)]
+    private bool _simulateMouseMove = false;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
     [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1)]
     private string _windowTitle = string.Empty;
 
@@ -158,7 +173,10 @@ public partial class SampleItem : CommandListItem, IClickImageItem, IClickImageC
                     point.Value.Y,
                     Button,
                     WindowTitle,
-                    WindowClassName).ConfigureAwait(false);
+                    WindowClassName,
+                    HoldDurationMs,
+                    ClickInjectionMode,
+                    SimulateMouseMove).ConfigureAwait(false);
 
                 context.Log($"クリック成功: ({point.Value.X}, {point.Value.Y})");
                 return true;
@@ -233,7 +251,7 @@ void Log(string message);
 string? GetVariable(string name);
 void SetVariable(string name, string value);
 string ToAbsolutePath(string relativePath);
-Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null);
+Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent", bool simulateMouseMove = false);
 Task SendHotkeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null);
 Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken);
 Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken);

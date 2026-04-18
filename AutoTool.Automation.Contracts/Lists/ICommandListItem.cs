@@ -85,6 +85,9 @@ public interface IClickImageItem : ICommandListItem
     public int Timeout { get; set; }
     public int Interval { get; set; }
     public CommandMouseButton Button { get; set; }
+    public int HoldDurationMs { get; set; }
+    public string ClickInjectionMode { get; set; }
+    public bool SimulateMouseMove { get; set; }
     public string WindowTitle { get; set; }
     public string WindowClassName { get; set; }
 }
@@ -102,6 +105,9 @@ public interface IHotkeyItem : ICommandListItem
 public interface IClickItem : ICommandListItem
 {
     public CommandMouseButton Button { get; set; }
+    public int HoldDurationMs { get; set; }
+    public string ClickInjectionMode { get; set; }
+    public bool SimulateMouseMove { get; set; }
     public int X { get; set; }
     public int Y { get; set; }
     public string WindowTitle { get; set; }
@@ -222,6 +228,9 @@ public interface IClickImageAIItem : ICommandListItem
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
     CommandMouseButton Button { get; set; }
+    int HoldDurationMs { get; set; }
+    string ClickInjectionMode { get; set; }
+    bool SimulateMouseMove { get; set; }
 }
 
 public interface IExecuteItem : ICommandListItem

@@ -114,6 +114,24 @@ namespace AutoTool.Automation.Runtime.Lists;
         [property: CommandProperty("マウスボタン", EditorType.MouseButtonPicker, Group = "クリック設定", Order = 1,
                          Description = "クリックに使用するボタン")]
         private CommandMouseButton _button = CommandMouseButton.Left;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("押下維持時間", EditorType.NumberBox, Group = "クリック設定", Order = 2,
+                         Description = "マウス押下から離すまでの待機時間", Unit = "ミリ秒", Min = 0)]
+        private int _holdDurationMs = 20;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("注入方式", EditorType.ComboBox, Group = "クリック設定", Order = 3,
+                         Description = "クリック入力の送信方式", Options = "MouseEvent,SendInput")]
+        private string _clickInjectionMode = "MouseEvent";
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("移動シミュレート", EditorType.CheckBox, Group = "クリック設定", Order = 4,
+                         Description = "クリック前にマウス移動を段階的にシミュレートする")]
+        private bool _simulateMouseMove = false;
         
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
@@ -127,7 +145,7 @@ namespace AutoTool.Automation.Runtime.Lists;
                          Description = "ウィンドウのクラス名")]
         private string _windowClassName = string.Empty;
 
-        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / X座標:{X} / Y座標:{Y} / ボタン:{Button}";
+        new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / X座標:{X} / Y座標:{Y} / ボタン:{Button} / 押下維持:{HoldDurationMs}ms / 方式:{ClickInjectionMode} / 移動シミュレート:{(SimulateMouseMove ? "ON" : "OFF")}";
 
         public ClickItem() { }
 
@@ -138,6 +156,9 @@ namespace AutoTool.Automation.Runtime.Lists;
                 X = item.X;
                 Y = item.Y;
                 Button = item.Button;
+                HoldDurationMs = item.HoldDurationMs;
+                ClickInjectionMode = item.ClickInjectionMode;
+                SimulateMouseMove = item.SimulateMouseMove;
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
             }
@@ -150,7 +171,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         
     public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
-            await context.ClickAsync(X, Y, Button, WindowTitle, WindowClassName).ConfigureAwait(false);
+            await context.ClickAsync(X, Y, Button, WindowTitle, WindowClassName, HoldDurationMs, ClickInjectionMode, SimulateMouseMove).ConfigureAwait(false);
             
             var targetDescription = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
                 ? "グローバル"

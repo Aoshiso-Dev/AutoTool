@@ -87,9 +87,9 @@ public class CommandExecutionContext : ICommandExecutionContext
         return _pathResolver.ToAbsolutePath(relativePath);
     }
     
-    public Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null)
+    public Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent", bool simulateMouseMove = false)
     {
-        return _mouseInput.ClickAsync(x, y, button, windowTitle, windowClassName);
+        return _mouseInput.ClickAsync(x, y, button, windowTitle, windowClassName, holdDurationMs, clickInjectionMode, simulateMouseMove);
     }
     
     public Task SendHotkeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null)

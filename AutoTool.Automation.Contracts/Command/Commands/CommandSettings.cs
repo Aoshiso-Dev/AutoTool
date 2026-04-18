@@ -81,6 +81,9 @@ public class ClickImageCommandSettings : ICommandSettings, IClickImageCommandSet
     public int Timeout { get; set; } = 5000;
     public int Interval { get; set; } = 500;
     public CommandMouseButton Button { get; set; } = CommandMouseButton.Left;
+    public int HoldDurationMs { get; set; } = 20;
+    public string ClickInjectionMode { get; set; } = "MouseEvent";
+    public bool SimulateMouseMove { get; set; } = false;
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;
 }
@@ -98,6 +101,9 @@ public class HotkeyCommandSettings : ICommandSettings, IHotkeyCommandSettings
 public class ClickCommandSettings : ICommandSettings, IClickCommandSettings
 {
     public CommandMouseButton Button { get; set; } = CommandMouseButton.Left;
+    public int HoldDurationMs { get; set; } = 20;
+    public string ClickInjectionMode { get; set; } = "MouseEvent";
+    public bool SimulateMouseMove { get; set; } = false;
     public int X { get; set; }
     public int Y { get; set; }
     public string WindowTitle { get; set; } = string.Empty;
@@ -278,6 +284,9 @@ public class ClickImageAICommandSettings : ICommandSettings, IClickImageAIComman
     public double ConfThreshold { get; set; } = 0.5;
     public double IoUThreshold { get; set; } = 0.25;
     public CommandMouseButton Button { get; set; } = CommandMouseButton.Left;
+    public int HoldDurationMs { get; set; } = 20;
+    public string ClickInjectionMode { get; set; } = "MouseEvent";
+    public bool SimulateMouseMove { get; set; } = false;
 
     public void Validate()
     {
