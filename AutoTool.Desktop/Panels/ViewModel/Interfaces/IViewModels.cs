@@ -61,6 +61,8 @@ public interface IButtonPanelViewModel
     event Action? UpRequested;
     event Action? DownRequested;
     event Action? DeleteRequested;
+    event Action? CopyRequested;
+    event Action? PasteRequested;
 
     void Prepare();
     void SetRunningState(bool isRunning);

@@ -1,12 +1,14 @@
 ﻿using AutoTool.Application.Files;
 using AutoTool.Application.History;
-using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Application.History.Commands;
+using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Desktop.ViewModel;
 
 public partial class MacroPanelViewModel
 {
+    private ICommandListItem? _inAppCommandClipboardItem;
+
     private void HandleClear()
     {
         if (_commandHistory is not null)
@@ -119,6 +121,59 @@ public partial class MacroPanelViewModel
         _editPanel.SetListCount(_listPanel.GetCount());
     }
 
+    private void HandleCopy()
+    {
+        var selectedItem = _listPanel.SelectedItem;
+        if (selectedItem is null && _listPanel.SelectedLineNumber >= 0 && _listPanel.SelectedLineNumber < _listPanel.GetCount())
+        {
+            selectedItem = _listPanel.GetItem(_listPanel.SelectedLineNumber + 1);
+        }
+
+        if (selectedItem is null)
+        {
+            _notifier.ShowInfo("コピーするコマンドを選択してください。", "コピー");
+            return;
+        }
+
+        try
+        {
+            var copiedItem = selectedItem.Clone();
+            PrepareItemForPaste(copiedItem);
+            _inAppCommandClipboardItem = copiedItem;
+        }
+        catch (Exception ex)
+        {
+            _notifier.ShowError($"コピーに失敗しました。\n{ex.Message}", "コピー");
+        }
+    }
+
+    private void HandlePaste()
+    {
+        if (!TryReadInAppClipboardItem(out var copiedItem))
+        {
+            _notifier.ShowInfo("コピー済みのコマンドがありません。", "貼り付け");
+            return;
+        }
+
+        var targetIndex = _listPanel.SelectedLineNumber >= 0 ? _listPanel.SelectedLineNumber + 1 : _listPanel.GetCount();
+
+        if (_commandHistory is not null)
+        {
+            var addCommand = new AddItemCommand(
+                copiedItem,
+                targetIndex,
+                (item, index) => _listPanel.InsertAt(index, item),
+                index => _listPanel.RemoveAt(index));
+            _commandHistory.ExecuteCommand(addCommand);
+        }
+        else
+        {
+            _listPanel.InsertAt(targetIndex, copiedItem);
+        }
+
+        _editPanel.SetListCount(_listPanel.GetCount());
+    }
+
     private void HandleEdit(ICommandListItem? item)
     {
         if (item is null) return;
@@ -203,5 +258,49 @@ public partial class MacroPanelViewModel
         }
 
         _editPanel.SetListCount(_listPanel.GetCount());
+    }
+
+    private static void PrepareItemForPaste(ICommandListItem item)
+    {
+        item.LineNumber = 0;
+        item.IsRunning = false;
+        item.IsSelected = false;
+        item.Progress = 0;
+        item.NestLevel = 0;
+        item.IsInLoop = false;
+        item.IsInIf = false;
+
+        if (item is IIfItem ifItem)
+        {
+            ifItem.Pair = null;
+        }
+
+        if (item is IIfEndItem ifEndItem)
+        {
+            ifEndItem.Pair = null;
+        }
+
+        if (item is ILoopItem loopItem)
+        {
+            loopItem.Pair = null;
+        }
+
+        if (item is ILoopEndItem loopEndItem)
+        {
+            loopEndItem.Pair = null;
+        }
+    }
+
+    private bool TryReadInAppClipboardItem(out ICommandListItem item)
+    {
+        item = default!;
+        if (_inAppCommandClipboardItem is null)
+        {
+            return false;
+        }
+
+        item = _inAppCommandClipboardItem.Clone();
+        PrepareItemForPaste(item);
+        return true;
     }
 }

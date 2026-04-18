@@ -114,6 +114,18 @@
 
         <!-- 削除・クリア -->
         <StackPanel Grid.Column="3" Orientation="Horizontal">
+            <ui:Button Icon="{ui:SymbolIcon Copy24}"
+                       ToolTip="コピー (Ctrl+C)"
+                       Command="{Binding CopyCommand}"
+                       IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
+                       Appearance="Secondary"
+                       Margin="0,0,4,0"/>
+            <ui:Button Icon="{ui:SymbolIcon ClipboardPaste24}"
+                       ToolTip="貼り付け (Ctrl+V)"
+                       Command="{Binding PasteCommand}"
+                       IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
+                       Appearance="Secondary"
+                       Margin="0,0,4,0"/>
             <ui:Button Icon="{ui:SymbolIcon Delete24}" 
                        ToolTip="削除"
                        Command="{Binding DeleteCommand}" 

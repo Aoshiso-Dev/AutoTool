@@ -29,6 +29,8 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
     public event Action? UpRequested;
     public event Action? DownRequested;
     public event Action? DeleteRequested;
+    public event Action? CopyRequested;
+    public event Action? PasteRequested;
 
     public ButtonPanelViewModel(ICommandRegistry commandRegistry)
     {
@@ -107,6 +109,12 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
 
     [RelayCommand]
     public void Delete() => DeleteRequested?.Invoke();
+
+    [RelayCommand]
+    public void Copy() => CopyRequested?.Invoke();
+
+    [RelayCommand]
+    public void Paste() => PasteRequested?.Invoke();
 
     public void SetRunningState(bool isRunning) => IsRunning = isRunning;
 

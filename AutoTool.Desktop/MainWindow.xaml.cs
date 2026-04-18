@@ -1,7 +1,11 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using AutoTool.Application.Ports;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Desktop.Model;
+using AutoTool.Desktop.Panels.ViewModel;
 using AutoTool.Desktop.View;
 using Wpf.Ui.Controls;
 
@@ -96,5 +100,62 @@ public partial class MainWindow : FluentWindow
     {
         await Task.Delay(1500).ConfigureAwait(false);
         Environment.Exit(0);
+    }
+
+    private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.C or Key.V) || Keyboard.Modifiers != ModifierKeys.Control)
+        {
+            return;
+        }
+
+        if (!CanHandleMacroClipboardShortcut())
+        {
+            return;
+        }
+
+        if (_viewModel.MacroPanelViewModel.ButtonPanelViewModel is not ButtonPanelViewModel buttonPanelViewModel)
+        {
+            return;
+        }
+
+        var command = e.Key switch
+        {
+            Key.C => buttonPanelViewModel.CopyCommand,
+            Key.V => buttonPanelViewModel.PasteCommand,
+            _ => null
+        };
+
+        if (command is null || !command.CanExecute(null))
+        {
+            return;
+        }
+
+        command.Execute(null);
+        e.Handled = true;
+    }
+
+    private bool CanHandleMacroClipboardShortcut()
+    {
+        if (_viewModel.SelectedTabIndex != TabIndexes.Macro || _viewModel.IsRunning)
+        {
+            return false;
+        }
+
+        var focused = Keyboard.FocusedElement as DependencyObject;
+        return !IsTextInputContext(focused);
+    }
+
+    private static bool IsTextInputContext(DependencyObject? focused)
+    {
+        for (var current = focused; current is not null; current = LogicalTreeHelper.GetParent(current))
+        {
+            if (current is TextBoxBase or System.Windows.Controls.PasswordBox or ComboBox { IsEditable: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

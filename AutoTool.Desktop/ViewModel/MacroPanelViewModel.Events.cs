@@ -18,6 +18,8 @@ public partial class MacroPanelViewModel
         _buttonPanel.UpRequested += HandleUp;
         _buttonPanel.DownRequested += HandleDown;
         _buttonPanel.DeleteRequested += HandleDelete;
+        _buttonPanel.CopyRequested += HandleCopy;
+        _buttonPanel.PasteRequested += HandlePaste;
 
         _listPanel.SelectedItemChanged += HandleSelectedItemChanged;
         _listPanel.ItemDoubleClicked += HandleItemDoubleClick;
@@ -39,6 +41,8 @@ public partial class MacroPanelViewModel
         _buttonPanel.UpRequested -= HandleUp;
         _buttonPanel.DownRequested -= HandleDown;
         _buttonPanel.DeleteRequested -= HandleDelete;
+        _buttonPanel.CopyRequested -= HandleCopy;
+        _buttonPanel.PasteRequested -= HandlePaste;
 
         _listPanel.SelectedItemChanged -= HandleSelectedItemChanged;
         _listPanel.ItemDoubleClicked -= HandleItemDoubleClick;

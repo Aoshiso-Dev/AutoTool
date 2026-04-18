@@ -11,7 +11,8 @@
         MinWidth="640" MinHeight="420"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="Mica"
-        WindowCornerPreference="Round">
+        WindowCornerPreference="Round"
+        PreviewKeyDown="MainWindow_PreviewKeyDown">
 
     <ui:FluentWindow.Resources>
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
@@ -27,6 +28,8 @@
         <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}"/>
         <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}"/>
         <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}"/>
+        <KeyBinding Key="C" Modifiers="Ctrl" Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.CopyCommand}"/>
+        <KeyBinding Key="V" Modifiers="Ctrl" Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.PasteCommand}"/>
     </ui:FluentWindow.InputBindings>
 
     <Grid>

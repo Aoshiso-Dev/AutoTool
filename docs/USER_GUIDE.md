@@ -44,6 +44,8 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 - `Ctrl+Shift+S`: 名前を付けて保存
 - `Ctrl+Z`: 元に戻す
 - `Ctrl+Y` / `Ctrl+Shift+Z`: やり直し
+- `Ctrl+C`: 選択中コマンドをコピー
+- `Ctrl+V`: コピー済みコマンドを選択行の下へ貼り付け
 
 設定:
 
@@ -58,6 +60,7 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
   - コンパクト時: 説明列を隠して操作列を優先表示
   - 標準/広め: 説明列を表示し、行高・列幅を拡張
   - `S/M/L` に応じて行高とフォントサイズを切り替えます（`S` は密度優先、`L` は視認性優先）
+- コマンド操作ボタン列に `コピー` / `貼り付け` ボタンがあります（ショートカットと同等）
 
 ## 4. 基本操作フロー
 
