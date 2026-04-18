@@ -243,6 +243,14 @@ public partial class CommandList : ObservableObject, ICommandList
 
             foreach (var item in deserializedItems)
             {
+                if (string.IsNullOrWhiteSpace(item.ItemType) || string.Equals(item.ItemType, "None", StringComparison.Ordinal))
+                {
+                    if (CommandMetadataCatalog.TryGetByItemType(item.GetType(), out var metadata))
+                    {
+                        item.ItemType = metadata.TypeName;
+                    }
+                }
+
                 // 定義プロバイダーを使用して適切な型を作成
                 var itemType = _commandDefinitionProvider.GetItemType(item.ItemType);
                 if (itemType is not null)
