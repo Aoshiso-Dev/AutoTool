@@ -1,7 +1,7 @@
 ﻿# AutoTool
 
 AutoTool は、Windows 上で定型操作をマクロとして作成・保存・実行するための WPF デスクトップアプリです。  
-画面操作（クリック・キー入力）、画像認識、OCR、AI 検出などを組み合わせて自動化フローを構築できます。
+画面操作（クリック・キー入力）、画像認識、OCR、AI 検出を組み合わせた自動化フローを構築できます。
 
 ## ドキュメント
 
@@ -16,7 +16,14 @@ AutoTool は、Windows 上で定型操作をマクロとして作成・保存・
 ```powershell
 dotnet restore .\AutoTool.sln
 dotnet build .\AutoTool.sln -c Debug
-dotnet run --project .\AutoTool\AutoTool.csproj
+dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
+```
+
+## テスト実行
+
+```powershell
+dotnet test .\AutoTool.Tests.Application\AutoTool.Tests.Application.csproj -c Debug
+dotnet test .\AutoTool.Tests.Domain\AutoTool.Tests.Domain.csproj -c Debug
 ```
 
 ## パフォーマンス計測（コマンド生成）
@@ -24,25 +31,25 @@ dotnet run --project .\AutoTool\AutoTool.csproj
 コマンド生成（`MacroFactory.CreateMacro`）のベンチマークは次で実行できます。
 
 ```powershell
-dotnet run -c Release --project .\AutoTool.Automation.Runtime.Benchmarks\AutoTool.Automation.Runtime.Benchmarks.csproj -- --filter *MacroFactoryBenchmarks*
+dotnet run -c Release --project .\AutoTool.Benchmarks.Automation\AutoTool.Benchmarks.Automation.csproj -- --filter *MacroFactoryBenchmarks*
 ```
-
-既定では `100 / 1000 / 10000` 件のコマンド規模で計測します。
 
 ## ソリューション構成（要点）
 
-- `AutoTool`: アプリ起動エントリ（WPF WinExe）
-- `AutoTool.Desktop`: 画面・ViewModel・ホスト構成
-- `AutoTool.Automation.Runtime`: 業務ロジック・モデル・ポート
-- `AutoTool.Infrastructure`: Win32 / OpenCV / OCR / 永続化などの実装
-- `AutoTool.Automation.Contracts`: コマンド実行の契約・基底型
-- `AutoTool.Commands`: コマンド層
-- `AutoTool.Automation.Runtime.Tests`: コアロジックのテスト
-- `AutoTool.Automation.Runtime.Benchmarks`: コマンド生成パフォーマンス計測
+- `AutoTool.Bootstrap`: アプリ起動エントリ（WPF WinExe）
+- `AutoTool.Desktop`: UI / ViewModel / Host 構成
+- `AutoTool.Application`: ユースケース層（履歴管理、ファイル操作、Ports）
+- `AutoTool.Domain`: ドメインモデル
+- `AutoTool.Automation.Contracts`: コマンド実行契約・入力/サービス抽象
+- `AutoTool.Automation.Runtime`: コマンド定義・マクロ生成・シリアライズ
+- `AutoTool.Infrastructure`: Win32 / OpenCV / OCR / 永続化など技術実装
+- `AutoTool.Tests.Application`: Application/Runtime の回帰テスト
+- `AutoTool.Tests.Domain`: Domain モデルテスト
+- `AutoTool.Benchmarks.Automation`: ベンチマーク
 
 ## 対応環境
 
 - Windows
 - .NET 8 SDK
 
-詳細手順は [利用者向けガイド](docs/USER_GUIDE.md) を参照してください。
+詳細は [利用者向けガイド](docs/USER_GUIDE.md) を参照してください。

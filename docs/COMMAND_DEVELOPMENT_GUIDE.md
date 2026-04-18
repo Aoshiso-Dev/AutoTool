@@ -13,19 +13,18 @@
 
 ## 最重要ルール
 
-1. **`[CommandDefinition]` は必須**
-- これがないと一覧にもシリアライズにも乗りません。
+1. **`[CommandDefinition]` は必須**  
+   これがないと一覧にもシリアライズにも乗りません。
 
-2. **`ExecuteAsync` をオーバーライドする場合**
-- `SimpleCommandBinding` は不要です。
-- `ReflectionCommandRegistry` が `ExecuteAsync` オーバーライドを検出し、`SimpleCommand` 経由で実行します。
+2. **`ExecuteAsync` をオーバーライドする場合**  
+   `SimpleCommandBinding` は不要です。  
+   `ReflectionCommandRegistry` が `ExecuteAsync` オーバーライドを検出し、`SimpleCommand` 経由で実行します。
 
-3. **`ExecuteAsync` をオーバーライドしない場合**
-- `[SimpleCommandBinding]` が必要です。
-- 典型例: `IfEndItem` / `LoopEndItem` / `LoopBreakItem`
+3. **`ExecuteAsync` をオーバーライドしない場合**  
+   `[SimpleCommandBinding]` が必要です。  
+   典型例: `IfEndItem` / `LoopEndItem` / `LoopBreakItem`
 
-4. **`ExecuteAsync` のシグネチャは現行で `ValueTask<bool>`**
-- `Task<bool>` ではなく、次の形に合わせます。
+4. **`ExecuteAsync` のシグネチャは `ValueTask<bool>`**
 
 ```csharp
 public override async ValueTask<bool> ExecuteAsync(
@@ -34,18 +33,19 @@ public override async ValueTask<bool> ExecuteAsync(
 ```
 
 5. **引数型は現行の入力モデルを使用**
+
 - マウス: `CommandMouseButton`
 - キー: `CommandKey`
 
 ## 追加手順（推奨）
 
-1. `CommandListItem*.cs` に `partial class` を追加する  
-2. `CommandTypeNames` の既存定数を使う（新規 type 名を作る場合は定数追加）  
-3. `CommandProperty` 付きプロパティを定義する  
-4. `Description` を実装する  
-5. `Clone()` とコピーコンストラクタを実装する  
-6. 必要なら `ExecuteAsync` を実装する（通常はこちら）  
-7. ビルドして一覧・実行・保存/読込を確認する  
+1. `CommandListItem*.cs` に `partial class` を追加する
+2. `CommandTypeNames` の既存定数を使う（新規 type 名を作る場合は定数追加）
+3. `CommandProperty` 付きプロパティを定義する
+4. `Description` を実装する
+5. `Clone()` とコピーコンストラクタを実装する
+6. 必要なら `ExecuteAsync` を実装する
+7. ビルドして一覧・実行・保存/読込を確認する
 
 ## 実装テンプレート（`ExecuteAsync` あり）
 
@@ -54,11 +54,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Model.Input;
-using AutoTool.Panels.Attributes;
-using AutoTool.Panels.Model.List.Interface;
-using CommandDef = AutoTool.Panels.Model.CommandDefinition;
+using AutoTool.Automation.Contracts.Lists;
+using AutoTool.Automation.Runtime.Attributes;
+using CommandDef = AutoTool.Automation.Runtime.Definitions;
 
-namespace AutoTool.Panels.List.Class;
+namespace AutoTool.Automation.Runtime.Lists;
 
 [CommandDef.CommandDefinition(
     CommandDef.CommandTypeNames.ClickImage,
@@ -191,7 +191,7 @@ public partial class LoopEndItem : CommandListItem, ILoopEndItem, ICommandSettin
 }
 ```
 
-## `CommandProperty` 属性（現行）
+## `CommandProperty` 属性
 
 `CommandPropertyAttribute` の主なパラメータ:
 
@@ -207,7 +207,7 @@ public partial class LoopEndItem : CommandListItem, ILoopEndItem, ICommandSettin
 - `Options`
 - `FileFilter`
 
-## `EditorType` 一覧（現行 enum）
+## `EditorType` 一覧
 
 - `TextBox`
 - `NumberBox`
@@ -224,7 +224,7 @@ public partial class LoopEndItem : CommandListItem, ILoopEndItem, ICommandSettin
 - `MouseButtonPicker`
 - `MultiLineTextBox`
 
-## `ICommandExecutionContext`（現行）
+## `ICommandExecutionContext`（抜粋）
 
 ```csharp
 DateTimeOffset GetLocalNow();
@@ -262,7 +262,7 @@ CommandDef.CommandCategory.Variable
 5. 実行処理で `CancellationToken` を考慮しているか
 6. 長時間処理で `ReportProgress` / `Log` を使っているか
 7. ファイルパスは `ToAbsolutePath` を使っているか
-8. `dotnet build` 後、UI一覧・実行・保存/読込が通るか
+8. `dotnet build` 後、UI 一覧・実行・保存/読込が通るか
 
 ## トラブルシューティング
 
@@ -276,7 +276,7 @@ CommandDef.CommandCategory.Variable
 
 - `ExecuteAsync` を override していないのに `SimpleCommandBinding` がない
 
-### UIエディタが出ない
+### UI エディタが出ない
 
 - `[property: CommandProperty(...)]` の指定漏れ
 - `EditorType` と型の組み合わせが不適切
