@@ -103,8 +103,10 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
     public ListPanelViewModel(ICommandRegistry commandRegistry, CommandList commandList)
     {
-        _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
-        _commandList = commandList ?? throw new ArgumentNullException(nameof(commandList));
+        ArgumentNullException.ThrowIfNull(commandRegistry);
+        ArgumentNullException.ThrowIfNull(commandList);
+        _commandRegistry = commandRegistry;
+        _commandList = commandList;
     }
 
     #region OnChanged

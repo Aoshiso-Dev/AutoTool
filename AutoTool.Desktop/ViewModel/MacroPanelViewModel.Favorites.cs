@@ -1,4 +1,4 @@
-using AutoTool.Model;
+﻿using AutoTool.Model;
 using AutoTool.Panels.Model.List.Interface;
 using System.IO;
 
@@ -13,7 +13,7 @@ public partial class MacroPanelViewModel
             var snapshotItems = _listPanel.CommandList.Clone().ToList();
             if (snapshotItems.Count == 0)
             {
-                _notifier.ShowError("お気に入りに追加するコマンドがありません。", "お気に入り");
+                _notifier.ShowError("追加できるコマンドがありません。", "お気に入り追加");
                 return;
             }
 
@@ -27,13 +27,13 @@ public partial class MacroPanelViewModel
             {
                 Name = favoriteName,
                 SnapshotPath = snapshotPath,
-                CreatedAt = DateTime.Now
+                CreatedAt = _timeProvider.GetLocalNow()
             });
         }
         catch (Exception ex)
         {
             _logWriter.Write(ex);
-            _notifier.ShowError($"お気に入りの追加に失敗しました。\n{ex.Message}", "お気に入り");
+            _notifier.ShowError($"お気に入り追加に失敗しました。\n{ex.Message}", "お気に入り追加");
         }
     }
 
@@ -51,7 +51,7 @@ public partial class MacroPanelViewModel
         catch (Exception ex)
         {
             _logWriter.Write(ex);
-            _notifier.ShowError($"お気に入りの削除に失敗しました。\n{ex.Message}", "お気に入り");
+            _notifier.ShowError($"お気に入り削除に失敗しました。\n{ex.Message}", "お気に入り削除");
         }
     }
 
@@ -62,7 +62,7 @@ public partial class MacroPanelViewModel
             if (string.IsNullOrWhiteSpace(favorite.SnapshotPath) || !File.Exists(favorite.SnapshotPath))
             {
                 _favoritePanel.RemoveFavorite(favorite);
-                _notifier.ShowError("お気に入りの保存ファイルが見つかりませんでした。", "お気に入り");
+                _notifier.ShowError("お気に入りファイルが見つからないため削除しました。", "お気に入り読み込み");
                 return;
             }
 
@@ -73,7 +73,7 @@ public partial class MacroPanelViewModel
         catch (Exception ex)
         {
             _logWriter.Write(ex);
-            _notifier.ShowError($"お気に入りの読み込みに失敗しました。\n{ex.Message}", "お気に入り");
+            _notifier.ShowError($"お気に入り読込に失敗しました。\n{ex.Message}", "お気に入り読み込み");
         }
     }
 

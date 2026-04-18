@@ -36,11 +36,16 @@ public class SimpleCommand : BaseCommand
         IOcrEngine? ocrEngine = null)
         : base(parent, settings)
     {
-        _item = item ?? throw new ArgumentNullException(nameof(item));
-        _variableStore = variableStore ?? throw new ArgumentNullException(nameof(variableStore));
-        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
-        _mouseInput = mouseInput ?? throw new ArgumentNullException(nameof(mouseInput));
-        _keyboardInput = keyboardInput ?? throw new ArgumentNullException(nameof(keyboardInput));
+        ArgumentNullException.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(variableStore);
+        ArgumentNullException.ThrowIfNull(pathResolver);
+        ArgumentNullException.ThrowIfNull(mouseInput);
+        ArgumentNullException.ThrowIfNull(keyboardInput);
+        _item = item;
+        _variableStore = variableStore;
+        _pathResolver = pathResolver;
+        _mouseInput = mouseInput;
+        _keyboardInput = keyboardInput;
         _processLauncher = processLauncher;
         _screenCapturer = screenCapturer;
         _imageMatcher = imageMatcher;
@@ -48,7 +53,7 @@ public class SimpleCommand : BaseCommand
         _ocrEngine = ocrEngine;
     }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         var context = new CommandExecutionContext(
             this,
@@ -63,6 +68,6 @@ public class SimpleCommand : BaseCommand
             _ocrEngine,
             CommandEventBus);
         
-        return await _item.ExecuteAsync(context, cancellationToken);
+        return await _item.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
     }
 }

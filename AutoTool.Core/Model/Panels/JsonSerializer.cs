@@ -1,14 +1,13 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using AutoTool.Panels.Model.List.Interface;
-using AutoTool.Panels.Model.CommandDefinition;
+using AutoTool.Serialization;
 
 namespace AutoTool.Panels.Serialization;
 
 /// <summary>
-/// マクロファイルのシリアライズ/デシリアライズを行うヘルパークラス
+/// �}�N���t�@�C���̃V���A���C�Y/�f�V���A���C�Y��s���w���p�[�N���X
 /// </summary>
 public interface IMacroFileSerializer
 {
@@ -17,20 +16,15 @@ public interface IMacroFileSerializer
 }
 
 /// <summary>
-/// マクロファイルのシリアライズ/デシリアライズを行うサービス
+/// �}�N���t�@�C���̃V���A���C�Y/�f�V���A���C�Y��s���T�[�r�X
 /// </summary>
 public sealed class MacroFileSerializer : IMacroFileSerializer
 {
     private readonly JsonSerializerOptions _options;
 
-    public MacroFileSerializer(ICommandDefinitionProvider definitionProvider)
+    public MacroFileSerializer()
     {
-        _options = new JsonSerializerOptions
-        {
-            ReferenceHandler = ReferenceHandler.Preserve,
-            WriteIndented = true
-        };
-        _options.Converters.Add(new CommandListItemConverter(definitionProvider));
+        _options = AutoToolJsonOptionsFactory.CreateMacroSerializerOptions();
     }
 
     public void SerializeToFile<T>(T obj, string path)
@@ -40,6 +34,7 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
             File.Delete(path);
         }
 
+        PrepareForSerialization(obj);
         var json = JsonSerializer.Serialize(obj, _options);
         File.WriteAllText(path, json);
     }
@@ -54,61 +49,31 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
         var json = File.ReadAllText(path);
         return JsonSerializer.Deserialize<T>(json, _options);
     }
-}
 
-/// <summary>
-/// ICommandListItemのJSONコンバーター
-/// </summary>
-internal sealed class CommandListItemConverter : JsonConverter<ICommandListItem>
-{
-    private readonly ICommandDefinitionProvider _definitionProvider;
-
-    public CommandListItemConverter(ICommandDefinitionProvider definitionProvider)
+    private static void PrepareForSerialization<T>(T obj)
     {
-        _definitionProvider = definitionProvider ?? throw new ArgumentNullException(nameof(definitionProvider));
-    }
-
-    public override ICommandListItem Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        using var doc = JsonDocument.ParseValue(ref reader);
-        var jsonObject = doc.RootElement;
-        var typeName = jsonObject.GetProperty("ItemType").GetString();
-
-        if (string.IsNullOrEmpty(typeName))
+        if (obj is not IEnumerable<ICommandListItem> items)
         {
-            throw new JsonException("ItemType is not found");
+            return;
         }
 
-        var targetType = _definitionProvider.GetItemType(typeName);
-        if (targetType is not null)
+        foreach (var item in items)
         {
-            return (ICommandListItem?)JsonSerializer.Deserialize(jsonObject.GetRawText(), targetType, options)
-                   ?? throw new JsonException($"Failed to deserialize {typeName}");
+            ClearPairReferences(item);
         }
-        
-        throw new NotSupportedException($"Type {typeName} is not supported");
-    }
-
-    public override void Write(Utf8JsonWriter writer, ICommandListItem value, JsonSerializerOptions options)
-    {
-        // 相互参照回避
-        ClearPairReferences(value);
-
-        JsonSerializer.Serialize(writer, value, value.GetType(), options);
     }
 
     private static void ClearPairReferences(ICommandListItem value)
     {
-        Action clear = value switch
+        var clearAction = value switch
         {
             IIfItem ifItem => () => ifItem.Pair = null,
             IIfEndItem endIfItem => () => endIfItem.Pair = null,
             ILoopItem loopItem => () => loopItem.Pair = null,
             ILoopEndItem endLoopItem => () => endLoopItem.Pair = null,
-            _ => static () => { }
+            _ => (Action?)null
         };
 
-        clear();
+        clearAction?.Invoke();
     }
 }
-

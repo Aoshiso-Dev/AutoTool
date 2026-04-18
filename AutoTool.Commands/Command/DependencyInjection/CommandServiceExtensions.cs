@@ -1,28 +1,28 @@
-﻿using AutoTool.Commands.Infrastructure;
+using System;
+using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AutoTool.Commands.DependencyInjection;
 
-/// <summary>
-/// コマンドサービスのDI拡張メソッド
-/// </summary>
 public static class CommandServiceExtensions
 {
-    /// <summary>
-    /// コマンド実行に必要なサービスをDIコンテナに登録します
-    /// </summary>
-    /// <param name="services">サービスコレクション</param>
-    /// <returns>サービスコレクション</returns>
-    public static IServiceCollection AddCommandServices(this IServiceCollection services)
+    public static IServiceCollection AddCommandServices(
+        this IServiceCollection services,
+        Action<CommandEventBusOptions>? configureCommandEventBus = null)
     {
-        // シングルトンサービス（状態を持つ、または高コストな初期化を持つ）
+        ArgumentNullException.ThrowIfNull(services);
+
+        CommandEventBusOptions commandEventBusOptions = new();
+        configureCommandEventBus?.Invoke(commandEventBusOptions);
+
+        services.AddSingleton(commandEventBusOptions);
+
         services.AddSingleton<ICommandEventBus, CommandEventBus>();
         services.AddSingleton<IVariableStore, InMemoryVariableStore>();
         services.AddSingleton<IObjectDetector, YoloObjectDetector>();
         services.AddSingleton<IPathResolver, PathResolver>();
 
-        // トランジェントサービス（ステートレスなもの）
         services.AddTransient<IImageMatcher, OpenCvImageMatcher>();
         services.AddTransient<IMouseInput, Win32MouseInput>();
         services.AddTransient<IKeyboardInput, Win32KeyboardInput>();

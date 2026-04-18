@@ -32,7 +32,8 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
 
     public ButtonPanelViewModel(ICommandRegistry commandRegistry)
     {
-        _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
+        ArgumentNullException.ThrowIfNull(commandRegistry);
+        _commandRegistry = commandRegistry;
         InitializeItemTypes();
     }
 

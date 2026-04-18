@@ -1,4 +1,6 @@
-﻿namespace AutoTool.Commands.Services;
+namespace AutoTool.Commands.Services;
+
+public sealed record ProcessOutputLine(string Text, bool IsError, DateTimeOffset Timestamp);
 
 /// <summary>
 /// プロセス起動のインターフェース
@@ -22,4 +24,13 @@ public interface IProcessLauncher
     /// <param name="waitForExit">終了を待つかどうか</param>
     /// <param name="cancellationToken">キャンセルトークン</param>
     Task StartAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 標準出力/標準エラーをストリームとして取得しながらプログラムを実行します。
+    /// </summary>
+    IAsyncEnumerable<ProcessOutputLine> StartWithOutputAsync(
+        string programPath,
+        string? arguments = null,
+        string? workingDirectory = null,
+        CancellationToken cancellationToken = default);
 }

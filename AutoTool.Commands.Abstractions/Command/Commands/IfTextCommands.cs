@@ -13,11 +13,13 @@ public class IfTextExistCommand : BaseCommand, IIfCommand, IIfTextExistCommand
     public IfTextExistCommand(ICommand? parent, ICommandSettings settings, IOcrEngine ocrEngine, IPathResolver pathResolver)
         : base(parent, settings)
     {
-        _ocrEngine = ocrEngine ?? throw new ArgumentNullException(nameof(ocrEngine));
-        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+        ArgumentNullException.ThrowIfNull(ocrEngine);
+        ArgumentNullException.ThrowIfNull(pathResolver);
+        _ocrEngine = ocrEngine;
+        _pathResolver = pathResolver;
     }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
@@ -39,13 +41,13 @@ public class IfTextExistCommand : BaseCommand, IIfCommand, IIfTextExistCommand
             TessdataPath = string.IsNullOrWhiteSpace(Settings.TessdataPath)
                 ? Settings.TessdataPath
                 : _pathResolver.ToAbsolutePath(Settings.TessdataPath)
-        }, cancellationToken);
+        }, cancellationToken).ConfigureAwait(false);
 
         var matched = TextMatchEvaluator.IsMatched(result.Text, result.Confidence, Settings);
         if (matched)
         {
             RaiseDoingCommand($"文字が見つかりました。Text=\"{result.Text}\" confidence={result.Confidence:F1}");
-            return await ExecuteChildrenAsync(cancellationToken);
+            return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
         RaiseDoingCommand("文字が見つかりませんでした。");
@@ -63,11 +65,13 @@ public class IfTextNotExistCommand : BaseCommand, IIfCommand, IIfTextNotExistCom
     public IfTextNotExistCommand(ICommand? parent, ICommandSettings settings, IOcrEngine ocrEngine, IPathResolver pathResolver)
         : base(parent, settings)
     {
-        _ocrEngine = ocrEngine ?? throw new ArgumentNullException(nameof(ocrEngine));
-        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+        ArgumentNullException.ThrowIfNull(ocrEngine);
+        ArgumentNullException.ThrowIfNull(pathResolver);
+        _ocrEngine = ocrEngine;
+        _pathResolver = pathResolver;
     }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
@@ -89,13 +93,13 @@ public class IfTextNotExistCommand : BaseCommand, IIfCommand, IIfTextNotExistCom
             TessdataPath = string.IsNullOrWhiteSpace(Settings.TessdataPath)
                 ? Settings.TessdataPath
                 : _pathResolver.ToAbsolutePath(Settings.TessdataPath)
-        }, cancellationToken);
+        }, cancellationToken).ConfigureAwait(false);
 
         var matched = TextMatchEvaluator.IsMatched(result.Text, result.Confidence, Settings);
         if (!matched)
         {
             RaiseDoingCommand("文字が見つかりませんでした。");
-            return await ExecuteChildrenAsync(cancellationToken);
+            return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
         RaiseDoingCommand($"文字が見つかりました。Text=\"{result.Text}\" confidence={result.Confidence:F1}");

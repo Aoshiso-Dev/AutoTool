@@ -1,7 +1,5 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Windows;
 using Color = System.Windows.Media.Color;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
@@ -10,92 +8,16 @@ namespace AutoTool.Commands.Infrastructure;
 
 public static class Win32ScreenCaptureHelper
 {
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT
-    {
-        public int Left;
-        public int Top;
-        public int Right;
-        public int Bottom;
-    }
-
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr FindWindow(string? className, string windowName);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetWindowDC(IntPtr hWnd);
-
-    [DllImport("gdi32.dll")]
-    private static extern bool BitBlt(IntPtr hdcDest, int xDest, int yDest, int width, int height, IntPtr hdcSrc, int xSrc, int ySrc, CopyPixelOperation rop);
-
-    [DllImport("gdi32.dll")]
-    private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
-
-    [DllImport("gdi32.dll")]
-    private static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int width, int height);
-
-    [DllImport("gdi32.dll")]
-    private static extern IntPtr SelectObject(IntPtr hdc, IntPtr hgdiObj);
-
-    [DllImport("gdi32.dll")]
-    private static extern bool DeleteObject(IntPtr hObject);
-
-    [DllImport("gdi32.dll")]
-    private static extern bool DeleteDC(IntPtr hdc);
-
-    [DllImport("user32.dll")]
-    private static extern int ReleaseDC(IntPtr hWnd, IntPtr hdc);
-
     public static Mat CaptureScreen()
     {
-        var width = (int)SystemParameters.VirtualScreenWidth;
-        var height = (int)SystemParameters.VirtualScreenHeight;
-
-        using var bitmap = new Bitmap(width, height);
-        using var graphics = Graphics.FromImage(bitmap);
-        graphics.CopyFromScreen(0, 0, 0, 0, bitmap.Size);
+        using var bitmap = Win32CaptureCore.CapturePrimaryScreen();
         return BitmapConverter.ToMat(bitmap);
     }
 
     public static Mat CaptureWindow(string windowTitle, string windowClassName = "")
     {
-        var hWnd = FindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
-        if (hWnd == IntPtr.Zero)
-        {
-            throw new System.ComponentModel.Win32Exception(
-                Marshal.GetLastWin32Error(),
-                $"Window not found. Title='{windowTitle}', ClassName='{windowClassName}'.");
-        }
-
-        if (!GetWindowRect(hWnd, out var rect))
-        {
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-        }
-
-        var width = rect.Right - rect.Left;
-        var height = rect.Bottom - rect.Top;
-
-        var hdcSrc = GetWindowDC(hWnd);
-        var hdcDest = CreateCompatibleDC(hdcSrc);
-        var hBitmap = CreateCompatibleBitmap(hdcSrc, width, height);
-        var hOld = SelectObject(hdcDest, hBitmap);
-
-        try
-        {
-            BitBlt(hdcDest, 0, 0, width, height, hdcSrc, 0, 0, CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
-            using var bitmap = Image.FromHbitmap(hBitmap);
-            return BitmapConverter.ToMat((Bitmap)bitmap);
-        }
-        finally
-        {
-            SelectObject(hdcDest, hOld);
-            DeleteObject(hBitmap);
-            DeleteDC(hdcDest);
-            ReleaseDC(hWnd, hdcSrc);
-        }
+        using var bitmap = Win32CaptureCore.CaptureWindow(windowTitle, windowClassName);
+        return BitmapConverter.ToMat(bitmap);
     }
 
     public static void SaveCapture(Mat image, string filePath)
@@ -111,9 +33,8 @@ public static class Win32ScreenCaptureHelper
 
     public static Mat CaptureRegion(System.Windows.Rect region)
     {
-        using var bitmap = new Bitmap((int)region.Width, (int)region.Height);
-        using var graphics = Graphics.FromImage(bitmap);
-        graphics.CopyFromScreen((int)region.X, (int)region.Y, 0, 0, bitmap.Size);
+        using var bitmap = Win32CaptureCore.CaptureDesktopRegion(
+            new Rectangle((int)region.X, (int)region.Y, (int)region.Width, (int)region.Height));
         return BitmapConverter.ToMat(bitmap);
     }
 }
@@ -216,4 +137,3 @@ internal static class OpenCvImageSearchHelper
         convert(mat);
     }
 }
-

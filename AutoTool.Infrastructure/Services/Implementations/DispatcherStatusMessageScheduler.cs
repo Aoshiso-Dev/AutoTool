@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Threading;
 using System.Windows.Threading;
 using AutoTool.Core.Ports;
 
@@ -8,13 +9,14 @@ public class DispatcherStatusMessageScheduler : IStatusMessageScheduler
 {
     public void Schedule(TimeSpan delay, Action action)
     {
-        var timer = new DispatcherTimer { Interval = delay };
-        timer.Tick += (s, e) =>
+        var dispatcher = Dispatcher.CurrentDispatcher;
+        _ = Task.Run(async () =>
         {
-            timer.Stop();
-            action();
-        };
-        timer.Start();
+            using var timer = new PeriodicTimer(delay);
+            if (await timer.WaitForNextTickAsync(CancellationToken.None).ConfigureAwait(false))
+            {
+                await dispatcher.InvokeAsync(action);
+            }
+        });
     }
 }
-

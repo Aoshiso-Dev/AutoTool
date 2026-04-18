@@ -9,27 +9,18 @@ using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.Model.MacroFactory;
 
-public class MacroFactory : IMacroFactory
+public class MacroFactory(
+    IServiceProvider serviceProvider,
+    ICommandRegistry commandRegistry,
+    ICommandFactory commandFactory,
+    ICommandEventBus commandEventBus,
+    IEnumerable<ICompositeCommandBuilder> compositeBuilders) : IMacroFactory
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ICommandRegistry _commandRegistry;
-    private readonly ICommandFactory _commandFactory;
-    private readonly ICommandEventBus _commandEventBus;
-    private readonly IReadOnlyList<ICompositeCommandBuilder> _compositeBuilders;
-
-    public MacroFactory(
-        IServiceProvider serviceProvider,
-        ICommandRegistry commandRegistry,
-        ICommandFactory commandFactory,
-        ICommandEventBus commandEventBus,
-        IEnumerable<ICompositeCommandBuilder> compositeBuilders)
-    {
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
-        _commandFactory = commandFactory ?? throw new ArgumentNullException(nameof(commandFactory));
-        _commandEventBus = commandEventBus ?? throw new ArgumentNullException(nameof(commandEventBus));
-        _compositeBuilders = (compositeBuilders ?? throw new ArgumentNullException(nameof(compositeBuilders))).ToList();
-    }
+    private readonly IServiceProvider _serviceProvider = EnsureNotNull(serviceProvider);
+    private readonly ICommandRegistry _commandRegistry = EnsureNotNull(commandRegistry);
+    private readonly ICommandFactory _commandFactory = EnsureNotNull(commandFactory);
+    private readonly ICommandEventBus _commandEventBus = EnsureNotNull(commandEventBus);
+    private readonly IReadOnlyList<ICompositeCommandBuilder> _compositeBuilders = EnsureNotNull(compositeBuilders).ToList();
 
     public ICommand CreateMacro(IEnumerable<ICommandListItem> items)
     {
@@ -139,5 +130,11 @@ public class MacroFactory : IMacroFactory
         return string.Equals(displayName, itemType, StringComparison.Ordinal)
             ? itemType
             : displayName;
+    }
+
+    private static T EnsureNotNull<T>(T value) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value;
     }
 }

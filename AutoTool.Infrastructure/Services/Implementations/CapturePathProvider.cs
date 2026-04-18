@@ -6,6 +6,13 @@ namespace AutoTool.Infrastructure.Implementations;
 
 public sealed class CapturePathProvider : ICapturePathProvider
 {
+    private readonly TimeProvider _timeProvider;
+
+    public CapturePathProvider(TimeProvider? timeProvider = null)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
+
     public string CreateCaptureFilePath()
     {
         var appDirectory = ApplicationPathResolver.GetApplicationDirectory();
@@ -17,7 +24,7 @@ public sealed class CapturePathProvider : ICapturePathProvider
             System.Diagnostics.Debug.WriteLine($"キャプチャディレクトリを作成: {captureDirectory}");
         }
 
-        var fileName = $"{DateTime.Now:yyyyMMddHHmmss}.png";
+        var fileName = $"{_timeProvider.GetLocalNow():yyyyMMddHHmmss}.png";
         var fullPath = Path.Combine(captureDirectory, fileName);
         System.Diagnostics.Debug.WriteLine($"キャプチャファイルパス生成: {fullPath}");
         return fullPath;

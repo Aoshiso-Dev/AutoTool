@@ -17,11 +17,13 @@ public class IfImageExistAICommand : BaseCommand, IIfCommand, IIfImageExistAICom
     public IfImageExistAICommand(ICommand? parent, ICommandSettings settings, IObjectDetector objectDetector, IPathResolver pathResolver)
         : base(parent, settings)
     {
-        _objectDetector = objectDetector ?? throw new ArgumentNullException(nameof(objectDetector));
-        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+        ArgumentNullException.ThrowIfNull(objectDetector);
+        ArgumentNullException.ThrowIfNull(pathResolver);
+        _objectDetector = objectDetector;
+        _pathResolver = pathResolver;
     }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
@@ -52,7 +54,7 @@ public class IfImageExistAICommand : BaseCommand, IIfCommand, IIfImageExistAICom
             if (best.ClassId == Settings.ClassID)
             {
                 RaiseDoingCommand($"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) ClassId: {best.ClassId}");
-                return await ExecuteChildrenAsync(cancellationToken);
+                return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -79,11 +81,13 @@ public class IfImageNotExistAICommand : BaseCommand, IIfCommand, IIfImageNotExis
     public IfImageNotExistAICommand(ICommand? parent, ICommandSettings settings, IObjectDetector objectDetector, IPathResolver pathResolver)
         : base(parent, settings)
     {
-        _objectDetector = objectDetector ?? throw new ArgumentNullException(nameof(objectDetector));
-        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+        ArgumentNullException.ThrowIfNull(objectDetector);
+        ArgumentNullException.ThrowIfNull(pathResolver);
+        _objectDetector = objectDetector;
+        _pathResolver = pathResolver;
     }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
@@ -112,7 +116,7 @@ public class IfImageNotExistAICommand : BaseCommand, IIfCommand, IIfImageNotExis
         if (targetDetections.Count == 0)
         {
             RaiseDoingCommand($"クラスID {Settings.ClassID} の画像が見つかりませんでした。");
-            return await ExecuteChildrenAsync(cancellationToken);
+            return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
         if (cancellationToken.IsCancellationRequested)

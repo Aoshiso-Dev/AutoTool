@@ -29,62 +29,29 @@ public partial class PropertyMetadata : ObservableObject
     public string? FileFilter => Attribute.FileFilter;
     public Type PropertyType => PropertyInfo.PropertyType;
 
+    [ObservableProperty]
     private ICommand? _browseCommand;
+
+    [ObservableProperty]
     private ICommand? _captureCommand;
+
+    [ObservableProperty]
     private ICommand? _pickColorCommand;
+
+    [ObservableProperty]
     private ICommand? _getWindowInfoCommand;
+
+    [ObservableProperty]
     private ICommand? _clearCommand;
+
+    [ObservableProperty]
     private string? _helperText;
+
+    [ObservableProperty]
     private string? _validationMessage;
+
+    [ObservableProperty]
     private bool _hasValidationError;
-
-    public ICommand? BrowseCommand
-    {
-        get => _browseCommand;
-        set => SetProperty(ref _browseCommand, value);
-    }
-
-    public ICommand? CaptureCommand
-    {
-        get => _captureCommand;
-        set => SetProperty(ref _captureCommand, value);
-    }
-
-    public ICommand? PickColorCommand
-    {
-        get => _pickColorCommand;
-        set => SetProperty(ref _pickColorCommand, value);
-    }
-
-    public ICommand? GetWindowInfoCommand
-    {
-        get => _getWindowInfoCommand;
-        set => SetProperty(ref _getWindowInfoCommand, value);
-    }
-
-    public ICommand? ClearCommand
-    {
-        get => _clearCommand;
-        set => SetProperty(ref _clearCommand, value);
-    }
-
-    public string? HelperText
-    {
-        get => _helperText;
-        set => SetProperty(ref _helperText, value);
-    }
-
-    public string? ValidationMessage
-    {
-        get => _validationMessage;
-        set => SetProperty(ref _validationMessage, value);
-    }
-
-    public bool HasValidationError
-    {
-        get => _hasValidationError;
-        set => SetProperty(ref _hasValidationError, value);
-    }
 
     public object? Value
     {
@@ -200,40 +167,20 @@ public partial class PropertyMetadata : ObservableObject
         }
     }
 
+    [ObservableProperty]
     private ICommand? _pickKeyCommand;
-    public ICommand? PickKeyCommand
-    {
-        get => _pickKeyCommand;
-        set => SetProperty(ref _pickKeyCommand, value);
-    }
 
+    [ObservableProperty]
     private ICommand? _pickPointCommand;
-    public ICommand? PickPointCommand
-    {
-        get => _pickPointCommand;
-        set => SetProperty(ref _pickPointCommand, value);
-    }
 
+    [ObservableProperty]
     private PropertyMetadata? _relatedProperty;
-    public PropertyMetadata? RelatedProperty
-    {
-        get => _relatedProperty;
-        set => SetProperty(ref _relatedProperty, value);
-    }
 
+    [ObservableProperty]
     private PropertyMetadata? _relatedProperty2;
-    public PropertyMetadata? RelatedProperty2
-    {
-        get => _relatedProperty2;
-        set => SetProperty(ref _relatedProperty2, value);
-    }
 
+    [ObservableProperty]
     private PropertyMetadata? _relatedProperty3;
-    public PropertyMetadata? RelatedProperty3
-    {
-        get => _relatedProperty3;
-        set => SetProperty(ref _relatedProperty3, value);
-    }
 
     public int RelatedIntValue => RelatedProperty?.IntValue ?? 0;
     public int RelatedIntValue2 => RelatedProperty2?.IntValue ?? 0;

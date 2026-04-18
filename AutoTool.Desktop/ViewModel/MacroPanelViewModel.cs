@@ -18,13 +18,17 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private readonly IMacroFactory _macroFactory;
     private readonly IMacroFileSerializer _macroFileSerializer;
     private readonly ICommandRegistry _commandRegistry;
+    private readonly TimeProvider _timeProvider;
     private readonly IListPanelViewModel _listPanel;
     private readonly IEditPanelViewModel _editPanel;
     private readonly IButtonPanelViewModel _buttonPanel;
     private readonly ILogPanelViewModel _logPanel;
     private readonly IFavoritePanelViewModel _favoritePanel;
+    private CancellationTokenSource? _commandEventSubscriptionCts;
+    private Task? _commandEventSubscriptionTask;
     private CancellationTokenSource? _cts;
     private CommandHistoryManager? _commandHistory;
+    private long _lastObservedDroppedCommandEvents;
     private bool _disposed;
     private bool _isEditDialogOpen;
 
@@ -54,23 +58,38 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         IMacroFactory macroFactory,
         IMacroFileSerializer macroFileSerializer,
         ICommandRegistry commandRegistry,
+        TimeProvider timeProvider,
         IListPanelViewModel listPanelViewModel,
         IEditPanelViewModel editPanelViewModel,
         IButtonPanelViewModel buttonPanelViewModel,
         ILogPanelViewModel logPanelViewModel,
         IFavoritePanelViewModel favoritePanelViewModel)
     {
-        _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
-        _logWriter = logWriter ?? throw new ArgumentNullException(nameof(logWriter));
-        _commandEventBus = commandEventBus ?? throw new ArgumentNullException(nameof(commandEventBus));
-        _macroFactory = macroFactory ?? throw new ArgumentNullException(nameof(macroFactory));
-        _macroFileSerializer = macroFileSerializer ?? throw new ArgumentNullException(nameof(macroFileSerializer));
-        _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
-        _listPanel = listPanelViewModel ?? throw new ArgumentNullException(nameof(listPanelViewModel));
-        _editPanel = editPanelViewModel ?? throw new ArgumentNullException(nameof(editPanelViewModel));
-        _buttonPanel = buttonPanelViewModel ?? throw new ArgumentNullException(nameof(buttonPanelViewModel));
-        _logPanel = logPanelViewModel ?? throw new ArgumentNullException(nameof(logPanelViewModel));
-        _favoritePanel = favoritePanelViewModel ?? throw new ArgumentNullException(nameof(favoritePanelViewModel));
+        ArgumentNullException.ThrowIfNull(notifier);
+        ArgumentNullException.ThrowIfNull(logWriter);
+        ArgumentNullException.ThrowIfNull(commandEventBus);
+        ArgumentNullException.ThrowIfNull(macroFactory);
+        ArgumentNullException.ThrowIfNull(macroFileSerializer);
+        ArgumentNullException.ThrowIfNull(commandRegistry);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(listPanelViewModel);
+        ArgumentNullException.ThrowIfNull(editPanelViewModel);
+        ArgumentNullException.ThrowIfNull(buttonPanelViewModel);
+        ArgumentNullException.ThrowIfNull(logPanelViewModel);
+        ArgumentNullException.ThrowIfNull(favoritePanelViewModel);
+
+        _notifier = notifier;
+        _logWriter = logWriter;
+        _commandEventBus = commandEventBus;
+        _macroFactory = macroFactory;
+        _macroFileSerializer = macroFileSerializer;
+        _commandRegistry = commandRegistry;
+        _timeProvider = timeProvider;
+        _listPanel = listPanelViewModel;
+        _editPanel = editPanelViewModel;
+        _buttonPanel = buttonPanelViewModel;
+        _logPanel = logPanelViewModel;
+        _favoritePanel = favoritePanelViewModel;
 
         SubscribeToChildViewModelEvents();
         RegisterCommandEventHandlers();
@@ -117,6 +136,20 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
 
         UnsubscribeFromChildViewModelEvents();
         UnsubscribeCommandEventHandlers();
+        _commandEventSubscriptionCts?.Cancel();
+        _commandEventSubscriptionCts?.Dispose();
+        _commandEventSubscriptionCts = null;
+        if (_commandEventSubscriptionTask is not null)
+        {
+            try
+            {
+                _commandEventSubscriptionTask.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            _commandEventSubscriptionTask = null;
+        }
         _cts?.Cancel();
         _cts?.Dispose();
         _disposed = true;

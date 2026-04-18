@@ -1,8 +1,8 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace AutoTool.Commands.Infrastructure;
 
-public static class Win32MouseInterop
+public static partial class Win32MouseInterop
 {
     [StructLayout(LayoutKind.Sequential)]
     private struct POINT
@@ -20,23 +20,27 @@ public static class Win32MouseInterop
         public int Bottom;
     }
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, int dwExtraInfo);
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "mouse_event")]
+    private static partial void NativeMouseEvent(uint dwFlags, uint dx, uint dy, uint dwData, int dwExtraInfo);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool GetCursorPos(out POINT point);
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "GetCursorPos")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool NativeGetCursorPos(out POINT point);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool SetCursorPos(int x, int y);
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "SetCursorPos")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool NativeSetCursorPos(int x, int y);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr FindWindow(string? className, string windowName);
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true, EntryPoint = "FindWindowW")]
+    private static partial IntPtr NativeFindWindow(string? className, string windowName);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "GetWindowRect")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool NativeGetWindowRect(IntPtr hWnd, out RECT rect);
 
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    [LibraryImport("user32.dll", EntryPoint = "SetForegroundWindow")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool NativeSetForegroundWindow(IntPtr hWnd);
 
     private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
     private const uint MOUSEEVENTF_LEFTUP = 0x0004;
@@ -52,10 +56,7 @@ public static class Win32MouseInterop
 
     public static System.Drawing.Point GetCursorPosition()
     {
-        if (!GetCursorPos(out var point))
-        {
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-        }
+        Win32NativeGuards.ThrowIfFalse(NativeGetCursorPos(out var point), nameof(NativeGetCursorPos));
 
         return new System.Drawing.Point(point.X, point.Y);
     }
@@ -81,43 +82,35 @@ public static class Win32MouseInterop
         var targetX = x;
         var targetY = y;
 
-        if (!GetCursorPos(out var originalPos))
-        {
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-        }
+        Win32NativeGuards.ThrowIfFalse(NativeGetCursorPos(out var originalPos), nameof(NativeGetCursorPos));
 
         if (!string.IsNullOrWhiteSpace(windowTitle))
         {
-            var hWnd = FindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
-            if (hWnd == IntPtr.Zero)
-            {
-                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), $"Window not found: {windowTitle}");
-            }
+            var hWnd = Win32NativeGuards.ThrowIfZero(
+                NativeFindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle),
+                nameof(NativeFindWindow),
+                $"Window not found: {windowTitle}");
 
-            if (!GetWindowRect(hWnd, out var rect))
-            {
-                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-            }
+            Win32NativeGuards.ThrowIfFalse(NativeGetWindowRect(hWnd, out var rect), nameof(NativeGetWindowRect));
 
             targetX += rect.Left;
             targetY += rect.Top;
-            SetForegroundWindow(hWnd);
+            NativeSetForegroundWindow(hWnd);
             await Task.Delay(30).ConfigureAwait(false);
         }
 
         try
         {
-            SetCursorPos(targetX, targetY);
+            NativeSetCursorPos(targetX, targetY);
             await Task.Delay(30).ConfigureAwait(false);
 
-            mouse_event(downEvent, 0, 0, 0, 0);
+            NativeMouseEvent(downEvent, 0, 0, 0, 0);
             await Task.Delay(20).ConfigureAwait(false);
-            mouse_event(upEvent, 0, 0, 0, 0);
+            NativeMouseEvent(upEvent, 0, 0, 0, 0);
         }
         finally
         {
-            SetCursorPos(originalPos.X, originalPos.Y);
+            NativeSetCursorPos(originalPos.X, originalPos.Y);
         }
     }
 }
-

@@ -1,6 +1,8 @@
 ﻿using AutoTool.Commands.Commands;
 using AutoTool.Commands.Interface;
+using AutoTool.Commands.Services;
 using AutoTool.Panels.List.Class;
+using AutoTool.Core.Diagnostics;
 using AutoTool.Panels.Model.MacroFactory;
 using System.Text.RegularExpressions;
 
@@ -18,8 +20,6 @@ public partial class MacroPanelViewModel
         var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
         var commandName = command.GetType().Name.Replace("Command", string.Empty);
         var commandType = command.GetType().FullName ?? command.GetType().Name;
-        var uiLineLabel = FormatUiLineLabel(command.LineNumber);
-        var uiCommandLabel = GetUiCommandLabel(command);
 
         var settingDict = command.Settings.GetType().GetProperties()
             .ToDictionary(x => x.Name, x => x.GetValue(command.Settings, null));
@@ -52,8 +52,7 @@ public partial class MacroPanelViewModel
 
         var lineNumber = command.LineNumber.ToString().PadLeft(2, ' ');
         var commandName = command.GetType().Name.Replace("Command", string.Empty);
-        var uiLineLabel = FormatUiLineLabel(command.LineNumber);
-        var uiCommandLabel = GetUiCommandLabel(command);
+
         _logWriter.Write(
             "FINISH",
             $"Line={lineNumber.Trim()}",
@@ -71,7 +70,7 @@ public partial class MacroPanelViewModel
         });
     }
 
-    private void HandleDoingCommand(ICommand command, string detail)
+    private void HandleDoingCommand(ICommand command, string detail, CommandLogPayload? payload = null)
     {
         if (IsSyntheticRootLoop(command))
         {
@@ -82,13 +81,19 @@ public partial class MacroPanelViewModel
         var commandName = command.GetType().Name.Replace("Command", string.Empty);
         var uiLineLabel = FormatUiLineLabel(command.LineNumber);
         var uiCommandLabel = GetUiCommandLabel(command);
+        var normalizedDetail = payload switch
+        {
+            ProcessOutputLogPayload processOutput => $"{(processOutput.IsError ? "[stderr]" : "[stdout]")} {processOutput.Text}",
+            _ => NormalizeLine(detail)
+        };
+
         _logWriter.Write(
             "DOING",
             $"Line={lineNumber.Trim()}",
             $"Command={commandName}",
-            $"Detail={NormalizeLine(detail)}");
+            $"Detail={normalizedDetail}");
 
-        var briefDetail = ToUiSummary(detail);
+        var briefDetail = ToUiSummary(normalizedDetail);
         OnUiThread(() => _logPanel.WriteLog(uiLineLabel, uiCommandLabel, briefDetail));
     }
 
@@ -113,11 +118,11 @@ public partial class MacroPanelViewModel
             var macro = _macroFactory.CreateMacro(listItems) as LoopCommand;
             if (macro is null)
             {
-                throw new InvalidOperationException("マクロの生成に失敗しました。");
+                throw new InvalidOperationException("マクロの作成に失敗しました。");
             }
 
-            _cts = new CancellationTokenSource();
-            await Task.Run(async () => await macro.Execute(_cts.Token), _cts.Token);
+            _cts = new();
+            await macro.Execute(_cts.Token);
         }
         catch (Exception ex)
         {
@@ -169,31 +174,31 @@ public partial class MacroPanelViewModel
         var validationError = FindCommandValidationException(ex);
         if (validationError is not null)
         {
-            var line = validationError.LineNumber > 0 ? $"（{validationError.LineNumber}行目）" : string.Empty;
+            var line = validationError.LineNumber > 0 ? $"行 {validationError.LineNumber}" : string.Empty;
             var propertyHint = string.IsNullOrWhiteSpace(validationError.PropertyName)
                 ? string.Empty
                 : $"\n項目: {ToUserPropertyName(validationError.PropertyName)}";
             var commandName = ResolveCommandName(validationError);
 
-            return $"設定値が不正です{line}。\nコマンド: {commandName}{propertyHint}\nエラーコード: {validationError.ErrorCode}\n詳細: {validationError.Message}";
+            return $"コマンド設定が正しくありません。\n{line}\nコマンド: {commandName}{propertyHint}\nコード: {validationError.ErrorCode}\n詳細: {validationError.Message}";
         }
 
         var creationError = FindCommandCreationException(ex);
         if (creationError is not null)
         {
-            var line = creationError.LineNumber.HasValue ? $"（{creationError.LineNumber}行目）" : string.Empty;
+            var line = creationError.LineNumber.HasValue ? $"行 {creationError.LineNumber}" : string.Empty;
             var commandName = ToUserCommandName(creationError.ItemType);
             var commandHint = string.IsNullOrWhiteSpace(commandName) ? string.Empty : $"\n対象コマンド: {commandName}";
             return creationError switch
             {
                 PairMismatchException =>
-                    $"コマンドの組み合わせが不完全です{line}。{commandHint}\n開始した条件/ループに対応する「終了」コマンドを追加してください。",
+                    $"対応する開始/終了コマンドの組み合わせが不正です。\n{line}{commandHint}",
                 EmptyStructureException =>
-                    $"条件またはループの中身が空です{line}。{commandHint}\n中に実行したいコマンドを1つ以上追加してください。",
+                    $"複合コマンドの中身が空です。\n{line}{commandHint}",
                 UnsupportedCommandTypeException =>
-                    $"このコマンドはまだ実行に対応していません{line}。{commandHint}\n別のコマンドを使うか、対応版に更新してください。",
+                    $"未対応のコマンドです。\n{line}{commandHint}",
                 _ =>
-                    $"コマンドの構成に問題があります{line}。{commandHint}\n詳細: {ReplaceItemTypeNames(creationError.Message)}"
+                    $"コマンド生成時にエラーが発生しました。\n{line}{commandHint}\n詳細: {ReplaceItemTypeNames(creationError.Message)}"
             };
         }
 
@@ -251,7 +256,7 @@ public partial class MacroPanelViewModel
             return;
         }
 
-        _logPanel.WriteLog(string.Empty, "システム", $"エラー: {NormalizeLine(ex.GetBaseException().Message)}");
+        _logPanel.WriteLog(string.Empty, "システム", $"エラー: {NormalizeLine(ExceptionDetailsFormatter.GetMostRelevantMessage(ex))}");
     }
 
     private string ResolveCommandName(CommandValidationException validationError)
@@ -276,22 +281,22 @@ public partial class MacroPanelViewModel
     {
         return propertyName switch
         {
-            "ImagePath" => "検索画像",
+            "ImagePath" => "画像パス",
             "ModelPath" => "モデルパス",
-            "ProgramPath" => "実行ファイルパス",
+            "ProgramPath" => "プログラムパス",
             "Threshold" => "しきい値",
             "ConfThreshold" => "信頼度しきい値",
             "IoUThreshold" => "IoUしきい値",
             "Timeout" => "タイムアウト",
-            "Interval" => "検索間隔",
+            "Interval" => "間隔",
             "Wait" => "待機時間",
             "Width" => "幅",
             "Height" => "高さ",
             "MinConfidence" => "最小信頼度",
-            "MatchMode" => "マッチ方式",
-            "Name" => "変数名",
+            "MatchMode" => "一致モード",
+            "Name" => "名前",
             "Operator" => "演算子",
-            "TessdataPath" => "tessdataフォルダ",
+            "TessdataPath" => "tessdataパス",
             _ => propertyName
         };
     }
@@ -303,19 +308,19 @@ public partial class MacroPanelViewModel
             "WaitImage" => "画像待機",
             "FindImage" => "画像検索",
             "ClickImage" => "画像クリック",
-            "IfImageExist" => "条件 - 画像存在判定",
-            "IfImageNotExist" => "条件 - 画像非存在判定",
-            "FindText" => "文字検索",
-            "IfTextExist" => "条件 - 文字存在判定",
-            "IfTextNotExist" => "条件 - 文字非存在判定",
-            "IfVariable" => "条件 - 変数比較",
+            "IfImageExist" => "If 画像あり",
+            "IfImageNotExist" => "If 画像なし",
+            "FindText" => "テキスト検索",
+            "IfTextExist" => "If テキストあり",
+            "IfTextNotExist" => "If テキストなし",
+            "IfVariable" => "If 変数",
             "SetVariable" => "変数設定",
-            "SetVariableAI" => "変数設定(AI検出)",
+            "SetVariableAI" => "変数設定(AI)",
             "SetVariableOCR" => "変数設定(OCR)",
-            "Execute" => "プログラム実行",
-            "ClickImageAI" => "画像クリック(AI検出)",
-            "IfImageExistAI" => "条件 - 画像存在判定(AI検出)",
-            "IfImageNotExistAI" => "条件 - 画像非存在判定(AI検出)",
+            "Execute" => "実行",
+            "ClickImageAI" => "画像クリック(AI)",
+            "IfImageExistAI" => "If 画像あり(AI)",
+            "IfImageNotExistAI" => "If 画像なし(AI)",
             "Click" => "クリック",
             "Hotkey" => "ホットキー",
             "Wait" => "待機",
@@ -379,10 +384,9 @@ public partial class MacroPanelViewModel
             return text;
         }
 
-        return Regex.Replace(
+        return ItemTypeNameRegex().Replace(
             text,
-            @"\b[A-Za-z]+(?:_[A-Za-z0-9]+)+\b",
-            match =>
+            static match =>
             {
                 var displayName = CommandListItem.GetDisplayNameForType(match.Value);
                 return string.Equals(displayName, match.Value, StringComparison.Ordinal)
@@ -390,6 +394,9 @@ public partial class MacroPanelViewModel
                     : displayName;
             });
     }
+
+    [GeneratedRegex(@"\b[A-Za-z]+(?:_[A-Za-z0-9]+)+\b", RegexOptions.CultureInvariant)]
+    private static partial Regex ItemTypeNameRegex();
 
     private string GetUiCommandLabel(ICommand command)
     {
@@ -413,4 +420,3 @@ public partial class MacroPanelViewModel
             && command.Parent is RootCommand;
     }
 }
-

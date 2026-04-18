@@ -10,10 +10,7 @@ public class IfCommand : BaseCommand, IIfCommand
 {
     public IfCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings) { }
 
-    protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-    {
-        return Task.FromResult(true);
-    }
+    protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken) => ValueTask.FromResult(true);
 }
 
 /// <summary>
@@ -23,10 +20,10 @@ public class IfEndCommand : BaseCommand
 {
     public IfEndCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings) { }
 
-    protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         ResetChildrenProgress();
-        return Task.FromResult(true);
+        return ValueTask.FromResult(true);
     }
 }
 
@@ -43,11 +40,13 @@ public class IfImageExistCommand : BaseCommand, IIfCommand, IIfImageExistCommand
     public IfImageExistCommand(ICommand? parent, ICommandSettings settings, IImageMatcher imageMatcher, IPathResolver pathResolver)
         : base(parent, settings)
     {
-        _imageMatcher = imageMatcher ?? throw new ArgumentNullException(nameof(imageMatcher));
-        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+        ArgumentNullException.ThrowIfNull(imageMatcher);
+        ArgumentNullException.ThrowIfNull(pathResolver);
+        _imageMatcher = imageMatcher;
+        _pathResolver = pathResolver;
     }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
@@ -70,12 +69,12 @@ public class IfImageExistCommand : BaseCommand, IIfCommand, IIfImageExistCommand
             (imagePath, threshold, searchColor, windowTitle, windowClassName, ct) =>
                 _imageMatcher.SearchImageAsync(imagePath, ct, threshold, searchColor, windowTitle, windowClassName),
             _ => { },
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
 
         if (result.Found && result.Point is not null)
         {
             RaiseDoingCommand($"画像が見つかりました。({result.Point.Value.X}, {result.Point.Value.Y})");
-            return await ExecuteChildrenAsync(cancellationToken);
+            return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
         RaiseDoingCommand("画像が見つかりませんでした。");
@@ -96,11 +95,13 @@ public class IfImageNotExistCommand : BaseCommand, IIfCommand, IIfImageNotExistC
     public IfImageNotExistCommand(ICommand? parent, ICommandSettings settings, IImageMatcher imageMatcher, IPathResolver pathResolver)
         : base(parent, settings)
     {
-        _imageMatcher = imageMatcher ?? throw new ArgumentNullException(nameof(imageMatcher));
-        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+        ArgumentNullException.ThrowIfNull(imageMatcher);
+        ArgumentNullException.ThrowIfNull(pathResolver);
+        _imageMatcher = imageMatcher;
+        _pathResolver = pathResolver;
     }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
@@ -123,12 +124,12 @@ public class IfImageNotExistCommand : BaseCommand, IIfCommand, IIfImageNotExistC
             (imagePath, threshold, searchColor, windowTitle, windowClassName, ct) =>
                 _imageMatcher.SearchImageAsync(imagePath, ct, threshold, searchColor, windowTitle, windowClassName),
             _ => { },
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
 
         if (!result.Found)
         {
             RaiseDoingCommand("画像が見つかりませんでした。");
-            return await ExecuteChildrenAsync(cancellationToken);
+            return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
         RaiseDoingCommand($"画像が見つかりました。({result.Point!.Value.X}, {result.Point.Value.Y})");
@@ -148,10 +149,11 @@ public class IfVariableCommand : BaseCommand, IIfCommand
     public IfVariableCommand(ICommand? parent, ICommandSettings settings, IVariableStore variableStore)
         : base(parent, settings)
     {
-        _variableStore = variableStore ?? throw new ArgumentNullException(nameof(variableStore));
+        ArgumentNullException.ThrowIfNull(variableStore);
+        _variableStore = variableStore;
     }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
@@ -175,7 +177,7 @@ public class IfVariableCommand : BaseCommand, IIfCommand
         if (conditionMet)
         {
             RaiseDoingCommand($"条件一致: {Settings.Name} {Settings.Operator} \"{expectedValue}\" (実際: \"{actualValue}\")");
-            return await ExecuteChildrenAsync(cancellationToken);
+            return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
         RaiseDoingCommand($"条件不一致: {Settings.Name} {Settings.Operator} \"{expectedValue}\" (実際: \"{actualValue}\")");

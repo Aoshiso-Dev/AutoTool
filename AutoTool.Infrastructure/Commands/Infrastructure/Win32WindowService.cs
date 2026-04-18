@@ -1,19 +1,20 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using AutoTool.Commands.Services;
 
 namespace AutoTool.Commands.Infrastructure;
 
 /// <summary>
-/// Win32 APIを使用したウィンドウ操作サービスの実装
+/// Win32 API��g�p�����E�B���h�E����T�[�r�X�̎���
 /// </summary>
-public class Win32WindowService : IWindowService
+public partial class Win32WindowService : IWindowService
 {
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, EntryPoint = "FindWindowW")]
+    private static partial IntPtr NativeFindWindow(string? lpClassName, string? lpWindowName);
 
-    [DllImport("user32.dll")]
-    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowRect")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool NativeGetWindowRect(IntPtr hWnd, out RECT lpRect);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT
@@ -31,28 +32,22 @@ public class Win32WindowService : IWindowService
             return IntPtr.Zero;
         }
 
-        return FindWindow(
-            string.IsNullOrEmpty(windowClassName) ? null : windowClassName,
-            string.IsNullOrEmpty(windowTitle) ? null : windowTitle);
+        var className = string.IsNullOrEmpty(windowClassName) ? null : windowClassName;
+        var title = string.IsNullOrEmpty(windowTitle) ? null : windowTitle;
+        return NativeFindWindow(className, title);
     }
 
     public Rectangle? GetWindowRect(IntPtr windowHandle)
     {
-        if (windowHandle == IntPtr.Zero)
-        {
-            return null;
-        }
-
-        if (GetWindowRect(windowHandle, out var rect))
-        {
-            return new Rectangle(
-                rect.Left,
-                rect.Top,
-                rect.Right - rect.Left,
-                rect.Bottom - rect.Top);
-        }
-
-        return null;
+        return windowHandle == IntPtr.Zero
+            ? null
+            : NativeGetWindowRect(windowHandle, out var rect)
+                ? new Rectangle(
+                    rect.Left,
+                    rect.Top,
+                    rect.Right - rect.Left,
+                    rect.Bottom - rect.Top)
+                : null;
     }
 
     public (int relativeX, int relativeY, bool success, string? errorMessage) ConvertToRelativeCoordinates(
@@ -66,13 +61,13 @@ public class Win32WindowService : IWindowService
         var windowHandle = GetWindowHandle(windowTitle, windowClassName);
         if (windowHandle == IntPtr.Zero)
         {
-            return (absoluteX, absoluteY, false, "指定されたウィンドウが見つかりません。");
+            return (absoluteX, absoluteY, false, "�w�肳�ꂽ�E�B���h�E��������܂���B");
         }
 
         var windowRect = GetWindowRect(windowHandle);
         if (windowRect is null)
         {
-            return (absoluteX, absoluteY, false, "ウィンドウの位置情報が取得できませんでした。");
+            return (absoluteX, absoluteY, false, "�E�B���h�E�̈ʒu��񂪎擾�ł��܂���ł����B");
         }
 
         var relativeX = absoluteX - windowRect.Value.Left;
@@ -81,4 +76,3 @@ public class Win32WindowService : IWindowService
         return (relativeX, relativeY, true, null);
     }
 }
-

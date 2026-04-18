@@ -8,7 +8,7 @@ namespace AutoTool.Commands.Services;
 /// <param name="ClassId">検出されたクラスID</param>
 /// <param name="Score">信頼度スコア</param>
 /// <param name="Rect">検出された領域</param>
-public record DetectionResult(int ClassId, float Score, Rectangle Rect);
+public readonly record struct DetectionResult(int ClassId, float Score, Rectangle Rect);
 
 /// <summary>
 /// AI物体検出のインターフェース

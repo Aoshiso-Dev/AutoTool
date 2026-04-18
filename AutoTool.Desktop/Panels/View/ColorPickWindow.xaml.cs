@@ -1,7 +1,8 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Windows;
 using System.Windows.Media;
 using AutoTool.Commands.Infrastructure;
+using AutoTool.Commands.Threading;
 using Color = System.Windows.Media.Color;
 
 namespace AutoTool.Panels.View;
@@ -9,6 +10,7 @@ namespace AutoTool.Panels.View;
 public partial class ColorPickWindow : Window
 {
     private bool _hookRegistered;
+    private CancellationTokenSource? _hookSubscriptionCts;
 
     public Color? Color { get; private set; }
 
@@ -25,9 +27,8 @@ public partial class ColorPickWindow : Window
             return;
         }
 
-        Win32MouseHookHelper.LButtonUp += OnLButtonUp;
-        Win32MouseHookHelper.RButtonUp += OnRButtonUp;
-        Win32MouseHookHelper.MouseMove += OnMouseMove;
+        _hookSubscriptionCts = new();
+        _ = ConsumeHookEventsAsync(_hookSubscriptionCts.Token);
         Win32MouseHookHelper.StartHook();
         _hookRegistered = true;
     }
@@ -39,14 +40,39 @@ public partial class ColorPickWindow : Window
             return;
         }
 
-        Win32MouseHookHelper.LButtonUp -= OnLButtonUp;
-        Win32MouseHookHelper.RButtonUp -= OnRButtonUp;
-        Win32MouseHookHelper.MouseMove -= OnMouseMove;
+        _hookSubscriptionCts?.Cancel();
+        _hookSubscriptionCts?.Dispose();
+        _hookSubscriptionCts = null;
         Win32MouseHookHelper.StopHook();
         _hookRegistered = false;
     }
 
-    private void OnMouseMove(object? sender, Win32MouseHookHelper.MouseEventArgs e)
+    private async Task ConsumeHookEventsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await foreach (var ev in Win32MouseHookHelper.ReadEventsAsync().ConfigureAwaitFalse(cancellationToken))
+            {
+                switch (ev.Kind)
+                {
+                    case Win32MouseHookHelper.MouseHookEventKind.MouseMove:
+                        await Dispatcher.InvokeAsync(OnMouseMove);
+                        break;
+                    case Win32MouseHookHelper.MouseHookEventKind.LButtonUp:
+                        await Dispatcher.InvokeAsync(OnLButtonUp);
+                        return;
+                    case Win32MouseHookHelper.MouseHookEventKind.RButtonUp:
+                        await Dispatcher.InvokeAsync(OnRButtonUp);
+                        return;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void OnMouseMove()
     {
         var cursorPos = Win32MouseInterop.GetCursorPosition();
         Left = cursorPos.X + 10;
@@ -56,14 +82,14 @@ public partial class ColorPickWindow : Window
         ColorPreview.Fill = new SolidColorBrush(Color ?? Colors.Transparent);
     }
 
-    private void OnLButtonUp(object? sender, Win32MouseHookHelper.MouseEventArgs e)
+    private void OnLButtonUp()
     {
         StopHook();
         DialogResult = true;
         Close();
     }
 
-    private void OnRButtonUp(object? sender, Win32MouseHookHelper.MouseEventArgs e)
+    private void OnRButtonUp()
     {
         StopHook();
         Color = null;
@@ -87,5 +113,4 @@ public partial class ColorPickWindow : Window
         return System.Windows.Media.Color.FromArgb(drawingColor.A, drawingColor.R, drawingColor.G, drawingColor.B);
     }
 }
-
 

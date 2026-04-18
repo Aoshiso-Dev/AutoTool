@@ -7,10 +7,7 @@ namespace AutoTool.Commands.Commands;
 /// </summary>
 public class RootCommand : BaseCommand, IRootCommand
 {
-    protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-    {
-        return Task.FromResult(true);
-    }
+    protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken) => ValueTask.FromResult(true);
 }
 
 /// <summary>
@@ -22,8 +19,5 @@ public class NothingCommand : BaseCommand, IRootCommand
 
     public NothingCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings) { }
 
-    protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-    {
-        return Task.FromResult(true);
-    }
+    protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken) => ValueTask.FromResult(true);
 }

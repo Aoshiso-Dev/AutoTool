@@ -18,12 +18,18 @@ public partial class EditPanelViewModel
         IPanelDialogService panelDialogService,
         ICapturePathProvider capturePathProvider)
     {
-        _commandRegistry = commandRegistry ?? throw new ArgumentNullException(nameof(commandRegistry));
-        _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
-        _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
-        _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
-        _panelDialogService = panelDialogService ?? throw new ArgumentNullException(nameof(panelDialogService));
-        _capturePathProvider = capturePathProvider ?? throw new ArgumentNullException(nameof(capturePathProvider));
+        ArgumentNullException.ThrowIfNull(commandRegistry);
+        ArgumentNullException.ThrowIfNull(windowService);
+        ArgumentNullException.ThrowIfNull(pathResolver);
+        ArgumentNullException.ThrowIfNull(notifier);
+        ArgumentNullException.ThrowIfNull(panelDialogService);
+        ArgumentNullException.ThrowIfNull(capturePathProvider);
+        _commandRegistry = commandRegistry;
+        _windowService = windowService;
+        _pathResolver = pathResolver;
+        _notifier = notifier;
+        _panelDialogService = panelDialogService;
+        _capturePathProvider = capturePathProvider;
 
         _commandRegistry.Initialize();
 

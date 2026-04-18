@@ -82,9 +82,9 @@ namespace AutoTool.Panels.List.Class;
             return new HotkeyItem(this);
         }
         
-        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+    public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
-            await context.SendHotkeyAsync(Key, Ctrl, Alt, Shift, WindowTitle, WindowClassName);
+            await context.SendHotkeyAsync(Key, Ctrl, Alt, Shift, WindowTitle, WindowClassName).ConfigureAwait(false);
             
             List<string> keys = [];
             if (Ctrl) keys.Add("Ctrl");
@@ -149,9 +149,9 @@ namespace AutoTool.Panels.List.Class;
             return new ClickItem(this);
         }
         
-        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+    public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
-            await context.ClickAsync(X, Y, Button, WindowTitle, WindowClassName);
+            await context.ClickAsync(X, Y, Button, WindowTitle, WindowClassName).ConfigureAwait(false);
             
             var targetDescription = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
                 ? "グローバル"
@@ -187,7 +187,7 @@ namespace AutoTool.Panels.List.Class;
             return new WaitItem(this);
         }
         
-        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+    public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             
@@ -198,7 +198,7 @@ namespace AutoTool.Panels.List.Class;
                 var progress = Wait > 0 ? (int)((stopwatch.ElapsedMilliseconds * 100) / Wait) : 100;
                 context.ReportProgress(Math.Clamp(progress, 0, 100));
                 
-                await Task.Delay(100, cancellationToken);
+                await Task.Delay(100, cancellationToken).ConfigureAwait(false);
             }
             
             context.Log("待機完了");

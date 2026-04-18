@@ -4,7 +4,7 @@ using AutoTool.Commands.Services;
 namespace AutoTool.Commands.Commands;
 
 /// <summary>
-/// コマンドの基底クラス
+/// 郢ｧ・ｳ郢晄ｧｭﾎｦ郢晏ｳｨ繝ｻ陜難ｽｺ陟手ｼ斐￠郢晢ｽｩ郢ｧ・ｹ
 /// </summary>
 public abstract class BaseCommand : ICommand
 {
@@ -29,9 +29,10 @@ public abstract class BaseCommand : ICommand
 
     protected BaseCommand(ICommand? parent, ICommandSettings settings)
     {
+        ArgumentNullException.ThrowIfNull(settings);
         Parent = parent;
         NestLevel = parent is null ? 0 : parent.NestLevel + 1;
-        Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        Settings = settings;
         Children = [];
         InitializeEventHandlers();
     }
@@ -56,7 +57,7 @@ public abstract class BaseCommand : ICommand
         {
             CommandSettingsValidator.Validate(Settings);
             OnStartCommand?.Invoke(this, EventArgs.Empty);
-            var result = await DoExecuteAsync(cancellationToken);
+            var result = await DoExecuteAsync(cancellationToken).ConfigureAwait(false);
             OnFinishCommand?.Invoke(this, EventArgs.Empty);
             return result;
         }
@@ -72,12 +73,12 @@ public abstract class BaseCommand : ICommand
         }
     }
 
-    protected abstract Task<bool> DoExecuteAsync(CancellationToken cancellationToken);
+    protected abstract ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken);
 
     public bool CanExecute() => true;
 
     /// <summary>
-    /// ログメッセージを発行します
+    /// 郢晢ｽｭ郢ｧ・ｰ郢晢ｽ｡郢昴・縺晉ｹ晢ｽｼ郢ｧ・ｸ郢ｧ蝣､蛹ｱ髯ｦ蠕鯉ｼ邵ｺ・ｾ邵ｺ繝ｻ
     /// </summary>
     protected void RaiseDoingCommand(string message)
     {
@@ -85,7 +86,7 @@ public abstract class BaseCommand : ICommand
     }
 
     /// <summary>
-    /// 進捗を報告します
+    /// 鬨ｾ・ｲ隰仙干・定撻・ｱ陷ｻ鄙ｫ・邵ｺ・ｾ邵ｺ繝ｻ
     /// </summary>
     protected void ReportProgress(double elapsedMilliseconds, double totalMilliseconds)
     {
@@ -103,7 +104,7 @@ public abstract class BaseCommand : ICommand
     }
 
     /// <summary>
-    /// 子コマンドの進捗をリセットします
+    /// 陝・・縺慕ｹ晄ｧｭﾎｦ郢晏ｳｨ繝ｻ鬨ｾ・ｲ隰仙干・堤ｹ晢ｽｪ郢ｧ・ｻ郢昴・繝ｨ邵ｺ蜉ｱ竏ｪ邵ｺ繝ｻ
     /// </summary>
     protected void ResetChildrenProgress()
     {
@@ -114,13 +115,13 @@ public abstract class BaseCommand : ICommand
     }
 
     /// <summary>
-    /// 子コマンドを順に実行します
+    /// 陝・・縺慕ｹ晄ｧｭﾎｦ郢晏ｳｨ・帝ｬ・・竊楢楜貅ｯ・｡蠕鯉ｼ邵ｺ・ｾ邵ｺ繝ｻ
     /// </summary>
     protected async Task<bool> ExecuteChildrenAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
-            throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
+            throw new InvalidOperationException("No child commands are configured. Add at least one command before executing children.");
         }
 
         ResetChildrenProgress();
@@ -132,7 +133,7 @@ public abstract class BaseCommand : ICommand
                 return false;
             }
 
-            if (!await command.Execute(cancellationToken))
+            if (!await command.Execute(cancellationToken).ConfigureAwait(false))
             {
                 return false;
             }
@@ -149,10 +150,19 @@ public abstract class BaseCommand : ICommand
         public event EventHandler<CommandEventArgs>? Finished { add { } remove { } }
         public event EventHandler<CommandLogEventArgs>? Doing { add { } remove { } }
         public event EventHandler<CommandProgressEventArgs>? ProgressUpdated { add { } remove { } }
+        public long DroppedEventCount => 0;
+        public int SubscriberCount => 0;
 
         public void PublishStarted(ICommand command) { }
         public void PublishFinished(ICommand command) { }
         public void PublishDoing(ICommand command, string detail) { }
+        public void PublishDoing(ICommand command, string detail, CommandLogPayload payload) { }
         public void PublishProgress(ICommand command, int progress) { }
+        public async IAsyncEnumerable<CommandBusEvent> ReadEventsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.CompletedTask;
+            yield break;
+        }
     }
 }
+

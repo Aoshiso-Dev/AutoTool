@@ -5,14 +5,9 @@ using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.Model.MacroFactory;
 
-public sealed class LoopCompositeCommandBuilder : ICompositeCommandBuilder
+public sealed class LoopCompositeCommandBuilder(ICommandFactory commandFactory) : ICompositeCommandBuilder
 {
-    private readonly ICommandFactory _commandFactory;
-
-    public LoopCompositeCommandBuilder(ICommandFactory commandFactory)
-    {
-        _commandFactory = commandFactory ?? throw new ArgumentNullException(nameof(commandFactory));
-    }
+    private readonly ICommandFactory _commandFactory = EnsureNotNull(commandFactory);
 
     public bool CanBuild(ICommandListItem item) => item is ILoopItem;
 
@@ -50,5 +45,11 @@ public sealed class LoopCompositeCommandBuilder : ICompositeCommandBuilder
         loopCommand.Children = buildChildren(loopCommand, childrenListItems);
 
         return loopCommand;
+    }
+
+    private static ICommandFactory EnsureNotNull(ICommandFactory value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value;
     }
 }

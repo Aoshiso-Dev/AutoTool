@@ -22,8 +22,8 @@ public interface ICommandListItem
     /// <summary>
     /// Execute the command logic (override in derived classes)
     /// </summary>
-    Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
-        => Task.FromResult(true);
+    ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        => ValueTask.FromResult(true);
 }
 
 public interface IWaitImageItem : ICommandListItem

@@ -6,14 +6,9 @@ using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.Panels.Model.MacroFactory;
 
-public sealed class IfCompositeCommandBuilder : ICompositeCommandBuilder
+public sealed class IfCompositeCommandBuilder(ICommandFactory commandFactory) : ICompositeCommandBuilder
 {
-    private readonly ICommandFactory _commandFactory;
-
-    public IfCompositeCommandBuilder(ICommandFactory commandFactory)
-    {
-        _commandFactory = commandFactory ?? throw new ArgumentNullException(nameof(commandFactory));
-    }
+    private readonly ICommandFactory _commandFactory = EnsureNotNull(commandFactory);
 
     public bool CanBuild(ICommandListItem item) => item is IIfItem;
 
@@ -145,5 +140,11 @@ public sealed class IfCompositeCommandBuilder : ICompositeCommandBuilder
         command.LineNumber = ifItem.LineNumber;
         command.IsEnabled = ifItem.IsEnable;
         return command;
+    }
+
+    private static ICommandFactory EnsureNotNull(ICommandFactory value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value;
     }
 }

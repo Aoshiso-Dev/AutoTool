@@ -132,9 +132,9 @@ namespace AutoTool.Panels.List.Class;
         /// <summary>
         /// Execute the command logic (override in derived classes)
         /// </summary>
-        public virtual Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        public virtual ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
-            return Task.FromResult(true);
+            return ValueTask.FromResult(true);
         }
 
         protected void SetIsEnableWithPair(ICommandListItem? pair, bool value)

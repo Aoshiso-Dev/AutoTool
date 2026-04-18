@@ -1,18 +1,18 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System.Windows.Input;
 
 namespace AutoTool.Commands.Infrastructure;
 
-internal static class Win32KeyboardInputHelper
+internal static partial class Win32KeyboardInputHelper
 {
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "keybd_event")]
+    private static partial void NativeKeybdEvent(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr FindWindow(string? className, string windowName);
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true, EntryPoint = "FindWindowW")]
+    private static partial IntPtr NativeFindWindow(string? className, string windowName);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr SendMessage(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam);
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "SendMessageW")]
+    private static partial IntPtr NativeSendMessage(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam);
 
     private const uint KeyEventfKeyDown = 0x0000;
     private const uint KeyEventfKeyUp = 0x0002;
@@ -73,68 +73,67 @@ internal static class Win32KeyboardInputHelper
 
     private static void KeyDownGlobal(Key key)
     {
-        keybd_event((byte)KeyInterop.VirtualKeyFromKey(key), 0, KeyEventfKeyDown, UIntPtr.Zero);
+        NativeKeybdEvent((byte)KeyInterop.VirtualKeyFromKey(key), 0, KeyEventfKeyDown, UIntPtr.Zero);
     }
 
     private static void KeyUpGlobal(Key key)
     {
-        keybd_event((byte)KeyInterop.VirtualKeyFromKey(key), 0, KeyEventfKeyUp, UIntPtr.Zero);
+        NativeKeybdEvent((byte)KeyInterop.VirtualKeyFromKey(key), 0, KeyEventfKeyUp, UIntPtr.Zero);
     }
 
     private static void KeyDownToWindow(Key key, bool ctrl, bool alt, bool shift, string windowTitle, string windowClassName)
     {
-        var hWnd = FindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
+        var hWnd = NativeFindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
         if (hWnd == IntPtr.Zero)
         {
             throw new System.ComponentModel.Win32Exception(
-                Marshal.GetLastWin32Error(),
+                Marshal.GetLastPInvokeError(),
                 $"Window not found. Title='{windowTitle}', ClassName='{windowClassName}'.");
         }
 
         if (ctrl)
         {
-            SendMessage(hWnd, WmKeyDown, (IntPtr)VkControl, IntPtr.Zero);
+            NativeSendMessage(hWnd, WmKeyDown, (IntPtr)VkControl, IntPtr.Zero);
         }
 
         if (alt)
         {
-            SendMessage(hWnd, WmKeyDown, (IntPtr)VkMenu, IntPtr.Zero);
+            NativeSendMessage(hWnd, WmKeyDown, (IntPtr)VkMenu, IntPtr.Zero);
         }
 
         if (shift)
         {
-            SendMessage(hWnd, WmKeyDown, (IntPtr)VkShift, IntPtr.Zero);
+            NativeSendMessage(hWnd, WmKeyDown, (IntPtr)VkShift, IntPtr.Zero);
         }
 
-        SendMessage(hWnd, WmKeyDown, (IntPtr)KeyInterop.VirtualKeyFromKey(key), IntPtr.Zero);
+        NativeSendMessage(hWnd, WmKeyDown, (IntPtr)KeyInterop.VirtualKeyFromKey(key), IntPtr.Zero);
     }
 
     private static void KeyUpToWindow(Key key, bool ctrl, bool alt, bool shift, string windowTitle, string windowClassName)
     {
-        var hWnd = FindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
+        var hWnd = NativeFindWindow(string.IsNullOrWhiteSpace(windowClassName) ? null : windowClassName, windowTitle);
         if (hWnd == IntPtr.Zero)
         {
             throw new System.ComponentModel.Win32Exception(
-                Marshal.GetLastWin32Error(),
+                Marshal.GetLastPInvokeError(),
                 $"Window not found. Title='{windowTitle}', ClassName='{windowClassName}'.");
         }
 
-        SendMessage(hWnd, WmKeyUp, (IntPtr)KeyInterop.VirtualKeyFromKey(key), IntPtr.Zero);
+        NativeSendMessage(hWnd, WmKeyUp, (IntPtr)KeyInterop.VirtualKeyFromKey(key), IntPtr.Zero);
 
         if (ctrl)
         {
-            SendMessage(hWnd, WmKeyUp, (IntPtr)VkControl, IntPtr.Zero);
+            NativeSendMessage(hWnd, WmKeyUp, (IntPtr)VkControl, IntPtr.Zero);
         }
 
         if (alt)
         {
-            SendMessage(hWnd, WmKeyUp, (IntPtr)VkMenu, IntPtr.Zero);
+            NativeSendMessage(hWnd, WmKeyUp, (IntPtr)VkMenu, IntPtr.Zero);
         }
 
         if (shift)
         {
-            SendMessage(hWnd, WmKeyUp, (IntPtr)VkShift, IntPtr.Zero);
+            NativeSendMessage(hWnd, WmKeyUp, (IntPtr)VkShift, IntPtr.Zero);
         }
     }
 }
-

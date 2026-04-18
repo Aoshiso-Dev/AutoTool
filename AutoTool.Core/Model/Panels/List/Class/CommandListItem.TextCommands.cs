@@ -177,7 +177,7 @@ public partial class FindTextItem : CommandListItem, IFindTextItem, IFindTextCom
         return new FindTextItem(this);
     }
 
-    public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+    public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var timeout = Math.Max(0, Timeout);
@@ -206,7 +206,7 @@ public partial class FindTextItem : CommandListItem, IFindTextItem, IFindTextCom
                 TessdataPath = string.IsNullOrWhiteSpace(TessdataPath)
                     ? TessdataPath
                     : context.ToAbsolutePath(TessdataPath)
-            }, cancellationToken);
+            }, cancellationToken).ConfigureAwait(false);
 
             var matched = IsMatched(result.Text, result.Confidence);
             SaveResultVariables(context, matched, result.Text, result.Confidence);
@@ -225,7 +225,7 @@ public partial class FindTextItem : CommandListItem, IFindTextItem, IFindTextCom
 
             var progress = timeout > 0 ? (int)((stopwatch.ElapsedMilliseconds * 100) / timeout) : 100;
             context.ReportProgress(Math.Clamp(progress, 0, 100));
-            await Task.Delay(interval, cancellationToken);
+            await Task.Delay(interval, cancellationToken).ConfigureAwait(false);
         }
 
         context.Log("文字が見つかりませんでした。");

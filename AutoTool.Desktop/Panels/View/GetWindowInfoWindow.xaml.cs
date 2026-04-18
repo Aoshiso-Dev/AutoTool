@@ -1,17 +1,13 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Ribbon.Primitives;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Shapes;
-using System.Drawing;
+using System.Windows;
 using AutoTool.Commands.Infrastructure;
+using AutoTool.Commands.Threading;
 
 namespace AutoTool.Panels.View;
 
 public partial class GetWindowInfoWindow : Window
 {
     private bool _hookRegistered;
+    private CancellationTokenSource? _hookSubscriptionCts;
 
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;
@@ -20,49 +16,67 @@ public partial class GetWindowInfoWindow : Window
     {
         InitializeComponent();
 
-        // 現在のマウスカーソル位置を取得
-        var _screenCurrentPoint = Win32MouseInterop.GetCursorPosition();
+        var screenCurrentPoint = Win32MouseInterop.GetCursorPosition();
+        Left = screenCurrentPoint.X + 5;
+        Top = screenCurrentPoint.Y + 5;
 
-        // ウィンドウの位置をマウスポインタの位置に変更
-        this.Left = _screenCurrentPoint.X + 5;
-        this.Top = _screenCurrentPoint.Y + 5;
+        StartHook();
+    }
 
-        Win32MouseHookHelper.LButtonDown += OnMouseDown;
-        Win32MouseHookHelper.MouseMove += OnMouseMove;
-        Win32MouseHookHelper.LButtonUp += OnMouseUp;
+    private void StartHook()
+    {
+        if (_hookRegistered)
+        {
+            return;
+        }
 
+        _hookSubscriptionCts = new();
+        _ = ConsumeHookEventsAsync(_hookSubscriptionCts.Token);
         Win32MouseHookHelper.StartHook();
         _hookRegistered = true;
     }
 
-    private void OnMouseDown(object? sender, Win32MouseHookHelper.MouseEventArgs e)
+    private async Task ConsumeHookEventsAsync(CancellationToken cancellationToken)
     {
-
+        try
+        {
+            await foreach (var ev in Win32MouseHookHelper.ReadEventsAsync().ConfigureAwaitFalse(cancellationToken))
+            {
+                switch (ev.Kind)
+                {
+                    case Win32MouseHookHelper.MouseHookEventKind.MouseMove:
+                        await Dispatcher.InvokeAsync(OnMouseMove);
+                        break;
+                    case Win32MouseHookHelper.MouseHookEventKind.LButtonUp:
+                        await Dispatcher.InvokeAsync(OnMouseUp);
+                        return;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
-    private void OnMouseMove(object? sender, Win32MouseHookHelper.MouseEventArgs e)
+    private void OnMouseMove()
     {
-        // 現在のマウスカーソル位置を取得
-        var _screenCurrentPoint = Win32MouseInterop.GetCursorPosition();
+        var screenCurrentPoint = Win32MouseInterop.GetCursorPosition();
+        Left = screenCurrentPoint.X + 5;
+        Top = screenCurrentPoint.Y - Height - 5;
 
-        // ウィンドウの位置をマウスポインタの位置に変更
-        this.Left = _screenCurrentPoint.X + 5;
-        this.Top = _screenCurrentPoint.Y - this.Height - 5;
-
-        // 直下のウィンドウ情報を取得
-        TextBlock_WindowTitle.Text = Win32WindowInfoHelper.GetWindowTitle(_screenCurrentPoint);
-        TextBlock_WindowClassName.Text = Win32WindowInfoHelper.GetWindowClassName(_screenCurrentPoint);
+        TextBlock_WindowTitle.Text = Win32WindowInfoHelper.GetWindowTitle(screenCurrentPoint);
+        TextBlock_WindowClassName.Text = Win32WindowInfoHelper.GetWindowClassName(screenCurrentPoint);
     }
 
-    private void OnMouseUp(object? sender, Win32MouseHookHelper.MouseEventArgs e)
+    private void OnMouseUp()
     {
         StopHook();
 
         WindowTitle = TextBlock_WindowTitle.Text;
         WindowClassName = TextBlock_WindowClassName.Text;
 
-        this.DialogResult = true;
-        this.Close();
+        DialogResult = true;
+        Close();
     }
 
     private void StopHook()
@@ -72,9 +86,9 @@ public partial class GetWindowInfoWindow : Window
             return;
         }
 
-        Win32MouseHookHelper.LButtonDown -= OnMouseDown;
-        Win32MouseHookHelper.MouseMove -= OnMouseMove;
-        Win32MouseHookHelper.LButtonUp -= OnMouseUp;
+        _hookSubscriptionCts?.Cancel();
+        _hookSubscriptionCts?.Dispose();
+        _hookSubscriptionCts = null;
         Win32MouseHookHelper.StopHook();
         _hookRegistered = false;
     }
@@ -85,5 +99,4 @@ public partial class GetWindowInfoWindow : Window
         base.OnClosed(e);
     }
 }
-
 

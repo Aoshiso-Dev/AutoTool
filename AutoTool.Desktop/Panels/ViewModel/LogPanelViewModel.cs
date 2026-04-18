@@ -10,6 +10,7 @@ public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
 {
     private readonly ObservableCollection<LogEntry> _logEntries = [];
     private readonly ICollectionView _filteredLogEntries;
+    private readonly TimeProvider _timeProvider;
 
     [ObservableProperty]
     private bool _isRunning;
@@ -20,8 +21,9 @@ public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
     public ObservableCollection<LogEntry> LogEntries => _logEntries;
     public ICollectionView FilteredLogEntries => _filteredLogEntries;
 
-    public LogPanelViewModel()
+    public LogPanelViewModel(TimeProvider timeProvider)
     {
+        _timeProvider = timeProvider;
         _filteredLogEntries = CollectionViewSource.GetDefaultView(_logEntries);
         _filteredLogEntries.Filter = FilterLogEntry;
     }
@@ -44,7 +46,7 @@ public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
     {
         AppendLogEntry(new LogEntry
         {
-            Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            Timestamp = _timeProvider.GetLocalNow().ToString("yyyy-MM-dd HH:mm:ss"),
             LineNumber = string.Empty,
             CommandName = "システム",
             Message = text,
@@ -56,7 +58,7 @@ public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
     {
         AppendLogEntry(new LogEntry
         {
-            Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            Timestamp = _timeProvider.GetLocalNow().ToString("yyyy-MM-dd HH:mm:ss"),
             LineNumber = lineNumber,
             CommandName = commandName,
             Message = detail,
@@ -99,32 +101,15 @@ public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
 
     private static LogEntryLevel DetectLevel(string detail)
     {
-        if (string.IsNullOrWhiteSpace(detail))
+        return detail switch
         {
-            return LogEntryLevel.Info;
-        }
-
-        if (ContainsAny(detail, "エラー", "error", "E_"))
-        {
-            return LogEntryLevel.Error;
-        }
-
-        if (ContainsAny(detail, "警告", "warning", "warn"))
-        {
-            return LogEntryLevel.Warning;
-        }
-
-        if (ContainsAny(detail, "開始", "start"))
-        {
-            return LogEntryLevel.Start;
-        }
-
-        if (ContainsAny(detail, "完了", "成功", "success"))
-        {
-            return LogEntryLevel.Success;
-        }
-
-        return LogEntryLevel.Info;
+            _ when string.IsNullOrWhiteSpace(detail) => LogEntryLevel.Info,
+            _ when ContainsAny(detail, "エラー", "error", "E_") => LogEntryLevel.Error,
+            _ when ContainsAny(detail, "警告", "warning", "warn") => LogEntryLevel.Warning,
+            _ when ContainsAny(detail, "開始", "start") => LogEntryLevel.Start,
+            _ when ContainsAny(detail, "完了", "成功", "success") => LogEntryLevel.Success,
+            _ => LogEntryLevel.Info
+        };
     }
 
     private static bool ContainsAny(string text, params string[] keywords)
@@ -140,3 +125,4 @@ public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
         return false;
     }
 }
+

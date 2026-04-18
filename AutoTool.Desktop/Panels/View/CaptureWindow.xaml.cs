@@ -15,11 +15,11 @@ public partial class CaptureWindow : Window
     private System.Drawing.Point _screenCurrentPoint;
     private System.Windows.Point _canvasStartPoint;
     private System.Windows.Point _canvasCurrentPoint;
-    private System.Windows.Shapes.Rectangle _canvasSelectionRectangle;
+    private readonly System.Windows.Shapes.Rectangle _canvasSelectionRectangle;
 
     public int Mode { get; set; } = 0;
     public Rect SelectedRegion { get; set; } = Rect.Empty;
-    public System.Drawing.Point SelectedPoint { get; set; } = new System.Drawing.Point();
+    public System.Drawing.Point SelectedPoint { get; set; } = default;
 
 
     public CaptureWindow()
@@ -39,27 +39,22 @@ public partial class CaptureWindow : Window
 
     private void Window_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (Mode == 0)
+        switch (Mode)
         {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
+            case 0 when e.LeftButton == MouseButtonState.Pressed:
                 _screenStartPoint = Win32MouseInterop.GetCursorPosition();
                 _canvasStartPoint = PointToScreen(e.GetPosition(this));
 
                 _canvasSelectionRectangle.Visibility = Visibility.Visible;
-
                 Canvas.SetLeft(_canvasSelectionRectangle, _canvasStartPoint.X);
                 Canvas.SetTop(_canvasSelectionRectangle, _canvasStartPoint.Y);
-            }
-        }
-        else if (Mode == 1)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
+                break;
+
+            case 1 when e.LeftButton == MouseButtonState.Pressed:
                 SelectedPoint = Win32MouseInterop.GetCursorPosition();
-                this.DialogResult = true;
-                this.Close();
-            }
+                DialogResult = true;
+                Close();
+                break;
         }
     }
 

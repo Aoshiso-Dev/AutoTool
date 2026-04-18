@@ -30,7 +30,8 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
 
     public FavoritePanelViewModel(IFavoriteMacroStore favoriteMacroStore)
     {
-        _favoriteMacroStore = favoriteMacroStore ?? throw new ArgumentNullException(nameof(favoriteMacroStore));
+        ArgumentNullException.ThrowIfNull(favoriteMacroStore);
+        _favoriteMacroStore = favoriteMacroStore;
         LoadFavorites();
     }
 

@@ -54,7 +54,7 @@ namespace AutoTool.Panels.List.Class;
             return new ExecuteItem(this);
         }
         
-        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
             try
             {
@@ -63,7 +63,7 @@ namespace AutoTool.Panels.List.Class;
                     ? WorkingDirectory
                     : context.ToAbsolutePath(WorkingDirectory);
 
-                await context.ExecuteProgramAsync(absoluteProgramPath, Arguments, absoluteWorkingDirectory, WaitForExit, cancellationToken);
+                await context.ExecuteProgramAsync(absoluteProgramPath, Arguments, absoluteWorkingDirectory, WaitForExit, cancellationToken).ConfigureAwait(false);
                 context.Log($"プログラムを実行しました: {absoluteProgramPath}");
                 return true;
             }
@@ -104,11 +104,11 @@ namespace AutoTool.Panels.List.Class;
 
         public new ICommandListItem Clone() => new SetVariableItem(this);
         
-        public override Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        public override ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
             context.SetVariable(Name, Value);
             context.Log($"変数 {Name} = \"{Value}\" を設定しました");
-            return Task.FromResult(true);
+            return ValueTask.FromResult(true);
         }
     }
 
@@ -179,7 +179,7 @@ namespace AutoTool.Panels.List.Class;
             return new SetVariableAIItem(this);
         }
         
-        public override Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        public override ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
             var absoluteModelPath = context.ToAbsolutePath(ModelPath);
             context.InitializeAIModel(absoluteModelPath, 640, true);
@@ -197,7 +197,7 @@ namespace AutoTool.Panels.List.Class;
         };
         context.SetVariable(Name, value);
             context.Log($"AI検出結果: {Name} = {value} (モード: {AIDetectMode}, 検出数: {detections.Count})");
-            return Task.FromResult(true);
+            return ValueTask.FromResult(true);
         }
     }
 
@@ -296,7 +296,7 @@ namespace AutoTool.Panels.List.Class;
 
         public new ICommandListItem Clone() => new SetVariableOCRItem(this);
 
-        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
             try
             {
@@ -315,7 +315,7 @@ namespace AutoTool.Panels.List.Class;
                     TessdataPath = string.IsNullOrWhiteSpace(TessdataPath)
                         ? TessdataPath
                         : context.ToAbsolutePath(TessdataPath)
-                }, cancellationToken);
+                }, cancellationToken).ConfigureAwait(false);
 
                 var value = result.Confidence >= MinConfidence ? result.Text : string.Empty;
                 context.SetVariable(Name, value);
@@ -410,7 +410,7 @@ namespace AutoTool.Panels.List.Class;
 
         public new ICommandListItem Clone() => new ScreenshotItem(this);
         
-        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
             try
             {
@@ -426,7 +426,7 @@ namespace AutoTool.Panels.List.Class;
                 var fileName = $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png";
                 var filePath = System.IO.Path.Combine(dir, fileName);
 
-                await context.TakeScreenshotAsync(filePath, WindowTitle, WindowClassName, cancellationToken);
+                await context.TakeScreenshotAsync(filePath, WindowTitle, WindowClassName, cancellationToken).ConfigureAwait(false);
                 
                 context.Log($"スクリーンショットを保存しました: {filePath}");
                 return true;
@@ -504,7 +504,7 @@ namespace AutoTool.Panels.List.Class;
 
         public new ICommandListItem Clone() => new ClickImageAIItem(this);
         
-        public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
             var absoluteModelPath = context.ToAbsolutePath(ModelPath);
             context.InitializeAIModel(absoluteModelPath, 640, true);
@@ -518,7 +518,7 @@ namespace AutoTool.Panels.List.Class;
                 int centerX = best.Rect.X + best.Rect.Width / 2;
                 int centerY = best.Rect.Y + best.Rect.Height / 2;
 
-                await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName);
+                await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName).ConfigureAwait(false);
                 context.Log($"AI画像クリックしました。({centerX}, {centerY}) ClassId: {best.ClassId}, Score: {best.Score:F2}");
                 return true;
             }

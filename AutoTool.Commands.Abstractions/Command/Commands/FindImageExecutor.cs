@@ -4,9 +4,9 @@ using System.IO;
 
 namespace AutoTool.Commands.Commands;
 
-public sealed class FindImageOptions
+public sealed record FindImageOptions
 {
-    public string ImagePath { get; init; } = string.Empty;
+    public required string ImagePath { get; init; }
     public double Threshold { get; init; } = 0.8;
     public Color? SearchColor { get; init; }
     public int Timeout { get; init; }
@@ -49,7 +49,7 @@ public static class FindImageExecutor
                 options.SearchColor,
                 options.WindowTitle,
                 options.WindowClassName,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
 
             if (point is not null)
             {
@@ -65,7 +65,7 @@ public static class FindImageExecutor
             var progress = timeout > 0 ? (int)((stopwatch.ElapsedMilliseconds * 100) / timeout) : 100;
             reportProgress?.Invoke(Math.Clamp(progress, 0, 100));
 
-            await Task.Delay(interval, cancellationToken);
+            await Task.Delay(interval, cancellationToken).ConfigureAwait(false);
         }
 
         return new FindImageResult(false, null, (int)stopwatch.ElapsedMilliseconds);

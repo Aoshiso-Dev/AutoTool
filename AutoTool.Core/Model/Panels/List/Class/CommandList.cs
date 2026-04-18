@@ -18,8 +18,10 @@ public partial class CommandList : ObservableObject, ICommandList
 
     public CommandList(ICommandDefinitionProvider commandDefinitionProvider, IMacroFileSerializer macroFileSerializer)
     {
-        _commandDefinitionProvider = commandDefinitionProvider ?? throw new ArgumentNullException(nameof(commandDefinitionProvider));
-        _macroFileSerializer = macroFileSerializer ?? throw new ArgumentNullException(nameof(macroFileSerializer));
+        ArgumentNullException.ThrowIfNull(commandDefinitionProvider);
+        ArgumentNullException.ThrowIfNull(macroFileSerializer);
+        _commandDefinitionProvider = commandDefinitionProvider;
+        _macroFileSerializer = macroFileSerializer;
     }
 
     public ICommandListItem this[int index]
@@ -60,10 +62,7 @@ public partial class CommandList : ObservableObject, ICommandList
 
     public void Override(int index, ICommandListItem item)
     {
-        if(item is null)
-        {
-            throw new ArgumentNullException(nameof(item));
-        }
+        ArgumentNullException.ThrowIfNull(item);
 
         if(index < 0 || index >= Items.Count)
         {

@@ -23,7 +23,7 @@ public class CommandListTests
     {
         var registry = new ReflectionCommandRegistry();
         registry.Initialize();
-        var serializer = new MacroFileSerializer(registry);
+        var serializer = new MacroFileSerializer();
         return new CommandList(registry, serializer);
     }
 
@@ -104,7 +104,7 @@ public class MacroFactoryTests
         var registry = provider.GetRequiredService<ICommandRegistry>();
         registry.Initialize();
 
-        var serializer = new MacroFileSerializer((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>());
+        var serializer = new MacroFileSerializer();
         var list = new CommandList((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>(), serializer);
 
         var ifItem = new IfVariableItem
@@ -149,7 +149,7 @@ public class MacroFactoryTests
         var registry = provider.GetRequiredService<ICommandRegistry>();
         registry.Initialize();
 
-        var serializer = new MacroFileSerializer((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>());
+        var serializer = new MacroFileSerializer();
         var list = new CommandList((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>(), serializer);
 
         var ifItem = new IfTextExistItem
@@ -189,7 +189,7 @@ public class MacroFactoryTests
         var registry = provider.GetRequiredService<ICommandRegistry>();
         registry.Initialize();
 
-        var serializer = new MacroFileSerializer((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>());
+        var serializer = new MacroFileSerializer();
         var list = new CommandList((ICommandDefinitionProvider)provider.GetRequiredService<ICommandRegistry>(), serializer);
 
         list.Add(new IfTextExistItem

@@ -1,4 +1,6 @@
+﻿using System.Collections.Generic;
 using AutoTool.Commands.Services;
+using AutoTool.Commands.Threading;
 using AutoTool.Panels.Model.List.Interface;
 
 namespace AutoTool.ViewModel;
@@ -82,24 +84,72 @@ public partial class MacroPanelViewModel
 
     private void RegisterCommandEventHandlers()
     {
-        _commandEventBus.Started += OnCommandStarted;
-        _commandEventBus.Finished += OnCommandFinished;
-        _commandEventBus.Doing += OnCommandDoing;
-        _commandEventBus.ProgressUpdated += OnCommandProgressUpdated;
+        _commandEventSubscriptionCts?.Cancel();
+        _commandEventSubscriptionCts?.Dispose();
+        _lastObservedDroppedCommandEvents = _commandEventBus.DroppedEventCount;
+        _commandEventSubscriptionCts = new();
+        _commandEventSubscriptionTask = ConsumeCommandEventsAsync(_commandEventSubscriptionCts.Token);
     }
 
     private void UnsubscribeCommandEventHandlers()
     {
-        _commandEventBus.Started -= OnCommandStarted;
-        _commandEventBus.Finished -= OnCommandFinished;
-        _commandEventBus.Doing -= OnCommandDoing;
-        _commandEventBus.ProgressUpdated -= OnCommandProgressUpdated;
+        _commandEventSubscriptionCts?.Cancel();
     }
 
-    private void OnCommandStarted(object? sender, CommandEventArgs args) => HandleStartCommand(args.Command);
-    private void OnCommandFinished(object? sender, CommandEventArgs args) => HandleFinishCommand(args.Command);
-    private void OnCommandDoing(object? sender, CommandLogEventArgs args) => HandleDoingCommand(args.Command, args.Detail);
-    private void OnCommandProgressUpdated(object? sender, CommandProgressEventArgs args) => HandleUpdateProgress(args.Command, args.Progress);
+    private async Task ConsumeCommandEventsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await foreach (var ev in _commandEventBus.ReadEventsAsync().ConfigureAwaitFalse(cancellationToken))
+            {
+                NotifyDroppedCommandEventsIfNeeded();
+
+                switch (ev.Kind)
+                {
+                    case CommandEventKind.Started:
+                        HandleStartCommand(ev.Command);
+                        break;
+                    case CommandEventKind.Finished:
+                        HandleFinishCommand(ev.Command);
+                        break;
+                    case CommandEventKind.Doing:
+                        HandleDoingCommand(ev.Command, ev.Detail, ev.Payload);
+                        break;
+                    case CommandEventKind.ProgressUpdated:
+                        HandleUpdateProgress(ev.Command, ev.Progress);
+                        break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void NotifyDroppedCommandEventsIfNeeded()
+    {
+        var dropped = _commandEventBus.DroppedEventCount;
+        if (dropped <= _lastObservedDroppedCommandEvents)
+        {
+            return;
+        }
+
+        var delta = dropped - _lastObservedDroppedCommandEvents;
+        _lastObservedDroppedCommandEvents = dropped;
+
+        var detail = $"Warning: dropped command events (+{delta}, total {dropped})";
+        _logWriter.WriteStructured(
+            "CommandEventBus",
+            "DropDetected",
+            new Dictionary<string, object?>
+            {
+                ["DroppedTotal"] = dropped,
+                ["DroppedDelta"] = delta,
+                ["SubscriberCount"] = _commandEventBus.SubscriberCount
+            });
+
+        OnUiThread(() => _logPanel.WriteLog(string.Empty, "System", detail));
+    }
 
     private void PrepareAllPanels()
     {
@@ -119,3 +169,4 @@ public partial class MacroPanelViewModel
         _buttonPanel.SetRunningState(isRunning);
     }
 }
+

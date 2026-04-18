@@ -13,7 +13,7 @@ public class LoopCommand : BaseCommand, ILoopCommand
 
     public LoopCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings) { }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         if (Children is null || !Children.Any())
         {
@@ -33,7 +33,7 @@ public class LoopCommand : BaseCommand, ILoopCommand
                     return false;
                 }
 
-                if (!await command.Execute(cancellationToken))
+                if (!await command.Execute(cancellationToken).ConfigureAwait(false))
                 {
                     // LoopBreak は正常なループ離脱として扱い、その他の false は失敗として伝播
                     return command is ILoopBreakCommand;
@@ -57,10 +57,10 @@ public class LoopEndCommand : BaseCommand, IEndLoopCommand
 
     public LoopEndCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings) { }
 
-    protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         ResetChildrenProgress();
-        return Task.FromResult(true);
+        return ValueTask.FromResult(true);
     }
 }
 
@@ -71,8 +71,5 @@ public class LoopBreakCommand : BaseCommand, ILoopBreakCommand
 {
     public LoopBreakCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings) { }
 
-    protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
-    {
-        return Task.FromResult(false);
-    }
+    protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken) => ValueTask.FromResult(false);
 }

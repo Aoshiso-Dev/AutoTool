@@ -143,9 +143,9 @@ public class CommandSettingsValidatorTests
     {
         public TestValidationCommand(ICommandSettings settings) : base(parent: null, settings) { }
 
-        protected override Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
         {
-            return Task.FromResult(true);
+            return ValueTask.FromResult(true);
         }
     }
 }

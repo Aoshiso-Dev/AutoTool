@@ -8,16 +8,11 @@ namespace AutoTool.Commands.DependencyInjection;
 /// <summary>
 /// DI コンテナを利用したコマンドファクトリ
 /// </summary>
-public class CommandFactory : ICommandFactory
+public class CommandFactory(IServiceProvider serviceProvider) : ICommandFactory
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ICommandEventBus? _commandEventBus;
-
-    public CommandFactory(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _commandEventBus = _serviceProvider.GetService(typeof(ICommandEventBus)) as ICommandEventBus;
-    }
+    private readonly IServiceProvider _serviceProvider = EnsureNotNull(serviceProvider);
+    private readonly ICommandEventBus? _commandEventBus =
+        serviceProvider.GetService(typeof(ICommandEventBus)) as ICommandEventBus;
 
     public TCommand Create<TCommand>(ICommand? parent, ICommandSettings settings) where TCommand : ICommand
     {
@@ -119,6 +114,12 @@ public class CommandFactory : ICommandFactory
         }
 
         return command;
+    }
+
+    private static IServiceProvider EnsureNotNull(IServiceProvider value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value;
     }
 }
 

@@ -47,11 +47,16 @@ public partial class FileManager : ObservableObject
         IFilePicker filePicker,
         IRecentFileStore recentFileStore)
     {
-        _fileTypeInfo = fileTypeInfo ?? throw new ArgumentNullException(nameof(fileTypeInfo));
-        _saveFunc = saveFunc ?? throw new ArgumentNullException(nameof(saveFunc));
-        _loadFunc = loadFunc ?? throw new ArgumentNullException(nameof(loadFunc));
-        _filePicker = filePicker ?? throw new ArgumentNullException(nameof(filePicker));
-        _recentFileStore = recentFileStore ?? throw new ArgumentNullException(nameof(recentFileStore));
+        ArgumentNullException.ThrowIfNull(fileTypeInfo);
+        ArgumentNullException.ThrowIfNull(saveFunc);
+        ArgumentNullException.ThrowIfNull(loadFunc);
+        ArgumentNullException.ThrowIfNull(filePicker);
+        ArgumentNullException.ThrowIfNull(recentFileStore);
+        _fileTypeInfo = fileTypeInfo;
+        _saveFunc = saveFunc;
+        _loadFunc = loadFunc;
+        _filePicker = filePicker;
+        _recentFileStore = recentFileStore;
 
         LoadRecentFiles();
     }

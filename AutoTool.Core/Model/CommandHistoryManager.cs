@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+Ôªøusing System.Collections.Generic;
 using System.Linq;
 
 namespace AutoTool.Model;
@@ -12,17 +12,14 @@ public class CommandHistoryManager
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
 
-    public string UndoDescription => CanUndo ? _undoStack.Peek().Description : "Ç»Çµ";
-    public string RedoDescription => CanRedo ? _redoStack.Peek().Description : "Ç»Çµ";
+    public string UndoDescription => CanUndo ? _undoStack.Peek().Description : "„Å™„Åó";
+    public string RedoDescription => CanRedo ? _redoStack.Peek().Description : "„Å™„Åó";
 
     public event EventHandler? HistoryChanged;
 
     public void ExecuteCommand(IUndoRedoCommand command)
     {
-        if (command is null)
-        {
-            throw new ArgumentNullException(nameof(command));
-        }
+        ArgumentNullException.ThrowIfNull(command);
         command.Execute();
         _undoStack.Push(command);
         _redoStack.Clear();
@@ -77,3 +74,4 @@ public class CommandHistoryManager
         );
     }
 }
+

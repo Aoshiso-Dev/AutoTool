@@ -106,7 +106,7 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
         return new FindImageItem(this);
     }
 
-    public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+    public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
         var absolutePath = context.ToAbsolutePath(ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
@@ -122,7 +122,7 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
             },
             context.SearchImageAsync,
             context.ReportProgress,
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
 
         SetResultVariables(context, result);
 
@@ -228,7 +228,7 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
         return new WaitImageItem(this);
     }
 
-    public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+    public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
         var absolutePath = context.ToAbsolutePath(ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
@@ -244,7 +244,7 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
             },
             context.SearchImageAsync,
             context.ReportProgress,
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
 
         if (result.Found)
         {
@@ -334,7 +334,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
         return new ClickImageItem(this);
     }
 
-    public override async Task<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+    public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
         var absolutePath = context.ToAbsolutePath(ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
@@ -350,7 +350,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
             },
             context.SearchImageAsync,
             context.ReportProgress,
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
 
         if (!result.Found || result.Point is null)
         {
@@ -358,7 +358,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
             return false;
         }
 
-        await context.ClickAsync(result.Point.Value.X, result.Point.Value.Y, Button, WindowTitle, WindowClassName);
+        await context.ClickAsync(result.Point.Value.X, result.Point.Value.Y, Button, WindowTitle, WindowClassName).ConfigureAwait(false);
         context.Log($"画像をクリックしました。({result.Point.Value.X}, {result.Point.Value.Y})");
         return true;
     }

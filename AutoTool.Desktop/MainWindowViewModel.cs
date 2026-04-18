@@ -34,25 +34,15 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         TabIndexes.Macro => MacroPanelViewModel.IsRunning,
         _ => false,
     };
-         
+
     private readonly Dictionary<int, FileManager> _fileManagers = [];
 
     public string AutoToolTitle => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened
         ? $"AutoTool - {CurrentFileName}"
         : "AutoTool";
 
+    [ObservableProperty]
     private int _selectedTabIndex = TabIndexes.Macro;
-    public int SelectedTabIndex
-    {
-        get => _selectedTabIndex;
-        set
-        {
-            if (SetProperty(ref _selectedTabIndex, value))
-            {
-                UpdateProperties();
-            }
-        }
-    }
 
     public bool IsFileOperationEnable => _fileManagers.ContainsKey(SelectedTabIndex);
 
@@ -88,11 +78,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         TryGetActiveFileManager(out var fileManager) ? fileManager.RecentFiles : null;
 
     public string MenuItemHeader_SaveFile => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened
-        ? $"{CurrentFileName} を保存" 
+        ? $"{CurrentFileName} を保存"
         : "保存";
 
     public string MenuItemHeader_SaveFileAs => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened
-        ? $"{CurrentFileName} を名前を付けて保存" 
+        ? $"{CurrentFileName} に名前を付けて保存"
         : "名前を付けて保存";
 
     [ObservableProperty]
@@ -108,11 +98,17 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IRecentFileStore recentFileStore,
         MacroPanelViewModel macroPanelViewModel)
     {
-        _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
-        _statusMessageScheduler = statusMessageScheduler ?? throw new ArgumentNullException(nameof(statusMessageScheduler));
-        _filePicker = filePicker ?? throw new ArgumentNullException(nameof(filePicker));
-        _recentFileStore = recentFileStore ?? throw new ArgumentNullException(nameof(recentFileStore));
-        MacroPanelViewModel = macroPanelViewModel ?? throw new ArgumentNullException(nameof(macroPanelViewModel));
+        ArgumentNullException.ThrowIfNull(notifier);
+        ArgumentNullException.ThrowIfNull(statusMessageScheduler);
+        ArgumentNullException.ThrowIfNull(filePicker);
+        ArgumentNullException.ThrowIfNull(recentFileStore);
+        ArgumentNullException.ThrowIfNull(macroPanelViewModel);
+
+        _notifier = notifier;
+        _statusMessageScheduler = statusMessageScheduler;
+        _filePicker = filePicker;
+        _recentFileStore = recentFileStore;
+        MacroPanelViewModel = macroPanelViewModel;
 
         InitializeFileManager();
         InitializeCommandHistory();
@@ -133,6 +129,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             _lastKnownIsRunning = IsRunning;
             UpdateCommandStates();
         }
+    }
+
+    partial void OnSelectedTabIndexChanged(int value)
+    {
+        UpdateProperties();
     }
 
     private void InitializeCommandHistory()
@@ -158,7 +159,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             new FileManager(
                 new FileTypeInfo
                 {
-                    Filter = "AutoTool マクロファイル(*.macro)|*.macro",
+                    Filter = "AutoTool マクロファイル (*.macro)|*.macro",
                     FilterIndex = 1,
                     RestoreDirectory = true,
                     DefaultExt = "macro",
@@ -182,7 +183,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(MenuItemHeader_SaveFile));
         OnPropertyChanged(nameof(MenuItemHeader_SaveFileAs));
         OnPropertyChanged(nameof(AutoToolTitle));
-        
+
         UpdateCommandStates();
     }
 
@@ -207,7 +208,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         else
         {
-            _notifier.ShowError("アプリケーションのディレクトリが見つかりませんでした。", "エラー");
+            _notifier.ShowError("アプリケーションのディレクトリを取得できませんでした。", "エラー");
         }
     }
 
@@ -218,7 +219,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             if (!TryGetActiveFileManager(out var fileManager) || !fileManager.OpenFile(filePath))
             {
-                StatusMessage = "ファイルを開けませんでした";
+                StatusMessage = "ファイルを開けませんでした。";
                 UpdateProperties();
                 return;
             }
@@ -229,8 +230,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            StatusMessage = "ファイルを開けませんでした";
-            _notifier.ShowError($"ファイルの読み込みに失敗しました。\n{ex.Message}", "読み込みエラー");
+            StatusMessage = "ファイルを開けませんでした。";
+            _notifier.ShowError($"ファイルを開く際にエラーが発生しました。\n{ex.Message}", "エラー");
         }
     }
 
@@ -244,7 +245,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            // 未保存（新規）状態では「名前を付けて保存」にフォールバック
             if (!IsFileOpened || string.IsNullOrWhiteSpace(CurrentFilePath))
             {
                 SaveFileAs();
@@ -254,14 +254,14 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             StatusMessage = "保存中...";
             fileManager.SaveFile();
             UpdateProperties();
-            
-            StatusMessage = $"保存完了: {CurrentFileName}";
+
+            StatusMessage = $"保存しました: {CurrentFileName}";
             _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
         }
         catch (Exception ex)
         {
-            StatusMessage = "保存に失敗しました";
-            _notifier.ShowError($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー");
+            StatusMessage = "保存に失敗しました。";
+            _notifier.ShowError($"保存時にエラーが発生しました。\n{ex.Message}", "保存エラー");
         }
     }
 
@@ -278,20 +278,20 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             StatusMessage = "名前を付けて保存中...";
             if (!fileManager.SaveFileAs())
             {
-                StatusMessage = "保存をキャンセルしました";
+                StatusMessage = "保存がキャンセルされました。";
                 _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
                 return;
             }
 
             UpdateProperties();
-            
-            StatusMessage = $"保存完了: {CurrentFileName}";
+
+            StatusMessage = $"保存しました: {CurrentFileName}";
             _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
         }
         catch (Exception ex)
         {
-            StatusMessage = "保存に失敗しました";
-            _notifier.ShowError($"ファイルの保存に失敗しました。\n{ex.Message}", "保存エラー");
+            StatusMessage = "保存に失敗しました。";
+            _notifier.ShowError($"保存時にエラーが発生しました。\n{ex.Message}", "保存エラー");
         }
     }
 
@@ -299,7 +299,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void Undo()
     {
         CommandHistory.Undo();
-        StatusMessage = $"元に戻しました: {CommandHistory.RedoDescription}";
+        StatusMessage = $"Undo: {CommandHistory.RedoDescription}";
         _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
     }
 
@@ -307,7 +307,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void Redo()
     {
         CommandHistory.Redo();
-        StatusMessage = $"やり直しました: {CommandHistory.UndoDescription}";
+        StatusMessage = $"Redo: {CommandHistory.UndoDescription}";
         _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
     }
 
@@ -335,9 +335,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         MacroPanelViewModel.PropertyChanged -= OnMacroPanelPropertyChanged;
         MacroPanelViewModel.Dispose();
         _disposed = true;
-        
+
         GC.SuppressFinalize(this);
     }
 }
-
-

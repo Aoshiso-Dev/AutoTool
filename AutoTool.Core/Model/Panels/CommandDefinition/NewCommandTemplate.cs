@@ -83,7 +83,7 @@ public class MyNewCommand : BaseCommand, ICommand, IMyNewCommand
 
     public MyNewCommand(ICommand parent, ICommandSettings settings) : base(parent, settings) { }
 
-    protected override async Task<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
     {
         // �R�}���h�̎���
         OnDoingCommand?.Invoke(this, $"MyNewCommand����s���܂���: {Settings.MyProperty}");

@@ -12,12 +12,12 @@ public partial class MainWindow : FluentWindow
 {
     private readonly WindowSettings _windowSettings;
 
-    public MainWindow(MainWindowViewModel viewModel)
+    public MainWindow(MainWindowViewModel viewModel, TimeProvider timeProvider)
     {
         InitializeComponent();
         DataContext = viewModel;
 
-        _windowSettings = WindowSettings.Load();
+        _windowSettings = WindowSettings.Load(timeProvider);
         SourceInitialized += MainWindow_SourceInitialized;
         Closing += MainWindow_Closing;
         Closed += MainWindow_Closed;
@@ -41,10 +41,12 @@ public partial class MainWindow : FluentWindow
         Application.Current?.Shutdown();
 
         // Shutdown が何らかの理由で完了しないケース向けのフェイルセーフ
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(1500).ConfigureAwait(false);
-            Environment.Exit(0);
-        });
+        _ = ForceExitAsync();
+    }
+
+    private static async Task ForceExitAsync()
+    {
+        await Task.Delay(1500).ConfigureAwait(false);
+        Environment.Exit(0);
     }
 }

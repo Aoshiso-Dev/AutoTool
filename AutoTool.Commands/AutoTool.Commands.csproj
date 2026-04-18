@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoTool.Commands.Abstractions\AutoTool.Commands.Abstractions.csproj" />
     <ProjectReference Include="..\AutoTool.Infrastructure\AutoTool.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
+

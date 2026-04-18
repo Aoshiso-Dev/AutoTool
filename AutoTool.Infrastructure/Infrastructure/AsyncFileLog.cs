@@ -1,4 +1,7 @@
-﻿using System.Threading.Channels;
+using System.Threading.Channels;
+using System.Collections.Generic;
+using AutoTool.Commands.Threading;
+using AutoTool.Core.Diagnostics;
 using System.IO;
 
 namespace AutoTool.Infrastructure;
@@ -12,14 +15,16 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
     private readonly string _logPath;
     private readonly CancellationTokenSource _cancellationTokenSource;
     private readonly Task _processingTask;
+    private readonly TimeProvider _timeProvider;
     private volatile bool _disposed;
     private const int FlushBatchSize = 32;
 
-    public AsyncFileLog()
+    public AsyncFileLog(TimeProvider? timeProvider = null)
     {
+        _timeProvider = timeProvider ?? TimeProvider.System;
         var appDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? @"C:\";
         _logDir = Path.Combine(appDir, "Logs");
-        _logPath = Path.Combine(_logDir, $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log");
+        _logPath = Path.Combine(_logDir, $"{_timeProvider.GetLocalNow():yyyy-MM-dd_HH-mm-ss}.log");
 
         var options = new BoundedChannelOptions(1000)
         {
@@ -32,7 +37,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         _writer = _logChannel.Writer;
         _reader = _logChannel.Reader;
 
-        _cancellationTokenSource = new CancellationTokenSource();
+        _cancellationTokenSource = new();
         _processingTask = Task.Run(() => ProcessLogQueueAsync(_cancellationTokenSource.Token));
     }
 
@@ -45,7 +50,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
 
         try
         {
-            var formattedMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] " +
+            var formattedMessage = $"[{_timeProvider.GetLocalNow():yyyy-MM-dd HH:mm:ss}] " +
                                    string.Join(" ", messages.Select(m => (m ?? string.Empty).PadRight(20)));
 
             if (!_writer.TryWrite(formattedMessage))
@@ -61,8 +66,31 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
 
     public void Write(Exception ex)
     {
-        Write($"Exception: {ex.Message}");
+        Write($"Exception: {ExceptionDetailsFormatter.FormatDetailed(ex)}");
         Write($"StackTrace: {ex.StackTrace}");
+    }
+
+    public void WriteStructured(string category, string eventName, IReadOnlyDictionary<string, object?> fields)
+    {
+        if (fields is null)
+        {
+            Write("STRUCT", $"Category={category}", $"Event={eventName}");
+            return;
+        }
+
+        List<string> segments =
+        [
+            "STRUCT",
+            $"Category={category}",
+            $"Event={eventName}"
+        ];
+
+        foreach (var kvp in fields)
+        {
+            segments.Add($"{kvp.Key}={FormatStructuredValue(kvp.Value)}");
+        }
+
+        Write(segments.ToArray());
     }
 
     private async Task ProcessLogQueueAsync(CancellationToken cancellationToken)
@@ -79,7 +107,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
 
             List<string> bufferedMessages = new(FlushBatchSize);
 
-            await foreach (var logMessage in _reader.ReadAllAsync(cancellationToken))
+            await foreach (var logMessage in _reader.ReadAllAsync().ConfigureAwaitFalse(cancellationToken))
             {
                 try
                 {
@@ -91,11 +119,11 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
                 }
                 catch (IOException ioEx)
                 {
-                    Console.WriteLine($"ログの書き込みに失敗しました: {ioEx.Message}");
+                    Console.WriteLine($"���O�̏������݂Ɏ��s���܂���: {ioEx.Message}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"ログ処理でエラーが発生しました: {ex.Message}");
+                    Console.WriteLine($"���O�����ŃG���[���������܂���: {ex.Message}");
                 }
             }
 
@@ -110,7 +138,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"ログ処理でエラーが発生しました: {ex.Message}");
+            Console.WriteLine($"���O�����ŃG���[���������܂���: {ex.Message}");
         }
     }
 
@@ -184,4 +212,15 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
             // Best-effort logging; ignore enqueue failures during shutdown.
         }
     }
+
+    private static string FormatStructuredValue(object? value)
+    {
+        if (value is null)
+        {
+            return "<null>";
+        }
+
+        return value.ToString()?.Replace("\r", "\\r").Replace("\n", "\\n") ?? string.Empty;
+    }
 }
+

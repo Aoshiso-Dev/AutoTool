@@ -1,5 +1,6 @@
-﻿using AutoTool.Commands.Interface;
+using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
+using AutoTool.Commands.Threading;
 using System.IO;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -89,7 +90,7 @@ public class CommandExecutionContext : ICommandExecutionContext
     public Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken)
     {
         if (_processLauncher is null)
-            throw new InvalidOperationException("プログラム実行サービスが利用できません。");
+            throw new InvalidOperationException("・ｽv・ｽ・ｽ・ｽO・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽs・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
 
         if (string.IsNullOrWhiteSpace(programPath))
         {
@@ -97,7 +98,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ProgramPathRequired,
                     nameof(programPath),
-                    "実行ファイルのパスは必須です。"));
+                    "・ｽ・ｽ・ｽs・ｽt・ｽ@・ｽC・ｽ・ｽ・ｽﾌパ・ｽX・ｽﾍ必・ｽ{・ｽﾅゑｿｽ・ｽB"));
         }
 
         if (!File.Exists(programPath))
@@ -106,23 +107,47 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ProgramPathNotFound,
                     nameof(programPath),
-                    $"実行ファイルが見つかりません: {programPath}"));
+                    $"・ｽ・ｽ・ｽs・ｽt・ｽ@・ｽC・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽ: {programPath}"));
         }
 
-        return _processLauncher.StartAsync(programPath, arguments, workingDirectory, waitForExit, cancellationToken);
+        return waitForExit
+            ? ExecuteProgramWithOutputAsync(programPath, arguments, workingDirectory, cancellationToken)
+            : _processLauncher.StartAsync(programPath, arguments, workingDirectory, waitForExit, cancellationToken);
+    }
+
+    private async Task ExecuteProgramWithOutputAsync(
+        string programPath,
+        string? arguments,
+        string? workingDirectory,
+        CancellationToken cancellationToken)
+    {
+        if (_processLauncher is null)
+        {
+            throw new InvalidOperationException("・ｽv・ｽ・ｽ・ｽO・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽs・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
+        }
+
+        await foreach (var line in _processLauncher
+                           .StartWithOutputAsync(programPath, arguments, workingDirectory)
+                           .ConfigureAwaitFalse(cancellationToken))
+        {
+            _commandEventBus.PublishDoing(
+                _command,
+                line.Text,
+                new ProcessOutputLogPayload(line.IsError, line.Text, line.Timestamp));
+        }
     }
     
     public Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken)
     {
         if (_screenCapturer is null)
-            throw new InvalidOperationException("画面キャプチャサービスが利用できません。");
+            throw new InvalidOperationException("・ｽ・ｽﾊキ・ｽ・ｽ・ｽv・ｽ`・ｽ・ｽ・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
         return _screenCapturer.CaptureToFileAsync(filePath, windowTitle, windowClassName, cancellationToken);
     }
     
     public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, Color? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken)
     {
         if (_imageMatcher is null)
-            throw new InvalidOperationException("画像検索サービスが利用できません。");
+            throw new InvalidOperationException("・ｽ鞫懶ｿｽ・ｽ・ｽ・ｽ・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
 
         if (string.IsNullOrWhiteSpace(imagePath))
         {
@@ -130,7 +155,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ImagePathRequired,
                     nameof(imagePath),
-                    "画像パスは必須です。"));
+                    "・ｽ鞫懶ｿｽp・ｽX・ｽﾍ必・ｽ{・ｽﾅゑｿｽ・ｽB"));
         }
 
         if (!File.Exists(imagePath))
@@ -139,7 +164,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ImagePathNotFound,
                     nameof(imagePath),
-                    $"検索画像が見つかりません: {imagePath}"));
+                    $"・ｽ・ｽ・ｽ・ｽ・ｽ鞫懶ｿｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽ: {imagePath}"));
         }
 
         return _imageMatcher.SearchImageAsync(imagePath, cancellationToken, threshold, searchColor, windowTitle, windowClassName);
@@ -148,7 +173,7 @@ public class CommandExecutionContext : ICommandExecutionContext
     public void InitializeAIModel(string modelPath, int inputSize = 640, bool useGpu = true)
     {
         if (_objectDetector is null)
-            throw new InvalidOperationException("AI検出サービスが利用できません。");
+            throw new InvalidOperationException("AI・ｽ・ｽ・ｽo・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
 
         if (string.IsNullOrWhiteSpace(modelPath))
         {
@@ -156,7 +181,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ModelPathRequired,
                     nameof(modelPath),
-                    "モデルパスは必須です。"));
+                    "・ｽ・ｽ・ｽf・ｽ・ｽ・ｽp・ｽX・ｽﾍ必・ｽ{・ｽﾅゑｿｽ・ｽB"));
         }
 
         if (!File.Exists(modelPath))
@@ -165,7 +190,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                 new CommandValidationIssue(
                     CommandValidationErrorCodes.ModelPathNotFound,
                     nameof(modelPath),
-                    $"モデルファイルが見つかりません: {modelPath}"));
+                    $"・ｽ・ｽ・ｽf・ｽ・ｽ・ｽt・ｽ@・ｽC・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽ: {modelPath}"));
         }
 
         _objectDetector.Initialize(modelPath, inputSize, useGpu);
@@ -174,14 +199,14 @@ public class CommandExecutionContext : ICommandExecutionContext
     public IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold)
     {
         if (_objectDetector is null)
-            throw new InvalidOperationException("AI検出サービスが利用できません。");
+            throw new InvalidOperationException("AI・ｽ・ｽ・ｽo・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
         return _objectDetector.Detect(windowTitle, confThreshold, iouThreshold);
     }
 
     public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken)
     {
         if (_ocrEngine is null)
-            throw new InvalidOperationException("OCRサービスが利用できません。");
+            throw new InvalidOperationException("OCR・ｽT・ｽ[・ｽr・ｽX・ｽ・ｽ・ｽ・ｽ・ｽp・ｽﾅゑｿｽ・ｽﾜゑｿｽ・ｽ・ｽB");
 
         if (!string.IsNullOrWhiteSpace(request.TessdataPath))
         {
@@ -191,7 +216,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                     new CommandValidationIssue(
                         CommandValidationErrorCodes.TessdataPathNotFound,
                         nameof(request.TessdataPath),
-                        $"フォルダが見つかりません: {request.TessdataPath}"));
+                        $"・ｽt・ｽH・ｽ・ｽ・ｽ_・ｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽ: {request.TessdataPath}"));
             }
 
             var hasTrainedData = Directory.EnumerateFiles(request.TessdataPath, "*.traineddata", SearchOption.TopDirectoryOnly).Any();
@@ -201,7 +226,7 @@ public class CommandExecutionContext : ICommandExecutionContext
                     new CommandValidationIssue(
                         CommandValidationErrorCodes.TessdataDataMissing,
                         nameof(request.TessdataPath),
-                        "*.traineddata が見つかりません。tessdata フォルダを選択してください。"));
+                        "*.traineddata ・ｽ・ｽ・ｽ・ｽ・ｽﾂゑｿｽ・ｽ・ｽﾜゑｿｽ・ｽ・ｽBtessdata ・ｽt・ｽH・ｽ・ｽ・ｽ_・ｽ・ｽI・ｽ・ｽ・ｽ・ｽﾄゑｿｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽ・ｽB"));
             }
         }
 
@@ -216,13 +241,24 @@ public class CommandExecutionContext : ICommandExecutionContext
         public event EventHandler<CommandEventArgs>? Finished { add { } remove { } }
         public event EventHandler<CommandLogEventArgs>? Doing { add { } remove { } }
         public event EventHandler<CommandProgressEventArgs>? ProgressUpdated { add { } remove { } }
+        public long DroppedEventCount => 0;
+        public int SubscriberCount => 0;
 
         public void PublishStarted(ICommand command) { }
         public void PublishFinished(ICommand command) { }
         public void PublishDoing(ICommand command, string detail) { }
+        public void PublishDoing(ICommand command, string detail, CommandLogPayload payload) { }
         public void PublishProgress(ICommand command, int progress) { }
+        public async IAsyncEnumerable<CommandBusEvent> ReadEventsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.CompletedTask;
+            yield break;
+        }
     }
 }
+
+
+
 
 
 
