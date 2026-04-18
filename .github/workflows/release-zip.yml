@@ -1,0 +1,102 @@
+﻿name: Release Zip
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-package:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore .\AutoTool.sln
+
+      - name: Publish
+        run: >
+          dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
+          -c Release
+          -r win-x64
+          --self-contained false
+          -o .\.deploy\AutoTool_publish
+
+      - name: Prepare package files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $publishDir = Resolve-Path ".\.deploy\AutoTool_publish"
+          $packageRoot = Join-Path $pwd ".\.deploy\release_package"
+          $settingsDir = Join-Path $packageRoot "Settings"
+
+          if (Test-Path -LiteralPath $packageRoot) {
+            Remove-Item -LiteralPath $packageRoot -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Path $packageRoot | Out-Null
+          New-Item -ItemType Directory -Path $settingsDir | Out-Null
+
+          Copy-Item -LiteralPath (Join-Path $publishDir "AutoTool.exe") -Destination $packageRoot -Force
+          Get-ChildItem -LiteralPath $publishDir -File -Filter "*.dll" | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $packageRoot -Force
+          }
+          Get-ChildItem -LiteralPath $publishDir -File -Filter "*.deps.json" | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $packageRoot -Force
+          }
+          Get-ChildItem -LiteralPath $publishDir -File -Filter "*.runtimeconfig.json" | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $packageRoot -Force
+          }
+          Get-ChildItem -LiteralPath $pwd -File -Filter "Readme*.txt" | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $packageRoot -Force
+          }
+
+          $settingsJson = Join-Path $publishDir "Settings\appsettings.json"
+          if (Test-Path -LiteralPath $settingsJson) {
+            Copy-Item -LiteralPath $settingsJson -Destination (Join-Path $settingsDir "appsettings.json") -Force
+          }
+
+          Get-ChildItem -LiteralPath $packageRoot -Recurse -File | Where-Object {
+            $_.Extension -in ".pdb", ".lib"
+          } | ForEach-Object {
+            Remove-Item -LiteralPath $_.FullName -Force
+          }
+
+      - name: Create zip
+        id: zip
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $version = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}" } else { "manual-${{ github.run_number }}" }
+          $zipName = "AutoTool-$version-win-x64.zip"
+          $zipPath = Join-Path $pwd $zipName
+          if (Test-Path -LiteralPath $zipPath) {
+            Remove-Item -LiteralPath $zipPath -Force
+          }
+          Compress-Archive -Path ".\.deploy\release_package\*" -DestinationPath $zipPath -CompressionLevel Optimal
+          "zip_path=$zipPath" >> $env:GITHUB_OUTPUT
+          "zip_name=$zipName" >> $env:GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.zip.outputs.zip_name }}
+          path: ${{ steps.zip.outputs.zip_path }}
+          if-no-files-found: error
+
+      - name: Upload to GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.zip.outputs.zip_path }}

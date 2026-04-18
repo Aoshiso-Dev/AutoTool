@@ -11,6 +11,12 @@ AutoTool は、Windows 上で定型操作をマクロとして作成・保存・
 - [配布ガイド](docs/DEPLOYMENT.md)
 - [コマンド開発ガイド](docs/COMMAND_DEVELOPMENT_GUIDE.md)
 
+## GitHub 配布（ZIP）
+
+- `v*` タグ（例: `v1.2.3`）を push すると、GitHub Actions の `Release Zip` が実行されます。
+- 実行後、GitHub Release に `AutoTool-<tag>-win-x64.zip` が添付されます。
+- ZIP には `AutoTool.exe`、必要な `*.dll`、`Readme*.txt`、実行構成ファイルが含まれます。
+
 ## 最短で動かす
 
 ```powershell

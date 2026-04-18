@@ -52,3 +52,28 @@ dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -r win-
 
 - 配布前に `dotnet build` / `dotnet test` を実行してから公開する
 - 配布手順は毎回同じスクリプトで実施し、手作業差分をなくす
+
+## 8. GitHub で ZIP 配布する場合
+
+`SR1CTRL` と同様に GitHub Releases で ZIP 配布する場合は、`.github/workflows/release-zip.yml` を利用します。
+
+- トリガー
+  - `v*` タグ push（例: `v1.0.0`）
+  - 手動実行（`workflow_dispatch`）
+- 実行内容
+  - `AutoTool.Bootstrap` を `win-x64` で publish
+  - 配布対象（`AutoTool.exe`、`*.dll`、`Readme*.txt`、実行構成ファイル）を収集
+  - ZIP（`AutoTool-<version>-win-x64.zip`）を生成
+  - タグ実行時は GitHub Release へ ZIP を自動添付
+
+### タグ配布の例
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+### 注意
+
+- ZIP には `*.pdb` / `*.lib` を含めない。
+- 配布版説明書（`Readme.txt` / `Readme_コマンド詳細.txt`）はリポジトリ root に置き、ZIP へ同梱する。
