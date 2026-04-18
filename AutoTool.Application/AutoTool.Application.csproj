@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AutoTool.Domain\AutoTool.Domain.csproj" />
+    <ProjectReference Include="..\AutoTool.Automation.Contracts\AutoTool.Automation.Contracts.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

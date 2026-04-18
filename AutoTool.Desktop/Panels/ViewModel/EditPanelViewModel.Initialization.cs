@@ -112,7 +112,7 @@ public partial class EditPanelViewModel
             }
             else
             {
-                throw new ArgumentException($"Unknown ItemType: {typeName}");
+                throw new ArgumentException($"未対応の ItemType です: {typeName}");
             }
         }
         catch (Exception ex)

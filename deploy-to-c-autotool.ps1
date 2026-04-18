@@ -10,7 +10,7 @@ $sourcePath = if ([System.IO.Path]::IsPathRooted($Source)) { $Source } else { Jo
 $sourcePath = (Resolve-Path -LiteralPath $sourcePath).Path
 
 if (-not (Test-Path -LiteralPath $sourcePath)) {
-    throw "Publish output not found: $sourcePath"
+    throw "発行済み成果物が見つかりません: $sourcePath"
 }
 
 if (-not (Test-Path -LiteralPath $Destination)) {
@@ -21,7 +21,7 @@ $destinationPath = (Resolve-Path -LiteralPath $Destination).Path
 # Destructive sync (/MIR) の前に、入力成果物の最低限を検証する。
 $sourceMainExe = Get-ChildItem -LiteralPath $sourcePath -File -Filter *.exe | Select-Object -First 1
 if ($null -eq $sourceMainExe) {
-    throw "No main executable was found in source: $sourcePath"
+    throw "ソースに実行ファイルが見つかりません: $sourcePath"
 }
 
 $macroDir = Join-Path $destinationPath "Macro"
@@ -36,7 +36,7 @@ else {
 robocopy $sourcePath $destinationPath /MIR /XD Macro Settings x86 /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
 $code = $LASTEXITCODE
 if ($code -gt 7) {
-    throw "robocopy failed with exit code $code"
+    throw "robocopy が失敗しました。終了コード: $code"
 }
 
 $destinationSettingsDir = Join-Path $destinationPath "Settings"
@@ -76,11 +76,11 @@ Get-ChildItem -LiteralPath $destinationPath -Recurse -Directory |
 # Minimum post-deploy verification.
 $destinationMainExe = Join-Path $destinationPath $sourceMainExe.Name
 if (-not (Test-Path -LiteralPath $destinationMainExe)) {
-    throw "Main executable is missing after deploy: $destinationMainExe"
+    throw "デプロイ後にメイン実行ファイルが見つかりません: $destinationMainExe"
 }
 
 if (-not (Test-Path -LiteralPath $destinationSettingsFile)) {
-    throw "Settings file is missing after deploy: $destinationSettingsFile"
+    throw "デプロイ後に設定ファイルが見つかりません: $destinationSettingsFile"
 }
 
 $userDataCountAfter = if (Test-Path -LiteralPath $macroDir) {
@@ -90,5 +90,5 @@ else {
     0
 }
 
-Write-Host "Deploy completed to $destinationPath (Macro/Settings preserved). robocopy exit=$code"
-Write-Host "Verified: exe=$destinationMainExe, settings=$destinationSettingsFile, userData(before=$userDataCountBefore, after=$userDataCountAfter)"
+Write-Host "デプロイが完了しました: $destinationPath（Macro/Settings 保護、robocopy 終了コード=$code）"
+Write-Host "確認結果: exe=$destinationMainExe, settings=$destinationSettingsFile, userData(before=$userDataCountBefore, after=$userDataCountAfter)"

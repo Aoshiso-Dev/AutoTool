@@ -3,6 +3,7 @@ using AutoTool.Automation.Runtime.Lists;
 using AutoTool.Automation.Contracts.Lists;
 using System.ComponentModel;
 using System.Windows.Data;
+using AutoTool.Application.Files;
 using AutoTool.Automation.Runtime.Definitions;
 
 namespace AutoTool.Desktop.Panels.ViewModel;
@@ -10,6 +11,7 @@ namespace AutoTool.Desktop.Panels.ViewModel;
 public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 {
     private readonly ICommandRegistry _commandRegistry;
+    private readonly CommandListFileUseCase _commandListFileUseCase;
     private readonly List<ICommandListItem> _selectedItems = [];
 
     // イベント
@@ -105,12 +107,17 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     }
     #endregion
 
-    public ListPanelViewModel(ICommandRegistry commandRegistry, CommandList commandList)
+    public ListPanelViewModel(
+        ICommandRegistry commandRegistry,
+        CommandList commandList,
+        CommandListFileUseCase commandListFileUseCase)
     {
         ArgumentNullException.ThrowIfNull(commandRegistry);
         ArgumentNullException.ThrowIfNull(commandList);
+        ArgumentNullException.ThrowIfNull(commandListFileUseCase);
         _commandRegistry = commandRegistry;
         _commandList = commandList;
+        _commandListFileUseCase = commandListFileUseCase;
     }
 
     #region OnChanged
@@ -330,12 +337,18 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
     public void Save(string filePath = "")
     {
-        CommandList.Save(filePath);
+        _commandListFileUseCase.Save(CommandList.Items, filePath);
     }
 
     public void Load(string filePath = "")
     {
-        CommandList.Load(filePath);
+        var loadedItems = _commandListFileUseCase.Load(filePath);
+        CommandList.Clear();
+        foreach (var item in loadedItems)
+        {
+            CommandList.Add(item);
+        }
+
         if (CommandList.Items.Count > 0)
         {
             SelectedLineNumber = -1;

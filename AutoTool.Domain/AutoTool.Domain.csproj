@@ -6,8 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\AutoTool.Automation.Contracts\AutoTool.Automation.Contracts.csproj" />
-  </ItemGroup>
-
 </Project>

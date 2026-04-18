@@ -25,8 +25,7 @@ public class CommandListTests
     {
         var registry = new ReflectionCommandRegistry();
         registry.Initialize();
-        var serializer = new MacroFileSerializer();
-        return new CommandList(registry, serializer);
+        return new CommandList(registry);
     }
 
     [Fact]
@@ -81,9 +80,8 @@ public class CommandListTests
             new WaitItem { ItemType = "UnknownItemType" }
         });
 
-        var list = new CommandList(registry, serializer);
-
-        Assert.Throws<InvalidDataException>(() => list.Load("dummy-path.json"));
+        var gateway = new CommandListFileGateway(serializer, registry);
+        Assert.Throws<InvalidDataException>(() => gateway.Load("dummy-path.json"));
     }
 }
 
@@ -100,8 +98,7 @@ public class MacroFactoryTests
         var registry = provider.GetRequiredService<ICommandRegistry>();
         registry.Initialize();
 
-        var serializer = new MacroFileSerializer();
-        var list = new CommandList(provider.GetRequiredService<ICommandDefinitionProvider>(), serializer);
+        var list = new CommandList(provider.GetRequiredService<ICommandDefinitionProvider>());
 
         var ifItem = new IfVariableItem
         {
@@ -139,8 +136,7 @@ public class MacroFactoryTests
         var registry = provider.GetRequiredService<ICommandRegistry>();
         registry.Initialize();
 
-        var serializer = new MacroFileSerializer();
-        var list = new CommandList(provider.GetRequiredService<ICommandDefinitionProvider>(), serializer);
+        var list = new CommandList(provider.GetRequiredService<ICommandDefinitionProvider>());
 
         var ifItem = new IfTextExistItem
         {
@@ -173,8 +169,7 @@ public class MacroFactoryTests
         var registry = provider.GetRequiredService<ICommandRegistry>();
         registry.Initialize();
 
-        var serializer = new MacroFileSerializer();
-        var list = new CommandList(provider.GetRequiredService<ICommandDefinitionProvider>(), serializer);
+        var list = new CommandList(provider.GetRequiredService<ICommandDefinitionProvider>());
 
         list.Add(new IfTextExistItem
         {

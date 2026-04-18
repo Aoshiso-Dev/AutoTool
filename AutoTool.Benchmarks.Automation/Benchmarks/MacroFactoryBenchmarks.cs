@@ -5,7 +5,6 @@ using AutoTool.Automation.Runtime.Lists;
 using AutoTool.Automation.Runtime.Definitions;
 using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Automation.Runtime.MacroFactory;
-using AutoTool.Automation.Runtime.Serialization;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Order;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,7 +57,7 @@ public class MacroFactoryBenchmarks
 
         var registry = new ReflectionCommandRegistry();
         registry.Initialize();
-        var list = new CommandList(registry, new MacroFileSerializer());
+        var list = new CommandList(registry);
 
         list.Add(new LoopItem
         {

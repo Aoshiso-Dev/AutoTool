@@ -37,8 +37,8 @@ AutoTool は、`AutoTool.Bootstrap` を起点に UI / Application / Domain / Inf
 - `Bootstrap -> Desktop`
 - `Desktop -> Application / Automation.Runtime / Infrastructure`
 - `Automation.Runtime -> Application / Automation.Contracts`
-- `Application -> Domain`
-- `Domain -> Automation.Contracts`
+- `Application -> Domain / Automation.Contracts`
+- `Domain -> (no external project references)`
 - `Infrastructure -> Application / Automation.Runtime / Automation.Contracts`
 
 ## 4. 起動シーケンス

@@ -1,4 +1,4 @@
-namespace AutoTool.Desktop.Model;
+﻿namespace AutoTool.Desktop.Model;
 
 public enum WindowSizePreset
 {

@@ -1,4 +1,5 @@
 ﻿using AutoTool.Commands.DependencyInjection;
+using AutoTool.Application.Ports;
 using AutoTool.Automation.Runtime.Definitions;
 using AutoTool.Automation.Runtime.Lists;
 using AutoTool.Automation.Runtime.MacroFactory;
@@ -25,6 +26,7 @@ public static class MacroRuntimeServiceCollectionExtensions
         services.AddSingleton<ICommandRegistry, ReflectionCommandRegistry>();
         services.AddSingleton<ICommandDefinitionProvider, ReflectionCommandRegistry>();
         services.AddTransient<IMacroFileSerializer, MacroFileSerializer>();
+        services.AddTransient<ICommandListFileGateway, CommandListFileGateway>();
         services.AddTransient<CommandList>();
 
         return services;

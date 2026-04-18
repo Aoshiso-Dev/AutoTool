@@ -1,4 +1,4 @@
-namespace AutoTool.Commands.Model.Input;
+﻿namespace AutoTool.Commands.Model.Input;
 
 public enum CommandMouseButton
 {

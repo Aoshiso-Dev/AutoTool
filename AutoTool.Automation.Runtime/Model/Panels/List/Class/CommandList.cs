@@ -1,28 +1,21 @@
 ﻿using System.Collections.ObjectModel;
-using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.Win32;
-using AutoTool.Domain.Automation.Lists;
 using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Automation.Runtime.Definitions;
-using AutoTool.Automation.Runtime.Serialization;
 
 namespace AutoTool.Automation.Runtime.Lists;
 
-public partial class CommandList : ObservableObject, ICommandList
+public partial class CommandList : ObservableObject
 {
     private readonly ICommandDefinitionProvider _commandDefinitionProvider;
-    private readonly IMacroFileSerializer _macroFileSerializer;
 
     [ObservableProperty]
     private ObservableCollection<ICommandListItem> _items = [];
 
-    public CommandList(ICommandDefinitionProvider commandDefinitionProvider, IMacroFileSerializer macroFileSerializer)
+    public CommandList(ICommandDefinitionProvider commandDefinitionProvider)
     {
         ArgumentNullException.ThrowIfNull(commandDefinitionProvider);
-        ArgumentNullException.ThrowIfNull(macroFileSerializer);
         _commandDefinitionProvider = commandDefinitionProvider;
-        _macroFileSerializer = macroFileSerializer;
     }
 
     public ICommandListItem this[int index]
@@ -227,55 +220,5 @@ public partial class CommandList : ObservableObject, ICommandList
         return clone;
     }
 
-    public void Save(string filePath)
-    {
-        var cloneItems = Clone();
-
-        _macroFileSerializer.SerializeToFile(cloneItems, filePath);
-    }
-
-    public void Load(string filePath)
-    {
-        var deserializedItems = _macroFileSerializer.DeserializeFromFile<ObservableCollection<ICommandListItem>>(filePath);
-        if (deserializedItems is not null)
-        {
-            Items.Clear();
-
-            foreach (var item in deserializedItems)
-            {
-                if (string.IsNullOrWhiteSpace(item.ItemType) || string.Equals(item.ItemType, "None", StringComparison.Ordinal))
-                {
-                    if (CommandMetadataCatalog.TryGetByItemType(item.GetType(), out var metadata))
-                    {
-                        item.ItemType = metadata.TypeName;
-                    }
-                }
-
-                // 定義プロバイダーを使用して適切な型を作成
-                var itemType = _commandDefinitionProvider.GetItemType(item.ItemType);
-                if (itemType is not null)
-                {
-                    try
-                    {
-                        // デシリアライズされたデータから新しいアイテムを作成
-                        var newItem = (ICommandListItem)Activator.CreateInstance(itemType, item)!;
-                        Add(newItem);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new InvalidDataException($"型 {item.ItemType} のアイテム作成に失敗しました: {ex.Message}");
-                    }
-                }
-                else
-                {
-                    throw new InvalidDataException($"不明な ItemType: {item.ItemType}");
-                }
-            }
-        }
-
-        CalculateNestLevel();
-        PairIfItems();
-        PairLoopItems();
-    }
 }
 
