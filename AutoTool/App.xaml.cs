@@ -15,29 +15,15 @@ namespace AutoTool;
 public partial class App : Application
 {
     private IHost? _host;
-
-    /// <summary>
-    /// アプリケーションのサービスプロバイダー
-    /// </summary>
-    /// <remarks>
-    /// 可能な限りコンストラクタインジェクションを使用してください。
-    /// このプロパティはMainWindowなど、DIコンテナから直接作成できないクラスでのみ使用してください。
-    /// </remarks>
-    public static IServiceProvider Services { get; private set; } = null!;
-
-    /// <summary>
-    /// DIコンテナからサービスを取得します
-    /// </summary>
-    /// <remarks>
-    /// 可能な限りコンストラクタインジェクションを使用してください。
-    /// </remarks>
-    public static T GetService<T>() where T : notnull => Services.GetRequiredService<T>();
+    private INotifier? _notifier;
+    private ILogWriter? _logWriter;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         // ホストを構築して初期化
-        _host = AppHostBuilder.BuildAndInitialize(e.Args);
-        Services = _host.Services;
+        _host = AppHostBuilder.CreateHostBuilder(e.Args).Build();
+        _notifier = _host.Services.GetService<INotifier>();
+        _logWriter = _host.Services.GetService<ILogWriter>();
 
         base.OnStartup(e);
 
@@ -46,10 +32,6 @@ public partial class App : Application
 
         // ホストを開始
         _host.Start();
-
-        var mainWindow = Services.GetRequiredService<MainWindow>();
-        MainWindow = mainWindow;
-        mainWindow.Show();
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -66,7 +48,7 @@ public partial class App : Application
             }
             catch (Exception ex)
             {
-                Services?.GetService<ILogWriter>()?.Write(ex);
+                _logWriter?.Write(ex);
             }
             finally
             {
@@ -79,20 +61,17 @@ public partial class App : Application
 
     private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        var notifier = Services?.GetService<INotifier>();
-        var logWriter = Services?.GetService<ILogWriter>();
-
         var exception = e.Exception;
-        logWriter?.Write(exception);
+        _logWriter?.Write(exception);
 
         if (IsCriticalException(exception))
         {
-            notifier?.ShowError("致命的なエラーが発生したためアプリケーションを終了します。", "致命的エラー");
+            _notifier?.ShowError("致命的なエラーが発生したためアプリケーションを終了します。", "致命的エラー");
             e.Handled = false;
             return;
         }
 
-        notifier?.ShowError("予期しないエラーが発生しました: " + exception.Message, "エラー");
+        _notifier?.ShowError("予期しないエラーが発生しました: " + exception.Message, "エラー");
 
         // 例外をハンドル済みとして設定
         e.Handled = true;

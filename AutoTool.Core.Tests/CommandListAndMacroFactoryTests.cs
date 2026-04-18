@@ -92,6 +92,7 @@ public class MacroFactoryTests
     {
         var services = new ServiceCollection();
         services.AddCommandServices();
+        services.AddSingleton<ICommandDependencyResolver>(sp => new DelegateCommandDependencyResolver(sp.GetService));
         services.AddSingleton<ICommandFactory, CommandFactory>();
         services.AddSingleton<ReflectionCommandRegistry>();
         services.AddSingleton<ICommandRegistry>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
@@ -137,6 +138,7 @@ public class MacroFactoryTests
     {
         var services = new ServiceCollection();
         services.AddCommandServices();
+        services.AddSingleton<ICommandDependencyResolver>(sp => new DelegateCommandDependencyResolver(sp.GetService));
         services.AddSingleton<ICommandFactory, CommandFactory>();
         services.AddSingleton<ReflectionCommandRegistry>();
         services.AddSingleton<ICommandRegistry>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
@@ -177,6 +179,7 @@ public class MacroFactoryTests
     {
         var services = new ServiceCollection();
         services.AddCommandServices();
+        services.AddSingleton<ICommandDependencyResolver>(sp => new DelegateCommandDependencyResolver(sp.GetService));
         services.AddSingleton<ICommandFactory, CommandFactory>();
         services.AddSingleton<ReflectionCommandRegistry>();
         services.AddSingleton<ICommandRegistry>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());

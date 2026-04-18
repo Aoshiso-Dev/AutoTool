@@ -1,7 +1,6 @@
 ﻿using AutoTool.Core.Ports;
 using AutoTool.Infrastructure.Implementations;
 using AutoTool.Panels.Hosting;
-using AutoTool.Panels.Model.CommandDefinition;
 using AutoTool.ViewModel;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,12 +26,6 @@ public static class AppHostBuilder
             });
     }
 
-    public static IHost BuildAndInitialize(string[]? args = null)
-    {
-        var host = CreateHostBuilder(args).Build();
-        host.Services.GetRequiredService<ICommandRegistry>().Initialize();
-        return host;
-    }
 }
 
 public static class AutoToolServiceExtensions
@@ -53,6 +46,7 @@ public static class AutoToolServiceExtensions
         services.AddTransient<MacroPanelViewModel>();
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<MainWindow>();
+        services.AddHostedService<MainWindowHostedService>();
 
         return services;
     }

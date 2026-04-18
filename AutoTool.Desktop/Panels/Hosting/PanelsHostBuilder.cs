@@ -26,13 +26,6 @@ public static class PanelsHostBuilder
             });
     }
 
-    public static IHost BuildAndInitialize(string[]? args = null)
-    {
-        var host = CreateHostBuilder(args).Build();
-        host.Services.GetRequiredService<ICommandRegistry>().Initialize();
-        return host;
-    }
-
     public static IServiceCollection AddPanelsCoreServices(this IServiceCollection services, IConfiguration? configuration = null)
     {
         services.AddSingleton(TimeProvider.System);
@@ -42,6 +35,7 @@ public static class PanelsHostBuilder
             configuration?.GetSection(CommandEventBusOptions.SectionName).Bind(options);
         });
 
+        services.AddSingleton<ICommandDependencyResolver>(sp => new DelegateCommandDependencyResolver(sp.GetService));
         services.AddSingleton<ICommandFactory, CommandFactory>();
 
         services.AddTransient<ICompositeCommandBuilder, IfCompositeCommandBuilder>();
@@ -51,6 +45,7 @@ public static class PanelsHostBuilder
         services.AddSingleton<ReflectionCommandRegistry>();
         services.AddSingleton<ICommandRegistry>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
         services.AddSingleton<ICommandDefinitionProvider>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
+        services.AddHostedService<CommandRegistryInitializationHostedService>();
         services.AddTransient<IMacroFileSerializer, MacroFileSerializer>();
         services.AddTransient<CommandList>();
 

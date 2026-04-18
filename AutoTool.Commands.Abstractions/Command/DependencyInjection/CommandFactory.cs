@@ -10,7 +10,7 @@ namespace AutoTool.Commands.DependencyInjection;
 /// <summary>
 /// DI コンテナを利用したコマンドファクトリ
 /// </summary>
-public class CommandFactory(IServiceProvider serviceProvider, ICommandEventBus? commandEventBus = null) : ICommandFactory
+public class CommandFactory(ICommandDependencyResolver dependencyResolver, ICommandEventBus? commandEventBus = null) : ICommandFactory
 {
     private enum ParameterSource
     {
@@ -25,7 +25,6 @@ public class CommandFactory(IServiceProvider serviceProvider, ICommandEventBus? 
         public required ParameterSource Source { get; init; }
         public required bool HasDefaultValue { get; init; }
         public object? DefaultValue { get; init; }
-        public Func<IServiceProvider, object?>? ServiceResolver { get; init; }
     }
 
     private sealed class ConstructorPlan
@@ -71,9 +70,7 @@ public class CommandFactory(IServiceProvider serviceProvider, ICommandEventBus? 
     }
 
     private static readonly ConcurrentDictionary<Type, IReadOnlyList<ConstructorPlan>> ConstructorPlanCache = new();
-    private static readonly ConcurrentDictionary<Type, Func<IServiceProvider, object?>> ServiceResolverCache = new();
-
-    private readonly IServiceProvider _serviceProvider = EnsureNotNull(serviceProvider);
+    private readonly ICommandDependencyResolver _dependencyResolver = EnsureNotNull(dependencyResolver);
     private readonly ICommandEventBus? _commandEventBus = commandEventBus;
 
     public TCommand Create<TCommand>(ICommand? parent, ICommandSettings settings) where TCommand : ICommand
@@ -171,8 +168,9 @@ public class CommandFactory(IServiceProvider serviceProvider, ICommandEventBus? 
             return service is not null;
         }
 
-        var resolver = parameterPlan.ServiceResolver ?? CreateServiceResolver(parameterPlan.ParameterType);
-        service = resolver(_serviceProvider);
+        service = _dependencyResolver.TryResolve(parameterPlan.ParameterType, out var resolved)
+            ? resolved
+            : null;
         resolvedServices[parameterPlan.ParameterType] = service;
         return service is not null;
     }
@@ -192,32 +190,12 @@ public class CommandFactory(IServiceProvider serviceProvider, ICommandEventBus? 
                         ParameterType = p.ParameterType,
                         Source = ResolveParameterSource(p.ParameterType),
                         HasDefaultValue = p.HasDefaultValue,
-                        DefaultValue = p.DefaultValue,
-                        ServiceResolver = ResolveParameterSource(p.ParameterType) == ParameterSource.ExplicitOrService
-                            ? CreateServiceResolver(p.ParameterType)
-                            : null
+                        DefaultValue = p.DefaultValue
                     })
                     .ToArray(),
                 Activator = CreateActivator(constructor)
             })
             .ToArray();
-    }
-
-    private static Func<IServiceProvider, object?> CreateServiceResolver(Type serviceType)
-    {
-        return ServiceResolverCache.GetOrAdd(serviceType, static type =>
-        {
-            var provider = Expression.Parameter(typeof(IServiceProvider), "provider");
-            var getServiceMethod = typeof(IServiceProvider).GetMethod(
-                nameof(IServiceProvider.GetService),
-                [typeof(Type)])
-                ?? throw new InvalidOperationException("IServiceProvider.GetService(Type) が見つかりません。");
-            var body = Expression.Convert(
-                Expression.Call(provider, getServiceMethod, Expression.Constant(type, typeof(Type))),
-                typeof(object));
-
-            return Expression.Lambda<Func<IServiceProvider, object?>>(body, provider).Compile();
-        });
     }
 
     private static Func<object?[], ICommand> CreateActivator(ConstructorInfo constructor)
@@ -260,7 +238,36 @@ public class CommandFactory(IServiceProvider serviceProvider, ICommandEventBus? 
         return command;
     }
 
-    private static IServiceProvider EnsureNotNull(IServiceProvider value)
+    private static ICommandDependencyResolver EnsureNotNull(ICommandDependencyResolver value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value;
+    }
+}
+
+/// <summary>
+/// コマンド依存解決の抽象
+/// </summary>
+public interface ICommandDependencyResolver
+{
+    bool TryResolve(Type serviceType, out object? service);
+}
+
+/// <summary>
+/// 関数ベースの依存解決実装
+/// </summary>
+public sealed class DelegateCommandDependencyResolver(Func<Type, object?> resolver) : ICommandDependencyResolver
+{
+    private readonly Func<Type, object?> _resolver = EnsureNotNull(resolver);
+
+    public bool TryResolve(Type serviceType, out object? service)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+        service = _resolver(serviceType);
+        return service is not null;
+    }
+
+    private static Func<Type, object?> EnsureNotNull(Func<Type, object?> value)
     {
         ArgumentNullException.ThrowIfNull(value);
         return value;
