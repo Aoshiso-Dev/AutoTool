@@ -46,6 +46,11 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 - `Ctrl+Y` / `Ctrl+Shift+Z`: やり直し
 - `Ctrl+C`: 選択中コマンドをコピー
 - `Ctrl+V`: コピー済みコマンドを選択行の下へ貼り付け
+- `Ctrl+X`: 選択中コマンドを切り取り（コピーして削除）
+- `Alt+↑` / `Alt+↓`: 選択中コマンドを上下に移動
+- `Ctrl+A` → `Delete`: コマンド一覧を全削除
+- `Shift+クリック` / `Ctrl+クリック`: コマンド一覧の複数選択
+  - 複数選択した状態で `Delete` / `Ctrl+X` / `Ctrl+C` / `Ctrl+V` が使えます
 
 設定:
 

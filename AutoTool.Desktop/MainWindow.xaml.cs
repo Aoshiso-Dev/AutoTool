@@ -20,6 +20,7 @@ public partial class MainWindow : FluentWindow
     private readonly MainWindowViewModel _viewModel;
     private readonly IUiStatePreferenceStore _uiStatePreferenceStore;
     private bool _restorePreviousSession;
+    private bool _isCommandListSelectAllPending;
 
     public MainWindow(
         MainWindowViewModel viewModel,
@@ -104,12 +105,12 @@ public partial class MainWindow : FluentWindow
 
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key is not (Key.C or Key.V) || Keyboard.Modifiers != ModifierKeys.Control)
+        if (_isCommandListSelectAllPending && e.Key is not Key.Delete)
         {
-            return;
+            SetCommandListSelectAllPending(false);
         }
 
-        if (!CanHandleMacroClipboardShortcut())
+        if (!CanHandleMacroKeyboardShortcut())
         {
             return;
         }
@@ -119,12 +120,42 @@ public partial class MainWindow : FluentWindow
             return;
         }
 
+        if (e.Key == Key.X && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            if (buttonPanelViewModel.CopyCommand.CanExecute(null))
+            {
+                buttonPanelViewModel.CopyCommand.Execute(null);
+            }
+
+            if (buttonPanelViewModel.DeleteCommand.CanExecute(null))
+            {
+                buttonPanelViewModel.DeleteCommand.Execute(null);
+            }
+
+            SetCommandListSelectAllPending(false);
+            e.Handled = true;
+            return;
+        }
+
         var command = e.Key switch
         {
-            Key.C => buttonPanelViewModel.CopyCommand,
-            Key.V => buttonPanelViewModel.PasteCommand,
+            Key.Delete when Keyboard.Modifiers == ModifierKeys.None
+                => _isCommandListSelectAllPending ? buttonPanelViewModel.ClearCommand : buttonPanelViewModel.DeleteCommand,
+            Key.A when Keyboard.Modifiers == ModifierKeys.Control => null,
+            Key.C when Keyboard.Modifiers == ModifierKeys.Control => buttonPanelViewModel.CopyCommand,
+            Key.V when Keyboard.Modifiers == ModifierKeys.Control => buttonPanelViewModel.PasteCommand,
+            Key.Up when Keyboard.Modifiers == ModifierKeys.Alt => buttonPanelViewModel.UpCommand,
+            Key.Down when Keyboard.Modifiers == ModifierKeys.Alt => buttonPanelViewModel.DownCommand,
             _ => null
         };
+
+        if (e.Key == Key.A && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            SetCommandListSelectAllPending(true);
+            _viewModel.StatusMessage = "全選択しました。Delete キーで全削除できます。";
+            e.Handled = true;
+            return;
+        }
 
         if (command is null || !command.CanExecute(null))
         {
@@ -132,10 +163,14 @@ public partial class MainWindow : FluentWindow
         }
 
         command.Execute(null);
+        if (e.Key == Key.Delete)
+        {
+            SetCommandListSelectAllPending(false);
+        }
         e.Handled = true;
     }
 
-    private bool CanHandleMacroClipboardShortcut()
+    private bool CanHandleMacroKeyboardShortcut()
     {
         if (_viewModel.SelectedTabIndex != TabIndexes.Macro || _viewModel.IsRunning)
         {
@@ -144,6 +179,12 @@ public partial class MainWindow : FluentWindow
 
         var focused = Keyboard.FocusedElement as DependencyObject;
         return !IsTextInputContext(focused);
+    }
+
+    private void SetCommandListSelectAllPending(bool isPending)
+    {
+        _isCommandListSelectAllPending = isPending;
+        _viewModel.MacroPanelViewModel.ListPanelViewModel.IsAllSelectedVisual = isPending;
     }
 
     private static bool IsTextInputContext(DependencyObject? focused)

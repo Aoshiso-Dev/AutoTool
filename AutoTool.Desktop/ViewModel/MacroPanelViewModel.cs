@@ -32,6 +32,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private long _lastObservedDroppedCommandEvents;
     private bool _disposed;
     private bool _isEditDialogOpen;
+    public event Action<string>? StatusMessageRequested;
 
     [ObservableProperty]
     private bool _isRunning;
@@ -168,5 +169,15 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _disposed = true;
 
         GC.SuppressFinalize(this);
+    }
+
+    private void PublishStatusMessage(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        StatusMessageRequested?.Invoke(message);
     }
 }

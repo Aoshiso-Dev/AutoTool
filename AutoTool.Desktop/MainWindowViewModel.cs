@@ -115,6 +115,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         InitializeCommandHistory();
         _lastKnownIsRunning = IsRunning;
         MacroPanelViewModel.PropertyChanged += OnMacroPanelPropertyChanged;
+        MacroPanelViewModel.StatusMessageRequested += OnMacroStatusMessageRequested;
     }
 
     private void OnMacroPanelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -323,6 +324,12 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         return _fileManagers.TryGetValue(SelectedTabIndex, out fileManager!);
     }
 
+    private void OnMacroStatusMessageRequested(string message)
+    {
+        StatusMessage = message;
+        _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
+    }
+
     public void RestoreSessionState(
         int selectedTabIndex,
         bool isFavoritePanelOpen,
@@ -383,6 +390,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
 
         MacroPanelViewModel.PropertyChanged -= OnMacroPanelPropertyChanged;
+        MacroPanelViewModel.StatusMessageRequested -= OnMacroStatusMessageRequested;
         MacroPanelViewModel.Dispose();
         _disposed = true;
 

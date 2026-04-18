@@ -7,7 +7,7 @@ namespace AutoTool.Desktop.ViewModel;
 
 public partial class MacroPanelViewModel
 {
-    private ICommandListItem? _inAppCommandClipboardItem;
+    private IReadOnlyList<ICommandListItem> _inAppCommandClipboardItems = [];
 
     private void HandleClear()
     {
@@ -95,27 +95,80 @@ public partial class MacroPanelViewModel
 
     private void HandleDelete()
     {
-        var selectedItem = _listPanel.SelectedItem;
-        var selectedIndex = _listPanel.SelectedLineNumber;
+        var selectedItems = _listPanel.GetSelectedItems()
+            .Distinct()
+            .ToList();
 
-        if (selectedItem is null && selectedIndex >= 0 && selectedIndex < _listPanel.GetCount())
+        if (selectedItems.Count == 0)
         {
-            selectedItem = _listPanel.GetItem(selectedIndex + 1);
+            var selectedItem = _listPanel.SelectedItem;
+            var selectedIndex = _listPanel.SelectedLineNumber;
+
+            if (selectedItem is null && selectedIndex >= 0 && selectedIndex < _listPanel.GetCount())
+            {
+                selectedItem = _listPanel.GetItem(selectedIndex + 1);
+            }
+
+            if (selectedItem is null)
+            {
+                return;
+            }
+
+            selectedItems.Add(selectedItem);
         }
 
-        if (selectedItem is not null && _commandHistory is not null)
+        if (selectedItems.Count == 1)
         {
-            var removeCommand = new RemoveItemCommand(
-                selectedItem.Clone(),
-                selectedIndex,
-                (item, index) => _listPanel.InsertAt(index, item),
-                index => _listPanel.RemoveAt(index)
-            );
-            _commandHistory.ExecuteCommand(removeCommand);
+            var target = selectedItems[0];
+            var selectedIndex = _listPanel.CommandList.Items.IndexOf(target);
+            if (selectedIndex < 0)
+            {
+                return;
+            }
+
+            if (_commandHistory is not null)
+            {
+                var removeCommand = new RemoveItemCommand(
+                    target.Clone(),
+                    selectedIndex,
+                    (item, index) => _listPanel.InsertAt(index, item),
+                    index => _listPanel.RemoveAt(index)
+                );
+                _commandHistory.ExecuteCommand(removeCommand);
+            }
+            else
+            {
+                _listPanel.Delete();
+            }
         }
         else
         {
-            _listPanel.Delete();
+            var entries = selectedItems
+                .Select(item => (Item: item.Clone(), Index: _listPanel.CommandList.Items.IndexOf(item)))
+                .Where(x => x.Index >= 0)
+                .OrderBy(x => x.Index)
+                .ToList();
+
+            if (entries.Count == 0)
+            {
+                return;
+            }
+
+            if (_commandHistory is not null)
+            {
+                var removeCommand = new RemoveItemsCommand(
+                    entries,
+                    (item, index) => _listPanel.InsertAt(index, item),
+                    index => _listPanel.RemoveAt(index));
+                _commandHistory.ExecuteCommand(removeCommand);
+            }
+            else
+            {
+                foreach (var (_, index) in entries.OrderByDescending(x => x.Index))
+                {
+                    _listPanel.RemoveAt(index);
+                }
+            }
         }
 
         _editPanel.SetListCount(_listPanel.GetCount());
@@ -123,44 +176,78 @@ public partial class MacroPanelViewModel
 
     private void HandleCopy()
     {
-        var selectedItem = _listPanel.SelectedItem;
-        if (selectedItem is null && _listPanel.SelectedLineNumber >= 0 && _listPanel.SelectedLineNumber < _listPanel.GetCount())
+        var selectedItems = _listPanel.GetSelectedItems()
+            .Distinct()
+            .ToList();
+
+        if (selectedItems.Count == 0)
         {
-            selectedItem = _listPanel.GetItem(_listPanel.SelectedLineNumber + 1);
+            var selectedItem = _listPanel.SelectedItem;
+            if (selectedItem is null && _listPanel.SelectedLineNumber >= 0 && _listPanel.SelectedLineNumber < _listPanel.GetCount())
+            {
+                selectedItem = _listPanel.GetItem(_listPanel.SelectedLineNumber + 1);
+            }
+
+            if (selectedItem is not null)
+            {
+                selectedItems.Add(selectedItem);
+            }
         }
 
-        if (selectedItem is null)
+        if (selectedItems.Count == 0)
         {
-            _notifier.ShowInfo("コピーするコマンドを選択してください。", "コピー");
+            PublishStatusMessage("コピーするコマンドを選択してください。");
             return;
         }
 
         try
         {
-            var copiedItem = selectedItem.Clone();
-            PrepareItemForPaste(copiedItem);
-            _inAppCommandClipboardItem = copiedItem;
+            _inAppCommandClipboardItems = selectedItems
+                .Select(x => x.Clone())
+                .Select(item =>
+                {
+                    PrepareItemForPaste(item);
+                    return item;
+                })
+                .ToList();
+
+            PublishStatusMessage($"{_inAppCommandClipboardItems.Count}件のコマンドをコピーしました。");
         }
         catch (Exception ex)
         {
+            PublishStatusMessage("コピーに失敗しました。");
             _notifier.ShowError($"コピーに失敗しました。\n{ex.Message}", "コピー");
         }
     }
 
     private void HandlePaste()
     {
-        if (!TryReadInAppClipboardItem(out var copiedItem))
+        if (!TryReadInAppClipboardItems(out var copiedItems))
         {
-            _notifier.ShowInfo("コピー済みのコマンドがありません。", "貼り付け");
+            PublishStatusMessage("コピー済みのコマンドがありません。");
             return;
         }
 
-        var targetIndex = _listPanel.SelectedLineNumber >= 0 ? _listPanel.SelectedLineNumber + 1 : _listPanel.GetCount();
+        var selectedItems = _listPanel.GetSelectedItems()
+            .Distinct()
+            .ToList();
+        var targetIndex = selectedItems.Count > 0
+            ? selectedItems
+                .Select(x => _listPanel.CommandList.Items.IndexOf(x))
+                .Where(x => x >= 0)
+                .DefaultIfEmpty(_listPanel.SelectedLineNumber)
+                .Max() + 1
+            : _listPanel.SelectedLineNumber >= 0 ? _listPanel.SelectedLineNumber + 1 : _listPanel.GetCount();
+
+        if (targetIndex < 0)
+        {
+            targetIndex = _listPanel.GetCount();
+        }
 
         if (_commandHistory is not null)
         {
-            var addCommand = new AddItemCommand(
-                copiedItem,
+            var addCommand = new AddItemsCommand(
+                copiedItems,
                 targetIndex,
                 (item, index) => _listPanel.InsertAt(index, item),
                 index => _listPanel.RemoveAt(index));
@@ -168,10 +255,14 @@ public partial class MacroPanelViewModel
         }
         else
         {
-            _listPanel.InsertAt(targetIndex, copiedItem);
+            for (var i = 0; i < copiedItems.Count; i++)
+            {
+                _listPanel.InsertAt(targetIndex + i, copiedItems[i]);
+            }
         }
 
         _editPanel.SetListCount(_listPanel.GetCount());
+        PublishStatusMessage($"{copiedItems.Count}件のコマンドを貼り付けました。");
     }
 
     private void HandleEdit(ICommandListItem? item)
@@ -291,16 +382,23 @@ public partial class MacroPanelViewModel
         }
     }
 
-    private bool TryReadInAppClipboardItem(out ICommandListItem item)
+    private bool TryReadInAppClipboardItems(out IReadOnlyList<ICommandListItem> items)
     {
-        item = default!;
-        if (_inAppCommandClipboardItem is null)
+        items = [];
+        if (_inAppCommandClipboardItems.Count == 0)
         {
             return false;
         }
 
-        item = _inAppCommandClipboardItem.Clone();
-        PrepareItemForPaste(item);
+        items = _inAppCommandClipboardItems
+            .Select(x => x.Clone())
+            .Select(item =>
+            {
+                PrepareItemForPaste(item);
+                return item;
+            })
+            .ToList();
+
         return true;
     }
 }

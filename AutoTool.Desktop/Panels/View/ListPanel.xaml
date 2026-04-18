@@ -23,9 +23,10 @@
         <ui:DataGrid x:Name="CommandDataGrid"
                      ItemsSource="{Binding CommandList.Items}" 
                      SelectedIndex="{Binding SelectedLineNumber, Mode=TwoWay}"
-                     SelectionMode="Single" 
+                     SelectionMode="Extended" 
                      HeadersVisibility="Column" 
                      CanUserAddRows="False" 
+                     CanUserDeleteRows="False"
                      AutoGenerateColumns="False" 
                      EnableRowVirtualization="False"
                      EnableColumnVirtualization="False"
@@ -62,6 +63,11 @@
                     <Setter Property="Background" Value="Transparent"/>
                     <Setter Property="BorderThickness" Value="0"/>
                     <Style.Triggers>
+                        <DataTrigger Binding="{Binding DataContext.IsAllSelectedVisual, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" Value="True">
+                            <Setter Property="Background" Value="#3050A0FF"/>
+                            <Setter Property="BorderBrush" Value="#50A0FF"/>
+                            <Setter Property="BorderThickness" Value="2,0,0,0"/>
+                        </DataTrigger>
                         <!-- 選択時のハイライト -->
                         <Trigger Property="IsSelected" Value="True">
                             <Setter Property="Background" Value="#3050A0FF"/>

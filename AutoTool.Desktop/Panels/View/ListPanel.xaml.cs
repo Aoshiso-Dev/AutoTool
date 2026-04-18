@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Linq;
 using AutoTool.Desktop.Panels.ViewModel;
 
 namespace AutoTool.Desktop.Panels.View;
@@ -162,6 +163,14 @@ public partial class ListPanel : UserControl
 
     private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (DataContext is ListPanelViewModel viewModel)
+        {
+            var selectedItems = CommandDataGrid.SelectedItems
+                .OfType<AutoTool.Automation.Contracts.Lists.ICommandListItem>()
+                .ToList();
+            viewModel.SetSelectedItems(selectedItems);
+        }
+
         Dispatcher.BeginInvoke(() =>
         {
             if (_scrollViewer is null)

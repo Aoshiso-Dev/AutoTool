@@ -7,6 +7,7 @@ namespace AutoTool.Desktop.Panels.ViewModel;
 public interface IListPanelViewModel
 {
     bool IsRunning { get; set; }
+    bool IsAllSelectedVisual { get; set; }
     CommandList CommandList { get; }
     int SelectedLineNumber { get; set; }
     ICommandListItem? SelectedItem { get; set; }
@@ -31,6 +32,8 @@ public interface IListPanelViewModel
     void Load(string filePath = "");
     int GetCount();
     ICommandListItem? GetItem(int lineNumber);
+    IReadOnlyList<ICommandListItem> GetSelectedItems();
+    void SetSelectedItems(IReadOnlyList<ICommandListItem> items);
     void SetSelectedItem(ICommandListItem? item);
     void SetSelectedLineNumber(int lineNumber);
 }

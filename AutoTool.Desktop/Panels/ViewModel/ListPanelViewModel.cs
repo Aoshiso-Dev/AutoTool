@@ -10,6 +10,7 @@ namespace AutoTool.Desktop.Panels.ViewModel;
 public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 {
     private readonly ICommandRegistry _commandRegistry;
+    private readonly List<ICommandListItem> _selectedItems = [];
 
     // イベント
     public event Action<ICommandListItem?>? SelectedItemChanged;
@@ -18,6 +19,9 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     #region Properties
     [ObservableProperty]
     private bool _isRunning;
+
+    [ObservableProperty]
+    private bool _isAllSelectedVisual;
 
     [ObservableProperty]
     private CommandList _commandList;
@@ -37,7 +41,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
     public ICommandListItem? SelectedItem
     {
-        get => CommandList.Items.FirstOrDefault(x => x.IsSelected);
+        get => _selectedItems.FirstOrDefault();
         set
         {
             if (value is null)
@@ -381,6 +385,32 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public void SetSelectedItem(ICommandListItem? item)
     {
         SelectedItem = item;
+    }
+
+    public IReadOnlyList<ICommandListItem> GetSelectedItems()
+    {
+        return _selectedItems.AsReadOnly();
+    }
+
+    public void SetSelectedItems(IReadOnlyList<ICommandListItem> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+
+        _selectedItems.Clear();
+        _selectedItems.AddRange(items.Where(x => x is not null).Distinct());
+
+        foreach (var commandItem in CommandList.Items)
+        {
+            commandItem.IsSelected = _selectedItems.Contains(commandItem);
+        }
+
+        if (_selectedItems.Count > 0)
+        {
+            SelectedItemChanged?.Invoke(_selectedItems[0]);
+            return;
+        }
+
+        SelectedItemChanged?.Invoke(null);
     }
 
     public void SetSelectedLineNumber(int lineNumber)
