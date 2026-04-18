@@ -1,18 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using AutoTool.Desktop.Panels.ViewModel;
 
 namespace AutoTool.Desktop.Panels.View;
@@ -22,93 +12,189 @@ namespace AutoTool.Desktop.Panels.View;
 /// </summary>
 public partial class ListPanel : UserControl
 {
-    private double _savedVerticalOffset = 0;
-    private double _savedHorizontalOffset = 0;
+    private enum ListPanelLayoutMode
+    {
+        Compact,
+        Standard,
+        Large
+    }
+
+    private double _savedVerticalOffset;
+    private double _savedHorizontalOffset;
+    private ScrollViewer? _scrollViewer;
+    private Window? _ownerWindow;
+    private ListPanelLayoutMode? _currentLayoutMode;
 
     public ListPanel()
     {
         InitializeComponent();
-        
-        // DataGridのLoadedイベントでスクロール位置保持を設定
-        this.Loaded += ListPanel_Loaded;
+        Loaded += ListPanel_Loaded;
+        Unloaded += ListPanel_Unloaded;
     }
 
     private void ListPanel_Loaded(object sender, RoutedEventArgs e)
     {
-        // DataGridを取得
-        var dataGrid = FindVisualChild<DataGrid>(this);
-        if (dataGrid is not null)
+        _scrollViewer ??= FindVisualChild<ScrollViewer>(CommandDataGrid);
+        if (_scrollViewer is not null)
         {
-            // ScrollViewerを取得
-            var scrollViewer = FindVisualChild<ScrollViewer>(dataGrid);
-            if (scrollViewer is not null)
-            {
-                // スクロール位置変更イベントを監視
-                scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
-            }
-
-            // SelectionChangedイベントでスクロール位置を復元
-            dataGrid.SelectionChanged += DataGrid_SelectionChanged;
-            
-            // ダブルクリックイベントを追加
-            dataGrid.MouseDoubleClick += DataGrid_MouseDoubleClick;
+            _scrollViewer.ScrollChanged -= ScrollViewer_ScrollChanged;
+            _scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
         }
+
+        CommandDataGrid.SelectionChanged -= DataGrid_SelectionChanged;
+        CommandDataGrid.SelectionChanged += DataGrid_SelectionChanged;
+        CommandDataGrid.MouseDoubleClick -= DataGrid_MouseDoubleClick;
+        CommandDataGrid.MouseDoubleClick += DataGrid_MouseDoubleClick;
+
+        _ownerWindow ??= Window.GetWindow(this);
+        if (_ownerWindow is not null)
+        {
+            _ownerWindow.SizeChanged -= OwnerWindow_SizeChanged;
+            _ownerWindow.SizeChanged += OwnerWindow_SizeChanged;
+            ApplyLayoutMode(_ownerWindow.ActualWidth);
+            return;
+        }
+
+        ApplyLayoutMode(ActualWidth);
+    }
+
+    private void ListPanel_Unloaded(object sender, RoutedEventArgs e)
+    {
+        if (_scrollViewer is not null)
+        {
+            _scrollViewer.ScrollChanged -= ScrollViewer_ScrollChanged;
+        }
+
+        CommandDataGrid.SelectionChanged -= DataGrid_SelectionChanged;
+        CommandDataGrid.MouseDoubleClick -= DataGrid_MouseDoubleClick;
+
+        if (_ownerWindow is not null)
+        {
+            _ownerWindow.SizeChanged -= OwnerWindow_SizeChanged;
+            _ownerWindow = null;
+        }
+    }
+
+    private void OwnerWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        ApplyLayoutMode(e.NewSize.Width);
+    }
+
+    private void ApplyLayoutMode(double windowWidth)
+    {
+        var mode = windowWidth switch
+        {
+            < 900 => ListPanelLayoutMode.Compact,
+            < 1450 => ListPanelLayoutMode.Standard,
+            _ => ListPanelLayoutMode.Large
+        };
+
+        if (_currentLayoutMode == mode)
+        {
+            return;
+        }
+
+        _currentLayoutMode = mode;
+        switch (mode)
+        {
+            case ListPanelLayoutMode.Compact:
+                CommandDataGrid.RowHeight = 32;
+                CommandDataGrid.ColumnHeaderHeight = 28;
+                CommandDataGrid.FontSize = 11;
+                SetColumnWidth(EnableColumn, 50);
+                SetColumnWidth(LineNumberColumn, 30);
+                SetColumnWidth(ProgressColumn, 58);
+                SetColumnWidth(CommandColumn, 130);
+                SetColumnWidth(MoveColumn, 42);
+                SetColumnWidth(DeleteColumn, 30);
+                SetColumnWidth(EditColumn, 34);
+                DescriptionColumn.Visibility = Visibility.Collapsed;
+                break;
+            case ListPanelLayoutMode.Standard:
+                CommandDataGrid.RowHeight = 40;
+                CommandDataGrid.ColumnHeaderHeight = 34;
+                CommandDataGrid.FontSize = 12;
+                SetColumnWidth(EnableColumn, 56);
+                SetColumnWidth(LineNumberColumn, 34);
+                SetColumnWidth(ProgressColumn, 72);
+                SetColumnWidth(CommandColumn, 170);
+                SetColumnWidth(MoveColumn, 50);
+                SetColumnWidth(DeleteColumn, 34);
+                SetColumnWidth(EditColumn, 38);
+                DescriptionColumn.Visibility = Visibility.Visible;
+                DescriptionColumn.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+                break;
+            default:
+                CommandDataGrid.RowHeight = 52;
+                CommandDataGrid.ColumnHeaderHeight = 40;
+                CommandDataGrid.FontSize = 14;
+                SetColumnWidth(EnableColumn, 68);
+                SetColumnWidth(LineNumberColumn, 40);
+                SetColumnWidth(ProgressColumn, 96);
+                SetColumnWidth(CommandColumn, 260);
+                SetColumnWidth(MoveColumn, 64);
+                SetColumnWidth(DeleteColumn, 44);
+                SetColumnWidth(EditColumn, 48);
+                DescriptionColumn.Visibility = Visibility.Visible;
+                DescriptionColumn.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+                break;
+        }
+    }
+
+    private static void SetColumnWidth(DataGridColumn column, double width)
+    {
+        ArgumentNullException.ThrowIfNull(column);
+        column.Width = new DataGridLength(width);
     }
 
     private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
     {
-        // スクロール位置を保存
-        var scrollViewer = sender as ScrollViewer;
-        if (scrollViewer is not null)
+        if (sender is not ScrollViewer scrollViewer)
         {
-            _savedVerticalOffset = scrollViewer.VerticalOffset;
-            _savedHorizontalOffset = scrollViewer.HorizontalOffset;
+            return;
         }
+
+        _savedVerticalOffset = scrollViewer.VerticalOffset;
+        _savedHorizontalOffset = scrollViewer.HorizontalOffset;
     }
 
     private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        // 少し遅延してからスクロール位置を復元
-        Dispatcher.BeginInvoke(new Action(() =>
+        Dispatcher.BeginInvoke(() =>
         {
-            var dataGrid = sender as DataGrid;
-            if (dataGrid is not null)
+            if (_scrollViewer is null)
             {
-                var scrollViewer = FindVisualChild<ScrollViewer>(dataGrid);
-                if (scrollViewer is not null)
+                _scrollViewer = FindVisualChild<ScrollViewer>(CommandDataGrid);
+                if (_scrollViewer is null)
                 {
-                    // 保存されたスクロール位置に復元
-                    scrollViewer.ScrollToVerticalOffset(_savedVerticalOffset);
-                    scrollViewer.ScrollToHorizontalOffset(_savedHorizontalOffset);
+                    return;
                 }
             }
-        }), System.Windows.Threading.DispatcherPriority.Background);
+
+            _scrollViewer.ScrollToVerticalOffset(_savedVerticalOffset);
+            _scrollViewer.ScrollToHorizontalOffset(_savedHorizontalOffset);
+        }, System.Windows.Threading.DispatcherPriority.Background);
     }
 
     private void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        // ヘッダー部分のダブルクリックは無視
-        var dataGrid = sender as DataGrid;
-        if (dataGrid is null) return;
-
-        // クリック位置の要素を確認
         var element = e.OriginalSource as DependencyObject;
         while (element is not null)
         {
             if (element is DataGridColumnHeader)
             {
-                // ヘッダーのダブルクリックは無視
                 return;
             }
+
             if (element is DataGridRow)
             {
-                // 行のダブルクリック - ViewModelに通知
                 if (DataContext is ListPanelViewModel viewModel)
                 {
                     viewModel.OnItemDoubleClick();
                 }
                 return;
             }
+
             element = VisualTreeHelper.GetParent(element);
         }
     }
@@ -118,18 +204,18 @@ public partial class ListPanel : UserControl
     /// </summary>
     private void EditSettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        // クリックされたボタンの行を選択状態にする
-        var button = sender as FrameworkElement;
-        if (button?.DataContext is AutoTool.Automation.Contracts.Lists.ICommandListItem item)
+        if (sender is not FrameworkElement { DataContext: AutoTool.Automation.Contracts.Lists.ICommandListItem item })
         {
-            if (DataContext is ListPanelViewModel viewModel)
-            {
-                // 行を選択
-                viewModel.SelectedLineNumber = item.LineNumber - 1;
-                // 編集ウィンドウを開く
-                viewModel.OnItemDoubleClick();
-            }
+            return;
         }
+
+        if (DataContext is not ListPanelViewModel viewModel)
+        {
+            return;
+        }
+
+        viewModel.SelectedLineNumber = item.LineNumber - 1;
+        viewModel.OnItemDoubleClick();
     }
 
     /// <summary>
@@ -137,8 +223,7 @@ public partial class ListPanel : UserControl
     /// </summary>
     private void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
     {
-        var button = sender as FrameworkElement;
-        if (button?.DataContext is not AutoTool.Automation.Contracts.Lists.ICommandListItem item)
+        if (sender is not FrameworkElement { DataContext: AutoTool.Automation.Contracts.Lists.ICommandListItem item })
         {
             return;
         }
@@ -157,8 +242,7 @@ public partial class ListPanel : UserControl
     /// </summary>
     private void MoveUpCommandButton_Click(object sender, RoutedEventArgs e)
     {
-        var button = sender as FrameworkElement;
-        if (button?.DataContext is not AutoTool.Automation.Contracts.Lists.ICommandListItem item)
+        if (sender is not FrameworkElement { DataContext: AutoTool.Automation.Contracts.Lists.ICommandListItem item })
         {
             return;
         }
@@ -177,8 +261,7 @@ public partial class ListPanel : UserControl
     /// </summary>
     private void MoveDownCommandButton_Click(object sender, RoutedEventArgs e)
     {
-        var button = sender as FrameworkElement;
-        if (button?.DataContext is not AutoTool.Automation.Contracts.Lists.ICommandListItem item)
+        if (sender is not FrameworkElement { DataContext: AutoTool.Automation.Contracts.Lists.ICommandListItem item })
         {
             return;
         }
@@ -197,7 +280,7 @@ public partial class ListPanel : UserControl
     /// </summary>
     private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
     {
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
         {
             var child = VisualTreeHelper.GetChild(parent, i);
             if (child is T result)
@@ -211,8 +294,7 @@ public partial class ListPanel : UserControl
                 return childOfChild;
             }
         }
+
         return default;
     }
 }
-
-

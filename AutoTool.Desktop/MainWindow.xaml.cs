@@ -65,7 +65,7 @@ public partial class MainWindow : FluentWindow
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        var settingsWindow = new SettingsWindow(_restorePreviousSession)
+        var settingsWindow = new SettingsWindow(_restorePreviousSession, _windowSettings.WindowSizePreset)
         {
             Owner = this
         };
@@ -77,6 +77,9 @@ public partial class MainWindow : FluentWindow
 
         _restorePreviousSession = settingsWindow.RestorePreviousSession;
         _uiStatePreferenceStore.SaveRestorePreviousSession(_restorePreviousSession);
+        _windowSettings.UpdateWindowSizePreset(settingsWindow.SelectedWindowSizePreset);
+        _windowSettings.Save();
+        _windowSettings.ApplyToWindow(this);
     }
 
     private void MainWindow_Closed(object? sender, EventArgs e)

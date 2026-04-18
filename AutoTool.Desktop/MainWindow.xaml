@@ -8,7 +8,7 @@
         xmlns:converters="clr-namespace:AutoTool.Desktop.View.Converters"
         mc:Ignorable="d"
         Title="{Binding AutoToolTitle}"
-        MinWidth="800" MinHeight="500"
+        MinWidth="640" MinHeight="420"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="Mica"
         WindowCornerPreference="Round">

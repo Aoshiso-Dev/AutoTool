@@ -46,6 +46,15 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 
 - タイトルバー右側の `設定` ボタンから設定画面を開けます
 - 「前回終了時の状態を次回起動時に復元する」を ON/OFF できます
+- 「メインウィンドウサイズ」を `S/M/L` から選択できます
+  - `S`: 作業領域の 30%
+  - `M`: 作業領域の 50%
+  - `L`: 作業領域の 70%
+  - 初回起動時は表示領域に応じて自動選択（4K 相当は `L`、それ以外は `M`）
+- コマンドリストはウィンドウ幅に応じて表示密度を自動調整します
+  - コンパクト時: 説明列を隠して操作列を優先表示
+  - 標準/広め: 説明列を表示し、行高・列幅を拡張
+  - `S/M/L` に応じて行高とフォントサイズを切り替えます（`S` は密度優先、`L` は視認性優先）
 
 ## 4. 基本操作フロー
 
@@ -59,7 +68,7 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 - マクロファイル拡張子: `.macro`
 - 設定ファイル: `Settings\appsettings.json`
 - ウィンドウ状態ファイル: `%AppData%\AutoTool\window_settings.json`
-  - 終了時にウィンドウ位置/サイズ、タブ状態、パネル開閉状態、右パネル幅、最後に開いていた `.macro` を保存
+  - 終了時にウィンドウ位置/サイズ、サイズプリセット、タブ状態、パネル開閉状態、右パネル幅、最後に開いていた `.macro` を保存
   - 起動時に保存内容を自動復元（対象ファイルが存在しない場合は復元をスキップ）
 - セッション復元設定: `Settings\appsettings.json`
   - `UiState.RestorePreviousSession` を `false` にすると、起動時の「前回タブ状態/パネル状態/最後に開いていたファイル」の復元を無効化

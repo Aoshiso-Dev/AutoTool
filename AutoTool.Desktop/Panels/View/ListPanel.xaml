@@ -20,7 +20,8 @@
 
     <Grid>
         <!-- ui:DataGrid を使用してテーマを継承 -->
-        <ui:DataGrid ItemsSource="{Binding CommandList.Items}" 
+        <ui:DataGrid x:Name="CommandDataGrid"
+                     ItemsSource="{Binding CommandList.Items}" 
                      SelectedIndex="{Binding SelectedLineNumber, Mode=TwoWay}"
                      SelectionMode="Single" 
                      HeadersVisibility="Column" 
@@ -34,7 +35,7 @@
                      BorderThickness="0"
                      VirtualizingPanel.IsVirtualizing="False"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     VerticalContentAlignment="Top"
+                     VerticalContentAlignment="Center"
                      VerticalAlignment="Stretch"
                      HorizontalAlignment="Stretch">
 
@@ -51,7 +52,7 @@
                     <Setter Property="TextBlock.TextAlignment" Value="Left"/>
                     <Setter Property="Background" Value="{ui:ThemeResource ControlFillColorSecondaryBrush}"/>
                     <Setter Property="Foreground" Value="{ui:ThemeResource TextFillColorPrimaryBrush}"/>
-                    <Setter Property="Padding" Value="8,6,8,6"/>
+                    <Setter Property="Padding" Value="8,4,8,4"/>
                 </Style>
             </ui:DataGrid.ColumnHeaderStyle>
 
@@ -88,6 +89,8 @@
                 <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                     <Setter Property="BorderThickness" Value="0"/>
                     <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Setter Property="Padding" Value="3,0"/>
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
                     <Style.Triggers>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter Property="Background" Value="Transparent"/>
@@ -99,7 +102,7 @@
 
             <ui:DataGrid.Columns>
                 <!-- 有効/無効 -->
-                <DataGridTemplateColumn Width="60" Header="">
+                <DataGridTemplateColumn x:Name="EnableColumn" Width="60" Header="">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ui:ToggleSwitch IsChecked="{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
@@ -112,7 +115,7 @@
                 </DataGridTemplateColumn>
 
                 <!-- 行番号 -->
-                <DataGridTemplateColumn Header="#" Width="35">
+                <DataGridTemplateColumn x:Name="LineNumberColumn" Header="#" Width="35">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding LineNumber}" 
@@ -123,13 +126,13 @@
                 </DataGridTemplateColumn>
 
                 <!-- 進捗 -->
-                <DataGridTemplateColumn Header="" Width="80">
+                <DataGridTemplateColumn x:Name="ProgressColumn" Header="" Width="80">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Grid Margin="4,2"
+                            <Grid Margin="2,0"
                                   Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibilityConverter}}">
                                 <!-- 実行中：プログレス表示 -->
-                                <Border CornerRadius="6" Padding="4"
+                                <Border CornerRadius="6" Padding="3,2"
                                         Background="#1510B981">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -138,7 +141,7 @@
                                         </Grid.RowDefinitions>
                                         
                                         <!-- プログレスバー -->
-                                        <Grid Grid.Row="0" Height="8" Margin="0,0,0,4">
+                                        <Grid Grid.Row="0" Height="8" Margin="0,0,0,2">
                                             <Border Background="#30808080" CornerRadius="4"/>
                                             <Border CornerRadius="4" HorizontalAlignment="Left"
                                                     Width="{Binding Progress, Converter={StaticResource ProgressToWidthConverter}, ConverterParameter=60}">
@@ -176,57 +179,76 @@
                 </DataGridTemplateColumn>
 
                 <!-- コマンド -->
-                <DataGridTemplateColumn Header="コマンド" Width="180">
+                <DataGridTemplateColumn x:Name="CommandColumn" Header="コマンド" Width="180">
+                    <DataGridTemplateColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </DataGridTemplateColumn.CellStyle>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Margin="3">
+                            <Grid Margin="0" VerticalAlignment="Stretch">
                                 <Border Background="{Binding ItemType, Converter={StaticResource CommandTypeToCategoryColorConverter}}" 
-                                        CornerRadius="4" Padding="8,4"
-                                        Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}">
+                                        CornerRadius="4"
+                                        Padding="8,0"
+                                        Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}"
+                                        VerticalAlignment="Stretch">
                                     <TextBlock Text="{Binding DisplayName}" 
-                                               FontWeight="Medium" FontSize="13"
+                                               FontWeight="Medium"
+                                               FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                               LineHeight="16"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               VerticalAlignment="Center"
                                                Foreground="#1a1a1a"/>
                                 </Border>
-                            </StackPanel>
+                            </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
                 <!-- 説明 -->
-                <DataGridTemplateColumn Header="説明" Width="*">
+                <DataGridTemplateColumn x:Name="DescriptionColumn" Header="説明" Width="*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel>
                                 <TextBlock Text="{Binding Description}" 
-                                           FontSize="13"
+                                           FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                           LineHeight="16"
+                                           LineStackingStrategy="BlockLineHeight"
                                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Text="{Binding Comment}" 
                                            FontSize="11" FontStyle="Italic"
+                                           LineHeight="14"
+                                           LineStackingStrategy="BlockLineHeight"
                                            Opacity="0.6"
                                            Visibility="{Binding HasComment, Converter={StaticResource BoolToVisibilityConverter}}"
-                                           Margin="0,2,0,0"/>
+                                           Margin="0,1,0,0"/>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
                 <!-- 行移動 -->
-                <DataGridTemplateColumn Header="" Width="52">
+                <DataGridTemplateColumn x:Name="MoveColumn" Header="" Width="52">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="2,0">
+                            <StackPanel Orientation="Horizontal" Margin="0">
                                 <ui:Button Icon="{ui:SymbolIcon ArrowUp24}"
                                            Appearance="Secondary"
                                            Click="MoveUpCommandButton_Click"
                                            ToolTip="1行上へ移動"
-                                           Padding="2"
-                                           Margin="0,0,4,0"
+                                           Padding="1"
+                                           Margin="0"
+                                           MinHeight="24"
                                            IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                                 <ui:Button Icon="{ui:SymbolIcon ArrowDown24}"
                                            Appearance="Secondary"
                                            Click="MoveDownCommandButton_Click"
                                            ToolTip="1行下へ移動"
-                                           Padding="2"
+                                           Padding="1"
+                                           Margin="2,0,0,0"
+                                           MinHeight="24"
                                            IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                             </StackPanel>
                         </DataTemplate>
@@ -234,30 +256,32 @@
                 </DataGridTemplateColumn>
 
                 <!-- 行削除 -->
-                <DataGridTemplateColumn Header="" Width="36">
+                <DataGridTemplateColumn x:Name="DeleteColumn" Header="" Width="36">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ui:Button Icon="{ui:SymbolIcon Delete24}"
                                        Appearance="Secondary"
                                        Click="DeleteCommandButton_Click"
                                        ToolTip="このコマンドを削除"
-                                       Padding="2"
-                                       Margin="2"
+                                       Padding="1"
+                                       Margin="0"
+                                       MinHeight="24"
                                        IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
                 <!-- 設定編集ボタン -->
-                <DataGridTemplateColumn Header="" Width="40">
+                <DataGridTemplateColumn x:Name="EditColumn" Header="" Width="40">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ui:Button Icon="{ui:SymbolIcon Settings24}" 
                                        Appearance="Secondary"
                                        Click="EditSettingsButton_Click"
                                        ToolTip="設定を編集"
-                                       Padding="4"
-                                       Margin="2"
+                                       Padding="1"
+                                       Margin="0"
+                                       MinHeight="24"
                                        IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

@@ -6,15 +6,22 @@ namespace AutoTool.Desktop.Model;
 
 public class WindowSettings
 {
-    private const int CurrentSchemaVersion = 1;
+    private const int CurrentSchemaVersion = 3;
+    private const double MinimumWindowWidth = 640;
+    private const double MinimumWindowHeight = 420;
+    private const double CompactSizeRatio = 0.30;
+    private const double StandardSizeRatio = 0.50;
+    private const double LargeSizeRatio = 0.70;
     private TimeProvider _timeProvider = TimeProvider.System;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public double Left { get; set; } = 100;
     public double Top { get; set; } = 100;
-    public double Width { get; set; } = 1000;
-    public double Height { get; set; } = 700;
+    public double Width { get; set; } = 960;
+    public double Height { get; set; } = 600;
     public WindowState WindowState { get; set; } = WindowState.Normal;
+    public WindowSizePreset WindowSizePreset { get; set; } = WindowSizePreset.Standard;
+    public bool IsWindowSizePresetInitialized { get; set; }
     public double EditPanelSplitterPosition { get; set; } = 300;
     public int SelectedTabIndex { get; set; }
     public int SelectedMacroListTabIndex { get; set; }
@@ -97,6 +104,19 @@ public class WindowSettings
 
         var workingArea = SystemParameters.WorkArea;
 
+        if (!settings.IsWindowSizePresetInitialized)
+        {
+            settings.WindowSizePreset = GetDefaultPreset(workingArea);
+            settings.IsWindowSizePresetInitialized = true;
+        }
+
+        if (!Enum.IsDefined(settings.WindowSizePreset))
+        {
+            settings.WindowSizePreset = WindowSizePreset.Standard;
+        }
+
+        settings.ApplyPresetSize(workingArea);
+
         if (settings.Left < 0 || settings.Left + settings.Width > workingArea.Width)
         {
             settings.Left = Math.Max(0, (workingArea.Width - settings.Width) / 2);
@@ -107,15 +127,8 @@ public class WindowSettings
             settings.Top = Math.Max(0, (workingArea.Height - settings.Height) / 2);
         }
 
-        if (settings.Width < 600)
-        {
-            settings.Width = 1000;
-        }
-
-        if (settings.Height < 400)
-        {
-            settings.Height = 700;
-        }
+        settings.Width = Math.Clamp(settings.Width, MinimumWindowWidth, workingArea.Width);
+        settings.Height = Math.Clamp(settings.Height, MinimumWindowHeight, workingArea.Height);
 
         if (settings.EditPanelSplitterPosition < 200 || settings.EditPanelSplitterPosition > 600)
         {
@@ -168,11 +181,54 @@ public class WindowSettings
 
     public void ApplyToWindow(Window window)
     {
+        ArgumentNullException.ThrowIfNull(window);
+
+        var workingArea = SystemParameters.WorkArea;
+        ApplyPresetSize(workingArea);
+
         window.Left = Left;
         window.Top = Top;
         window.Width = Width;
         window.Height = Height;
         window.WindowState = WindowState;
+    }
+
+    public void UpdateWindowSizePreset(WindowSizePreset preset)
+    {
+        if (!Enum.IsDefined(preset))
+        {
+            preset = WindowSizePreset.Standard;
+        }
+
+        WindowSizePreset = preset;
+        IsWindowSizePresetInitialized = true;
+
+        var workingArea = SystemParameters.WorkArea;
+        ApplyPresetSize(workingArea);
+        Left = Math.Max(0, (workingArea.Width - Width) / 2);
+        Top = Math.Max(0, (workingArea.Height - Height) / 2);
+        WindowState = WindowState.Normal;
+    }
+
+    private void ApplyPresetSize(Rect workingArea)
+    {
+        var ratio = WindowSizePreset switch
+        {
+            WindowSizePreset.Compact => CompactSizeRatio,
+            WindowSizePreset.Large => LargeSizeRatio,
+            _ => StandardSizeRatio
+        };
+
+        Width = Math.Clamp(Math.Floor(workingArea.Width * ratio), MinimumWindowWidth, workingArea.Width);
+        Height = Math.Clamp(Math.Floor(workingArea.Height * ratio), MinimumWindowHeight, workingArea.Height);
+    }
+
+    private static WindowSizePreset GetDefaultPreset(Rect workingArea)
+    {
+        // 4K 以上の作業領域を検出した場合は初期値を広めにする
+        return workingArea is { Width: >= 3200, Height: >= 1700 }
+            ? WindowSizePreset.Large
+            : WindowSizePreset.Standard;
     }
 
     public void ApplyToViewModel(AutoTool.Desktop.MainWindowViewModel viewModel)

@@ -7,9 +7,9 @@
         mc:Ignorable="d"
         Title="設定"
         Width="520"
-        Height="260"
+        Height="340"
         MinWidth="460"
-        MinHeight="240"
+        MinHeight="320"
         WindowStartupLocation="CenterOwner"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="Mica"
@@ -27,7 +27,16 @@
                 <CheckBox x:Name="RestorePreviousSessionCheckBox"
                           Content="前回終了時の状態を次回起動時に復元する"
                           ToolTip="タブ状態、パネル開閉状態、最後に開いたマクロを復元します。"/>
-                <TextBlock Text="変更内容は保存後、次回起動から適用されます。"
+                <TextBlock Text="メインウィンドウサイズ"
+                           Margin="0,14,0,4"
+                           FontWeight="SemiBold"/>
+                <ComboBox x:Name="WindowSizePresetComboBox"
+                          SelectedIndex="1">
+                    <ComboBoxItem Content="S（コンパクト: 作業領域の30%）"/>
+                    <ComboBoxItem Content="M（標準: 作業領域の50%）"/>
+                    <ComboBoxItem Content="L（広め: 作業領域の70%）"/>
+                </ComboBox>
+                <TextBlock Text="変更内容は保存時に即時適用され、次回起動時にも引き継がれます。"
                            Margin="0,10,0,0"
                            Opacity="0.8"/>
             </StackPanel>
