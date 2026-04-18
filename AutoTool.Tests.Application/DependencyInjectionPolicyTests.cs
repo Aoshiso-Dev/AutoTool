@@ -12,6 +12,16 @@ public class DependencyInjectionPolicyTests
         new(@"\bGetRequiredService\s*\(", RegexOptions.CultureInvariant)
     ];
 
+    private static readonly string[] LegacyNamespaceMarkers =
+    [
+        "AutoTool.Core",
+        "AutoTool.Commands.Abstractions",
+        "AutoTool.Panels",
+        "AutoTool.ViewModel",
+        "AutoTool.View.",
+        "AutoTool.Hosting"
+    ];
+
     private static readonly string[] TargetDirectories =
     [
         "AutoTool.Application",
@@ -37,13 +47,8 @@ public class DependencyInjectionPolicyTests
                 continue;
             }
 
-            foreach (var filePath in Directory.EnumerateFiles(directoryPath, "*.cs", SearchOption.AllDirectories))
+            foreach (var filePath in EnumerateProductionFiles(directoryPath, "*.cs"))
             {
-                if (IsGeneratedOrBuildArtifact(filePath))
-                {
-                    continue;
-                }
-
                 var content = File.ReadAllText(filePath);
                 foreach (var pattern in ForbiddenPatterns)
                 {
@@ -60,6 +65,47 @@ public class DependencyInjectionPolicyTests
         Assert.True(
             violations.Count == 0,
             "Service Locator pattern が検出されました:" + Environment.NewLine + string.Join(Environment.NewLine, violations));
+    }
+
+    [Fact]
+    public void ProductionCode_DoesNotReferenceLegacyNamespaces()
+    {
+        var root = FindRepositoryRoot();
+        var violations = new List<string>();
+
+        foreach (var directory in TargetDirectories)
+        {
+            var directoryPath = Path.Combine(root, directory);
+            if (!Directory.Exists(directoryPath))
+            {
+                continue;
+            }
+
+            foreach (var filePath in EnumerateProductionFiles(directoryPath, "*.cs")
+                .Concat(EnumerateProductionFiles(directoryPath, "*.xaml")))
+            {
+                var content = File.ReadAllText(filePath);
+                foreach (var marker in LegacyNamespaceMarkers)
+                {
+                    if (!content.Contains(marker, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    violations.Add($"{Path.GetRelativePath(root, filePath)}: {marker}");
+                }
+            }
+        }
+
+        Assert.True(
+            violations.Count == 0,
+            "旧 namespace 参照が検出されました:" + Environment.NewLine + string.Join(Environment.NewLine, violations));
+    }
+
+    private static IEnumerable<string> EnumerateProductionFiles(string directoryPath, string searchPattern)
+    {
+        return Directory.EnumerateFiles(directoryPath, searchPattern, SearchOption.AllDirectories)
+            .Where(filePath => !IsGeneratedOrBuildArtifact(filePath));
     }
 
     private static bool IsGeneratedOrBuildArtifact(string filePath)

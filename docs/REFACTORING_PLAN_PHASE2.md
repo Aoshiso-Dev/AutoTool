@@ -200,6 +200,11 @@
   - `IServiceProvider`
   - `GetService(...)`
   - `GetRequiredService(...)`
+- 旧 namespace 混入の回帰も検知
+  - `AutoTool.Core`
+  - `AutoTool.Commands.Abstractions`
+  - `AutoTool.Panels`
+  - `AutoTool.ViewModel` / `AutoTool.View.*` / `AutoTool.Hosting`
 - 対象は `AutoTool.Application` / `AutoTool.Automation.Contracts` / `AutoTool.Automation.Runtime` / `AutoTool.Bootstrap` / `AutoTool.Desktop` / `AutoTool.Domain` / `AutoTool.Infrastructure`
 - `bin` / `obj` / 生成コードは除外して誤検知を抑制
 
@@ -210,7 +215,7 @@
 - `required` の段階導入は主要モデルで完了（`FavoriteMacroEntry` / `RecentFileEntry` / `FileTypeInfo`）
 - 現在の回帰状況:
   - `AutoTool.Tests.Domain`: 22 pass
-  - `AutoTool.Tests.Application`: 39 pass
+  - `AutoTool.Tests.Application`: 40 pass
   - `dotnet build AutoTool.sln -c Debug`: 成功
 
 ## 次フェーズ（PR6+ 継続）
