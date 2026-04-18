@@ -5,7 +5,7 @@ using System;
 using System.Drawing;
 
 
-namespace YoloWinLib;
+namespace AutoTool.Infrastructure.Vision.Yolo;
 
 
 /// <summary>

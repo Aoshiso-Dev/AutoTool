@@ -2,7 +2,7 @@
 using System.Windows.Input;
 using AutoTool.Commands.Model.Input;
 
-namespace AutoTool.Panels.View;
+namespace AutoTool.Desktop.Panels.View;
 
 public partial class KeyPickerWindow : Window
 {

@@ -1,6 +1,6 @@
 ﻿using System.IO;
-using AutoTool.Core.Ports;
-using AutoTool.Panels.Helpers;
+using AutoTool.Application.Ports;
+using AutoTool.Infrastructure.Paths;
 
 namespace AutoTool.Infrastructure.Implementations;
 

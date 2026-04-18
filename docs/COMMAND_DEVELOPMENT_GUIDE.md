@@ -4,7 +4,7 @@
 
 ## 概要
 
-現在のコマンド追加は、`AutoTool.Core/Model/Panels/List/Class/CommandListItem*.cs` に `CommandListItem` 派生クラスを追加する方式です。  
+現在のコマンド追加は、`AutoTool.Automation.Runtime/Model/Panels/List/Class/CommandListItem*.cs` に `CommandListItem` 派生クラスを追加する方式です。  
 `[CommandDefinition]` で定義したクラスは、以下に自動反映されます。
 
 - コマンド一覧表示（カテゴリ・表示名・表示順）

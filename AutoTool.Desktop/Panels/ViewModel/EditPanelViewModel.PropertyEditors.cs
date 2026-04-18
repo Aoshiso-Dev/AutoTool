@@ -2,10 +2,10 @@
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Interface;
-using AutoTool.Panels.Attributes;
-using AutoTool.Panels.View;
+using AutoTool.Automation.Runtime.Attributes;
+using AutoTool.Desktop.Panels.View;
 
-namespace AutoTool.Panels.ViewModel;
+namespace AutoTool.Desktop.Panels.ViewModel;
 
 public partial class EditPanelViewModel
 {

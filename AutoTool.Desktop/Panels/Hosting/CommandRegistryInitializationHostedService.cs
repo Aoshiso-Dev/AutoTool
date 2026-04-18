@@ -1,7 +1,7 @@
-﻿using AutoTool.Panels.Model.CommandDefinition;
+﻿using AutoTool.Automation.Runtime.Definitions;
 using Microsoft.Extensions.Hosting;
 
-namespace AutoTool.Panels.Hosting;
+namespace AutoTool.Desktop.Panels.Hosting;
 
 public sealed class CommandRegistryInitializationHostedService(ICommandRegistry commandRegistry) : IHostedService
 {

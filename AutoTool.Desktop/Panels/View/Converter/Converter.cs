@@ -5,10 +5,10 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
-using AutoTool.Panels.Model.CommandDefinition;
+using AutoTool.Automation.Runtime.Definitions;
 using AutoTool.Commands.Model.Input;
 
-namespace AutoTool.Panels.View.Converter;
+namespace AutoTool.Desktop.Panels.View.Converter;
 
 public class InverseBooleanConverter : IValueConverter
 {
@@ -239,7 +239,7 @@ public class OcrRegionNumberEditorVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is not AutoTool.Panels.Attributes.PropertyMetadata metadata)
+        if (value is not AutoTool.Automation.Runtime.Attributes.PropertyMetadata metadata)
         {
             return Visibility.Visible;
         }

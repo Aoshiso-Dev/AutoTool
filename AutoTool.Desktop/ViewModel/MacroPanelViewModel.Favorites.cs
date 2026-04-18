@@ -1,8 +1,8 @@
-﻿using AutoTool.Model;
-using AutoTool.Panels.Model.List.Interface;
+﻿using AutoTool.Domain.Macros;
+using AutoTool.Automation.Contracts.Lists;
 using System.IO;
 
-namespace AutoTool.ViewModel;
+namespace AutoTool.Desktop.ViewModel;
 
 public partial class MacroPanelViewModel
 {
@@ -23,12 +23,10 @@ public partial class MacroPanelViewModel
 
             _macroFileSerializer.SerializeToFile<IEnumerable<ICommandListItem>>(snapshotItems, snapshotPath);
 
-            _favoritePanel.AddFavorite(new FavoriteMacroEntry
-            {
-                Name = favoriteName,
-                SnapshotPath = snapshotPath,
-                CreatedAt = _timeProvider.GetLocalNow()
-            });
+            _favoritePanel.AddFavorite(FavoriteMacroEntry.Create(
+                favoriteName,
+                snapshotPath,
+                _timeProvider.GetLocalNow()));
         }
         catch (Exception ex)
         {

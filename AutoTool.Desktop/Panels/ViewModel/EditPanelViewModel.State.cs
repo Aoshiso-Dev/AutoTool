@@ -2,12 +2,12 @@
 using System.Collections.ObjectModel;
 using System.Windows.Media;
 using AutoTool.Commands.Model.Input;
-using AutoTool.Panels.Attributes;
-using AutoTool.Panels.List.Class;
-using AutoTool.Panels.Model.List.Interface;
-using AutoTool.Panels.ViewModel.Shared;
+using AutoTool.Automation.Runtime.Attributes;
+using AutoTool.Automation.Runtime.Lists;
+using AutoTool.Automation.Contracts.Lists;
+using AutoTool.Desktop.Panels.ViewModel.Shared;
 
-namespace AutoTool.Panels.ViewModel;
+namespace AutoTool.Desktop.Panels.ViewModel;
 
 public partial class EditPanelViewModel
 {

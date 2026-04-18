@@ -13,9 +13,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using AutoTool.Panels.ViewModel;
+using AutoTool.Desktop.Panels.ViewModel;
 
-namespace AutoTool.Panels.View;
+namespace AutoTool.Desktop.Panels.View;
 
 /// <summary>
 /// ListPanel.xaml の相互作用ロジック
@@ -120,7 +120,7 @@ public partial class ListPanel : UserControl
     {
         // クリックされたボタンの行を選択状態にする
         var button = sender as FrameworkElement;
-        if (button?.DataContext is AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+        if (button?.DataContext is AutoTool.Automation.Contracts.Lists.ICommandListItem item)
         {
             if (DataContext is ListPanelViewModel viewModel)
             {
@@ -138,7 +138,7 @@ public partial class ListPanel : UserControl
     private void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
     {
         var button = sender as FrameworkElement;
-        if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+        if (button?.DataContext is not AutoTool.Automation.Contracts.Lists.ICommandListItem item)
         {
             return;
         }
@@ -158,7 +158,7 @@ public partial class ListPanel : UserControl
     private void MoveUpCommandButton_Click(object sender, RoutedEventArgs e)
     {
         var button = sender as FrameworkElement;
-        if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+        if (button?.DataContext is not AutoTool.Automation.Contracts.Lists.ICommandListItem item)
         {
             return;
         }
@@ -178,7 +178,7 @@ public partial class ListPanel : UserControl
     private void MoveDownCommandButton_Click(object sender, RoutedEventArgs e)
     {
         var button = sender as FrameworkElement;
-        if (button?.DataContext is not AutoTool.Panels.Model.List.Interface.ICommandListItem item)
+        if (button?.DataContext is not AutoTool.Automation.Contracts.Lists.ICommandListItem item)
         {
             return;
         }

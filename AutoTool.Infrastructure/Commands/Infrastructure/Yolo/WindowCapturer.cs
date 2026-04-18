@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using AutoTool.Commands.Infrastructure;
 
-namespace YoloWinLib;
+namespace AutoTool.Infrastructure.Vision.Yolo;
 
 internal static class WindowCapturer
 {

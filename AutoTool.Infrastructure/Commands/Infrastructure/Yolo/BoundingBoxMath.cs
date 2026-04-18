@@ -1,4 +1,4 @@
-﻿namespace YoloWinLib;
+﻿namespace AutoTool.Infrastructure.Vision.Yolo;
 
 
 internal static class BoundingBoxMath

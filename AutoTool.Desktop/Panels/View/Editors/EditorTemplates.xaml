@@ -2,9 +2,9 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-                    xmlns:editors="clr-namespace:AutoTool.Panels.View.Editors"
-                    xmlns:attrs="clr-namespace:AutoTool.Panels.Attributes;assembly=AutoTool.Infrastructure"
-                    xmlns:converter="clr-namespace:AutoTool.Panels.View.Converter">
+                    xmlns:editors="clr-namespace:AutoTool.Desktop.Panels.View.Editors"
+                    xmlns:attrs="clr-namespace:AutoTool.Automation.Runtime.Attributes;assembly=AutoTool.Infrastructure"
+                    xmlns:converter="clr-namespace:AutoTool.Desktop.Panels.View.Converter">
 
     <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
     <converter:OcrRegionNumberEditorVisibilityConverter x:Key="OcrRegionNumberEditorVisibilityConverter"/>

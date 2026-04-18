@@ -13,7 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoTool.Commands\AutoTool.Commands.csproj" />
+    <ProjectReference Include="..\AutoTool.Application\AutoTool.Application.csproj" />
+    <ProjectReference Include="..\AutoTool.Automation.Runtime\AutoTool.Automation.Runtime.csproj" />
     <ProjectReference Include="..\AutoTool.Infrastructure\AutoTool.Infrastructure.csproj" />
   </ItemGroup>
 

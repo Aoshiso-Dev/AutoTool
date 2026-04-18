@@ -1,4 +1,4 @@
-﻿namespace AutoTool.Panels.ViewModel.Shared;
+﻿namespace AutoTool.Desktop.Panels.ViewModel.Shared;
 
 public enum LogEntryLevel
 {

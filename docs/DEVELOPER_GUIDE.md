@@ -15,7 +15,7 @@
 ```powershell
 dotnet restore .\AutoTool.sln
 dotnet build .\AutoTool.sln -c Debug
-dotnet test .\AutoTool.Core.Tests\AutoTool.Core.Tests.csproj -c Debug
+dotnet test .\AutoTool.Automation.Runtime.Tests\AutoTool.Automation.Runtime.Tests.csproj -c Debug
 ```
 
 アプリ実行:
@@ -33,12 +33,12 @@ dotnet run --project .\AutoTool\AutoTool.csproj
   - 画面（XAML）
   - ViewModel
   - DI 登録のアプリ層
-- `AutoTool.Core`
+- `AutoTool.Automation.Runtime`
   - マクロ編集/履歴/シリアライズなどの中核ロジック
   - ポート（インターフェース）定義
 - `AutoTool.Infrastructure`
   - Win32、OpenCV、OCR、AI、XML 永続化など外部依存実装
-- `AutoTool.Commands.Abstractions`
+- `AutoTool.Automation.Contracts`
   - コマンド実行コンテキスト・共通契約
 - `AutoTool.Commands`
   - コマンド群
@@ -58,7 +58,7 @@ dotnet run --project .\AutoTool\AutoTool.csproj
 ## 7. 変更時のチェックリスト
 
 - ビルド成功
-- `AutoTool.Core.Tests` 成功
+- `AutoTool.Automation.Runtime.Tests` 成功
 - 主要操作（開く/保存/実行/Undo/Redo）確認
 - 例外発生時にログ/通知が正しく出ることを確認
 

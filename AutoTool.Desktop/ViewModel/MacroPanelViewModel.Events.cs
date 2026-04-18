@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using AutoTool.Commands.Services;
 using AutoTool.Commands.Threading;
-using AutoTool.Panels.Model.List.Interface;
+using AutoTool.Automation.Contracts.Lists;
 
-namespace AutoTool.ViewModel;
+namespace AutoTool.Desktop.ViewModel;
 
 public partial class MacroPanelViewModel
 {

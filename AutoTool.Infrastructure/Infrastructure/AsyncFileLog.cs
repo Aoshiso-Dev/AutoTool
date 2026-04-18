@@ -1,7 +1,7 @@
 ﻿using System.Threading.Channels;
 using System.Collections.Generic;
 using AutoTool.Commands.Threading;
-using AutoTool.Core.Diagnostics;
+using AutoTool.Automation.Runtime.Diagnostics;
 using System.IO;
 
 namespace AutoTool.Infrastructure;
