@@ -1,7 +1,7 @@
 ﻿using System;
 using OpenCvSharp;
 
-namespace YoloWinLib;
+namespace AutoTool.Infrastructure.Vision.Yolo;
 
 
 internal static class YoloDrawer

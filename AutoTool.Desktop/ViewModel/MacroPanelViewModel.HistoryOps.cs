@@ -1,7 +1,9 @@
-﻿using AutoTool.Model;
-using AutoTool.Panels.Model.List.Interface;
+﻿using AutoTool.Application.Files;
+using AutoTool.Application.History;
+using AutoTool.Automation.Contracts.Lists;
+using AutoTool.Application.History.Commands;
 
-namespace AutoTool.ViewModel;
+namespace AutoTool.Desktop.ViewModel;
 
 public partial class MacroPanelViewModel
 {
@@ -156,7 +158,7 @@ public partial class MacroPanelViewModel
             {
                 _editPanel.SetItem(editingItem);
 
-                var editWindow = new AutoTool.Panels.View.EditPanelWindow();
+                var editWindow = new AutoTool.Desktop.Panels.View.EditPanelWindow();
                 editWindow.SetEditPanelDataContext(EditPanelViewModel);
                 editWindow.Owner = System.Windows.Application.Current.MainWindow;
 

@@ -16,7 +16,7 @@
 例:
 
 ```powershell
-dotnet publish .\AutoTool\AutoTool.csproj -c Release -r win-x64 --self-contained false -o .\.deploy\AutoTool_publish
+dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -r win-x64 --self-contained false -o .\.deploy\AutoTool_publish
 ```
 
 ## 4. 配置スクリプト実行

@@ -20,7 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoTool.Core\AutoTool.Core.csproj" />
+    <ProjectReference Include="..\AutoTool.Application\AutoTool.Application.csproj" />
+    <ProjectReference Include="..\AutoTool.Automation.Contracts\AutoTool.Automation.Contracts.csproj" />
+    <ProjectReference Include="..\AutoTool.Automation.Runtime\AutoTool.Automation.Runtime.csproj" />
   </ItemGroup>
 </Project>
 

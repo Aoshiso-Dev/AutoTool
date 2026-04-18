@@ -1,18 +1,14 @@
 ﻿using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Infrastructure;
-using AutoTool.Commands.Services;
-using AutoTool.Core.Ports;
+using AutoTool.Application.Ports;
+using AutoTool.Infrastructure.DependencyInjection;
 using AutoTool.Infrastructure.Implementations;
-using AutoTool.Panels.List.Class;
-using AutoTool.Panels.Model.CommandDefinition;
-using AutoTool.Panels.Model.MacroFactory;
-using AutoTool.Panels.Serialization;
-using AutoTool.Panels.ViewModel;
+using AutoTool.Desktop.Panels.ViewModel;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace AutoTool.Panels.Hosting;
+namespace AutoTool.Desktop.Panels.Hosting;
 
 public static class PanelsHostBuilder
 {
@@ -35,19 +31,8 @@ public static class PanelsHostBuilder
             configuration?.GetSection(CommandEventBusOptions.SectionName).Bind(options);
         });
 
-        services.AddSingleton<ICommandDependencyResolver>(sp => new DelegateCommandDependencyResolver(sp.GetService));
-        services.AddSingleton<ICommandFactory, CommandFactory>();
-
-        services.AddTransient<ICompositeCommandBuilder, IfCompositeCommandBuilder>();
-        services.AddTransient<ICompositeCommandBuilder, LoopCompositeCommandBuilder>();
-        services.AddSingleton<IMacroFactory, MacroFactory>();
-
-        services.AddSingleton<ReflectionCommandRegistry>();
-        services.AddSingleton<ICommandRegistry>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
-        services.AddSingleton<ICommandDefinitionProvider>(sp => sp.GetRequiredService<ReflectionCommandRegistry>());
+        services.AddMacroRuntimeCoreServices();
         services.AddHostedService<CommandRegistryInitializationHostedService>();
-        services.AddTransient<IMacroFileSerializer, MacroFileSerializer>();
-        services.AddTransient<CommandList>();
 
         services.AddSingleton<IPanelDialogService, WpfPanelDialogService>();
         services.AddSingleton<ICapturePathProvider, CapturePathProvider>();

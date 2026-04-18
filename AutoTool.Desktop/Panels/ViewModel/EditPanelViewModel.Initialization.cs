@@ -1,13 +1,13 @@
 ﻿using System.Collections.ObjectModel;
-using AutoTool.Panels.Model.CommandDefinition;
-using AutoTool.Panels.ViewModel.Shared;
+using AutoTool.Automation.Runtime.Definitions;
+using AutoTool.Desktop.Panels.ViewModel.Shared;
 using AutoTool.Commands.Services;
 using AutoTool.Commands.Model.Input;
-using AutoTool.Panels.Services;
-using AutoTool.Core.Ports;
+using AutoTool.Infrastructure.Panels;
+using AutoTool.Application.Ports;
 
 
-namespace AutoTool.Panels.ViewModel;
+namespace AutoTool.Desktop.Panels.ViewModel;
 
 public partial class EditPanelViewModel
 {

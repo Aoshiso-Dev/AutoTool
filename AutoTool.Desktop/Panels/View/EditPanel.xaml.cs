@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace AutoTool.Panels.View;
+namespace AutoTool.Desktop.Panels.View;
 
 /// <summary>
 /// EditPanel.xaml の相互作用ロジック

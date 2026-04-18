@@ -2,9 +2,9 @@
 using System.ComponentModel;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
-using AutoTool.Panels.ViewModel.Shared;
+using AutoTool.Desktop.Panels.ViewModel.Shared;
 
-namespace AutoTool.Panels.ViewModel;
+namespace AutoTool.Desktop.Panels.ViewModel;
 
 public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
 {

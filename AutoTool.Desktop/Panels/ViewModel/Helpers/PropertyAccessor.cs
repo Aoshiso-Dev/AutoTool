@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq.Expressions;
-using AutoTool.Panels.Model.List.Interface;
+using AutoTool.Automation.Contracts.Lists;
 
-namespace AutoTool.Panels.ViewModel.Helpers;
+namespace AutoTool.Desktop.Panels.ViewModel.Helpers;
 
 /// <summary>
 /// 型安全なプロパティアクセサ

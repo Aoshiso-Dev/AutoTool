@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using Microsoft.Extensions.Hosting;
 
-namespace AutoTool.Hosting;
+namespace AutoTool.Desktop.Hosting;
 
 public sealed class MainWindowHostedService(MainWindow mainWindow) : IHostedService
 {
@@ -9,9 +9,9 @@ public sealed class MainWindowHostedService(MainWindow mainWindow) : IHostedServ
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (Application.Current.MainWindow is null)
+        if (System.Windows.Application.Current.MainWindow is null)
         {
-            Application.Current.MainWindow = _mainWindow;
+            System.Windows.Application.Current.MainWindow = _mainWindow;
         }
 
         if (!_mainWindow.IsVisible)

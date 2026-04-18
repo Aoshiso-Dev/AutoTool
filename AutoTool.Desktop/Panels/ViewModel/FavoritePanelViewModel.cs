@@ -2,10 +2,11 @@
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using System.IO;
-using AutoTool.Core.Ports;
-using AutoTool.Model;
+using AutoTool.Application.Ports;
+using AutoTool.Domain.Macros;
+using AutoTool.Application.Files;
 
-namespace AutoTool.Panels.ViewModel;
+namespace AutoTool.Desktop.Panels.ViewModel;
 
 public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelViewModel
 {
@@ -94,6 +95,13 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
 
     public void AddFavorite(FavoriteMacroEntry favorite)
     {
+        ArgumentNullException.ThrowIfNull(favorite);
+        favorite.Normalize();
+        if (!favorite.IsValid())
+        {
+            return;
+        }
+
         var existing = FavoriteList.FirstOrDefault(x => string.Equals(x.Name, favorite.Name, StringComparison.OrdinalIgnoreCase));
         if (existing is not null)
         {
@@ -146,7 +154,19 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
 
     private void LoadFavorites()
     {
-        FavoriteList = _favoriteMacroStore.Load(GetFavoritesStoragePath()) ?? [];
+        var loaded = _favoriteMacroStore.Load(GetFavoritesStoragePath()) ?? [];
+        var normalized = loaded
+            .Where(x => x is not null)
+            .Select(x => x.Normalize())
+            .Where(x => x.IsValid())
+            .ToList();
+
+        FavoriteList = [.. normalized];
+
+        if (loaded.Count != FavoriteList.Count)
+        {
+            SaveFavorites();
+        }
     }
 
     private void SaveFavorites()

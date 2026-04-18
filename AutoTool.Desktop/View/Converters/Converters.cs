@@ -8,7 +8,7 @@ using CommunityToolkit.Mvvm.Collections;
 using System.Globalization;
 using System.Windows;
 
-namespace AutoTool.View.Converters;
+namespace AutoTool.Desktop.View.Converters;
 
 public class InvertBooleanConverter : IValueConverter
 {

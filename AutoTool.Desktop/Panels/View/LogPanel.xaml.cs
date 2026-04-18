@@ -1,8 +1,8 @@
 ﻿using System.Collections.Specialized;
 using System.Windows.Controls;
-using AutoTool.Panels.ViewModel;
+using AutoTool.Desktop.Panels.ViewModel;
 
-namespace AutoTool.Panels.View;
+namespace AutoTool.Desktop.Panels.View;
 
 public partial class LogPanel : UserControl
 {

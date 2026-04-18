@@ -15,7 +15,7 @@ using System.Xml.Serialization;
 using System.Windows.Shapes;
 using System.Security.Policy;
 
-namespace AutoTool.ViewModel;
+namespace AutoTool.Desktop.ViewModel;
 
 public partial class MonitoringPanelViewModel : ObservableObject
 {

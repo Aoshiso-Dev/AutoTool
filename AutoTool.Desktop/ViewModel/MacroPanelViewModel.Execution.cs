@@ -1,12 +1,12 @@
 ﻿using AutoTool.Commands.Commands;
 using AutoTool.Commands.Interface;
 using AutoTool.Commands.Services;
-using AutoTool.Panels.List.Class;
-using AutoTool.Core.Diagnostics;
-using AutoTool.Panels.Model.MacroFactory;
+using AutoTool.Automation.Runtime.Lists;
+using AutoTool.Automation.Runtime.Diagnostics;
+using AutoTool.Automation.Runtime.MacroFactory;
 using System.Text.RegularExpressions;
 
-namespace AutoTool.ViewModel;
+namespace AutoTool.Desktop.ViewModel;
 
 public partial class MacroPanelViewModel
 {

@@ -1,9 +1,9 @@
 ﻿using AutoTool.Commands.Model.Input;
-using AutoTool.Panels.List.Class;
-using AutoTool.Panels.Model.List.Interface;
-using AutoTool.Panels.ViewModel.Helpers;
+using AutoTool.Automation.Runtime.Lists;
+using AutoTool.Automation.Contracts.Lists;
+using AutoTool.Desktop.Panels.ViewModel.Helpers;
 
-namespace AutoTool.Panels.ViewModel.Helpers;
+namespace AutoTool.Desktop.Panels.ViewModel.Helpers;
 
 /// <summary>
 /// EditPanelViewModel用のプロパティ管理クラス

@@ -7,7 +7,7 @@ using System.Windows.Shapes;
 using System.Drawing;
 using AutoTool.Commands.Infrastructure;
 
-namespace AutoTool.Panels.View;
+namespace AutoTool.Desktop.Panels.View;
 
 public partial class CaptureWindow : Window
 {

@@ -2,7 +2,7 @@
 using System.Windows;
 using System.IO;
 
-namespace AutoTool.Model;
+namespace AutoTool.Desktop.Model;
 
 public class WindowSettings
 {

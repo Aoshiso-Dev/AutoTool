@@ -1,10 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using AutoTool.Panels.Model.CommandDefinition;
-using AutoTool.Panels.ViewModel.Shared;
+using AutoTool.Automation.Runtime.Definitions;
+using AutoTool.Desktop.Panels.ViewModel.Shared;
 using System.Collections.ObjectModel;
 
-namespace AutoTool.Panels.ViewModel;
+namespace AutoTool.Desktop.Panels.ViewModel;
 
 public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewModel
 {

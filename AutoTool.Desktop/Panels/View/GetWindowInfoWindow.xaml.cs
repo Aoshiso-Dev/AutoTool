@@ -2,7 +2,7 @@
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Threading;
 
-namespace AutoTool.Panels.View;
+namespace AutoTool.Desktop.Panels.View;
 
 public partial class GetWindowInfoWindow : Window
 {

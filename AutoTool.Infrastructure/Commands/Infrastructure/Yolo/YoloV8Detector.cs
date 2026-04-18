@@ -5,7 +5,7 @@ using OpenCvSharp.Dnn;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace YoloWinLib;
+namespace AutoTool.Infrastructure.Vision.Yolo;
 
 public sealed class YoloV8Detector : IDisposable
 {

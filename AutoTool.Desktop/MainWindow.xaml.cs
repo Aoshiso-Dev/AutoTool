@@ -1,9 +1,9 @@
 ﻿using System.Windows;
 using AutoTool.Commands.Infrastructure;
-using AutoTool.Model;
+using AutoTool.Desktop.Model;
 using Wpf.Ui.Controls;
 
-namespace AutoTool;
+namespace AutoTool.Desktop;
 
 /// <summary>
 /// Interaction logic for MainWindow.xaml
@@ -38,7 +38,7 @@ public partial class MainWindow : FluentWindow
     {
         // 念のためグローバルフックを解除してから明示的に終了
         Win32MouseHookHelper.StopHook();
-        Application.Current?.Shutdown();
+        System.Windows.Application.Current?.Shutdown();
 
         // Shutdown が何らかの理由で完了しないケース向けのフェイルセーフ
         _ = ForceExitAsync();

@@ -1,8 +1,9 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using AutoTool.Panels.Attributes;
+using AutoTool.Automation.Runtime.Attributes;
+using EditorPropertyMetadata = AutoTool.Automation.Runtime.Attributes.PropertyMetadata;
 
-namespace AutoTool.Panels.View.Editors;
+namespace AutoTool.Desktop.Panels.View.Editors;
 
 /// <summary>
 /// PropertyMetadataのEditorTypeに基づいてDataTemplateを選択
@@ -27,7 +28,7 @@ public class EditorTemplateSelector : DataTemplateSelector
 
     public override DataTemplate? SelectTemplate(object item, DependencyObject container)
     {
-        if (item is not Attributes.PropertyMetadata metadata)
+        if (item is not EditorPropertyMetadata metadata)
             return DefaultTemplate ?? base.SelectTemplate(item, container);
 
         return metadata.EditorType switch

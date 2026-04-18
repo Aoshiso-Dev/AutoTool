@@ -1,8 +1,8 @@
-﻿using AutoTool.Panels.List.Class;
-using AutoTool.Panels.Model.List.Interface;
-using AutoTool.Model;
+﻿using AutoTool.Automation.Runtime.Lists;
+using AutoTool.Automation.Contracts.Lists;
+using AutoTool.Domain.Macros;
 
-namespace AutoTool.Panels.ViewModel;
+namespace AutoTool.Desktop.Panels.ViewModel;
 
 public interface IListPanelViewModel
 {

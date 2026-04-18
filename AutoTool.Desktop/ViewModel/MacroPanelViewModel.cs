@@ -1,14 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AutoTool.Commands.Services;
-using AutoTool.Panels.ViewModel;
-using AutoTool.Panels.Model.MacroFactory;
-using AutoTool.Panels.Model.CommandDefinition;
-using AutoTool.Model;
-using AutoTool.Core.Ports;
-using AutoTool.Panels.Serialization;
+using AutoTool.Desktop.Panels.ViewModel;
+using AutoTool.Automation.Runtime.MacroFactory;
+using AutoTool.Automation.Runtime.Definitions;
+using AutoTool.Application.Files;
+using AutoTool.Application.History;
+using AutoTool.Application.Ports;
+using AutoTool.Automation.Runtime.Serialization;
 
-namespace AutoTool.ViewModel;
+namespace AutoTool.Desktop.ViewModel;
 
 public partial class MacroPanelViewModel : ObservableObject, IDisposable
 {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AutoTool.Panels.ViewModel.Shared;
+namespace AutoTool.Desktop.Panels.ViewModel.Shared;
 
 /// <summary>
 /// コマンド表示用のアイテムクラス

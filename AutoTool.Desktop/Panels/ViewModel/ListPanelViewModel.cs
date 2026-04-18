@@ -1,11 +1,11 @@
 ﻿﻿using CommunityToolkit.Mvvm.ComponentModel;
-using AutoTool.Panels.List.Class;
-using AutoTool.Panels.Model.List.Interface;
+using AutoTool.Automation.Runtime.Lists;
+using AutoTool.Automation.Contracts.Lists;
 using System.ComponentModel;
 using System.Windows.Data;
-using AutoTool.Panels.Model.CommandDefinition;
+using AutoTool.Automation.Runtime.Definitions;
 
-namespace AutoTool.Panels.ViewModel;
+namespace AutoTool.Desktop.Panels.ViewModel;
 
 public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
-using AutoTool.Core.Ports;
-using AutoTool.Model;
+using AutoTool.Application.Ports;
+using AutoTool.Domain.Macros;
 
 namespace AutoTool.Infrastructure.Implementations;
 

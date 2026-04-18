@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 using AutoTool.Commands.Services;
-using YoloWinLib;
+using AutoTool.Infrastructure.Vision.Yolo;
 
 namespace AutoTool.Commands.Infrastructure;
 
@@ -33,4 +33,5 @@ public class YoloObjectDetector : IObjectDetector
             .AsReadOnly();
     }
 }
+
 

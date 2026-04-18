@@ -2,11 +2,11 @@
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using AutoTool.Commands.Infrastructure;
-using AutoTool.Panels.Attributes;
-using AutoTool.Panels.List.Class;
-using AutoTool.Panels.View;
+using AutoTool.Automation.Runtime.Attributes;
+using AutoTool.Automation.Runtime.Lists;
+using AutoTool.Desktop.Panels.View;
 
-namespace AutoTool.Panels.ViewModel;
+namespace AutoTool.Desktop.Panels.ViewModel;
 
 public partial class EditPanelViewModel
 {

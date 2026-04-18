@@ -1,12 +1,12 @@
-﻿using AutoTool.Core.Ports;
+﻿using AutoTool.Application.Ports;
 using AutoTool.Infrastructure.Implementations;
-using AutoTool.Panels.Hosting;
-using AutoTool.ViewModel;
+using AutoTool.Desktop.Panels.Hosting;
+using AutoTool.Desktop.ViewModel;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace AutoTool.Hosting;
+namespace AutoTool.Desktop.Hosting;
 
 public static class AppHostBuilder
 {

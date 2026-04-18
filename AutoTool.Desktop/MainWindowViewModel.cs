@@ -1,14 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
-using AutoTool.ViewModel;
-using AutoTool.Model;
-using static AutoTool.Model.FileManager;
-using AutoTool.Core.Ports;
+using AutoTool.Desktop.ViewModel;
+using AutoTool.Application.Files;
+using AutoTool.Application.History;
+using static AutoTool.Application.Files.FileManager;
+using AutoTool.Application.Ports;
 using INotifier = AutoTool.Commands.Services.INotifier;
 using System.ComponentModel;
 
-namespace AutoTool;
+namespace AutoTool.Desktop;
 
 public static class TabIndexes
 {
@@ -74,7 +75,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
-    public ObservableCollection<RecentFile>? RecentFiles =>
+    public ObservableCollection<RecentFileEntry>? RecentFiles =>
         TryGetActiveFileManager(out var fileManager) ? fileManager.RecentFiles : null;
 
     public string MenuItemHeader_SaveFile => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened

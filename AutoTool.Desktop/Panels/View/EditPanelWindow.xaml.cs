@@ -7,7 +7,7 @@ using System.Windows.Media;
 using WpfNumberBox = Wpf.Ui.Controls.NumberBox;
 using Wpf.Ui.Controls;
 
-namespace AutoTool.Panels.View;
+namespace AutoTool.Desktop.Panels.View;
 
 public partial class EditPanelWindow : FluentWindow
 {

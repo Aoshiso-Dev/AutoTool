@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Windows.Threading;
-using AutoTool.Core.Ports;
+using AutoTool.Application.Ports;
 
 namespace AutoTool.Infrastructure.Implementations;
 
