@@ -105,9 +105,7 @@ public partial class ListPanel : UserControl
                 SetColumnWidth(LineNumberColumn, 30);
                 SetColumnWidth(ProgressColumn, 58);
                 SetColumnWidth(CommandColumn, 130);
-                SetColumnWidth(MoveColumn, 42);
-                SetColumnWidth(DeleteColumn, 30);
-                SetColumnWidth(EditColumn, 34);
+                ApplyActionColumnWidths(CommandDataGrid.RowHeight);
                 DescriptionColumn.Visibility = Visibility.Collapsed;
                 break;
             case ListPanelLayoutMode.Standard:
@@ -118,9 +116,7 @@ public partial class ListPanel : UserControl
                 SetColumnWidth(LineNumberColumn, 34);
                 SetColumnWidth(ProgressColumn, 72);
                 SetColumnWidth(CommandColumn, 170);
-                SetColumnWidth(MoveColumn, 50);
-                SetColumnWidth(DeleteColumn, 34);
-                SetColumnWidth(EditColumn, 38);
+                ApplyActionColumnWidths(CommandDataGrid.RowHeight);
                 DescriptionColumn.Visibility = Visibility.Visible;
                 DescriptionColumn.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
                 break;
@@ -132,13 +128,19 @@ public partial class ListPanel : UserControl
                 SetColumnWidth(LineNumberColumn, 40);
                 SetColumnWidth(ProgressColumn, 96);
                 SetColumnWidth(CommandColumn, 260);
-                SetColumnWidth(MoveColumn, 64);
-                SetColumnWidth(DeleteColumn, 44);
-                SetColumnWidth(EditColumn, 48);
+                ApplyActionColumnWidths(CommandDataGrid.RowHeight);
                 DescriptionColumn.Visibility = Visibility.Visible;
                 DescriptionColumn.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
                 break;
         }
+    }
+
+    private void ApplyActionColumnWidths(double rowHeight)
+    {
+        SetColumnWidth(DeleteColumn, rowHeight);
+        SetColumnWidth(EditColumn, rowHeight);
+        // 上下ボタンは2個を横並びにするため、1つ分の隙間(2px)を加える
+        SetColumnWidth(MoveColumn, rowHeight * 2 + 2);
     }
 
     private static void SetColumnWidth(DataGridColumn column, double width)
