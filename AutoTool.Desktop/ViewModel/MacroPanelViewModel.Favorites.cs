@@ -1,6 +1,7 @@
 ﻿using AutoTool.Domain.Macros;
 using AutoTool.Automation.Contracts.Lists;
 using System.IO;
+using AutoTool.Infrastructure.Paths;
 
 namespace AutoTool.Desktop.ViewModel;
 
@@ -78,8 +79,8 @@ public partial class MacroPanelViewModel
     private static string GetFavoritesDirectory()
     {
         return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "AutoTool",
+            ApplicationPathResolver.GetApplicationDirectory(),
+            "Settings",
             "Favorites");
     }
 }

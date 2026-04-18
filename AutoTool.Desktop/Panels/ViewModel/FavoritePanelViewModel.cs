@@ -5,13 +5,14 @@ using System.IO;
 using AutoTool.Application.Ports;
 using AutoTool.Domain.Macros;
 using AutoTool.Application.Files;
+using AutoTool.Infrastructure.Paths;
 
 namespace AutoTool.Desktop.Panels.ViewModel;
 
 public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelViewModel
 {
     private readonly IFavoriteMacroStore _favoriteMacroStore;
-    private const string FavoritesFileName = "favorites.xml";
+    private const string FavoritesFileName = "favorites.json";
 
     [ObservableProperty]
     private bool _isRunning;
@@ -154,7 +155,21 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
 
     private void LoadFavorites()
     {
-        var loaded = _favoriteMacroStore.Load(GetFavoritesStoragePath()) ?? [];
+        var storagePath = GetFavoritesStoragePath();
+        var loaded = _favoriteMacroStore.Load(storagePath);
+
+        if (loaded is null)
+        {
+            var legacyPath = GetLegacyFavoritesStoragePath();
+            loaded = _favoriteMacroStore.Load(legacyPath);
+            if (loaded is not null)
+            {
+                _favoriteMacroStore.Save(storagePath, loaded);
+                TryDeleteLegacyFavoritesFile(legacyPath);
+            }
+        }
+
+        loaded ??= [];
         var normalized = loaded
             .Where(x => x is not null)
             .Select(x => x.Normalize())
@@ -176,11 +191,31 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
 
     private static string GetFavoritesStoragePath()
     {
+        var settingsDirectory = Path.Combine(ApplicationPathResolver.GetApplicationDirectory(), "Settings");
+        Directory.CreateDirectory(settingsDirectory);
+        return Path.Combine(settingsDirectory, FavoritesFileName);
+    }
+
+    private static string GetLegacyFavoritesStoragePath()
+    {
         var appDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "AutoTool");
+        return Path.Combine(appDir, "favorites.xml");
+    }
 
-        Directory.CreateDirectory(appDir);
-        return Path.Combine(appDir, FavoritesFileName);
+    private static void TryDeleteLegacyFavoritesFile(string legacyPath)
+    {
+        try
+        {
+            if (File.Exists(legacyPath))
+            {
+                File.Delete(legacyPath);
+            }
+        }
+        catch
+        {
+            // No-op: keep legacy file when cleanup fails.
+        }
     }
 }

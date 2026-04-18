@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Windows;
 using System.IO;
+using AutoTool.Infrastructure.Paths;
 
 namespace AutoTool.Desktop.Model;
 
@@ -31,10 +32,14 @@ public class WindowSettings
     public string? LastOpenedMacroFilePath { get; set; }
 
     private static readonly string SettingsDirectory = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "AutoTool");
+        ApplicationPathResolver.GetApplicationDirectory(),
+        "Settings");
 
     private static readonly string SettingsFilePath = Path.Combine(SettingsDirectory, "window_settings.json");
+    private static readonly string LegacySettingsDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "AutoTool");
+    private static readonly string LegacySettingsFilePath = Path.Combine(LegacySettingsDirectory, "window_settings.json");
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true
@@ -72,27 +77,70 @@ public class WindowSettings
     {
         var resolvedTimeProvider = timeProvider ?? TimeProvider.System;
 
+        if (TryLoadFromPath(SettingsFilePath, resolvedTimeProvider, out var settings))
+        {
+            return settings;
+        }
+
+        if (TryLoadFromPath(LegacySettingsFilePath, resolvedTimeProvider, out settings))
+        {
+            settings.Save();
+            TryDeleteLegacySettingsFile();
+            return settings;
+        }
+
+        return new WindowSettings(resolvedTimeProvider);
+    }
+
+    private static bool TryLoadFromPath(string filePath, TimeProvider resolvedTimeProvider, out WindowSettings settings)
+    {
+        settings = null!;
+
         try
         {
-            if (File.Exists(SettingsFilePath))
+            if (!File.Exists(filePath))
             {
-                var json = File.ReadAllText(SettingsFilePath);
-                var settings = JsonSerializer.Deserialize<WindowSettings>(json, SerializerOptions);
-                if (settings is not null)
-                {
-                    settings._timeProvider = resolvedTimeProvider;
-                    ValidatePosition(settings);
-                    System.Diagnostics.Debug.WriteLine($"[{resolvedTimeProvider.GetLocalNow():O}] ウィンドウ設定を読み込みました: {SettingsFilePath}");
-                    return settings;
-                }
+                return false;
             }
+
+            var json = File.ReadAllText(filePath);
+            var loaded = JsonSerializer.Deserialize<WindowSettings>(json, SerializerOptions);
+            if (loaded is null)
+            {
+                return false;
+            }
+
+            loaded._timeProvider = resolvedTimeProvider;
+            ValidatePosition(loaded);
+            settings = loaded;
+            System.Diagnostics.Debug.WriteLine($"[{resolvedTimeProvider.GetLocalNow():O}] ウィンドウ設定を読み込みました: {filePath}");
+            return true;
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[{resolvedTimeProvider.GetLocalNow():O}] ウィンドウ設定の読み込みに失敗しました: {ex.Message}");
+            return false;
         }
+    }
 
-        return new WindowSettings(resolvedTimeProvider);
+    private static void TryDeleteLegacySettingsFile()
+    {
+        try
+        {
+            if (File.Exists(LegacySettingsFilePath))
+            {
+                File.Delete(LegacySettingsFilePath);
+            }
+
+            if (Directory.Exists(LegacySettingsDirectory) && !Directory.EnumerateFileSystemEntries(LegacySettingsDirectory).Any())
+            {
+                Directory.Delete(LegacySettingsDirectory);
+            }
+        }
+        catch
+        {
+            // No-op: keep legacy settings when cleanup fails.
+        }
     }
 
     private static void ValidatePosition(WindowSettings settings)
