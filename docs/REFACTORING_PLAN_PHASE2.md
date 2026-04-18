@@ -92,7 +92,7 @@
 - `MainWindow` / `MainWindowViewModel` を `AutoTool.Desktop` へ整理
 - XAML (`x:Class` / `clr-namespace`) と `App.xaml` の `x:Class` も整合済み
 
-## PR6: DI ポリシー準拠の強化 ✅ 一部完了
+## PR6: DI ポリシー準拠の強化 ✅ 完了
 
 ### PR6-1: Service Locator 残存の削減 ✅ 完了
 
@@ -194,13 +194,23 @@
 - 外部公開契約 (`ICommandDependencyResolver`) は維持しつつ内部責務を分離
 - `CommandDependencyResolverTests` に `ICommandEventBus` 解決ケースを追加
 
+### PR6-12: DI ポリシー回帰ガードの自動化 ✅ 完了
+
+- `DependencyInjectionPolicyTests` を追加し、主要プロダクションコード配下を走査して Service Locator パターン混入を検知
+  - `IServiceProvider`
+  - `GetService(...)`
+  - `GetRequiredService(...)`
+- 対象は `AutoTool.Application` / `AutoTool.Automation.Contracts` / `AutoTool.Automation.Runtime` / `AutoTool.Bootstrap` / `AutoTool.Desktop` / `AutoTool.Domain` / `AutoTool.Infrastructure`
+- `bin` / `obj` / 生成コードは除外して誤検知を抑制
+
 ## 全体ステータス（PR6時点）
 
 - Domain/Application の責務分離・namespace 正規化・DI是正・回帰テスト拡充は完了
+- DI ポリシー違反の回帰検知をテストで自動化済み
 - `required` の段階導入は主要モデルで完了（`FavoriteMacroEntry` / `RecentFileEntry` / `FileTypeInfo`）
 - 現在の回帰状況:
   - `AutoTool.Tests.Domain`: 22 pass
-  - `AutoTool.Tests.Application`: 37 pass
+  - `AutoTool.Tests.Application`: 39 pass
   - `dotnet build AutoTool.sln -c Debug`: 成功
 
 ## 次フェーズ（PR6+ 継続）
