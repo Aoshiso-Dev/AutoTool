@@ -18,6 +18,12 @@ if (-not (Test-Path -LiteralPath $Destination)) {
 }
 $destinationPath = (Resolve-Path -LiteralPath $Destination).Path
 
+# Destructive sync (/MIR) の前に、入力成果物の最低限を検証する。
+$sourceMainExe = Get-ChildItem -LiteralPath $sourcePath -File -Filter *.exe | Select-Object -First 1
+if ($null -eq $sourceMainExe) {
+    throw "No main executable was found in source: $sourcePath"
+}
+
 $macroDir = Join-Path $destinationPath "Macro"
 $userDataCountBefore = if (Test-Path -LiteralPath $macroDir) {
     (Get-ChildItem -LiteralPath $macroDir -Recurse -File | Measure-Object).Count
@@ -27,7 +33,7 @@ else {
 }
 
 # Mirror deploy artifacts but preserve user data/config folders.
-robocopy $sourcePath $destinationPath /MIR /XD Macro Settings /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
+robocopy $sourcePath $destinationPath /MIR /XD Macro Settings x86 /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
 $code = $LASTEXITCODE
 if ($code -gt 7) {
     throw "robocopy failed with exit code $code"
@@ -45,7 +51,9 @@ if (-not (Test-Path -LiteralPath $destinationSettingsFile) -and (Test-Path -Lite
 }
 
 # Remove unsupported deployment artifacts.
-Get-ChildItem -LiteralPath $destinationPath -Recurse -File -Include *.pdb,*.lib | ForEach-Object {
+Get-ChildItem -LiteralPath $destinationPath -Recurse -File |
+    Where-Object { $_.Extension -in ".pdb", ".lib" } |
+    ForEach-Object {
     Remove-Item -LiteralPath $_.FullName -Force
 }
 
@@ -66,11 +74,6 @@ Get-ChildItem -LiteralPath $destinationPath -Recurse -Directory |
     }
 
 # Minimum post-deploy verification.
-$sourceMainExe = Get-ChildItem -LiteralPath $sourcePath -File -Filter *.exe | Select-Object -First 1
-if ($null -eq $sourceMainExe) {
-    throw "No main executable was found in source: $sourcePath"
-}
-
 $destinationMainExe = Join-Path $destinationPath $sourceMainExe.Name
 if (-not (Test-Path -LiteralPath $destinationMainExe)) {
     throw "Main executable is missing after deploy: $destinationMainExe"

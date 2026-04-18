@@ -139,51 +139,51 @@ internal static partial class Win32CaptureCore
         return new Bitmap(image);
     }
 
-    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true, EntryPoint = "FindWindowW")]
     private static partial IntPtr NativeFindWindow(string? lpClassName, string? lpWindowName);
 
-    [LibraryImport("user32.dll", SetLastError = true)]
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "GetWindowRect")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool NativeGetWindowRect(IntPtr hWnd, out RECT lpRect);
 
-    [LibraryImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowDC")]
     private static partial IntPtr NativeGetWindowDC(IntPtr hWnd);
 
-    [LibraryImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "GetDC")]
     private static partial IntPtr NativeGetDC(IntPtr hWnd);
 
-    [LibraryImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "ReleaseDC")]
     private static partial int NativeReleaseDC(IntPtr hWnd, IntPtr hdc);
 
-    [LibraryImport("gdi32.dll")]
+    [LibraryImport("gdi32.dll", EntryPoint = "CreateCompatibleDC")]
     private static partial IntPtr NativeCreateCompatibleDC(IntPtr hdc);
 
-    [LibraryImport("gdi32.dll")]
+    [LibraryImport("gdi32.dll", EntryPoint = "DeleteDC")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool NativeDeleteDC(IntPtr hdc);
 
-    [LibraryImport("gdi32.dll")]
+    [LibraryImport("gdi32.dll", EntryPoint = "CreateCompatibleBitmap")]
     private static partial IntPtr NativeCreateCompatibleBitmap(IntPtr hdc, int width, int height);
 
-    [LibraryImport("gdi32.dll")]
+    [LibraryImport("gdi32.dll", EntryPoint = "SelectObject")]
     private static partial IntPtr NativeSelectObject(IntPtr hdc, IntPtr hgdiObj);
 
-    [LibraryImport("gdi32.dll")]
+    [LibraryImport("gdi32.dll", EntryPoint = "DeleteObject")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool NativeDeleteObject(IntPtr hObject);
 
-    [LibraryImport("gdi32.dll")]
+    [LibraryImport("gdi32.dll", EntryPoint = "BitBlt")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool NativeBitBlt(IntPtr hdcDest, int xDest, int yDest, int width, int height, IntPtr hdcSrc, int xSrc, int ySrc, int rop);
 
-    [LibraryImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "PrintWindow")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool NativePrintWindow(IntPtr hWnd, IntPtr hdcBlt, uint nFlags);
 
-    [LibraryImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "GetSystemMetrics")]
     private static partial int NativeGetSystemMetrics(int nIndex);
 
-    [LibraryImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "SetProcessDpiAwarenessContext")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool NativeSetProcessDpiAwarenessContext(IntPtr value);
 }
