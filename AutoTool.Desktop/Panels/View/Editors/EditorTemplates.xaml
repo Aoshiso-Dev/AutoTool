@@ -396,8 +396,16 @@
                     <TextBlock Text="{Binding StringValue, TargetNullValue='未選択'}" 
                                Style="{StaticResource EditorDescription}" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <ui:Button Grid.Column="1" Content="参照" Icon="{ui:SymbolIcon FolderOpen24}"
-                           Command="{Binding BrowseCommand}"/>
+                <StackPanel Grid.Column="1" Orientation="Vertical">
+                    <ui:Button Content="参照" Icon="{ui:SymbolIcon FolderOpen24}"
+                               Command="{Binding BrowseCommand}" Margin="0,0,0,4"/>
+                    <ui:Button Content="公式ページ"
+                               Command="{Binding OpenReferenceCommand}" Margin="0,0,0,4"
+                               Visibility="{Binding OpenReferenceCommand, Converter={StaticResource NullToVisibilityConverter}}"/>
+                    <ui:Button Content="jpn+eng取得"
+                               Command="{Binding DownloadRecommendedCommand}"
+                               Visibility="{Binding DownloadRecommendedCommand, Converter={StaticResource NullToVisibilityConverter}}"/>
+                </StackPanel>
             </Grid>
         </Border>
     </DataTemplate>

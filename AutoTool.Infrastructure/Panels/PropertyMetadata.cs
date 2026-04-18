@@ -47,6 +47,12 @@ public partial class PropertyMetadata : ObservableObject
     private ICommand? _clearCommand;
 
     [ObservableProperty]
+    private ICommand? _openReferenceCommand;
+
+    [ObservableProperty]
+    private ICommand? _downloadRecommendedCommand;
+
+    [ObservableProperty]
     private string? _helperText;
 
     [ObservableProperty]

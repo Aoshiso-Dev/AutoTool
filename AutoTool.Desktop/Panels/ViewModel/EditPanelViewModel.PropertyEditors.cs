@@ -4,6 +4,9 @@ using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Interface;
 using AutoTool.Automation.Runtime.Attributes;
 using AutoTool.Desktop.Panels.View;
+using System.Diagnostics;
+using System.IO;
+using System.Net.Http;
 
 namespace AutoTool.Desktop.Panels.ViewModel;
 
@@ -186,6 +189,77 @@ public partial class EditPanelViewModel
         }
 
         prop.HelperText = "未指定の場合は ./tessdata を使用します。";
+        prop.OpenReferenceCommand = new RelayCommand(OpenTessdataReferencePage);
+        prop.DownloadRecommendedCommand = new AsyncRelayCommand(() => DownloadRecommendedTessdataAsync(prop));
+    }
+
+    private void OpenTessdataReferencePage()
+    {
+        const string tessdataFastRepositoryUrl = "https://github.com/tesseract-ocr/tessdata_fast";
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(tessdataFastRepositoryUrl)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            _notifier.ShowError($"公式ページを開けませんでした。\n{ex.Message}", "エラー");
+        }
+    }
+
+    private async Task DownloadRecommendedTessdataAsync(PropertyMetadata prop)
+    {
+        ArgumentNullException.ThrowIfNull(prop);
+
+        var targetDirectory = ResolveTessdataTargetDirectory(prop.StringValue);
+
+        try
+        {
+            Directory.CreateDirectory(targetDirectory);
+
+            using var client = new HttpClient();
+            var files = new (string FileName, string Url)[]
+            {
+                ("jpn.traineddata", "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/jpn.traineddata"),
+                ("eng.traineddata", "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/eng.traineddata")
+            };
+
+            foreach (var (fileName, url) in files)
+            {
+                await using var source = await client.GetStreamAsync(url);
+                await using var destination = File.Create(Path.Combine(targetDirectory, fileName));
+                await source.CopyToAsync(destination);
+            }
+
+            prop.Value = _pathResolver.ToRelativePath(targetDirectory);
+            prop.NotifyAllValueProperties();
+            UpdateProperties();
+
+            _notifier.ShowInfo(
+                $"tessdata を取得しました。\n保存先: {targetDirectory}\n取得: jpn.traineddata / eng.traineddata",
+                "OCRデータ取得完了");
+        }
+        catch (Exception ex)
+        {
+            _notifier.ShowError($"tessdata の取得に失敗しました。\n{ex.Message}", "エラー");
+        }
+    }
+
+    private string ResolveTessdataTargetDirectory(string configuredValue)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredValue))
+        {
+            var absolute = _pathResolver.ToAbsolutePath(configuredValue);
+            if (!string.IsNullOrWhiteSpace(absolute))
+            {
+                return absolute;
+            }
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, "tessdata");
     }
 
     private void ValidateCurrentItemSettings()

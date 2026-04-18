@@ -94,6 +94,9 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
   - `dotnet build` のエラーを解消
 - 画像/OCR が期待通り動かない:
   - 対象画面の解像度・表示倍率・類似度しきい値を調整
+  - OCR コマンドの `tessdataディレクトリ` で `公式ページ` から取得元を確認できます
+  - `jpn+eng取得` を押すと `jpn.traineddata` / `eng.traineddata` を自動取得できます
+  - 既定では実行ファイル配下の `.\tessdata` が使用されます
 - 保存できない:
   - 書き込み先フォルダ権限を確認
 
