@@ -58,6 +58,11 @@
                                ToolTip="{Binding CommandHistory.RedoDescription, StringFormat='やり直し: {0}'}" 
                                Command="{Binding RedoCommand}"
                                Appearance="Transparent"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
+                    <ui:Button Icon="{ui:SymbolIcon Settings24}"
+                               ToolTip="設定"
+                               Appearance="Transparent"
+                               Click="SettingsButton_Click"/>
                 </StackPanel>
             </ui:TitleBar.Header>
         </ui:TitleBar>

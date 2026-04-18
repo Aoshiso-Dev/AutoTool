@@ -39,6 +39,7 @@ public static class AutoToolServiceExtensions
         services.AddSingleton<IFilePicker, WpfFilePicker>();
         services.AddSingleton<IRecentFileStore, XmlRecentFileStore>();
         services.AddSingleton<IFavoriteMacroStore, XmlFavoriteMacroStore>();
+        services.AddSingleton<IUiStatePreferenceStore, JsonUiStatePreferenceStore>();
 
         services.AddSingleton<AutoTool.Infrastructure.AsyncFileLog>();
         services.AddSingleton<ILogWriter, DelegatingLogWriter>();

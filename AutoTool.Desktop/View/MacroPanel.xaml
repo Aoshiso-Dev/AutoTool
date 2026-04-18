@@ -4,8 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:converters="clr-namespace:AutoTool.Desktop.View.Converters"
         xmlns:panels="clr-namespace:AutoTool.Desktop.Panels.View"
         mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <converters:FavoritePanelWidthMultiConverter x:Key="FavoritePanelWidthMultiConverter"/>
+    </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -18,7 +23,15 @@
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="6"/>
+                <ColumnDefinition>
+                    <ColumnDefinition.Width>
+                        <MultiBinding Converter="{StaticResource FavoritePanelWidthMultiConverter}" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged">
+                            <Binding Path="IsFavoritePanelOpen" Mode="OneWay"/>
+                            <Binding Path="FavoritePanelWidth" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"/>
+                        </MultiBinding>
+                    </ColumnDefinition.Width>
+                </ColumnDefinition>
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0" Margin="8,0,8,8" ClipToBounds="True">
@@ -100,8 +113,27 @@
                 </Border>
             </Grid>
 
-            <Grid Grid.Column="1" Margin="0,0,8,8">
-                <ui:Card Width="340" Padding="0" Margin="8,0,0,0">
+            <GridSplitter Grid.Column="1"
+                          Margin="0,0,0,8"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          ResizeDirection="Columns"
+                          ResizeBehavior="PreviousAndNext"
+                          Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}">
+                <GridSplitter.Style>
+                    <Style TargetType="GridSplitter">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFavoritePanelOpen}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </GridSplitter.Style>
+            </GridSplitter>
+
+            <Grid Grid.Column="2" Margin="0,0,8,8">
+                <ui:Card Padding="0" Margin="8,0,0,0" MinWidth="240" MaxWidth="700">
                     <ui:Card.Style>
                         <Style TargetType="ui:Card">
                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -116,7 +148,7 @@
                 </ui:Card>
             </Grid>
 
-            <StackPanel Grid.ColumnSpan="2"
+            <StackPanel Grid.ColumnSpan="3"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Bottom"

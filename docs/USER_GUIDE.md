@@ -42,6 +42,11 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 - `Ctrl+Z`: 元に戻す
 - `Ctrl+Y` / `Ctrl+Shift+Z`: やり直し
 
+設定:
+
+- タイトルバー右側の `設定` ボタンから設定画面を開けます
+- 「前回終了時の状態を次回起動時に復元する」を ON/OFF できます
+
 ## 4. 基本操作フロー
 
 1. コマンドを追加して手順を作る
@@ -53,6 +58,12 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 
 - マクロファイル拡張子: `.macro`
 - 設定ファイル: `Settings\appsettings.json`
+- ウィンドウ状態ファイル: `%AppData%\AutoTool\window_settings.json`
+  - 終了時にウィンドウ位置/サイズ、タブ状態、パネル開閉状態、右パネル幅、最後に開いていた `.macro` を保存
+  - 起動時に保存内容を自動復元（対象ファイルが存在しない場合は復元をスキップ）
+- セッション復元設定: `Settings\appsettings.json`
+  - `UiState.RestorePreviousSession` を `false` にすると、起動時の「前回タブ状態/パネル状態/最後に開いていたファイル」の復元を無効化
+  - 同じ設定は設定画面からも変更できます
 
 ## 6. よくあるトラブル
 

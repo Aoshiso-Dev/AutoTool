@@ -62,3 +62,25 @@ public class BoolToVisibilityConverter : IValueConverter
         return false;
     }
 }
+
+public class FavoritePanelWidthMultiConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        var isOpen = values.Length > 0 && values[0] is bool open && open;
+        var width = values.Length > 1 && values[1] is double panelWidth ? panelWidth : 340d;
+        var normalizedWidth = Math.Clamp(width, 240d, 700d);
+        return new GridLength(isOpen ? normalizedWidth : 0d, GridUnitType.Pixel);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        if (value is GridLength gridLength && gridLength.IsAbsolute)
+        {
+            var normalizedWidth = Math.Clamp(gridLength.Value, 240d, 700d);
+            return [Binding.DoNothing, normalizedWidth];
+        }
+
+        return [Binding.DoNothing, 340d];
+    }
+}

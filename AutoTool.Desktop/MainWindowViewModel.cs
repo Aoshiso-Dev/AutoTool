@@ -323,6 +323,55 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         return _fileManagers.TryGetValue(SelectedTabIndex, out fileManager!);
     }
 
+    public void RestoreSessionState(
+        int selectedTabIndex,
+        bool isFavoritePanelOpen,
+        bool isLogPanelOpen,
+        int selectedMacroListTabIndex,
+        double favoritePanelWidth,
+        string? lastOpenedMacroFilePath)
+    {
+        SelectedTabIndex = selectedTabIndex is TabIndexes.Macro or TabIndexes.Monitor
+            ? selectedTabIndex
+            : TabIndexes.Macro;
+
+        MacroPanelViewModel.FavoritePanelWidth = Math.Clamp(favoritePanelWidth, 240, 700);
+        MacroPanelViewModel.IsFavoritePanelOpen = isFavoritePanelOpen;
+        MacroPanelViewModel.IsLogPanelOpen = isLogPanelOpen;
+        MacroPanelViewModel.SelectedListTabIndex = Math.Max(0, selectedMacroListTabIndex);
+
+        if (string.IsNullOrWhiteSpace(lastOpenedMacroFilePath))
+        {
+            UpdateProperties();
+            return;
+        }
+
+        if (!TryGetMacroFileManager(out var macroFileManager) || !macroFileManager.OpenFile(lastOpenedMacroFilePath))
+        {
+            StatusMessage = "前回のマクロファイルを復元できませんでした。";
+            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
+            UpdateProperties();
+            return;
+        }
+
+        CommandHistory.Clear();
+        StatusMessage = $"前回の状態を復元しました: {macroFileManager.CurrentFileName}";
+        _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
+        UpdateProperties();
+    }
+
+    public string? GetLastOpenedMacroFilePath()
+    {
+        return TryGetMacroFileManager(out var macroFileManager) && macroFileManager.IsFileOpened
+            ? macroFileManager.CurrentFilePath
+            : null;
+    }
+
+    private bool TryGetMacroFileManager(out FileManager fileManager)
+    {
+        return _fileManagers.TryGetValue(TabIndexes.Macro, out fileManager!);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;

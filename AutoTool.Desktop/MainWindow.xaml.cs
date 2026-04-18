@@ -1,6 +1,8 @@
 ﻿using System.Windows;
+using AutoTool.Application.Ports;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Desktop.Model;
+using AutoTool.Desktop.View;
 using Wpf.Ui.Controls;
 
 namespace AutoTool.Desktop;
@@ -11,13 +13,31 @@ namespace AutoTool.Desktop;
 public partial class MainWindow : FluentWindow
 {
     private readonly WindowSettings _windowSettings;
+    private readonly MainWindowViewModel _viewModel;
+    private readonly IUiStatePreferenceStore _uiStatePreferenceStore;
+    private bool _restorePreviousSession;
 
-    public MainWindow(MainWindowViewModel viewModel, TimeProvider timeProvider)
+    public MainWindow(
+        MainWindowViewModel viewModel,
+        TimeProvider timeProvider,
+        IUiStatePreferenceStore uiStatePreferenceStore)
     {
+        ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(uiStatePreferenceStore);
+
         InitializeComponent();
-        DataContext = viewModel;
+        _viewModel = viewModel;
+        _uiStatePreferenceStore = uiStatePreferenceStore;
+        DataContext = _viewModel;
+        _restorePreviousSession = _uiStatePreferenceStore.LoadRestorePreviousSession();
 
         _windowSettings = WindowSettings.Load(timeProvider);
+        if (_restorePreviousSession)
+        {
+            _windowSettings.ApplyToViewModel(_viewModel);
+        }
+
         SourceInitialized += MainWindow_SourceInitialized;
         Closing += MainWindow_Closing;
         Closed += MainWindow_Closed;
@@ -31,7 +51,32 @@ public partial class MainWindow : FluentWindow
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         _windowSettings.UpdateFromWindow(this);
+        if (_restorePreviousSession)
+        {
+            _windowSettings.UpdateFromViewModel(_viewModel);
+        }
+        else
+        {
+            _windowSettings.ClearSessionState();
+        }
+
         _windowSettings.Save();
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsWindow = new SettingsWindow(_restorePreviousSession)
+        {
+            Owner = this
+        };
+
+        if (settingsWindow.ShowDialog() != true)
+        {
+            return;
+        }
+
+        _restorePreviousSession = settingsWindow.RestorePreviousSession;
+        _uiStatePreferenceStore.SaveRestorePreviousSession(_restorePreviousSession);
     }
 
     private void MainWindow_Closed(object? sender, EventArgs e)

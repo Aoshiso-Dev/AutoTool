@@ -45,6 +45,9 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isLogPanelOpen;
 
+    [ObservableProperty]
+    private double _favoritePanelWidth = 340;
+
     // Exposed for view binding without concrete casts.
     public IListPanelViewModel ListPanelViewModel => _listPanel;
     public IEditPanelViewModel EditPanelViewModel => _editPanel;
@@ -111,6 +114,15 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     public void SetCommandHistory(CommandHistoryManager commandHistory)
     {
         _commandHistory = commandHistory;
+    }
+
+    partial void OnFavoritePanelWidthChanged(double value)
+    {
+        var normalizedWidth = Math.Clamp(value, 240, 700);
+        if (Math.Abs(normalizedWidth - value) > 0.1)
+        {
+            FavoritePanelWidth = normalizedWidth;
+        }
     }
 
     public void SaveMacroFile(string filePath) => _listPanel.Save(filePath);

@@ -6,8 +6,10 @@ namespace AutoTool.Desktop.Model;
 
 public class WindowSettings
 {
+    private const int CurrentSchemaVersion = 1;
     private TimeProvider _timeProvider = TimeProvider.System;
 
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public double Left { get; set; } = 100;
     public double Top { get; set; } = 100;
     public double Width { get; set; } = 1000;
@@ -15,6 +17,11 @@ public class WindowSettings
     public WindowState WindowState { get; set; } = WindowState.Normal;
     public double EditPanelSplitterPosition { get; set; } = 300;
     public int SelectedTabIndex { get; set; }
+    public int SelectedMacroListTabIndex { get; set; }
+    public bool IsFavoritePanelOpen { get; set; }
+    public bool IsLogPanelOpen { get; set; }
+    public double FavoritePanelWidth { get; set; } = 340;
+    public string? LastOpenedMacroFilePath { get; set; }
 
     private static readonly string SettingsDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -83,6 +90,11 @@ public class WindowSettings
 
     private static void ValidatePosition(WindowSettings settings)
     {
+        if (settings.SchemaVersion <= 0)
+        {
+            settings.SchemaVersion = CurrentSchemaVersion;
+        }
+
         var workingArea = SystemParameters.WorkArea;
 
         if (settings.Left < 0 || settings.Left + settings.Width > workingArea.Width)
@@ -109,6 +121,23 @@ public class WindowSettings
         {
             settings.EditPanelSplitterPosition = 300;
         }
+
+        if (settings.SelectedTabIndex is not (AutoTool.Desktop.TabIndexes.Macro or AutoTool.Desktop.TabIndexes.Monitor))
+        {
+            settings.SelectedTabIndex = AutoTool.Desktop.TabIndexes.Macro;
+        }
+
+        if (settings.SelectedMacroListTabIndex < 0)
+        {
+            settings.SelectedMacroListTabIndex = 0;
+        }
+
+        if (settings.FavoritePanelWidth is < 240 or > 700)
+        {
+            settings.FavoritePanelWidth = settings.EditPanelSplitterPosition is >= 240 and <= 700
+                ? settings.EditPanelSplitterPosition
+                : 340;
+        }
     }
 
     public void UpdateFromWindow(Window window)
@@ -124,6 +153,19 @@ public class WindowSettings
         WindowState = window.WindowState;
     }
 
+    public void UpdateFromViewModel(AutoTool.Desktop.MainWindowViewModel viewModel)
+    {
+        ArgumentNullException.ThrowIfNull(viewModel);
+
+        SelectedTabIndex = viewModel.SelectedTabIndex;
+        SelectedMacroListTabIndex = viewModel.MacroPanelViewModel.SelectedListTabIndex;
+        IsFavoritePanelOpen = viewModel.MacroPanelViewModel.IsFavoritePanelOpen;
+        IsLogPanelOpen = viewModel.MacroPanelViewModel.IsLogPanelOpen;
+        FavoritePanelWidth = viewModel.MacroPanelViewModel.FavoritePanelWidth;
+        EditPanelSplitterPosition = FavoritePanelWidth;
+        LastOpenedMacroFilePath = viewModel.GetLastOpenedMacroFilePath();
+    }
+
     public void ApplyToWindow(Window window)
     {
         window.Left = Left;
@@ -131,5 +173,27 @@ public class WindowSettings
         window.Width = Width;
         window.Height = Height;
         window.WindowState = WindowState;
+    }
+
+    public void ApplyToViewModel(AutoTool.Desktop.MainWindowViewModel viewModel)
+    {
+        ArgumentNullException.ThrowIfNull(viewModel);
+
+        viewModel.RestoreSessionState(
+            SelectedTabIndex,
+            IsFavoritePanelOpen,
+            IsLogPanelOpen,
+            SelectedMacroListTabIndex,
+            FavoritePanelWidth,
+            LastOpenedMacroFilePath);
+    }
+
+    public void ClearSessionState()
+    {
+        SelectedTabIndex = AutoTool.Desktop.TabIndexes.Macro;
+        SelectedMacroListTabIndex = 0;
+        IsFavoritePanelOpen = false;
+        IsLogPanelOpen = false;
+        LastOpenedMacroFilePath = null;
     }
 }
