@@ -224,6 +224,106 @@ public class CommandHistoryManagerTests
     }
 }
 
+public class MacroFileSerializerCompatibilityTests
+{
+    [Fact]
+    public void SerializeToFile_WhenOverwritingLegacyFile_PreservesMissingPathLikeValues()
+    {
+        var serializer = new MacroFileSerializer();
+        var filePath = Path.Combine(Path.GetTempPath(), $"legacy-macro-{Guid.NewGuid()}.macro");
+        File.WriteAllText(filePath, CreateLegacyExecuteMacroJson());
+
+        try
+        {
+            var updated = new ObservableCollection<ICommandListItem>
+            {
+                new ExecuteItem
+                {
+                    ItemType = CommandTypeNames.Execute,
+                    ProgramPath = string.Empty,
+                    Arguments = "--new",
+                    WorkingDirectory = string.Empty
+                }
+            };
+
+            serializer.SerializeToFile(updated, filePath);
+            var savedJson = File.ReadAllText(filePath);
+            Assert.Contains(@"""ProgramPath"": ""C:\\Legacy\\tool.exe""", savedJson, StringComparison.Ordinal);
+            Assert.Contains(@"""WorkingDirectory"": ""C:\\Legacy\\Work""", savedJson, StringComparison.Ordinal);
+            Assert.Contains(@"""Arguments"": ""--new""", savedJson, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+    }
+
+    [Fact]
+    public void SerializeToFile_WhenOverwritingModernFile_DoesNotPreserveMissingPathLikeValues()
+    {
+        var serializer = new MacroFileSerializer();
+        var filePath = Path.Combine(Path.GetTempPath(), $"modern-macro-{Guid.NewGuid()}.macro");
+
+        try
+        {
+            var existing = new ObservableCollection<ICommandListItem>
+            {
+                new ExecuteItem
+                {
+                    ItemType = CommandTypeNames.Execute,
+                    ProgramPath = @"C:\Legacy\tool.exe",
+                    WorkingDirectory = @"C:\Legacy\Work"
+                }
+            };
+            serializer.SerializeToFile(existing, filePath);
+            var firstSavedJson = File.ReadAllText(filePath);
+            Assert.Contains(@"""ProgramPath"": ""C:\\Legacy\\tool.exe""", firstSavedJson, StringComparison.Ordinal);
+            Assert.Contains(@"""WorkingDirectory"": ""C:\\Legacy\\Work""", firstSavedJson, StringComparison.Ordinal);
+
+            var updated = new ObservableCollection<ICommandListItem>
+            {
+                new ExecuteItem
+                {
+                    ItemType = CommandTypeNames.Execute,
+                    ProgramPath = string.Empty,
+                    WorkingDirectory = string.Empty
+                }
+            };
+            serializer.SerializeToFile(updated, filePath);
+
+            var savedJson = File.ReadAllText(filePath);
+            Assert.DoesNotContain(@"C:\\Legacy\\tool.exe", savedJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(@"C:\\Legacy\\Work", savedJson, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+    }
+
+    private static string CreateLegacyExecuteMacroJson()
+    {
+        return $$"""
+                 {
+                   "$values": [
+                     {
+                       "ItemType": "{{CommandTypeNames.Execute}}",
+                       "ProgramPath": "C:\\Legacy\\tool.exe",
+                       "Arguments": "--legacy",
+                       "WorkingDirectory": "C:\\Legacy\\Work"
+                     }
+                   ]
+                 }
+                 """;
+    }
+}
+
 internal sealed class FakeMacroFileSerializer : IMacroFileSerializer
 {
     private readonly object? _deserializedObject;
@@ -484,7 +584,7 @@ public class FindTextItemTests
         public string? GetVariable(string name) => _vars.TryGetValue(name, out var v) ? v : null;
         public void SetVariable(string name, string value) => _vars[name] = value;
         public string ToAbsolutePath(string relativePath) => relativePath;
-        public Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null) => Task.CompletedTask;
+        public Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent") => Task.CompletedTask;
         public Task SendHotkeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null) => Task.CompletedTask;
         public Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.CompletedTask;

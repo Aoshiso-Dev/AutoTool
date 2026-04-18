@@ -12,7 +12,6 @@ public static class AutoToolJsonOptionsFactory
         };
 
         options.TypeInfoResolverChain.Insert(0, new CommandListItemPolymorphicResolver());
-        options.TypeInfoResolverChain.Insert(0, AutoToolJsonSerializerContext.Default);
         return options;
     }
 

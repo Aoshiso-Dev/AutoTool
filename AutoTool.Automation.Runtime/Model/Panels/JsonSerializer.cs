@@ -62,13 +62,17 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
 
     public void SerializeToFile<T>(T obj, string path)
     {
+        PreserveLegacyPathLikeValuesIfNeeded(obj, path);
+
         if (File.Exists(path))
         {
             File.Delete(path);
         }
 
         PrepareForSerialization(obj);
-        var json = JsonSerializer.Serialize(obj, _options);
+        var json = obj is IEnumerable<ICommandListItem> items
+            ? SerializeCommandItems(items)
+            : JsonSerializer.Serialize(obj, _options);
         File.WriteAllText(path, json);
     }
 
@@ -86,7 +90,201 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
             return legacyResult;
         }
 
+        if (TryDeserializeModernCommandItems<T>(json, out var modernResult))
+        {
+            return modernResult;
+        }
+
         return JsonSerializer.Deserialize<T>(json, _options);
+    }
+
+    private string SerializeCommandItems(IEnumerable<ICommandListItem> items)
+    {
+        var array = new JsonArray();
+
+        foreach (var item in items)
+        {
+            var node = JsonSerializer.SerializeToNode(item, item.GetType(), _options);
+            if (node is not null)
+            {
+                array.Add(node);
+            }
+        }
+
+        return array.ToJsonString(_options);
+    }
+
+    private bool TryDeserializeModernCommandItems<T>(string json, out T? result)
+    {
+        result = default;
+
+        JsonNode? node;
+        try
+        {
+            node = JsonNode.Parse(json);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+
+        if (node is not JsonArray values)
+        {
+            return false;
+        }
+
+        var items = new ObservableCollection<ICommandListItem>();
+
+        foreach (var entry in values.OfType<JsonObject>())
+        {
+            var rawItemType = entry["ItemType"]?.GetValue<string>() ?? string.Empty;
+            var itemType = MapLegacyItemType(rawItemType);
+
+            if (string.IsNullOrWhiteSpace(itemType) || !CommandMetadataCatalog.TryGetByTypeName(itemType, out var metadata))
+            {
+                throw new InvalidDataException($"不明な ItemType: {rawItemType}");
+            }
+
+            var deserialized = JsonSerializer.Deserialize(entry.ToJsonString(), metadata.ItemType, _options);
+            if (deserialized is not ICommandListItem commandItem)
+            {
+                throw new InvalidDataException($"アイテム復元失敗: {itemType}");
+            }
+
+            if (string.IsNullOrWhiteSpace(commandItem.ItemType) || string.Equals(commandItem.ItemType, "None", StringComparison.Ordinal))
+            {
+                commandItem.ItemType = itemType;
+            }
+
+            items.Add(commandItem);
+        }
+
+        if (typeof(T).IsAssignableFrom(typeof(ObservableCollection<ICommandListItem>)))
+        {
+            result = (T)(object)items;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void PreserveLegacyPathLikeValuesIfNeeded<T>(T obj, string path)
+    {
+        if (obj is not IEnumerable<ICommandListItem> newItems || !File.Exists(path))
+        {
+            return;
+        }
+
+        if (!TryGetLegacyItemsNode(path, out var legacyItemsNode))
+        {
+            return;
+        }
+
+        var newItemList = newItems.ToList();
+        var count = Math.Min(newItemList.Count, legacyItemsNode.Count);
+
+        for (var i = 0; i < count; i++)
+        {
+            var currentItem = newItemList[i];
+            if (legacyItemsNode[i] is not JsonObject legacyItem)
+            {
+                continue;
+            }
+
+            var legacyItemType = legacyItem["ItemType"]?.GetValue<string>() ?? string.Empty;
+            var mappedLegacyItemType = MapLegacyItemType(legacyItemType);
+
+            if (!string.Equals(currentItem.ItemType, mappedLegacyItemType, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            CopyMissingPathLikePropertiesFromLegacyJson(legacyItem, currentItem);
+        }
+    }
+
+    private static bool TryGetLegacyItemsNode(string path, out JsonArray items)
+    {
+        items = new JsonArray();
+
+        JsonNode? rootNode;
+        try
+        {
+            rootNode = JsonNode.Parse(File.ReadAllText(path));
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+
+        if (rootNode is not JsonObject rootObject || rootObject["$values"] is not JsonArray values)
+        {
+            return false;
+        }
+
+        items = values;
+        return true;
+    }
+
+    private static void CopyMissingPathLikePropertiesFromLegacyJson(JsonObject source, ICommandListItem target)
+    {
+        var targetType = target.GetType();
+
+        foreach (var targetProperty in targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (!targetProperty.CanRead || !targetProperty.CanWrite || targetProperty.PropertyType != typeof(string))
+            {
+                continue;
+            }
+
+            if (!IsPathLikeProperty(targetProperty.Name))
+            {
+                continue;
+            }
+
+            var targetValue = targetProperty.GetValue(target) as string;
+            if (!string.IsNullOrWhiteSpace(targetValue))
+            {
+                continue;
+            }
+
+            if (!source.TryGetPropertyValue(targetProperty.Name, out var sourceNode) || sourceNode is null)
+            {
+                continue;
+            }
+
+            if (sourceNode is not JsonValue sourceValueNode)
+            {
+                continue;
+            }
+
+            string? sourceValue;
+            try
+            {
+                sourceValue = sourceValueNode.GetValue<string>();
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(sourceValue))
+            {
+                continue;
+            }
+
+            targetProperty.SetValue(target, sourceValue);
+        }
+    }
+
+    private static bool IsPathLikeProperty(string propertyName)
+    {
+        return propertyName.EndsWith("Path", StringComparison.OrdinalIgnoreCase)
+               || propertyName.EndsWith("Directory", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryDeserializeLegacy<T>(string json, out T? result)
