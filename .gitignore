@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local deployment / diagnostics artifacts
+.deploy/
+infra.diag.txt
+*.diag.txt

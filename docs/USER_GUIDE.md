@@ -1,0 +1,73 @@
+﻿# 利用者向けガイド
+
+## 1. このアプリでできること
+
+AutoTool は、繰り返し作業を「マクロ」として保存し、ワンクリックで再実行するためのツールです。
+
+- クリック、キー入力、待機などの操作自動化
+- 画像検索（OpenCV）を使った画面上ターゲットの検出
+- OCR（Tesseract）を使った文字判定
+- AI 検出（ONNX Runtime）を使った対象検出
+
+## 2. はじめに（初回セットアップ）
+
+前提:
+
+- Windows 環境
+- .NET 8 SDK がインストール済み
+
+実行:
+
+```powershell
+dotnet restore .\AutoTool.sln
+dotnet build .\AutoTool.sln -c Debug
+dotnet run --project .\AutoTool\AutoTool.csproj
+```
+
+## 3. 画面の見方
+
+メイン画面は主に次の領域で構成されます。
+
+- タイトルバー: 開く、保存、Undo/Redo
+- マクロ編集エリア: コマンド一覧の編集
+- ログパネル: 実行中のログ確認
+- お気に入りパネル: よく使う構成の呼び出し
+- ステータスバー: 実行状態・メッセージ表示
+
+ショートカット:
+
+- `Ctrl+O`: 開く
+- `Ctrl+S`: 上書き保存
+- `Ctrl+Shift+S`: 名前を付けて保存
+- `Ctrl+Z`: 元に戻す
+- `Ctrl+Y` / `Ctrl+Shift+Z`: やり直し
+
+## 4. 基本操作フロー
+
+1. コマンドを追加して手順を作る
+2. 必要なパラメータを編集する
+3. 保存して `.macro` ファイルとして管理する
+4. 実行してログで結果を確認する
+
+## 5. ファイルと設定
+
+- マクロファイル拡張子: `.macro`
+- 設定ファイル: `Settings\appsettings.json`
+
+`Settings\appsettings.json` は、ビルド出力時に `Settings` 配下へ配置されます。
+
+## 6. よくあるトラブル
+
+- 起動しない:
+  - `dotnet --info` で .NET 8 SDK を確認
+  - `dotnet build` のエラーを解消
+- 画像/OCR が期待通り動かない:
+  - 対象画面の解像度・表示倍率・類似度しきい値を調整
+- 保存できない:
+  - 書き込み先フォルダ権限を確認
+
+## 7. 次に読む資料
+
+- コマンド実装を増やしたい: [コマンド開発ガイド](COMMAND_DEVELOPMENT_GUIDE.md)
+- 配布したい: [配布ガイド](DEPLOYMENT.md)
+- 内部構成を把握したい: [アーキテクチャ概要](ARCHITECTURE.md)
