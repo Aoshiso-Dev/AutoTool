@@ -187,7 +187,7 @@
                 </DataGridTemplateColumn>
 
                 <!-- コマンド -->
-                <DataGridTemplateColumn x:Name="CommandColumn" Header="コマンド" Width="180">
+                <DataGridTemplateColumn x:Name="CommandColumn" Header="コマンド" Width="170">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                             <Setter Property="Padding" Value="0"/>
