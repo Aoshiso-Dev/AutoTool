@@ -71,6 +71,10 @@
                                ToolTip="設定"
                                Appearance="Transparent"
                                Click="SettingsButton_Click"/>
+                    <ui:Button Icon="{ui:SymbolIcon Info24}"
+                               ToolTip="バージョン情報"
+                               Command="{Binding VersionInfoCommand}"
+                               Appearance="Transparent"/>
                 </StackPanel>
             </ui:TitleBar.Header>
         </ui:TitleBar>

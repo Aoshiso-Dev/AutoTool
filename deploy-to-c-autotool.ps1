@@ -30,14 +30,40 @@ function Invoke-Publish {
         [Parameter(Mandatory = $true)]
         [string]$Configuration,
         [Parameter(Mandatory = $true)]
-        [string]$OutputPath
+        [string]$OutputPath,
+        [string]$PublishVersion
     )
 
     Write-Host "publish を実行します: project=$ProjectPath, configuration=$Configuration, output=$OutputPath"
-    dotnet publish $ProjectPath -c $Configuration -o $OutputPath
+    $arguments = @("publish", $ProjectPath, "-c", $Configuration, "-o", $OutputPath)
+    if (-not [string]::IsNullOrWhiteSpace($PublishVersion)) {
+        $arguments += "/p:Version=$PublishVersion"
+        $arguments += "/p:FileVersion=$PublishVersion"
+        $arguments += "/p:AssemblyVersion=$PublishVersion"
+    }
+
+    dotnet @arguments
     if ($LASTEXITCODE -ne 0) {
         throw "publish が失敗しました。終了コード: $LASTEXITCODE"
     }
+}
+
+function Get-LatestGitTagVersion {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepositoryRoot
+    )
+
+    $tag = git -C $RepositoryRoot tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | Select-Object -First 1
+    if ([string]::IsNullOrWhiteSpace($tag)) {
+        throw "Git タグ（vMAJOR.MINOR.PATCH）が見つかりません。GitHub を正とするため、先にタグを作成してください。"
+    }
+
+    if ($tag -notmatch '^v(\d+)\.(\d+)\.(\d+)$') {
+        throw "タグ形式が不正です。vMAJOR.MINOR.PATCH 形式が必要です。検出値: $tag"
+    }
+
+    return "$($Matches[1]).$($Matches[2]).$($Matches[3])"
 }
 
 function Get-FileHashSafe {
@@ -89,7 +115,9 @@ if (-not $SkipPublish) {
         New-Item -ItemType Directory -Path $sourcePath -Force | Out-Null
     }
 
-    Invoke-Publish -ProjectPath $projectPath -Configuration $Configuration -OutputPath $sourcePath
+    $publishVersion = Get-LatestGitTagVersion -RepositoryRoot $root
+    Write-Host "GitHub基準バージョンを適用します: $publishVersion"
+    Invoke-Publish -ProjectPath $projectPath -Configuration $Configuration -OutputPath $sourcePath -PublishVersion $publishVersion
 }
 
 if (-not (Test-Path -LiteralPath $sourcePath)) {

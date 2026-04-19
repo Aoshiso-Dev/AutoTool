@@ -58,6 +58,6 @@ dotnet run -c Release --project .\AutoTool.Benchmarks.Automation\AutoTool.Benchm
 ## 対応環境
 
 - Windows
-- .NET 8 SDK
+- .NET 10 SDK（C# 14）
 
 詳細は [利用者向けガイド](docs/USER_GUIDE.md) を参照してください。

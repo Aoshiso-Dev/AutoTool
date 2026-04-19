@@ -7,7 +7,8 @@
 ## 2. 開発環境
 
 - Windows
-- .NET 8 SDK
+- .NET 10 SDK
+- C# 14（`LangVersion=14.0`）
 - Visual Studio 2022 または `dotnet` CLI
 
 ## 3. よく使うコマンド

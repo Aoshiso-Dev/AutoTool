@@ -7,6 +7,12 @@ namespace AutoTool.Desktop.Ui;
 
 public sealed class WpfAppDialogService : IAppDialogService
 {
+    private static readonly System.Text.RegularExpressions.Regex UrlPattern = new(
+        @"https?://[^\s]+",
+        System.Text.RegularExpressions.RegexOptions.Compiled
+        | System.Text.RegularExpressions.RegexOptions.CultureInvariant
+        | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
     public string? Show(
         string title,
         string message,
@@ -135,11 +141,11 @@ public sealed class WpfAppDialogService : IAppDialogService
 
         var messageBlock = new TextBlock
         {
-            Text = message,
             TextWrapping = TextWrapping.Wrap,
             LineHeight = 22,
             Foreground = new SolidColorBrush(Color.FromRgb(235, 237, 240))
         };
+        PopulateMessageInlines(messageBlock, message);
         messageScroll.Content = messageBlock;
 
         var buttonPanel = new StackPanel
@@ -206,6 +212,58 @@ public sealed class WpfAppDialogService : IAppDialogService
 
         dialogWindow.ShowDialog();
         return selectedActionId;
+    }
+
+    private static void PopulateMessageInlines(TextBlock messageBlock, string message)
+    {
+        messageBlock.Inlines.Clear();
+
+        var lastIndex = 0;
+        foreach (System.Text.RegularExpressions.Match match in UrlPattern.Matches(message))
+        {
+            if (match.Index > lastIndex)
+            {
+                messageBlock.Inlines.Add(new System.Windows.Documents.Run(message[lastIndex..match.Index]));
+            }
+
+            var url = match.Value;
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                var hyperlink = new System.Windows.Documents.Hyperlink(new System.Windows.Documents.Run(url))
+                {
+                    NavigateUri = uri
+                };
+                hyperlink.Click += (_, _) => OpenUrl(uri);
+                messageBlock.Inlines.Add(hyperlink);
+            }
+            else
+            {
+                messageBlock.Inlines.Add(new System.Windows.Documents.Run(url));
+            }
+
+            lastIndex = match.Index + match.Length;
+        }
+
+        if (lastIndex < message.Length)
+        {
+            messageBlock.Inlines.Add(new System.Windows.Documents.Run(message[lastIndex..]));
+        }
+    }
+
+    private static void OpenUrl(Uri uri)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = uri.AbsoluteUri,
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            // 通知ダイアログからのリンク遷移失敗は無視する。
+        }
     }
 
     private static Color GetToneColor(AppDialogTone tone) => tone switch

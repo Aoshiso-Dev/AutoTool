@@ -236,10 +236,14 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void VersionInfo()
     {
-        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-        var appName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+        var assembly = System.Reflection.Assembly.GetEntryAssembly() ?? System.Reflection.Assembly.GetExecutingAssembly();
+        var appName = assembly.GetName().Name;
+        var fileVersionInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+        var version = assembly.GetName().Version;
         const string githubUrl = "https://github.com/Aoshiso-Dev/AutoTool";
-        var versionString = $"{version?.Major}.{version?.Minor}.{version?.Build}";
+        var versionString = string.IsNullOrWhiteSpace(fileVersionInfo.FileVersion)
+            ? $"{version?.Major}.{version?.Minor}.{version?.Build}"
+            : fileVersionInfo.FileVersion;
 
         _notifier.ShowInfo($"{appName}\nVer.{versionString}\n{githubUrl}", "バージョン情報");
     }

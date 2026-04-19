@@ -15,6 +15,7 @@
 
 `deploy-to-c-autotool.ps1` は既定で以下を順番に実行します。
 
+- Git タグ（`vMAJOR.MINOR.PATCH`）の最新値をバージョンとして採用
 - `AutoTool.Bootstrap` を `Release` で publish（`.deploy\AutoTool_publish`）
 - `C:\AutoTool` へ同期コピー（`Macro` / `Settings` は保護）
 - 主要バイナリ（`AutoTool.exe` / `AutoTool.dll` / `AutoTool.Desktop.dll`）のハッシュ一致確認
@@ -41,6 +42,15 @@
 
 ```powershell
 dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -o .\.deploy\AutoTool_publish
+```
+
+注意:
+
+- GitHub を正式バージョンの正とする運用では、手動 publish 時もタグ由来バージョンを明示してください。
+- 例（タグ `v1.0.2` の場合）:
+
+```powershell
+dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -o .\.deploy\AutoTool_publish /p:Version=1.0.2 /p:FileVersion=1.0.2 /p:AssemblyVersion=1.0.2
 ```
 
 ## 5. スクリプトの主な処理
@@ -70,6 +80,7 @@ dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -o .\.d
 
 - 配布前に `dotnet build` / `dotnet test` を実行してから公開する
 - 配布手順は毎回同じスクリプトで実施し、手作業差分をなくす
+- `deploy-to-c-autotool.ps1` 実行時は、最新 `v*` タグ（例: `v1.0.2`）を publish バージョン（`1.0.2`）へ注入する
 
 ## 9. GitHub で ZIP 配布する場合
 
