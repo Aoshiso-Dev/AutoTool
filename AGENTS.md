@@ -33,6 +33,10 @@
 - ビルド完了後、実行に必要な成果物（`exe` / `dll` / 依存ランタイム等）をデプロイ先ディレクトリに配置する。
 - ビルド完了後、成果物は毎回、運用で定めた指定の配布先ディレクトリへコピーする。
 - 指定の配布先ディレクトリは `C:\AutoTool` とし、ビルド完了後は毎回ここへ成果物をコピーする。
+- デプロイは `deploy-to-c-autotool.ps1` を正規手順とし、手動コピーは行わない。
+- デプロイ系処理（publish → copy → 検証）は並列実行せず、必ず直列実行する。
+- `deploy-to-c-autotool.ps1` は既定で publish を実行して `.deploy\AutoTool_publish` を最新化してからコピーする。
+- `-SkipPublish` は配布元が最新であることを確認できる場合のみ使用する。
 - コピー対象は実行に必要な成果物のみに限定し、過不足がないことを確認する。
 - 設定ファイルはデプロイ先の `Settings` 配下（例: `Settings\appsettings.json`）に配置する。
 - デプロイ時はユーザーデータ領域と設定領域を除外保護し、既存データを削除しない。
@@ -43,6 +47,7 @@
 - ロケール配下ディレクトリ（例: `cs` / `de` / `fr` など）は空ディレクトリを残さない。空であることを確認して削除する。
 - 64bit 運用時は `x86` 配下を配置しない。既存配置に `x86` が残っている場合は削除する。
 - 配置後は最低限、メイン実行ファイルの存在、設定ファイルの存在、ユーザーデータ保持件数を確認する。
+- 配置後は `AutoTool.exe` / `AutoTool.dll` / `AutoTool.Desktop.dll` のハッシュ一致を確認し、不一致は失敗として扱う。
 
 ## Architecture Policy (Clean Architecture / DDD)
 
@@ -57,6 +62,9 @@
 - Repository は Aggregate 永続化のための抽象として定義し、クエリ最適化は必要に応じて読み取りモデルを分離する。
 - テストは Domain / Application を優先し、インフラ詳細に依存しない形で主要ユースケースの回帰を防ぐ。
 - 既存構造との整合性を尊重し、一括変更ではなく段階的に適用する。
+- `Application` / `Domain` から `System.Windows` / `Microsoft.Win32` / `AutoTool.Desktop` への参照を持ち込まない。
+- `DllImport` / `LibraryImport` は `Infrastructure` に限定し、他層で直接利用しない。
+- WPF 固有の UI アダプタ（ダイアログ、ファイルピッカー、Dispatcher など）は `Desktop` に配置し、`Infrastructure` へ残さない。
 
 ## Dependency Injection Policy
 

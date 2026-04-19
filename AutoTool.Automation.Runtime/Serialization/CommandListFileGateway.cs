@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.IO;
 using AutoTool.Application.Ports;
 using AutoTool.Automation.Contracts.Lists;

@@ -590,7 +590,8 @@ public class FileManagerTests
             saveAction ?? (_ => { }),
             loadAction ?? (_ => { }),
             picker,
-            store);
+            store,
+            new FakeFileSystemPathService());
     }
 
     private sealed class FakeFilePicker : IFilePicker
@@ -614,6 +615,13 @@ public class FileManagerTests
             SaveCalled = true;
             Files = files;
         }
+    }
+
+    private sealed class FakeFileSystemPathService : IFileSystemPathService
+    {
+        public bool FileExists(string filePath) => File.Exists(filePath);
+
+        public string GetFileName(string filePath) => Path.GetFileName(filePath);
     }
 }
 

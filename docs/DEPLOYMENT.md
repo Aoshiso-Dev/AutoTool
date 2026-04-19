@@ -11,23 +11,39 @@
 - ユーザーデータ（`Macro`）と既存設定は保護する
 - 不要成果物（`*.pdb`、`*.lib`、`x86` など）は削除する
 
-## 3. 発行（publish）
+## 3. 配置スクリプト実行（推奨）
+
+`deploy-to-c-autotool.ps1` は既定で以下を順番に実行します。
+
+- `AutoTool.Bootstrap` を `Release` で publish（`.deploy\AutoTool_publish`）
+- `C:\AutoTool` へ同期コピー（`Macro` / `Settings` は保護）
+- 主要バイナリ（`AutoTool.exe` / `AutoTool.dll` / `AutoTool.Desktop.dll`）のハッシュ一致確認
+
+```powershell
+.\deploy-to-c-autotool.ps1 -Destination C:\AutoTool
+```
+
+必要に応じて publish 対象や構成を指定できます。
+
+```powershell
+.\deploy-to-c-autotool.ps1 -Project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -Configuration Release -Source .\.deploy\AutoTool_publish -Destination C:\AutoTool
+```
+
+すでに最新 publish 済みで、コピーだけ実行したい場合:
+
+```powershell
+.\deploy-to-c-autotool.ps1 -SkipPublish -Source .\.deploy\AutoTool_publish -Destination C:\AutoTool
+```
+
+## 4. 手動で publish する場合
 
 例:
 
 ```powershell
-dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -r win-x64 --self-contained false -o .\.deploy\AutoTool_publish
+dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -o .\.deploy\AutoTool_publish
 ```
 
-## 4. 配置スクリプト実行
-
-`deploy-to-c-autotool.ps1` を使って配布先を更新します。
-
-```powershell
-.\deploy-to-c-autotool.ps1 -Source .\.deploy\AutoTool_publish -Destination C:\AutoTool
-```
-
-スクリプトの主な処理:
+## 5. スクリプトの主な処理
 
 - `robocopy /MIR` で成果物を同期（`Macro` と `Settings` は除外）
 - 初回のみ `Settings\appsettings.json` を投入
@@ -35,25 +51,27 @@ dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -r win-
 - `x86` ディレクトリを削除
 - 空のロケールディレクトリを削除
 - メイン EXE / 設定ファイル / ユーザーデータ件数を検証
+- 主要バイナリのハッシュ一致を検証（未一致時は上書き再試行）
 
-## 5. 配置後チェック
+## 6. 配置後チェック
 
 - 配布先にメイン EXE がある
 - 配布先に `Settings\appsettings.json` がある
 - `Macro` 配下の既存データ件数が保持されている
 
-## 6. 失敗時の確認
+## 7. 失敗時の確認
 
-- publish 出力フォルダが存在するか
+- publish 出力フォルダが最新か（必要に応じて `-SkipPublish` を外す）
 - 配布先ディレクトリ権限があるか
 - `robocopy` の終了コードが 8 以上になっていないか
+- 実行中の `AutoTool.exe` がファイルをロックしていないか
 
-## 7. 運用メモ
+## 8. 運用メモ
 
 - 配布前に `dotnet build` / `dotnet test` を実行してから公開する
 - 配布手順は毎回同じスクリプトで実施し、手作業差分をなくす
 
-## 8. GitHub で ZIP 配布する場合
+## 9. GitHub で ZIP 配布する場合
 
 `SR1CTRL` と同様に GitHub Releases で ZIP 配布する場合は、`.github/workflows/release-zip.yml` を利用します。
 

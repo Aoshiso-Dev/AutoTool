@@ -15,6 +15,7 @@ public interface IListPanelViewModel
 
     event Action<ICommandListItem?>? SelectedItemChanged;
     event Action<ICommandListItem?>? ItemDoubleClicked;
+    event Action? InteractionRequested;
 
     void Prepare();
     void SetRunningState(bool isRunning);
@@ -38,6 +39,7 @@ public interface IListPanelViewModel
     void SetSelectedItem(ICommandListItem? item);
     void SetSelectedLineNumber(int lineNumber);
     void SetValidationErrorItems(IEnumerable<ICommandListItem> items);
+    void NotifyInteraction();
 }
 
 public interface IEditPanelViewModel

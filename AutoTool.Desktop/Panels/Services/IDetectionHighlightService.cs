@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace AutoTool.Desktop.Panels.Services;
 

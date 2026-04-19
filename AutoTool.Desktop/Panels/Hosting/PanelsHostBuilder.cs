@@ -5,6 +5,7 @@ using AutoTool.Infrastructure.DependencyInjection;
 using AutoTool.Infrastructure.Implementations;
 using AutoTool.Desktop.Panels.Services;
 using AutoTool.Desktop.Panels.ViewModel;
+using AutoTool.Desktop.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

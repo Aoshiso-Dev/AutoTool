@@ -1,7 +1,9 @@
 ﻿using AutoTool.Application.Ports;
-using AutoTool.Infrastructure.Implementations;
 using AutoTool.Desktop.Panels.Hosting;
+using AutoTool.Desktop.Services;
+using AutoTool.Desktop.Ui;
 using AutoTool.Desktop.ViewModel;
+using AutoTool.Infrastructure.Implementations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -35,8 +37,10 @@ public static class AutoToolServiceExtensions
         services.AddSingleton(TimeProvider.System);
 
         services.AddSingleton<AutoTool.Commands.Services.INotifier, WpfNotifier>();
+        services.AddSingleton<IAppDialogService, WpfAppDialogService>();
         services.AddSingleton<IStatusMessageScheduler, DispatcherStatusMessageScheduler>();
         services.AddSingleton<IFilePicker, WpfFilePicker>();
+        services.AddSingleton<IFileSystemPathService, FileSystemPathService>();
         services.AddSingleton<IRecentFileStore, XmlRecentFileStore>();
         services.AddSingleton<IFavoriteMacroStore, XmlFavoriteMacroStore>();
         services.AddSingleton<IUiStatePreferenceStore, JsonUiStatePreferenceStore>();

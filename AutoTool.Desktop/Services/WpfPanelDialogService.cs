@@ -1,7 +1,7 @@
-﻿using AutoTool.Application.Ports;
+using AutoTool.Application.Ports;
 using Microsoft.Win32;
 
-namespace AutoTool.Infrastructure.Implementations;
+namespace AutoTool.Desktop.Services;
 
 public sealed class WpfPanelDialogService : IPanelDialogService
 {

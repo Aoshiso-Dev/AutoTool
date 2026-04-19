@@ -207,7 +207,8 @@ public class FileManagerRegressionTests
             _ => { },
             _ => { },
             picker,
-            store);
+            store,
+            new TestFileSystemPathService());
     }
 
     private sealed class TestFilePicker : IFilePicker
@@ -226,5 +227,12 @@ public class FileManagerRegressionTests
         {
             Files = files;
         }
+    }
+
+    private sealed class TestFileSystemPathService : IFileSystemPathService
+    {
+        public bool FileExists(string filePath) => File.Exists(filePath);
+
+        public string GetFileName(string filePath) => Path.GetFileName(filePath);
     }
 }

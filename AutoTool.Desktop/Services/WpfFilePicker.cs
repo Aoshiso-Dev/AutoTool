@@ -1,7 +1,7 @@
-﻿using AutoTool.Application.Ports;
+using AutoTool.Application.Ports;
 using Microsoft.Win32;
 
-namespace AutoTool.Infrastructure.Implementations;
+namespace AutoTool.Desktop.Services;
 
 public class WpfFilePicker : IFilePicker
 {
@@ -35,4 +35,3 @@ public class WpfFilePicker : IFilePicker
         return result == true && !string.IsNullOrEmpty(dialog.FileName) ? dialog.FileName : null;
     }
 }
-

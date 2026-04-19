@@ -3,7 +3,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                     xmlns:editors="clr-namespace:AutoTool.Desktop.Panels.View.Editors"
-                    xmlns:attrs="clr-namespace:AutoTool.Automation.Runtime.Attributes;assembly=AutoTool.Infrastructure"
+                    xmlns:attrs="clr-namespace:AutoTool.Automation.Runtime.Attributes"
                     xmlns:converter="clr-namespace:AutoTool.Desktop.Panels.View.Converter">
 
     <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
@@ -428,6 +428,8 @@
                                     DefaultTemplate="{StaticResource DefaultEditorTemplate}"/>
 
 </ResourceDictionary>
+
+
 
 
 

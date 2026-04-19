@@ -1,4 +1,4 @@
-using AutoTool.Application.Ports;
+﻿using AutoTool.Application.Ports;
 using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Application.Files;

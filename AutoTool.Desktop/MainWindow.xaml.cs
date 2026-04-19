@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -9,7 +8,6 @@ using AutoTool.Commands.Infrastructure;
 using AutoTool.Desktop.Model;
 using AutoTool.Desktop.Panels.ViewModel;
 using AutoTool.Desktop.View;
-using AutoTool.Infrastructure.Ui;
 using Wpf.Ui.Controls;
 
 namespace AutoTool.Desktop;
@@ -26,6 +24,7 @@ public partial class MainWindow : FluentWindow
     private readonly WindowSettings _windowSettings;
     private readonly MainWindowViewModel _viewModel;
     private readonly IUiStatePreferenceStore _uiStatePreferenceStore;
+    private readonly IAppDialogService _appDialogService;
     private bool _restorePreviousSession;
     private bool _isCommandListSelectAllPending;
     private bool _isEmergencyStopTriggered;
@@ -34,21 +33,21 @@ public partial class MainWindow : FluentWindow
     private long? _lastEscapePressedObservedAtTimestamp;
     private CancellationTokenSource? _emergencyStopPollCts;
 
-    [DllImport("user32.dll", EntryPoint = "GetAsyncKeyState")]
-    private static extern short NativeGetAsyncKeyState(int vKey);
-
     public MainWindow(
         MainWindowViewModel viewModel,
         TimeProvider timeProvider,
-        IUiStatePreferenceStore uiStatePreferenceStore)
+        IUiStatePreferenceStore uiStatePreferenceStore,
+        IAppDialogService appDialogService)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(uiStatePreferenceStore);
+        ArgumentNullException.ThrowIfNull(appDialogService);
 
         InitializeComponent();
         _viewModel = viewModel;
         _uiStatePreferenceStore = uiStatePreferenceStore;
+        _appDialogService = appDialogService;
         DataContext = _viewModel;
         _restorePreviousSession = _uiStatePreferenceStore.LoadRestorePreviousSession();
 
@@ -101,7 +100,7 @@ public partial class MainWindow : FluentWindow
             return true;
         }
 
-        var result = AutoToolDialog.Show(
+        var result = _appDialogService.Show(
             "未保存の変更",
             "未保存の変更があります。このまま閉じると変更内容は失われます。閉じますか？",
             [
@@ -109,7 +108,7 @@ public partial class MainWindow : FluentWindow
                 new("discard", "保存せず閉じる"),
                 new("cancel", "キャンセル", IsCancel: true)
             ],
-            AutoToolDialogTone.Warning,
+            AppDialogTone.Warning,
             this);
 
         switch (result)
@@ -338,7 +337,7 @@ public partial class MainWindow : FluentWindow
 
     private void Win32KeyboardHookHelper_KeyChanged(object? sender, Win32KeyboardHookHelper.KeyboardHookEventArgs e)
     {
-        if (e.Key != Key.Escape)
+        if (e.VirtualKey != VkEscape)
         {
             return;
         }
@@ -381,7 +380,7 @@ public partial class MainWindow : FluentWindow
             _ = Dispatcher.BeginInvoke(() =>
             {
                 var now = Stopwatch.GetTimestamp();
-                var isEscapePressed = (NativeGetAsyncKeyState(VkEscape) & 0x8000) != 0 || _isEscapeKeyDownByHook;
+                var isEscapePressed = Win32KeyStateHelper.IsKeyPressed(VkEscape) || _isEscapeKeyDownByHook;
                 HandleEmergencyStopPressState(isEscapePressed, now);
             });
         }

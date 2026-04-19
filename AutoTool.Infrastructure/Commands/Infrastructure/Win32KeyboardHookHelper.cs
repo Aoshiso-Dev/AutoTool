@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Windows.Input;
 
 namespace AutoTool.Commands.Infrastructure;
 
@@ -42,9 +41,9 @@ public static partial class Win32KeyboardHookHelper
     private static IntPtr _hookId = IntPtr.Zero;
     private static int _hookUserCount;
 
-    public sealed class KeyboardHookEventArgs(Key key, bool isKeyDown) : EventArgs
+    public sealed class KeyboardHookEventArgs(int virtualKey, bool isKeyDown) : EventArgs
     {
-        public Key Key { get; } = key;
+        public int VirtualKey { get; } = virtualKey;
         public bool IsKeyDown { get; } = isKeyDown;
     }
 
@@ -115,9 +114,9 @@ public static partial class Win32KeyboardHookHelper
             if (message is WmKeyDown or WmKeyUp or WmSysKeyDown or WmSysKeyUp)
             {
                 var hookStruct = Marshal.PtrToStructure<KbdLlHookStruct>(lParam);
-                var key = KeyInterop.KeyFromVirtualKey((int)hookStruct.VkCode);
+                var virtualKey = (int)hookStruct.VkCode;
                 var isKeyDown = message is WmKeyDown or WmSysKeyDown;
-                KeyChanged?.Invoke(null, new KeyboardHookEventArgs(key, isKeyDown));
+                KeyChanged?.Invoke(null, new KeyboardHookEventArgs(virtualKey, isKeyDown));
             }
         }
 

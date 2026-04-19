@@ -1,9 +1,7 @@
-﻿using System;
-using System.Threading;
-using System.Windows.Threading;
 using AutoTool.Application.Ports;
+using System.Windows.Threading;
 
-namespace AutoTool.Infrastructure.Implementations;
+namespace AutoTool.Desktop.Services;
 
 public class DispatcherStatusMessageScheduler : IStatusMessageScheduler
 {

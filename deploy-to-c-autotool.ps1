@@ -1,17 +1,101 @@
 ﻿param(
     [string]$Source = ".deploy\AutoTool_publish",
-    [string]$Destination = "C:\AutoTool"
+    [string]$Destination = "C:\AutoTool",
+    [string]$Project = ".\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj",
+    [string]$Configuration = "Release",
+    [switch]$SkipPublish
 )
 
 $ErrorActionPreference = "Stop"
 
-$root = Get-Location
-$sourcePath = if ([System.IO.Path]::IsPathRooted($Source)) { $Source } else { Join-Path $root $Source }
-$sourcePath = (Resolve-Path -LiteralPath $sourcePath).Path
+function Resolve-AbsolutePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [string]$BaseDirectory
+    )
+
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        return $Path
+    }
+
+    return Join-Path $BaseDirectory $Path
+}
+
+function Invoke-Publish {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectPath,
+        [Parameter(Mandatory = $true)]
+        [string]$Configuration,
+        [Parameter(Mandatory = $true)]
+        [string]$OutputPath
+    )
+
+    Write-Host "publish を実行します: project=$ProjectPath, configuration=$Configuration, output=$OutputPath"
+    dotnet publish $ProjectPath -c $Configuration -o $OutputPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "publish が失敗しました。終了コード: $LASTEXITCODE"
+    }
+}
+
+function Get-FileHashSafe {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+}
+
+function Ensure-FileHashMatched {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourceFile,
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationFile
+    )
+
+    if (-not (Test-Path -LiteralPath $DestinationFile)) {
+        throw "配置先ファイルが見つかりません: $DestinationFile"
+    }
+
+    $sourceHash = Get-FileHashSafe -Path $SourceFile
+    $destinationHash = Get-FileHashSafe -Path $DestinationFile
+    if ($sourceHash -eq $destinationHash) {
+        return
+    }
+
+    # robocopy 後も差分が残る場合の保険。ロック中だとここも失敗する。
+    Copy-Item -LiteralPath $SourceFile -Destination $DestinationFile -Force
+
+    $destinationHash = Get-FileHashSafe -Path $DestinationFile
+    if ($sourceHash -ne $destinationHash) {
+        throw "配置後ハッシュ不一致: $DestinationFile。実行中プロセスのロックを確認してください。"
+    }
+}
+
+$root = (Get-Location).Path
+$sourcePath = Resolve-AbsolutePath -Path $Source -BaseDirectory $root
+$projectPath = Resolve-AbsolutePath -Path $Project -BaseDirectory $root
+
+if (-not $SkipPublish) {
+    if (-not (Test-Path -LiteralPath $projectPath)) {
+        throw "publish 対象プロジェクトが見つかりません: $projectPath"
+    }
+
+    if (-not (Test-Path -LiteralPath $sourcePath)) {
+        New-Item -ItemType Directory -Path $sourcePath -Force | Out-Null
+    }
+
+    Invoke-Publish -ProjectPath $projectPath -Configuration $Configuration -OutputPath $sourcePath
+}
 
 if (-not (Test-Path -LiteralPath $sourcePath)) {
     throw "発行済み成果物が見つかりません: $sourcePath"
 }
+$sourcePath = (Resolve-Path -LiteralPath $sourcePath).Path
 
 if (-not (Test-Path -LiteralPath $Destination)) {
     New-Item -ItemType Directory -Path $Destination | Out-Null
@@ -19,7 +103,10 @@ if (-not (Test-Path -LiteralPath $Destination)) {
 $destinationPath = (Resolve-Path -LiteralPath $Destination).Path
 
 # Destructive sync (/MIR) の前に、入力成果物の最低限を検証する。
-$sourceMainExe = Get-ChildItem -LiteralPath $sourcePath -File -Filter *.exe | Select-Object -First 1
+$sourceMainExe = Get-ChildItem -LiteralPath $sourcePath -File -Filter *.exe | Where-Object { $_.Name -eq 'AutoTool.exe' } | Select-Object -First 1
+if ($null -eq $sourceMainExe) {
+    $sourceMainExe = Get-ChildItem -LiteralPath $sourcePath -File -Filter *.exe | Select-Object -First 1
+}
 if ($null -eq $sourceMainExe) {
     throw "ソースに実行ファイルが見つかりません: $sourcePath"
 }
@@ -45,7 +132,7 @@ if (-not (Test-Path -LiteralPath $destinationSettingsDir)) {
 }
 
 $destinationSettingsFile = Join-Path $destinationSettingsDir "appsettings.json"
-$sourceSettingsFile = Join-Path $sourcePath "Settings\\appsettings.json"
+$sourceSettingsFile = Join-Path $sourcePath "Settings\appsettings.json"
 if (-not (Test-Path -LiteralPath $destinationSettingsFile) -and (Test-Path -LiteralPath $sourceSettingsFile)) {
     Copy-Item -LiteralPath $sourceSettingsFile -Destination $destinationSettingsFile -Force
 }
@@ -54,8 +141,8 @@ if (-not (Test-Path -LiteralPath $destinationSettingsFile) -and (Test-Path -Lite
 Get-ChildItem -LiteralPath $destinationPath -Recurse -File |
     Where-Object { $_.Extension -in ".pdb", ".lib" } |
     ForEach-Object {
-    Remove-Item -LiteralPath $_.FullName -Force
-}
+        Remove-Item -LiteralPath $_.FullName -Force
+    }
 
 $x86Dir = Join-Path $destinationPath "x86"
 if (Test-Path -LiteralPath $x86Dir) {
@@ -81,6 +168,18 @@ if (-not (Test-Path -LiteralPath $destinationMainExe)) {
 
 if (-not (Test-Path -LiteralPath $destinationSettingsFile)) {
     throw "デプロイ後に設定ファイルが見つかりません: $destinationSettingsFile"
+}
+
+# Ensure critical binaries are really updated.
+$criticalFiles = @($sourceMainExe.Name, 'AutoTool.dll', 'AutoTool.Desktop.dll')
+foreach ($name in $criticalFiles) {
+    $sourceFile = Join-Path $sourcePath $name
+    if (-not (Test-Path -LiteralPath $sourceFile)) {
+        continue
+    }
+
+    $destinationFile = Join-Path $destinationPath $name
+    Ensure-FileHashMatched -SourceFile $sourceFile -DestinationFile $destinationFile
 }
 
 $userDataCountAfter = if (Test-Path -LiteralPath $macroDir) {

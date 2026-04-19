@@ -17,6 +17,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     // イベント
     public event Action<ICommandListItem?>? SelectedItemChanged;
     public event Action<ICommandListItem?>? ItemDoubleClicked;
+    public event Action? InteractionRequested;
 
     #region Properties
     [ObservableProperty]
@@ -444,6 +445,11 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
                 .Where(static x => x is not null)
                 .Distinct()
         ];
+    }
+
+    public void NotifyInteraction()
+    {
+        InteractionRequested?.Invoke();
     }
 
     public void Prepare()

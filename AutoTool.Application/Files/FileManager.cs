@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.ObjectModel;
-using System.IO;
 using AutoTool.Application.Ports;
 
 namespace AutoTool.Application.Files;
@@ -30,6 +29,7 @@ public partial class FileManager : ObservableObject
     private readonly Action<string> _loadFunc;
     private readonly IFilePicker _filePicker;
     private readonly IRecentFileStore _recentFileStore;
+    private readonly IFileSystemPathService _fileSystemPathService;
 
     [ObservableProperty]
     private bool _isFileOpened;
@@ -48,18 +48,21 @@ public partial class FileManager : ObservableObject
         Action<string> saveFunc,
         Action<string> loadFunc,
         IFilePicker filePicker,
-        IRecentFileStore recentFileStore)
+        IRecentFileStore recentFileStore,
+        IFileSystemPathService fileSystemPathService)
     {
         ArgumentNullException.ThrowIfNull(fileTypeInfo);
         ArgumentNullException.ThrowIfNull(saveFunc);
         ArgumentNullException.ThrowIfNull(loadFunc);
         ArgumentNullException.ThrowIfNull(filePicker);
         ArgumentNullException.ThrowIfNull(recentFileStore);
+        ArgumentNullException.ThrowIfNull(fileSystemPathService);
         _fileTypeInfo = fileTypeInfo;
         _saveFunc = saveFunc;
         _loadFunc = loadFunc;
         _filePicker = filePicker;
         _recentFileStore = recentFileStore;
+        _fileSystemPathService = fileSystemPathService;
 
         LoadRecentFiles();
     }
@@ -75,7 +78,7 @@ public partial class FileManager : ObservableObject
             }
         }
 
-        if (!File.Exists(filePath))
+        if (!_fileSystemPathService.FileExists(filePath))
         {
             RemoveFromRecentFiles(filePath);
             return false;
@@ -85,7 +88,7 @@ public partial class FileManager : ObservableObject
         AddToRecentFiles(filePath);
 
         CurrentFilePath = filePath;
-        CurrentFileName = Path.GetFileName(filePath);
+        CurrentFileName = _fileSystemPathService.GetFileName(filePath);
         IsFileOpened = true;
         return true;
     }
@@ -110,7 +113,7 @@ public partial class FileManager : ObservableObject
         AddToRecentFiles(filePath);
 
         CurrentFilePath = filePath;
-        CurrentFileName = Path.GetFileName(filePath);
+        CurrentFileName = _fileSystemPathService.GetFileName(filePath);
         IsFileOpened = true;
         return true;
     }
@@ -150,7 +153,7 @@ public partial class FileManager : ObservableObject
 
         RecentFiles?.Insert(0, new RecentFileEntry
         {
-            FileName = Path.GetFileName(filePath),
+            FileName = _fileSystemPathService.GetFileName(filePath),
             FilePath = filePath
         });
 

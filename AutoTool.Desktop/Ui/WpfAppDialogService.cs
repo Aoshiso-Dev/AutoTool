@@ -1,27 +1,18 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using AutoTool.Application.Ports;
 
-namespace AutoTool.Infrastructure.Ui;
+namespace AutoTool.Desktop.Ui;
 
-public enum AutoToolDialogTone
+public sealed class WpfAppDialogService : IAppDialogService
 {
-    Info,
-    Warning,
-    Error,
-    Question
-}
-
-public sealed record AutoToolDialogAction(string Id, string Label, bool IsDefault = false, bool IsCancel = false);
-
-public static class AutoToolDialog
-{
-    public static string? Show(
+    public string? Show(
         string title,
         string message,
-        IReadOnlyList<AutoToolDialogAction> actions,
-        AutoToolDialogTone tone = AutoToolDialogTone.Info,
-        Window? owner = null)
+        IReadOnlyList<AppDialogAction> actions,
+        AppDialogTone tone = AppDialogTone.Info,
+        object? owner = null)
     {
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(message);
@@ -40,17 +31,17 @@ public static class AutoToolDialog
 
         if (app.Dispatcher.CheckAccess())
         {
-            return ShowInternal(title, message, actions, tone, owner);
+            return ShowInternal(title, message, actions, tone, owner as Window);
         }
 
-        return app.Dispatcher.Invoke(() => ShowInternal(title, message, actions, tone, owner));
+        return app.Dispatcher.Invoke(() => ShowInternal(title, message, actions, tone, owner as Window));
     }
 
     private static string? ShowInternal(
         string title,
         string message,
-        IReadOnlyList<AutoToolDialogAction> actions,
-        AutoToolDialogTone tone,
+        IReadOnlyList<AppDialogAction> actions,
+        AppDialogTone tone,
         Window? owner)
     {
         string? selectedActionId = null;
@@ -217,12 +208,12 @@ public static class AutoToolDialog
         return selectedActionId;
     }
 
-    private static Color GetToneColor(AutoToolDialogTone tone) => tone switch
+    private static Color GetToneColor(AppDialogTone tone) => tone switch
     {
-        AutoToolDialogTone.Info => Color.FromRgb(112, 147, 255),
-        AutoToolDialogTone.Warning => Color.FromRgb(232, 173, 68),
-        AutoToolDialogTone.Error => Color.FromRgb(214, 92, 92),
-        AutoToolDialogTone.Question => Color.FromRgb(124, 186, 114),
+        AppDialogTone.Info => Color.FromRgb(112, 147, 255),
+        AppDialogTone.Warning => Color.FromRgb(232, 173, 68),
+        AppDialogTone.Error => Color.FromRgb(214, 92, 92),
+        AppDialogTone.Question => Color.FromRgb(124, 186, 114),
         _ => Color.FromRgb(112, 147, 255)
     };
 }

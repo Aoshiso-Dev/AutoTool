@@ -23,6 +23,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IStatusMessageScheduler _statusMessageScheduler;
     private readonly IFilePicker _filePicker;
     private readonly IRecentFileStore _recentFileStore;
+    private readonly IFileSystemPathService _fileSystemPathService;
     private EventHandler? _commandHistoryChangedHandler;
     private bool _lastKnownIsRunning;
     private bool _isDirtyTrackingSuspended;
@@ -101,18 +102,21 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IStatusMessageScheduler statusMessageScheduler,
         IFilePicker filePicker,
         IRecentFileStore recentFileStore,
+        IFileSystemPathService fileSystemPathService,
         MacroPanelViewModel macroPanelViewModel)
     {
         ArgumentNullException.ThrowIfNull(notifier);
         ArgumentNullException.ThrowIfNull(statusMessageScheduler);
         ArgumentNullException.ThrowIfNull(filePicker);
         ArgumentNullException.ThrowIfNull(recentFileStore);
+        ArgumentNullException.ThrowIfNull(fileSystemPathService);
         ArgumentNullException.ThrowIfNull(macroPanelViewModel);
 
         _notifier = notifier;
         _statusMessageScheduler = statusMessageScheduler;
         _filePicker = filePicker;
         _recentFileStore = recentFileStore;
+        _fileSystemPathService = fileSystemPathService;
         MacroPanelViewModel = macroPanelViewModel;
 
         InitializeFileManager();
@@ -197,7 +201,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                 filePath => MacroPanelViewModel.SaveMacroFile(filePath),
                 filePath => MacroPanelViewModel.LoadMacroFile(filePath),
                 _filePicker,
-                _recentFileStore
+                _recentFileStore,
+                _fileSystemPathService
             )
         );
     }

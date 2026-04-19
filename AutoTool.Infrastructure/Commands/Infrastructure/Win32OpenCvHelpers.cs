@@ -31,10 +31,10 @@ public static class Win32ScreenCaptureHelper
         image.SaveImage(filePath);
     }
 
-    public static Mat CaptureRegion(System.Windows.Rect region)
+    public static Mat CaptureRegion(double x, double y, double width, double height)
     {
         using var bitmap = Win32CaptureCore.CaptureDesktopRegion(
-            new Rectangle((int)region.X, (int)region.Y, (int)region.Width, (int)region.Height));
+            new Rectangle((int)x, (int)y, (int)width, (int)height));
         return BitmapConverter.ToMat(bitmap);
     }
 }

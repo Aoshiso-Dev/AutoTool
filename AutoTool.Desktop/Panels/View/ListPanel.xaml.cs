@@ -46,6 +46,12 @@ public partial class ListPanel : UserControl
         CommandDataGrid.SelectionChanged += DataGrid_SelectionChanged;
         CommandDataGrid.MouseDoubleClick -= DataGrid_MouseDoubleClick;
         CommandDataGrid.MouseDoubleClick += DataGrid_MouseDoubleClick;
+        CommandDataGrid.PreviewMouseDown -= DataGrid_PreviewInteraction;
+        CommandDataGrid.PreviewMouseDown += DataGrid_PreviewInteraction;
+        CommandDataGrid.PreviewMouseWheel -= DataGrid_PreviewInteraction;
+        CommandDataGrid.PreviewMouseWheel += DataGrid_PreviewInteraction;
+        CommandDataGrid.PreviewKeyDown -= DataGrid_PreviewInteraction;
+        CommandDataGrid.PreviewKeyDown += DataGrid_PreviewInteraction;
 
         _ownerWindow ??= Window.GetWindow(this);
         if (_ownerWindow is not null)
@@ -68,6 +74,9 @@ public partial class ListPanel : UserControl
 
         CommandDataGrid.SelectionChanged -= DataGrid_SelectionChanged;
         CommandDataGrid.MouseDoubleClick -= DataGrid_MouseDoubleClick;
+        CommandDataGrid.PreviewMouseDown -= DataGrid_PreviewInteraction;
+        CommandDataGrid.PreviewMouseWheel -= DataGrid_PreviewInteraction;
+        CommandDataGrid.PreviewKeyDown -= DataGrid_PreviewInteraction;
 
         if (_ownerWindow is not null)
         {
@@ -207,6 +216,14 @@ public partial class ListPanel : UserControl
             }
 
             element = VisualTreeHelper.GetParent(element);
+        }
+    }
+
+    private void DataGrid_PreviewInteraction(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ListPanelViewModel viewModel)
+        {
+            viewModel.NotifyInteraction();
         }
     }
 

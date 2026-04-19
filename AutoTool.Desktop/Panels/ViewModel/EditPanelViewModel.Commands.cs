@@ -67,7 +67,7 @@ public partial class EditPanelViewModel
         if (cw.ShowDialog() == true)
         {
             var path = _capturePathProvider.CreateCaptureFilePath();
-            var mat = Win32ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion);
+            var mat = Win32ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion.X, cw.SelectedRegion.Y, cw.SelectedRegion.Width, cw.SelectedRegion.Height);
             Win32ScreenCaptureHelper.SaveCapture(mat, path);
             ImagePath = path;
         }

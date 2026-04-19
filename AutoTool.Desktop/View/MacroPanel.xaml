@@ -54,12 +54,12 @@
                 </Border>
 
                 <Border HorizontalAlignment="Stretch"
-                        VerticalAlignment="Top"
+                        VerticalAlignment="Bottom"
                         MaxHeight="240"
                         Margin="0,0,0,0"
                         Panel.ZIndex="35">
                     <Border.RenderTransform>
-                        <TranslateTransform Y="-260"/>
+                        <TranslateTransform Y="260"/>
                     </Border.RenderTransform>
                     <Border.Style>
                         <Style TargetType="Border">
@@ -86,7 +86,7 @@
                                         <BeginStoryboard>
                                             <Storyboard>
                                                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                                                 To="-260"
+                                                                 To="260"
                                                                  Duration="0:0:0.18">
                                                     <DoubleAnimation.EasingFunction>
                                                         <CubicEase EasingMode="EaseIn"/>

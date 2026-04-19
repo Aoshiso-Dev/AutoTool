@@ -1,7 +1,7 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Runtime.InteropServices;
+using AutoTool.Commands.Infrastructure;
 using DrawingRectangle = System.Drawing.Rectangle;
 
 namespace AutoTool.Desktop.Panels.Services;
@@ -44,7 +44,7 @@ public sealed class DetectionHighlightService : IDetectionHighlightService
     {
         var centerX = bounds.Left + (bounds.Width / 2);
         var centerY = bounds.Top + (bounds.Height / 2);
-        var (dpiX, dpiY) = GetMonitorDpiAt(centerX, centerY);
+        var (dpiX, dpiY) = Win32DpiHelper.GetMonitorDpiAt(centerX, centerY);
         var scaleX = 96d / dpiX;
         var scaleY = 96d / dpiY;
 
@@ -77,41 +77,4 @@ public sealed class DetectionHighlightService : IDetectionHighlightService
 
         return window;
     }
-
-    private static (double DpiX, double DpiY) GetMonitorDpiAt(int x, int y)
-    {
-        var monitor = MonitorFromPoint(new POINT { X = x, Y = y }, MonitorDefaultToNearest);
-        if (monitor == IntPtr.Zero)
-        {
-            return (96d, 96d);
-        }
-
-        var hr = GetDpiForMonitor(monitor, MonitorDpiType.Effective, out var dpiX, out var dpiY);
-        if (hr != 0 || dpiX == 0 || dpiY == 0)
-        {
-            return (96d, 96d);
-        }
-
-        return (dpiX, dpiY);
-    }
-
-    private const uint MonitorDefaultToNearest = 2;
-
-    private enum MonitorDpiType
-    {
-        Effective = 0
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct POINT
-    {
-        public int X;
-        public int Y;
-    }
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr MonitorFromPoint(POINT pt, uint dwFlags);
-
-    [DllImport("Shcore.dll")]
-    private static extern int GetDpiForMonitor(IntPtr hmonitor, MonitorDpiType dpiType, out uint dpiX, out uint dpiY);
 }
