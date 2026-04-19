@@ -117,6 +117,7 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
     public void Paste() => PasteRequested?.Invoke();
 
     public void SetRunningState(bool isRunning) => IsRunning = isRunning;
+    public void RequestStop() => StopRequested?.Invoke();
 
     public void Prepare() { }
 }

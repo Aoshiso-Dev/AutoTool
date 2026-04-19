@@ -37,6 +37,7 @@ public partial class App : System.Windows.Application
     protected override void OnExit(ExitEventArgs e)
     {
         // グローバルフックが残っていても必ず解除する
+        Win32KeyboardHookHelper.StopHook();
         Win32MouseHookHelper.StopHook();
 
         // UIスレッドの同期コンテキストに依存せず停止処理を完了させる

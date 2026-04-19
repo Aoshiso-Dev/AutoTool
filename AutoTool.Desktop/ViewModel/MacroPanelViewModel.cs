@@ -135,6 +135,18 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         PublishStatusMessage(IsPreflightPanelOpen ? "診断パネルを表示しました。" : "診断パネルを閉じました。");
     }
 
+    [RelayCommand]
+    private void ClosePreflightPanel()
+    {
+        if (!IsPreflightPanelOpen)
+        {
+            return;
+        }
+
+        IsPreflightPanelOpen = false;
+        PublishStatusMessage("診断パネルを閉じました。");
+    }
+
     public void SetCommandHistory(CommandHistoryManager commandHistory)
     {
         _commandHistory = commandHistory;
@@ -207,5 +219,15 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private void RequestNewFileState()
     {
         NewFileStateRequested?.Invoke();
+    }
+
+    private void ClosePreflightPanelForListInteraction()
+    {
+        if (!IsPreflightPanelOpen)
+        {
+            return;
+        }
+
+        IsPreflightPanelOpen = false;
     }
 }

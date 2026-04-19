@@ -69,6 +69,7 @@ public interface IButtonPanelViewModel
 
     void Prepare();
     void SetRunningState(bool isRunning);
+    void RequestStop();
 }
 
 public interface ILogPanelViewModel

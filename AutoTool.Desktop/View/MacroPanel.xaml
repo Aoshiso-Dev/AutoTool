@@ -113,10 +113,27 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Grid.Row="0"
-                                           Text="実行前チェック"
-                                           FontSize="14"
-                                           FontWeight="SemiBold"/>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="実行前チェック"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
+
+                                    <ui:Button Grid.Column="1"
+                                               Command="{Binding ClosePreflightPanelCommand}"
+                                               ToolTip="診断パネルを閉じる"
+                                               Width="28"
+                                               Height="28"
+                                               Padding="0"
+                                               Appearance="Transparent"
+                                               Icon="{ui:SymbolIcon Dismiss24}"/>
+                                </Grid>
 
                                 <TextBlock Grid.Row="1"
                                            Text="{Binding PreflightSummary}"

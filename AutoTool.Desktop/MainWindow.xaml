@@ -12,7 +12,8 @@
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="Mica"
         WindowCornerPreference="Round"
-        PreviewKeyDown="MainWindow_PreviewKeyDown">
+        PreviewKeyDown="MainWindow_PreviewKeyDown"
+        PreviewKeyUp="MainWindow_PreviewKeyUp">
 
     <ui:FluentWindow.Resources>
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
@@ -75,7 +76,7 @@
         </ui:TitleBar>
 
         <!-- メインコンテンツ -->
-        <Grid Grid.Row="1" Margin="0" IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}">
+        <Grid Grid.Row="1" Margin="0">
             <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}"/>
         </Grid>
 

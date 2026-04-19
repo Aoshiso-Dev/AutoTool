@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -16,11 +18,23 @@ namespace AutoTool.Desktop;
 /// </summary>
 public partial class MainWindow : FluentWindow
 {
+    private static readonly TimeSpan EmergencyStopHoldDuration = TimeSpan.FromMilliseconds(1200);
+    private static readonly TimeSpan EmergencyStopPollInterval = TimeSpan.FromMilliseconds(50);
+    private static readonly TimeSpan EmergencyStopReleaseGrace = TimeSpan.FromMilliseconds(220);
+    private const int VkEscape = 0x1B;
     private readonly WindowSettings _windowSettings;
     private readonly MainWindowViewModel _viewModel;
     private readonly IUiStatePreferenceStore _uiStatePreferenceStore;
     private bool _restorePreviousSession;
     private bool _isCommandListSelectAllPending;
+    private bool _isEmergencyStopTriggered;
+    private bool _isEscapeKeyDownByHook;
+    private long? _emergencyStopPressedAtTimestamp;
+    private long? _lastEscapePressedObservedAtTimestamp;
+    private CancellationTokenSource? _emergencyStopPollCts;
+
+    [DllImport("user32.dll", EntryPoint = "GetAsyncKeyState")]
+    private static extern short NativeGetAsyncKeyState(int vKey);
 
     public MainWindow(
         MainWindowViewModel viewModel,
@@ -46,15 +60,20 @@ public partial class MainWindow : FluentWindow
         SourceInitialized += MainWindow_SourceInitialized;
         Closing += MainWindow_Closing;
         Closed += MainWindow_Closed;
+        Deactivated += MainWindow_Deactivated;
     }
 
     private void MainWindow_SourceInitialized(object? sender, EventArgs e)
     {
         _windowSettings.ApplyToWindow(this);
+        Win32KeyboardHookHelper.KeyChanged += Win32KeyboardHookHelper_KeyChanged;
+        Win32KeyboardHookHelper.StartHook();
+        StartEmergencyStopPolling();
     }
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        ResetEmergencyStopState();
         _windowSettings.UpdateFromWindow(this);
         if (_restorePreviousSession)
         {
@@ -90,6 +109,9 @@ public partial class MainWindow : FluentWindow
     private void MainWindow_Closed(object? sender, EventArgs e)
     {
         // 念のためグローバルフックを解除してから明示的に終了
+        StopEmergencyStopPolling();
+        Win32KeyboardHookHelper.KeyChanged -= Win32KeyboardHookHelper_KeyChanged;
+        Win32KeyboardHookHelper.StopHook();
         Win32MouseHookHelper.StopHook();
         System.Windows.Application.Current?.Shutdown();
 
@@ -105,6 +127,13 @@ public partial class MainWindow : FluentWindow
 
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Escape)
+        {
+            _isEscapeKeyDownByHook = true;
+            e.Handled = true;
+            return;
+        }
+
         if (_isCommandListSelectAllPending && e.Key is not Key.Delete)
         {
             SetCommandListSelectAllPending(false);
@@ -170,6 +199,18 @@ public partial class MainWindow : FluentWindow
         e.Handled = true;
     }
 
+    private void MainWindow_PreviewKeyUp(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape)
+        {
+            return;
+        }
+
+        _isEscapeKeyDownByHook = false;
+    }
+
+    private void MainWindow_Deactivated(object? sender, EventArgs e) => ResetEmergencyStopState();
+
     private bool CanHandleMacroKeyboardShortcut()
     {
         if (_viewModel.SelectedTabIndex != TabIndexes.Macro || _viewModel.IsRunning)
@@ -198,5 +239,110 @@ public partial class MainWindow : FluentWindow
         }
 
         return false;
+    }
+
+    private void HandleEmergencyStopPressState(bool isPressed, long nowTimestamp)
+    {
+        if (!_viewModel.MacroPanelViewModel.IsRunning)
+        {
+            ResetEmergencyStopState();
+            return;
+        }
+
+        if (isPressed)
+        {
+            _lastEscapePressedObservedAtTimestamp = nowTimestamp;
+
+            if (_emergencyStopPressedAtTimestamp is null)
+            {
+                _emergencyStopPressedAtTimestamp = nowTimestamp;
+                _viewModel.StatusMessage = $"緊急停止: Esc を {EmergencyStopHoldDuration.TotalSeconds:0.0} 秒長押しで停止します。";
+                return;
+            }
+
+            if (_isEmergencyStopTriggered)
+            {
+                return;
+            }
+
+            var elapsed = Stopwatch.GetElapsedTime(_emergencyStopPressedAtTimestamp.Value, nowTimestamp);
+            if (elapsed >= EmergencyStopHoldDuration)
+            {
+                _isEmergencyStopTriggered = true;
+                _viewModel.MacroPanelViewModel.ButtonPanelViewModel.RequestStop();
+            }
+            return;
+        }
+
+        if (_lastEscapePressedObservedAtTimestamp is null)
+        {
+            ResetEmergencyStopState();
+            return;
+        }
+
+        var releaseElapsed = Stopwatch.GetElapsedTime(_lastEscapePressedObservedAtTimestamp.Value, nowTimestamp);
+        if (releaseElapsed >= EmergencyStopReleaseGrace)
+        {
+            ResetEmergencyStopState();
+        }
+    }
+
+    private void ResetEmergencyStopState()
+    {
+        _isEscapeKeyDownByHook = false;
+        _emergencyStopPressedAtTimestamp = null;
+        _lastEscapePressedObservedAtTimestamp = null;
+        _isEmergencyStopTriggered = false;
+    }
+
+    private void Win32KeyboardHookHelper_KeyChanged(object? sender, Win32KeyboardHookHelper.KeyboardHookEventArgs e)
+    {
+        if (e.Key != Key.Escape)
+        {
+            return;
+        }
+
+        _ = Dispatcher.BeginInvoke(() =>
+        {
+            _isEscapeKeyDownByHook = e.IsKeyDown;
+            HandleEmergencyStopPressState(e.IsKeyDown, Stopwatch.GetTimestamp());
+        });
+    }
+
+    private void StartEmergencyStopPolling()
+    {
+        _emergencyStopPollCts?.Cancel();
+        _emergencyStopPollCts?.Dispose();
+        _emergencyStopPollCts = new();
+        _ = PollEmergencyStopKeyAsync(_emergencyStopPollCts.Token);
+    }
+
+    private void StopEmergencyStopPolling()
+    {
+        _emergencyStopPollCts?.Cancel();
+        _emergencyStopPollCts?.Dispose();
+        _emergencyStopPollCts = null;
+    }
+
+    private async Task PollEmergencyStopKeyAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(EmergencyStopPollInterval, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                var now = Stopwatch.GetTimestamp();
+                var isEscapePressed = (NativeGetAsyncKeyState(VkEscape) & 0x8000) != 0 || _isEscapeKeyDownByHook;
+                HandleEmergencyStopPressState(isEscapePressed, now);
+            });
+        }
     }
 }

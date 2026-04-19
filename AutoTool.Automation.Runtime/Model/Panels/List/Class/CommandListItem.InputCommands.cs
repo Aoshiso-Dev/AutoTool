@@ -171,6 +171,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         
     public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             await context.ClickAsync(X, Y, Button, WindowTitle, WindowClassName, HoldDurationMs, ClickInjectionMode, SimulateMouseMove).ConfigureAwait(false);
             
             var targetDescription = string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName)
@@ -208,21 +209,31 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
         
     public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        try
         {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            
             while (stopwatch.ElapsedMilliseconds < Wait)
             {
-                if (cancellationToken.IsCancellationRequested) return false;
-                
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
+
                 var progress = Wait > 0 ? (int)((stopwatch.ElapsedMilliseconds * 100) / Wait) : 100;
                 context.ReportProgress(Math.Clamp(progress, 0, 100));
-                
+
                 await Task.Delay(100, cancellationToken).ConfigureAwait(false);
             }
-            
-            context.Log("待機完了");
-            return true;
         }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+
+        context.Log("待機完了");
+        return true;
     }
+}
 

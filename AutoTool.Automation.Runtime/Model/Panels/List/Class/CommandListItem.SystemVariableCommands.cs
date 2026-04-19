@@ -526,6 +526,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         
         public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var absoluteModelPath = context.ToAbsolutePath(ModelPath);
             context.InitializeAIModel(absoluteModelPath, 640, true);
 
@@ -538,6 +539,7 @@ namespace AutoTool.Automation.Runtime.Lists;
                 int centerX = best.Rect.X + best.Rect.Width / 2;
                 int centerY = best.Rect.Y + best.Rect.Height / 2;
 
+                cancellationToken.ThrowIfCancellationRequested();
                 await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName, HoldDurationMs, ClickInjectionMode, SimulateMouseMove).ConfigureAwait(false);
                 context.Log($"AI画像をクリックしました。({centerX}, {centerY}) / クラスID: {best.ClassId} / スコア: {best.Score:F2}");
                 return true;

@@ -69,7 +69,7 @@ public partial class MacroPanelViewModel
             return;
         }
 
-        System.Windows.Application.Current.Dispatcher.Invoke(() => SetAllPanelsRunningState(true));
+        System.Windows.Application.Current.Dispatcher.Invoke(() => SetRunningState(true));
         PublishStatusMessage("マクロを実行開始しました。");
 
         await Run();
@@ -80,7 +80,7 @@ public partial class MacroPanelViewModel
         _cts?.Cancel();
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
-            SetAllPanelsRunningState(false);
+            SetRunningState(false);
         });
         PublishStatusMessage("実行を停止しました。");
     }
@@ -101,6 +101,7 @@ public partial class MacroPanelViewModel
 
     private void HandleSelectedItemChanged(ICommandListItem? item)
     {
+        ClosePreflightPanelForListInteraction();
         _editPanel.SetItem(item);
     }
 
@@ -187,13 +188,5 @@ public partial class MacroPanelViewModel
         _buttonPanel.Prepare();
     }
 
-    private void SetAllPanelsRunningState(bool isRunning)
-    {
-        _listPanel.SetRunningState(isRunning);
-        _editPanel.SetRunningState(isRunning);
-        _favoritePanel.SetRunningState(isRunning);
-        _logPanel.SetRunningState(isRunning);
-        _buttonPanel.SetRunningState(isRunning);
-    }
 }
 

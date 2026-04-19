@@ -108,6 +108,7 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
 
     public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var absolutePath = context.ToAbsolutePath(ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
             new FindImageOptions
@@ -379,6 +380,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
             return false;
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         await context.ClickAsync(result.Point.Value.X, result.Point.Value.Y, Button, WindowTitle, WindowClassName, HoldDurationMs, ClickInjectionMode, SimulateMouseMove).ConfigureAwait(false);
         context.Log($"画像をクリックしました。({result.Point.Value.X}, {result.Point.Value.Y})");
         return true;

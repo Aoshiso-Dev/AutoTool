@@ -12,6 +12,7 @@ public partial class MacroPanelViewModel
 
     private void HandleClear()
     {
+        ClosePreflightPanelForListInteraction();
         var countBefore = _listPanel.GetCount();
         if (_commandHistory is not null)
         {
@@ -39,6 +40,7 @@ public partial class MacroPanelViewModel
 
     private void HandleAdd(string itemType)
     {
+        ClosePreflightPanelForListInteraction();
         if (_commandHistory is not null)
         {
             var newItem = _commandRegistry.CreateCommandItem(itemType);
@@ -66,6 +68,7 @@ public partial class MacroPanelViewModel
 
     private void HandleUp()
     {
+        ClosePreflightPanelForListInteraction();
         var fromIndex = _listPanel.SelectedLineNumber;
         var toIndex = fromIndex - 1;
         if (fromIndex <= 0)
@@ -93,6 +96,7 @@ public partial class MacroPanelViewModel
 
     private void HandleDown()
     {
+        ClosePreflightPanelForListInteraction();
         var fromIndex = _listPanel.SelectedLineNumber;
         var toIndex = fromIndex + 1;
         if (fromIndex < 0 || toIndex >= _listPanel.GetCount())
@@ -120,6 +124,7 @@ public partial class MacroPanelViewModel
 
     private void HandleDelete()
     {
+        ClosePreflightPanelForListInteraction();
         var countBefore = _listPanel.GetCount();
         var selectedItems = _listPanel.GetSelectedItems()
             .Distinct()
@@ -257,6 +262,7 @@ public partial class MacroPanelViewModel
 
     private void HandlePaste()
     {
+        ClosePreflightPanelForListInteraction();
         if (!TryReadInAppClipboardItems(out var copiedItems))
         {
             PublishStatusMessage("コピー済みのコマンドがありません。");
@@ -304,6 +310,7 @@ public partial class MacroPanelViewModel
     {
         if (item is null) return;
         if (_isEditDialogOpen) return;
+        ClosePreflightPanelForListInteraction();
 
         var oldItem = _listPanel.SelectedItem;
         var index = item.LineNumber - 1;
@@ -327,6 +334,7 @@ public partial class MacroPanelViewModel
     private void HandleItemDoubleClick(ICommandListItem? item)
     {
         if (item is null || IsRunning) return;
+        ClosePreflightPanelForListInteraction();
 
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
