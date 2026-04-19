@@ -20,85 +20,11 @@ public partial class EditPanelViewModel
     [ObservableProperty]
     private string _validationSummary = string.Empty;
 
+    [ObservableProperty]
     private ICommandListItem? _item;
-    public ICommandListItem? Item
-    {
-        get => _item;
-        set
-        {
-            if (!SetProperty(ref _item, value)) return;
 
-            if (value is not null)
-            {
-                var displayItem = ItemTypes.FirstOrDefault(x => x.TypeName == value.ItemType);
-                if (displayItem is not null && _selectedItemTypeObj != displayItem)
-                {
-                    _selectedItemTypeObj = displayItem;
-                    OnPropertyChanged(nameof(SelectedItemTypeObj));
-                }
-            }
-            else
-            {
-                _selectedItemTypeObj = null;
-                OnPropertyChanged(nameof(SelectedItemTypeObj));
-            }
-
-            UpdateProperties();
-            UpdateIsProperties();
-            UpdatePropertyGroups();
-            if (!IsOcrPreviewAvailable)
-            {
-                HasOcrPreviewResult = false;
-                IsOcrPreviewRunning = false;
-                IsOcrAutoTuning = false;
-                OcrPreviewSummary = "OCRプレビューは未実行です。";
-                OcrAutoTuneSummary = string.Empty;
-                OcrPreviewText = string.Empty;
-                OcrPreviewConfidenceText = string.Empty;
-            }
-            if (!IsImageSearchPreviewAvailable)
-            {
-                HasImageSearchPreviewResult = false;
-                IsImageSearchPreviewRunning = false;
-                IsImageSearchAutoTuning = false;
-                ImageSearchPreviewSummary = "画像検索テストは未実行です。";
-                ImageSearchAutoTuneSummary = string.Empty;
-                ImageSearchPreviewDetail = string.Empty;
-                ImageSearchSearchArea = string.Empty;
-                ImageSearchRecoveryGuide = string.Empty;
-            }
-            if (!IsAiDetectionPreviewAvailable)
-            {
-                HasAiDetectionPreviewResult = false;
-                IsAiDetectionPreviewRunning = false;
-                IsAiDetectionAutoTuning = false;
-                AiDetectionPreviewSummary = "AI検出テストは未実行です。";
-                AiDetectionAutoTuneSummary = string.Empty;
-                AiDetectionPreviewDetail = string.Empty;
-                AiDetectionSearchArea = string.Empty;
-                AiDetectionRecoveryGuide = string.Empty;
-            }
-
-            RunOcrPreviewCommand.NotifyCanExecuteChanged();
-            RunOcrAutoTuneCommand.NotifyCanExecuteChanged();
-            RunImageSearchPreviewCommand.NotifyCanExecuteChanged();
-            RunImageSearchAutoTuneCommand.NotifyCanExecuteChanged();
-            RunAiDetectionPreviewCommand.NotifyCanExecuteChanged();
-            RunAiDetectionAutoTuneCommand.NotifyCanExecuteChanged();
-        }
-    }
-
+    [ObservableProperty]
     private int _listCount;
-    public int ListCount
-    {
-        get => _listCount;
-        set
-        {
-            SetProperty(ref _listCount, value);
-            UpdateIsProperties();
-            UpdateProperties();
-        }
-    }
 
     public bool IsListNotEmpty => ListCount > 0;
     public bool IsListEmpty => ListCount == 0;
@@ -211,9 +137,9 @@ public partial class EditPanelViewModel
     }
 
     public string WindowTitleText => string.IsNullOrEmpty(WindowTitle) ? "指定なし" : WindowTitle;
-    public string WindowTitle { get => _propertyManager.WindowTitle.GetValue(Item); set { _propertyManager.WindowTitle.SetValue(Item, value); UpdateProperties(); } }
+    public string WindowTitle { get => _propertyManager.WindowTitle.GetValue(Item); set => SetAndRefresh(() => _propertyManager.WindowTitle.SetValue(Item, value)); }
     public string WindowClassNameText => string.IsNullOrEmpty(WindowClassName) ? "指定なし" : WindowClassName;
-    public string WindowClassName { get => _propertyManager.WindowClassName.GetValue(Item); set { _propertyManager.WindowClassName.SetValue(Item, value); UpdateProperties(); } }
+    public string WindowClassName { get => _propertyManager.WindowClassName.GetValue(Item); set => SetAndRefresh(() => _propertyManager.WindowClassName.SetValue(Item, value)); }
 
     public string ImagePath
     {
@@ -224,25 +150,31 @@ public partial class EditPanelViewModel
         }
         set
         {
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
-            _propertyManager.ImagePath.SetValue(Item, relativePath);
-            UpdateProperties();
+            SetPathAndRefresh(_propertyManager.ImagePath.SetValue, value);
         }
     }
 
-    public double Threshold { get => _propertyManager.Threshold.GetValue(Item); set { _propertyManager.Threshold.SetValue(Item, value); UpdateProperties(); } }
-    public CommandColor? SearchColor { get => _propertyManager.SearchColor.GetValue(Item); set { _propertyManager.SearchColor.SetValue(Item, value); UpdateProperties(); OnPropertyChanged(nameof(SearchColorBrush)); OnPropertyChanged(nameof(SearchColorText)); OnPropertyChanged(nameof(SearchColorTextColor)); } }
-    public int Timeout { get => _propertyManager.Timeout.GetValue(Item); set { _propertyManager.Timeout.SetValue(Item, value); UpdateProperties(); } }
-    public int Interval { get => _propertyManager.Interval.GetValue(Item); set { _propertyManager.Interval.SetValue(Item, value); UpdateProperties(); } }
-    public CommandMouseButton MouseButton { get => _propertyManager.MouseButton.GetValue(Item); set { _propertyManager.MouseButton.SetValue(Item, value); UpdateProperties(); } }
-    public bool Ctrl { get => _propertyManager.Ctrl.GetValue(Item); set { _propertyManager.Ctrl.SetValue(Item, value); UpdateProperties(); } }
-    public bool Alt { get => _propertyManager.Alt.GetValue(Item); set { _propertyManager.Alt.SetValue(Item, value); UpdateProperties(); } }
-    public bool Shift { get => _propertyManager.Shift.GetValue(Item); set { _propertyManager.Shift.SetValue(Item, value); UpdateProperties(); } }
-    public CommandKey Key { get => _propertyManager.Key.GetValue(Item); set { _propertyManager.Key.SetValue(Item, value); UpdateProperties(); } }
-    public int X { get => _propertyManager.X.GetValue(Item); set { _propertyManager.X.SetValue(Item, value); UpdateProperties(); } }
-    public int Y { get => _propertyManager.Y.GetValue(Item); set { _propertyManager.Y.SetValue(Item, value); UpdateProperties(); } }
-    public int Wait { get => _propertyManager.Wait.GetValue(Item); set { _propertyManager.Wait.SetValue(Item, value); UpdateProperties(); } }
-    public int LoopCount { get => _propertyManager.LoopCount.GetValue(Item); set { _propertyManager.LoopCount.SetValue(Item, value); UpdateProperties(); } }
+    public double Threshold { get => _propertyManager.Threshold.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Threshold.SetValue(Item, value)); }
+    public CommandColor? SearchColor
+    {
+        get => _propertyManager.SearchColor.GetValue(Item);
+        set => SetAndRefresh(
+            () => _propertyManager.SearchColor.SetValue(Item, value),
+            nameof(SearchColorBrush),
+            nameof(SearchColorText),
+            nameof(SearchColorTextColor));
+    }
+    public int Timeout { get => _propertyManager.Timeout.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Timeout.SetValue(Item, value)); }
+    public int Interval { get => _propertyManager.Interval.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Interval.SetValue(Item, value)); }
+    public CommandMouseButton MouseButton { get => _propertyManager.MouseButton.GetValue(Item); set => SetAndRefresh(() => _propertyManager.MouseButton.SetValue(Item, value)); }
+    public bool Ctrl { get => _propertyManager.Ctrl.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Ctrl.SetValue(Item, value)); }
+    public bool Alt { get => _propertyManager.Alt.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Alt.SetValue(Item, value)); }
+    public bool Shift { get => _propertyManager.Shift.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Shift.SetValue(Item, value)); }
+    public CommandKey Key { get => _propertyManager.Key.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Key.SetValue(Item, value)); }
+    public int X { get => _propertyManager.X.GetValue(Item); set => SetAndRefresh(() => _propertyManager.X.SetValue(Item, value)); }
+    public int Y { get => _propertyManager.Y.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Y.SetValue(Item, value)); }
+    public int Wait { get => _propertyManager.Wait.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Wait.SetValue(Item, value)); }
+    public int LoopCount { get => _propertyManager.LoopCount.GetValue(Item); set => SetAndRefresh(() => _propertyManager.LoopCount.SetValue(Item, value)); }
 
     public string ModelPath
     {
@@ -253,14 +185,12 @@ public partial class EditPanelViewModel
         }
         set
         {
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
-            _propertyManager.ModelPath.SetValue(Item, relativePath);
-            UpdateProperties();
+            SetPathAndRefresh(_propertyManager.ModelPath.SetValue, value);
         }
     }
 
-    public int ClassID { get => _propertyManager.ClassID.GetValue(Item); set { _propertyManager.ClassID.SetValue(Item, value); UpdateProperties(); } }
-    public string AIDetectMode { get => _propertyManager.Mode.GetValue(Item); set { _propertyManager.Mode.SetValue(Item, value); UpdateProperties(); } }
+    public int ClassID { get => _propertyManager.ClassID.GetValue(Item); set => SetAndRefresh(() => _propertyManager.ClassID.SetValue(Item, value)); }
+    public string AIDetectMode { get => _propertyManager.Mode.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Mode.SetValue(Item, value)); }
 
     public string ProgramPath
     {
@@ -271,13 +201,11 @@ public partial class EditPanelViewModel
         }
         set
         {
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
-            _propertyManager.ProgramPath.SetValue(Item, relativePath);
-            UpdateProperties();
+            SetPathAndRefresh(_propertyManager.ProgramPath.SetValue, value);
         }
     }
 
-    public string Arguments { get => _propertyManager.Arguments.GetValue(Item); set { _propertyManager.Arguments.SetValue(Item, value); UpdateProperties(); } }
+    public string Arguments { get => _propertyManager.Arguments.GetValue(Item); set => SetAndRefresh(() => _propertyManager.Arguments.SetValue(Item, value)); }
 
     public string WorkingDirectory
     {
@@ -288,17 +216,15 @@ public partial class EditPanelViewModel
         }
         set
         {
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
-            _propertyManager.WorkingDirectory.SetValue(Item, relativePath);
-            UpdateProperties();
+            SetPathAndRefresh(_propertyManager.WorkingDirectory.SetValue, value);
         }
     }
 
-    public bool WaitForExit { get => _propertyManager.WaitForExit.GetValue(Item); set { _propertyManager.WaitForExit.SetValue(Item, value); UpdateProperties(); } }
-    public string VariableName { get => _propertyManager.VariableName.GetValue(Item); set { _propertyManager.VariableName.SetValue(Item, value); UpdateProperties(); } }
-    public string VariableValue { get => _propertyManager.VariableValue.GetValue(Item); set { _propertyManager.VariableValue.SetValue(Item, value); UpdateProperties(); } }
-    public string CompareOperator { get => _propertyManager.CompareOperator.GetValue(Item); set { _propertyManager.CompareOperator.SetValue(Item, value); UpdateProperties(); } }
-    public string CompareValue { get => _propertyManager.CompareValue.GetValue(Item); set { _propertyManager.CompareValue.SetValue(Item, value); UpdateProperties(); } }
+    public bool WaitForExit { get => _propertyManager.WaitForExit.GetValue(Item); set => SetAndRefresh(() => _propertyManager.WaitForExit.SetValue(Item, value)); }
+    public string VariableName { get => _propertyManager.VariableName.GetValue(Item); set => SetAndRefresh(() => _propertyManager.VariableName.SetValue(Item, value)); }
+    public string VariableValue { get => _propertyManager.VariableValue.GetValue(Item); set => SetAndRefresh(() => _propertyManager.VariableValue.SetValue(Item, value)); }
+    public string CompareOperator { get => _propertyManager.CompareOperator.GetValue(Item); set => SetAndRefresh(() => _propertyManager.CompareOperator.SetValue(Item, value)); }
+    public string CompareValue { get => _propertyManager.CompareValue.GetValue(Item); set => SetAndRefresh(() => _propertyManager.CompareValue.SetValue(Item, value)); }
 
     public string SaveDirectory
     {
@@ -309,14 +235,12 @@ public partial class EditPanelViewModel
         }
         set
         {
-            var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
-            _propertyManager.SaveDirectory.SetValue(Item, relativePath);
-            UpdateProperties();
+            SetPathAndRefresh(_propertyManager.SaveDirectory.SetValue, value);
         }
     }
 
-    public double ConfThreshold { get => _propertyManager.ConfThreshold.GetValue(Item); set { _propertyManager.ConfThreshold.SetValue(Item, value); UpdateProperties(); } }
-    public double IoUThreshold { get => _propertyManager.IoUThreshold.GetValue(Item); set { _propertyManager.IoUThreshold.SetValue(Item, value); UpdateProperties(); } }
+    public double ConfThreshold { get => _propertyManager.ConfThreshold.GetValue(Item); set => SetAndRefresh(() => _propertyManager.ConfThreshold.SetValue(Item, value)); }
+    public double IoUThreshold { get => _propertyManager.IoUThreshold.GetValue(Item); set => SetAndRefresh(() => _propertyManager.IoUThreshold.SetValue(Item, value)); }
 
     public string Comment
     {
@@ -337,18 +261,8 @@ public partial class EditPanelViewModel
 
     [ObservableProperty] private ObservableCollection<CommandDisplayItem> _itemTypes = [];
 
+    [ObservableProperty]
     private CommandDisplayItem? _selectedItemTypeObj;
-    public CommandDisplayItem? SelectedItemTypeObj
-    {
-        get => _selectedItemTypeObj;
-        set
-        {
-            if (SetProperty(ref _selectedItemTypeObj, value) && value is not null)
-            {
-                OnSelectedItemTypeChanged(value.TypeName);
-            }
-        }
-    }
 
     public string SelectedItemType
     {
@@ -379,4 +293,94 @@ public partial class EditPanelViewModel
 
     [ObservableProperty] private ObservableCollection<string> _aIDetectModes = [];
     public string SelectedAIDetectMode { get => AIDetectMode; set { AIDetectMode = value; } }
+
+    partial void OnItemChanged(ICommandListItem? value)
+    {
+        if (value is not null)
+        {
+            var displayItem = ItemTypes.FirstOrDefault(x => x.TypeName == value.ItemType);
+            if (displayItem is not null && SelectedItemTypeObj != displayItem)
+            {
+                SelectedItemTypeObj = displayItem;
+            }
+        }
+        else
+        {
+            SelectedItemTypeObj = null;
+        }
+
+        UpdateProperties();
+        UpdateIsProperties();
+        UpdatePropertyGroups();
+        if (!IsOcrPreviewAvailable)
+        {
+            HasOcrPreviewResult = false;
+            IsOcrPreviewRunning = false;
+            IsOcrAutoTuning = false;
+            OcrPreviewSummary = "OCRプレビューは未実行です。";
+            OcrAutoTuneSummary = string.Empty;
+            OcrPreviewText = string.Empty;
+            OcrPreviewConfidenceText = string.Empty;
+        }
+        if (!IsImageSearchPreviewAvailable)
+        {
+            HasImageSearchPreviewResult = false;
+            IsImageSearchPreviewRunning = false;
+            IsImageSearchAutoTuning = false;
+            ImageSearchPreviewSummary = "画像検索テストは未実行です。";
+            ImageSearchAutoTuneSummary = string.Empty;
+            ImageSearchPreviewDetail = string.Empty;
+            ImageSearchSearchArea = string.Empty;
+            ImageSearchRecoveryGuide = string.Empty;
+        }
+        if (!IsAiDetectionPreviewAvailable)
+        {
+            HasAiDetectionPreviewResult = false;
+            IsAiDetectionPreviewRunning = false;
+            IsAiDetectionAutoTuning = false;
+            AiDetectionPreviewSummary = "AI検出テストは未実行です。";
+            AiDetectionAutoTuneSummary = string.Empty;
+            AiDetectionPreviewDetail = string.Empty;
+            AiDetectionSearchArea = string.Empty;
+            AiDetectionRecoveryGuide = string.Empty;
+        }
+
+        RunOcrPreviewCommand.NotifyCanExecuteChanged();
+        RunOcrAutoTuneCommand.NotifyCanExecuteChanged();
+        RunImageSearchPreviewCommand.NotifyCanExecuteChanged();
+        RunImageSearchAutoTuneCommand.NotifyCanExecuteChanged();
+        RunAiDetectionPreviewCommand.NotifyCanExecuteChanged();
+        RunAiDetectionAutoTuneCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnListCountChanged(int value)
+    {
+        UpdateIsProperties();
+        UpdateProperties();
+    }
+
+    partial void OnSelectedItemTypeObjChanged(CommandDisplayItem? value)
+    {
+        if (value is not null)
+        {
+            OnSelectedItemTypeChanged(value.TypeName);
+        }
+    }
+
+    private void SetPathAndRefresh(Action<ICommandListItem?, string> setter, string value)
+    {
+        var relativePath = string.IsNullOrEmpty(value) ? value : _pathResolver.ToRelativePath(value);
+        SetAndRefresh(() => setter(Item, relativePath));
+    }
+
+    private void SetAndRefresh(Action setter, params string[] additionalPropertyNames)
+    {
+        setter();
+        UpdateProperties();
+
+        foreach (var propertyName in additionalPropertyNames)
+        {
+            OnPropertyChanged(propertyName);
+        }
+    }
 }

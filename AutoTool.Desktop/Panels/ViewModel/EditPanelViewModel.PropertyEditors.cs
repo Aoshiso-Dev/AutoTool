@@ -107,10 +107,7 @@ public partial class EditPanelViewModel
         if (!string.IsNullOrEmpty(path))
         {
             prop.Value = _pathResolver.ToRelativePath(path);
-            OnPropertyChanged(nameof(ImagePath));
-            OnPropertyChanged(nameof(PreviewImagePath));
-            OnPropertyChanged(nameof(HasImagePreview));
-            UpdateProperties();
+            RefreshEditorState(nameof(ImagePath), nameof(PreviewImagePath), nameof(HasImagePreview));
         }
     }
 
@@ -123,10 +120,7 @@ public partial class EditPanelViewModel
             var mat = Win32ScreenCaptureHelper.CaptureRegion(cw.SelectedRegion.X, cw.SelectedRegion.Y, cw.SelectedRegion.Width, cw.SelectedRegion.Height);
             Win32ScreenCaptureHelper.SaveCapture(mat, path);
             prop.Value = _pathResolver.ToRelativePath(path);
-            OnPropertyChanged(nameof(ImagePath));
-            OnPropertyChanged(nameof(PreviewImagePath));
-            OnPropertyChanged(nameof(HasImagePreview));
-            UpdateProperties();
+            RefreshEditorState(nameof(ImagePath), nameof(PreviewImagePath), nameof(HasImagePreview));
         }
     }
 
@@ -137,7 +131,7 @@ public partial class EditPanelViewModel
         if (w.Color.HasValue)
         {
             prop.Value = w.Color.Value;
-            UpdateProperties();
+            RefreshEditorState();
         }
     }
 
@@ -157,7 +151,7 @@ public partial class EditPanelViewModel
                 classNameProp.Value = w.WindowClassName;
             }
 
-            UpdateProperties();
+            RefreshEditorState();
         }
     }
 
@@ -167,7 +161,7 @@ public partial class EditPanelViewModel
         if (!string.IsNullOrEmpty(path))
         {
             prop.Value = _pathResolver.ToRelativePath(path);
-            UpdateProperties();
+            RefreshEditorState();
         }
     }
 
@@ -177,7 +171,7 @@ public partial class EditPanelViewModel
         if (!string.IsNullOrEmpty(path))
         {
             prop.Value = _pathResolver.ToRelativePath(path);
-            UpdateProperties();
+            RefreshEditorState();
         }
     }
 
@@ -236,7 +230,7 @@ public partial class EditPanelViewModel
 
             prop.Value = _pathResolver.ToRelativePath(targetDirectory);
             prop.NotifyAllValueProperties();
-            UpdateProperties();
+            RefreshEditorState();
 
             _notifier.ShowInfo(
                 $"tessdata を取得しました。\n保存先: {targetDirectory}\n取得: jpn.traineddata / eng.traineddata",
@@ -333,7 +327,7 @@ public partial class EditPanelViewModel
             if (ctrlProp is not null) ctrlProp.Value = keyPickerWindow.SelectedCtrl;
             if (altProp is not null) altProp.Value = keyPickerWindow.SelectedAlt;
             if (shiftProp is not null) shiftProp.Value = keyPickerWindow.SelectedShift;
-            UpdateProperties();
+            RefreshEditorState();
         }
     }
 
@@ -397,7 +391,7 @@ public partial class EditPanelViewModel
             }
         }
 
-        UpdateProperties();
+        RefreshEditorState();
 
         if (!string.IsNullOrEmpty(windowTitle) || !string.IsNullOrEmpty(windowClassName))
         {
@@ -424,5 +418,10 @@ public partial class EditPanelViewModel
                 $"領域を設定しました: ({relativeX}, {relativeY}, {regionWidth}, {regionHeight})",
                 "座標設定完了");
         }
+    }
+
+    private void RefreshEditorState(params string[] additionalPropertyNames)
+    {
+        SetAndRefresh(() => { }, additionalPropertyNames);
     }
 }

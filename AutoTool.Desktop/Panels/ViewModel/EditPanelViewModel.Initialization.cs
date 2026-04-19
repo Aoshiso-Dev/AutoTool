@@ -111,8 +111,7 @@ public partial class EditPanelViewModel
                 _isUpdating = true;
                 try
                 {
-                    _item = newItem;
-                    OnPropertyChanged(nameof(Item));
+                    Item = newItem;
                 }
                 finally
                 {

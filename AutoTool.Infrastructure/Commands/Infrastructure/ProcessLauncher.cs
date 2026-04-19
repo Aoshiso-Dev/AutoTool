@@ -88,7 +88,7 @@ public class ProcessLauncher(TimeProvider? timeProvider = null) : IProcessLaunch
         ChannelWriter<ProcessOutputLine> writer,
         CancellationToken cancellationToken)
     {
-        while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
             var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
             if (line is null)

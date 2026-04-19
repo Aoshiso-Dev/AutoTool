@@ -1,6 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
     <NuGetAudit>false</NuGetAudit>
+    <LangVersion>14.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

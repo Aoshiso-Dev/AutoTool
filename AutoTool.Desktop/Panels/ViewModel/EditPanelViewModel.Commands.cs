@@ -1018,7 +1018,6 @@ public partial class EditPanelViewModel
         var clone = Item.Clone();
         apply(clone);
         Item = clone;
-        UpdateProperties();
         UpdatePropertyGroups();
         ItemEdited?.Invoke(clone);
         return true;

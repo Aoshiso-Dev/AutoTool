@@ -40,53 +40,32 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private readonly Dictionary<int, FileManager> _fileManagers = [];
 
-    public string AutoToolTitle => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened
-        ? $"AutoTool - {CurrentFileName}"
-        : "AutoTool";
-
     [ObservableProperty]
     private int _selectedTabIndex = TabIndexes.Macro;
 
-    public bool IsFileOperationEnable => _fileManagers.ContainsKey(SelectedTabIndex);
+    [ObservableProperty]
+    private string _autoToolTitle = "AutoTool";
 
-    public bool IsFileOpened => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened;
+    [ObservableProperty]
+    private bool _isFileOperationEnable;
 
-    public string CurrentFileName
-    {
-        get => TryGetActiveFileManager(out var fileManager) ? fileManager.CurrentFileName : string.Empty;
-        set
-        {
-            if (TryGetActiveFileManager(out var fileManager))
-            {
-                fileManager.CurrentFileName = value;
-                OnPropertyChanged();
-            }
-        }
-    }
+    [ObservableProperty]
+    private bool _isFileOpened;
 
-    public string CurrentFilePath
-    {
-        get => TryGetActiveFileManager(out var fileManager) ? fileManager.CurrentFilePath : string.Empty;
-        set
-        {
-            if (TryGetActiveFileManager(out var fileManager))
-            {
-                fileManager.CurrentFilePath = value;
-                OnPropertyChanged();
-            }
-        }
-    }
+    [ObservableProperty]
+    private string _currentFileName = string.Empty;
 
-    public ObservableCollection<RecentFileEntry>? RecentFiles =>
-        TryGetActiveFileManager(out var fileManager) ? fileManager.RecentFiles : null;
+    [ObservableProperty]
+    private string _currentFilePath = string.Empty;
 
-    public string MenuItemHeader_SaveFile => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened
-        ? $"{CurrentFileName} を保存"
-        : "保存";
+    [ObservableProperty]
+    private ObservableCollection<RecentFileEntry>? _recentFiles;
 
-    public string MenuItemHeader_SaveFileAs => TryGetActiveFileManager(out var fileManager) && fileManager.IsFileOpened
-        ? $"{CurrentFileName} に名前を付けて保存"
-        : "名前を付けて保存";
+    [ObservableProperty]
+    private string _menuItemHeader_SaveFile = "保存";
+
+    [ObservableProperty]
+    private string _menuItemHeader_SaveFileAs = "名前を付けて保存";
 
     [ObservableProperty]
     private MacroPanelViewModel _macroPanelViewModel;
@@ -144,7 +123,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedTabIndexChanged(int value)
     {
-        UpdateProperties();
+        RefreshFileUiState();
     }
 
     private void InitializeCommandHistory()
@@ -187,38 +166,71 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private void InitializeFileManager()
     {
-        _fileManagers.Add(
-            TabIndexes.Macro,
-            new FileManager(
-                new FileTypeInfo
-                {
-                    Filter = "AutoTool マクロファイル (*.macro)|*.macro",
-                    FilterIndex = 1,
-                    RestoreDirectory = true,
-                    DefaultExt = "macro",
-                    Title = "マクロファイルを開く",
-                },
-                filePath => MacroPanelViewModel.SaveMacroFile(filePath),
-                filePath => MacroPanelViewModel.LoadMacroFile(filePath),
-                _filePicker,
-                _recentFileStore,
-                _fileSystemPathService
-            )
-        );
+        var macroFileManager = new FileManager(
+            new FileTypeInfo
+            {
+                Filter = "AutoTool マクロファイル (*.macro)|*.macro",
+                FilterIndex = 1,
+                RestoreDirectory = true,
+                DefaultExt = "macro",
+                Title = "マクロファイルを開く",
+            },
+            filePath => MacroPanelViewModel.SaveMacroFile(filePath),
+            filePath => MacroPanelViewModel.LoadMacroFile(filePath),
+            _filePicker,
+            _recentFileStore,
+            _fileSystemPathService);
+
+        macroFileManager.PropertyChanged += OnFileManagerPropertyChanged;
+        _fileManagers.Add(TabIndexes.Macro, macroFileManager);
+        RefreshFileUiState();
     }
 
-    private void UpdateProperties()
+    private void RefreshFileUiState()
     {
-        OnPropertyChanged(nameof(IsFileOperationEnable));
-        OnPropertyChanged(nameof(IsFileOpened));
-        OnPropertyChanged(nameof(CurrentFilePath));
-        OnPropertyChanged(nameof(CurrentFileName));
-        OnPropertyChanged(nameof(RecentFiles));
-        OnPropertyChanged(nameof(MenuItemHeader_SaveFile));
-        OnPropertyChanged(nameof(MenuItemHeader_SaveFileAs));
-        OnPropertyChanged(nameof(AutoToolTitle));
+        IsFileOperationEnable = _fileManagers.ContainsKey(SelectedTabIndex);
+
+        if (TryGetActiveFileManager(out var fileManager))
+        {
+            IsFileOpened = fileManager.IsFileOpened;
+            CurrentFilePath = fileManager.CurrentFilePath;
+            CurrentFileName = fileManager.CurrentFileName;
+            RecentFiles = fileManager.RecentFiles;
+        }
+        else
+        {
+            IsFileOpened = false;
+            CurrentFilePath = string.Empty;
+            CurrentFileName = string.Empty;
+            RecentFiles = null;
+        }
+
+        MenuItemHeader_SaveFile = IsFileOpened
+            ? $"{CurrentFileName} を保存"
+            : "保存";
+        MenuItemHeader_SaveFileAs = IsFileOpened
+            ? $"{CurrentFileName} に名前を付けて保存"
+            : "名前を付けて保存";
+        AutoToolTitle = IsFileOpened
+            ? $"AutoTool - {CurrentFileName}"
+            : "AutoTool";
 
         UpdateCommandStates();
+    }
+
+    private void OnFileManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not FileManager changedManager)
+        {
+            return;
+        }
+
+        if (!TryGetActiveFileManager(out var activeManager) || !ReferenceEquals(changedManager, activeManager))
+        {
+            return;
+        }
+
+        RefreshFileUiState();
     }
 
     [RelayCommand]
@@ -254,13 +266,13 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             if (!TryGetActiveFileManager(out var fileManager) || !fileManager.OpenFile(filePath))
             {
                 StatusMessage = "ファイルを開けませんでした。";
-                UpdateProperties();
+                RefreshFileUiState();
                 return;
             }
 
             ClearDirtyState();
+            RefreshFileUiState();
             StatusMessage = $"ファイルを開きました: {CurrentFileName}";
-            UpdateProperties();
         }
         catch (Exception ex)
         {
@@ -288,7 +300,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             StatusMessage = "保存中...";
             fileManager.SaveFile();
             HasUnsavedChanges = false;
-            UpdateProperties();
+            RefreshFileUiState();
 
             StatusMessage = $"保存しました: {CurrentFileName}";
             _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
@@ -319,7 +331,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             }
 
             HasUnsavedChanges = false;
-            UpdateProperties();
+            RefreshFileUiState();
 
             StatusMessage = $"保存しました: {CurrentFileName}";
             _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
@@ -375,7 +387,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         ClearDirtyState();
         StatusMessage = "全削除したため、新規保存モードに切り替えました。";
         _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
-        UpdateProperties();
+        RefreshFileUiState();
     }
 
     public void RestoreSessionState(
@@ -397,7 +409,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         if (string.IsNullOrWhiteSpace(lastOpenedMacroFilePath))
         {
-            UpdateProperties();
+            RefreshFileUiState();
             return;
         }
 
@@ -405,14 +417,14 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             StatusMessage = "前回のマクロファイルを復元できませんでした。";
             _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
-            UpdateProperties();
+            RefreshFileUiState();
             return;
         }
 
         ClearDirtyState();
+        RefreshFileUiState();
         StatusMessage = $"前回の状態を復元しました: {macroFileManager.CurrentFileName}";
         _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
-        UpdateProperties();
     }
 
     public string? GetLastOpenedMacroFilePath()
@@ -435,6 +447,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             CommandHistory.HistoryChanged -= _commandHistoryChangedHandler;
             _commandHistoryChangedHandler = null;
+        }
+
+        foreach (var fileManager in _fileManagers.Values)
+        {
+            fileManager.PropertyChanged -= OnFileManagerPropertyChanged;
         }
 
         MacroPanelViewModel.PropertyChanged -= OnMacroPanelPropertyChanged;

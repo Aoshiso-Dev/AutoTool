@@ -32,18 +32,8 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     [ObservableProperty]
     private IReadOnlyList<ICommandListItem> _validationErrorItems = [];
 
+    [ObservableProperty]
     private int _selectedLineNumber;
-    public int SelectedLineNumber
-    {
-        get => _selectedLineNumber;
-        set
-        {
-            if (SetProperty(ref _selectedLineNumber, value))
-            {
-                OnSelectedLineNumberChanged();
-            }
-        }
-    }
 
     public ICommandListItem? SelectedItem
     {
@@ -99,16 +89,8 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         }
     }
 
+    [ObservableProperty]
     private int _executedLineNumber;
-    public int ExecutedLineNumber
-    {
-        get => _executedLineNumber;
-        set
-        {
-            SetProperty(ref _executedLineNumber, value);
-            OnExecutedLineNumberChanged();
-        }
-    }
     #endregion
 
     public ListPanelViewModel(
@@ -157,6 +139,16 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
             cmd.IsRunning = true;
             // Refresh()を削除 - IsRunningはINotifyPropertyChangedで通知される
         }
+    }
+
+    partial void OnSelectedLineNumberChanged(int value)
+    {
+        OnSelectedLineNumberChanged();
+    }
+
+    partial void OnExecutedLineNumberChanged(int value)
+    {
+        OnExecutedLineNumberChanged();
     }
     #endregion
 
