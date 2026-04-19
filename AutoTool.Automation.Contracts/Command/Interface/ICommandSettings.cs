@@ -138,6 +138,12 @@ public interface ILoopEndCommandSettings : ICommandSettings
     ICommand? Pair { get; set; }
 }
 
+public interface IRetryCommandSettings : ICommandSettings
+{
+    int RetryCount { get; set; }
+    int RetryInterval { get; set; }
+}
+
 public interface IIfWaitImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }

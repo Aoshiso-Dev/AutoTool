@@ -200,6 +200,18 @@ public interface ILoopBreakItem : ICommandListItem
 {
 }
 
+public interface IRetryItem : ICommandListItem
+{
+    public int RetryCount { get; set; }
+    public int RetryInterval { get; set; }
+    public ICommandListItem? Pair { get; set; }
+}
+
+public interface IRetryEndItem : ICommandListItem
+{
+    public ICommandListItem? Pair { get; set; }
+}
+
 public interface IIfImageExistAIItem : ICommandListItem
 {
     string WindowTitle { get; set; }

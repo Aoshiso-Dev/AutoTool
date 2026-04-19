@@ -30,6 +30,7 @@ public interface IIfTextExistCommand : ICommand, IIfCommand { new IIfTextCommand
 public interface IIfTextNotExistCommand : ICommand, IIfCommand { new IIfTextCommandSettings Settings { get; } }
 public interface ILoopCommand : ICommand { new ILoopCommandSettings Settings { get; } }
 public interface IEndLoopCommand : ICommand { new ILoopEndCommandSettings Settings { get; } }
+public interface IRetryCommand : ICommand { new IRetryCommandSettings Settings { get; } }
 public interface ILoopBreakCommand : ICommand { }
 public interface IIfImageExistAICommand : ICommand, IIfCommand { new IIfImageExistAISettings Settings { get; } }
 public interface IIfImageNotExistAICommand : ICommand, IIfCommand { new IIfImageNotExistAISettings Settings { get; } }

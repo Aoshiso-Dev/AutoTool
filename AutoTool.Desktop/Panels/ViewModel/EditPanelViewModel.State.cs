@@ -104,14 +104,14 @@ public partial class EditPanelViewModel
     public bool IsListEmpty => ListCount == 0;
     public bool IsListNotEmptyButNoSelection => ListCount > 0 && Item is null;
     public bool IsNotNullItem => Item is not null;
-    public bool IsWaitImageItem => Item is WaitImageItem;
+    public bool IsWaitImageItem => Item is WaitImageItem or WaitImageDisappearItem;
     public bool IsClickImageItem => Item is ClickImageItem;
     public bool IsClickImageAIItem => Item is ClickImageAIItem;
     public bool IsHotkeyItem => Item is HotkeyItem;
     public bool IsClickItem => Item is ClickItem;
     public bool IsWaitItem => Item is WaitItem;
-    public bool IsLoopItem => Item is LoopItem;
-    public bool IsEndLoopItem => Item is LoopEndItem;
+    public bool IsLoopItem => Item is LoopItem or RetryItem;
+    public bool IsEndLoopItem => Item is LoopEndItem or RetryEndItem;
     public bool IsBreakItem => Item is LoopBreakItem;
     public bool IsIfImageExistItem => Item is IfImageExistItem;
     public bool IsIfImageNotExistItem => Item is IfImageNotExistItem;
@@ -126,7 +126,7 @@ public partial class EditPanelViewModel
     public bool IsOcrPreviewAvailable => Item is IFindTextItem or IIfTextExistItem or IIfTextNotExistItem or ISetVariableOCRItem;
     public bool IsImageSearchPreviewAvailable => Item is IWaitImageItem or IClickImageItem or IIfImageExistItem or IIfImageNotExistItem or IFindImageItem;
     public bool IsAiDetectionPreviewAvailable => Item is IIfImageExistAIItem or IIfImageNotExistAIItem or IClickImageAIItem or ISetVariableAIItem;
-    public bool HasImagePreview => Item is WaitImageItem or ClickImageItem or IfImageExistItem or IfImageNotExistItem;
+    public bool HasImagePreview => Item is WaitImageItem or WaitImageDisappearItem or ClickImageItem or IfImageExistItem or IfImageNotExistItem;
 
     [ObservableProperty]
     private bool _hasOcrPreviewResult;

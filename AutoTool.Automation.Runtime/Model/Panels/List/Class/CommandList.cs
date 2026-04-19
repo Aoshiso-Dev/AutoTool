@@ -141,12 +141,20 @@ public partial class CommandList : ObservableObject
             Items.OfType<ILoopEndItem>());
     }
 
+    public void PairRetryItems()
+    {
+        PairItems(
+            Items.OfType<IRetryItem>(),
+            Items.OfType<IRetryEndItem>());
+    }
+
     private void RebuildState()
     {
         ReorderItems();
         CalculateNestLevel();
         PairIfItems();
         PairLoopItems();
+        PairRetryItems();
     }
 
     private static void PairItems<TStart, TEnd>(IEnumerable<TStart> starts, IEnumerable<TEnd> ends)
@@ -191,6 +199,8 @@ public partial class CommandList : ObservableObject
         IIfEndItem x => x.Pair,
         ILoopItem x => x.Pair,
         ILoopEndItem x => x.Pair,
+        IRetryItem x => x.Pair,
+        IRetryEndItem x => x.Pair,
         _ => null
     };
 
@@ -202,6 +212,8 @@ public partial class CommandList : ObservableObject
             IIfEndItem x => () => x.Pair = pair,
             ILoopItem x => () => x.Pair = pair,
             ILoopEndItem x => () => x.Pair = pair,
+            IRetryItem x => () => x.Pair = pair,
+            IRetryEndItem x => () => x.Pair = pair,
             _ => static () => { }
         };
 

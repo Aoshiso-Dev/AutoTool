@@ -73,3 +73,75 @@ public class LoopBreakCommand : BaseCommand, ILoopBreakCommand
 
     protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken) => ValueTask.FromResult(false);
 }
+
+/// <summary>
+/// リトライコマンド
+/// </summary>
+public class RetryCommand : BaseCommand, IRetryCommand
+{
+    public new IRetryCommandSettings Settings => (IRetryCommandSettings)base.Settings;
+
+    public RetryCommand() { }
+
+    public RetryCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings) { }
+
+    protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    {
+        if (Children is null || !Children.Any())
+        {
+            throw new InvalidOperationException("リトライブロック内に要素がありません。");
+        }
+
+        for (var attempt = 1; attempt <= Settings.RetryCount; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            RaiseDoingCommand($"リトライ実行 {attempt}/{Settings.RetryCount} 回目");
+
+            ResetChildrenProgress();
+            var succeeded = true;
+
+            foreach (var command in Children)
+            {
+                if (!await command.Execute(cancellationToken).ConfigureAwait(false))
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (succeeded)
+            {
+                RaiseDoingCommand($"リトライ成功 ({attempt}/{Settings.RetryCount})");
+                return true;
+            }
+
+            if (attempt >= Settings.RetryCount)
+            {
+                break;
+            }
+
+            if (Settings.RetryInterval > 0)
+            {
+                RaiseDoingCommand($"次回リトライまで {Settings.RetryInterval}ms 待機します。");
+                await Task.Delay(Settings.RetryInterval, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        RaiseDoingCommand($"リトライ失敗: {Settings.RetryCount} 回実行しても成功しませんでした。");
+        return false;
+    }
+}
+
+/// <summary>
+/// リトライ終了コマンド
+/// </summary>
+public class RetryEndCommand : BaseCommand
+{
+    public RetryEndCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings) { }
+
+    protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    {
+        ResetChildrenProgress();
+        return ValueTask.FromResult(true);
+    }
+}

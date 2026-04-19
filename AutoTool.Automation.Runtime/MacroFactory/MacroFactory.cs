@@ -229,6 +229,7 @@ public class MacroFactory(
         {
             IIfItem ifItem when ifItem.Pair is not null => ifItem.Pair.LineNumber,
             ILoopItem loopItem when loopItem.Pair is not null => loopItem.Pair.LineNumber,
+            IRetryItem retryItem when retryItem.Pair is not null => retryItem.Pair.LineNumber,
             _ => -1
         };
 

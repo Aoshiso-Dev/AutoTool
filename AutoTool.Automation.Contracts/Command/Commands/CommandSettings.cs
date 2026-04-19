@@ -133,6 +133,12 @@ public class LoopEndCommandSettings : ICommandSettings, ILoopEndCommandSettings
     public ICommand? Pair { get; set; }
 }
 
+public class RetryCommandSettings : ICommandSettings, IRetryCommandSettings
+{
+    public int RetryCount { get; set; } = 3;
+    public int RetryInterval { get; set; } = 500;
+}
+
 public class AIImageDetectCommandSettings : ICommandSettings, IIfImageExistAISettings
 {
     public string ModelPath { get; set; } = string.Empty;

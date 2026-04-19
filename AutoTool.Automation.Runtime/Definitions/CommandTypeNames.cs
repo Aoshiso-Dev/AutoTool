@@ -10,11 +10,14 @@ public static class CommandTypeNames
     public const string Hotkey = "Hotkey";
     public const string Wait = "Wait";
     public const string WaitImage = "Wait_Image";
+    public const string WaitImageDisappear = "Wait_Image_Disappear";
     public const string Execute = "Execute";
     public const string Screenshot = "Screenshot";
     public const string Loop = "Loop";
     public const string LoopEnd = "Loop_End";
     public const string LoopBreak = "Loop_Break";
+    public const string Retry = "Retry";
+    public const string RetryEnd = "Retry_End";
     public const string IfImageExist = "IF_ImageExist";
     public const string IfImageNotExist = "IF_ImageNotExist";
     public const string IfTextExist = "IF_TextExist";

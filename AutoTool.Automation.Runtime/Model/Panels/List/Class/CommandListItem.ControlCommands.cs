@@ -498,6 +498,85 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Retry, typeof(RetryCommand), typeof(IRetryCommandSettings), CommandDef.CommandCategory.Control, isLoopCommand: true, displayPriority: 3, displaySubPriority: 4, displayNameJa: "制御 - リトライ開始", displayNameEn: "Retry Start")]
+    public partial class RetryItem : CommandListItem, IRetryItem, IRetryCommandSettings
+    {
+        new public bool IsEnable
+        {
+            get => base.IsEnable;
+            set => SetIsEnableWithPair(Pair, value);
+        }
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("リトライ回数", EditorType.NumberBox, Group = "基本設定", Order = 1,
+                         Description = "失敗時に再実行する最大回数", Min = 1)]
+        private int _retryCount = 3;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("リトライ間隔", EditorType.NumberBox, Group = "基本設定", Order = 2,
+                         Description = "再実行までの待機時間", Unit = "ミリ秒", Min = 0)]
+        private int _retryInterval = 500;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private ICommandListItem? _pair = null;
+
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / リトライ回数:{RetryCount} / 間隔:{RetryInterval}ms";
+
+        public RetryItem() { }
+
+        public RetryItem(RetryItem? item = null) : base(item)
+        {
+            if (item is null)
+            {
+                return;
+            }
+
+            RetryCount = item.RetryCount;
+            RetryInterval = item.RetryInterval;
+            Pair = item.Pair;
+        }
+
+        public new ICommandListItem Clone()
+        {
+            return new RetryItem(this);
+        }
+    }
+
+    [CommandDef.SimpleCommandBinding(typeof(RetryEndCommand), typeof(ICommandSettings))]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.RetryEnd, typeof(RetryEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, isEndCommand: true, displayPriority: 3, displaySubPriority: 5, displayNameJa: "制御 - リトライ終了", displayNameEn: "Retry End")]
+    public partial class RetryEndItem : CommandListItem, IRetryEndItem, ICommandSettings
+    {
+        new public bool IsEnable
+        {
+            get => base.IsEnable;
+            set => SetIsEnableWithPair(Pair, value);
+        }
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        private ICommandListItem? _pair = null;
+
+        new public string Description => $"{Pair?.LineNumber}->{LineNumber}";
+
+        public RetryEndItem() { }
+
+        public RetryEndItem(RetryEndItem? item = null) : base(item)
+        {
+            if (item is not null)
+            {
+                Pair = item.Pair;
+            }
+        }
+
+        public new ICommandListItem Clone()
+        {
+            return new RetryEndItem(this);
+        }
+    }
+
     [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageExistAI, typeof(IfImageExistAICommand), typeof(IIfImageExistAISettings), CommandDef.CommandCategory.AI, isIfCommand: true, displayPriority: 4, displaySubPriority: 5, displayNameJa: "条件 - 画像存在判定(AI検出)", displayNameEn: "If AI Image Exists")]
     public partial class IfImageExistAIItem : CommandListItem, IIfItem, IIfImageExistAIItem, IIfImageExistAISettings
     {

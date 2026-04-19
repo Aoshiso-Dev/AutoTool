@@ -375,6 +375,8 @@ public partial class MacroPanelViewModel
             CommandValidationErrorCodes.TimeoutOutOfRange => "対処: タイムアウトを 0 以上に設定してください。",
             CommandValidationErrorCodes.IntervalOutOfRange => "対処: 検索間隔を 0 以上に設定してください。",
             CommandValidationErrorCodes.WaitOutOfRange => "対処: 待機時間を 0 以上に設定してください。",
+            CommandValidationErrorCodes.RetryCountOutOfRange => "対処: リトライ回数を 1 以上に設定してください。",
+            CommandValidationErrorCodes.RetryIntervalOutOfRange => "対処: リトライ間隔を 0 以上に設定してください。",
             _ => $"対処: {propertyName} の値を見直してください。"
         };
 
@@ -430,6 +432,8 @@ public partial class MacroPanelViewModel
             "Timeout" => "タイムアウト",
             "Interval" => "間隔",
             "Wait" => "待機時間",
+            "RetryCount" => "リトライ回数",
+            "RetryInterval" => "リトライ間隔",
             "Width" => "幅",
             "Height" => "高さ",
             "MinConfidence" => "最小信頼度",
@@ -446,6 +450,7 @@ public partial class MacroPanelViewModel
         return commandName switch
         {
             "WaitImage" => "画像待機",
+            "WaitImageDisappear" => "画像消失待機",
             "FindImage" => "画像検索",
             "ClickImage" => "画像クリック",
             "IfImageExist" => "If 画像あり",
@@ -465,6 +470,8 @@ public partial class MacroPanelViewModel
             "Hotkey" => "ホットキー",
             "Wait" => "待機",
             "Loop" => "ループ",
+            "Retry" => "リトライ",
+            "RetryEnd" => "リトライ終了",
             _ => commandName
         };
     }

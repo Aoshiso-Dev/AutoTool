@@ -258,6 +258,119 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
     }
 }
 
+[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.WaitImageDisappear, typeof(SimpleCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 2, displaySubPriority: 5, displayNameJa: "画像消失待機", displayNameEn: "Wait for Image Disappear")]
+public partial class WaitImageDisappearItem : CommandListItem, IWaitImageItem, IWaitImageCommandSettings
+{
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("検索画像", EditorType.ImagePicker, Group = "画像設定", Order = 1,
+                     Description = "消失を待つ画像ファイル", FileFilter = "画像ファイル|*.png;*.jpg;*.bmp")]
+    private string _imagePath = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("一致しきい値", EditorType.Slider, Group = "画像設定", Order = 2,
+                     Description = "画像一致度の最小値", Min = 0.01, Max = 1.0, Step = 0.01)]
+    private double _threshold = 0.8;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("強調検索色", EditorType.ColorPicker, Group = "画像設定", Order = 3,
+                     Description = "特定の色を強調して検索")]
+    private CommandColor? _searchColor = null;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("タイムアウト", EditorType.NumberBox, Group = "タイミング", Order = 1,
+                     Description = "消失待機を諦めるまでの時間", Unit = "ミリ秒", Min = 0)]
+    private int _timeout = 5000;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("検索間隔", EditorType.NumberBox, Group = "タイミング", Order = 2,
+                     Description = "画像検索の間隔", Unit = "ミリ秒", Min = 0)]
+    private int _interval = 500;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1,
+                     Description = "操作対象のウィンドウタイトル（空欄で全画面）")]
+    private string _windowTitle = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("ウィンドウクラス名", EditorType.TextBox, Group = "対象ウィンドウ", Order = 2,
+                     Description = "ウィンドウのクラス名")]
+    private string _windowClassName = string.Empty;
+
+    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+
+    public WaitImageDisappearItem() { }
+
+    public WaitImageDisappearItem(WaitImageDisappearItem? item = null) : base(item)
+    {
+        if (item is null)
+        {
+            return;
+        }
+
+        ImagePath = item.ImagePath;
+        Threshold = item.Threshold;
+        SearchColor = item.SearchColor;
+        Timeout = item.Timeout;
+        Interval = item.Interval;
+        WindowTitle = item.WindowTitle;
+        WindowClassName = item.WindowClassName;
+    }
+
+    public new ICommandListItem Clone()
+    {
+        return new WaitImageDisappearItem(this);
+    }
+
+    public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+    {
+        var absolutePath = context.ToAbsolutePath(ImagePath);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var point = await context.SearchImageAsync(
+                absolutePath,
+                Threshold,
+                SearchColor,
+                WindowTitle,
+                WindowClassName,
+                cancellationToken).ConfigureAwait(false);
+
+            if (point is null)
+            {
+                context.Log($"画像が消失しました。経過時間={stopwatch.ElapsedMilliseconds}ms");
+                return true;
+            }
+
+            if (Timeout == 0 || stopwatch.ElapsedMilliseconds >= Timeout)
+            {
+                context.Log($"タイムアウト: 画像が消失しませんでした。経過時間={stopwatch.ElapsedMilliseconds}ms");
+                return false;
+            }
+
+            if (Timeout > 0)
+            {
+                var progress = Math.Clamp((int)Math.Round((double)stopwatch.ElapsedMilliseconds / Timeout * 100), 0, 100);
+                context.ReportProgress(progress);
+            }
+
+            if (Interval > 0)
+            {
+                await Task.Delay(Interval, cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+}
+
 [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.ClickImage, typeof(SimpleCommand), typeof(IClickImageCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 1, displaySubPriority: 2, displayNameJa: "画像クリック", displayNameEn: "Image Click")]
 public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickImageCommandSettings
 {

@@ -20,31 +20,46 @@ public sealed class LoopCompositeCommandBuilder(ICommandFactory commandFactory) 
         int endIndex,
         Func<ICommand, int, int, IEnumerable<ICommand>> buildChildren)
     {
-        var loopItem = (ILoopItem)item;
-        if (loopItem.Pair is null)
+        var pair = item switch
         {
-            throw new PairMismatchException($"ループ (行 {loopItem.LineNumber}) に対応するEndLoopがありません", loopItem.LineNumber, loopItem.ItemType);
+            ILoopItem loopItem => loopItem.Pair,
+            IRetryItem retryItem => retryItem.Pair,
+            _ => null
+        };
+
+        if (pair is null)
+        {
+            throw new PairMismatchException($"ループ系コマンド (行 {item.LineNumber}) に対応する終了コマンドがありません", item.LineNumber, item.ItemType);
         }
 
-        var endLoopIndex = FindIndexByLineNumber(items, loopItem.Pair.LineNumber, itemIndex + 1, endIndex);
+        var endLoopIndex = FindIndexByLineNumber(items, pair.LineNumber, itemIndex + 1, endIndex);
         if (endLoopIndex < 0)
         {
-            throw new PairMismatchException($"ループ (行 {loopItem.LineNumber}) のEndLoop位置を特定できません", loopItem.LineNumber, loopItem.ItemType);
+            throw new PairMismatchException($"ループ系コマンド (行 {item.LineNumber}) の終了位置を特定できません", item.LineNumber, item.ItemType);
         }
 
         if (endLoopIndex - itemIndex <= 1)
         {
-            throw new EmptyStructureException($"ループ (行 {loopItem.LineNumber}) 内にコマンドがありません", loopItem.LineNumber, loopItem.ItemType);
+            throw new EmptyStructureException($"ループ系コマンド (行 {item.LineNumber}) 内にコマンドがありません", item.LineNumber, item.ItemType);
         }
 
-        var loopCommand = _commandFactory.Create<LoopCommand>(parent, new LoopCommandSettings
+        ICommand loopCommand = item switch
         {
-            LoopCount = loopItem.LoopCount,
-            Pair = null
-        });
+            ILoopItem loopItem => _commandFactory.Create<LoopCommand>(parent, new LoopCommandSettings
+            {
+                LoopCount = loopItem.LoopCount,
+                Pair = null
+            }),
+            IRetryItem retryItem => _commandFactory.Create<RetryCommand>(parent, new RetryCommandSettings
+            {
+                RetryCount = retryItem.RetryCount,
+                RetryInterval = retryItem.RetryInterval
+            }),
+            _ => throw new UnsupportedCommandTypeException($"未対応のループ系コマンドです: {item.GetType().Name}", item.LineNumber, item.ItemType)
+        };
 
-        loopCommand.LineNumber = loopItem.LineNumber;
-        loopCommand.IsEnabled = loopItem.IsEnable;
+        loopCommand.LineNumber = item.LineNumber;
+        loopCommand.IsEnabled = item.IsEnable;
         loopCommand.Children = buildChildren(loopCommand, itemIndex + 1, endLoopIndex - 1);
 
         return loopCommand;

@@ -25,6 +25,8 @@ public static class CommandValidationErrorCodes
     public const string ModelPathNotFound = "E_MODEL_PATH_NOT_FOUND";
     public const string WaitOutOfRange = "E_WAIT_RANGE";
     public const string LoopCountOutOfRange = "E_LOOP_COUNT_RANGE";
+    public const string RetryCountOutOfRange = "E_RETRY_COUNT_RANGE";
+    public const string RetryIntervalOutOfRange = "E_RETRY_INTERVAL_RANGE";
     public const string TessdataPathNotFound = "E_TESSDATA_PATH_NOT_FOUND";
     public const string TessdataDataMissing = "E_TESSDATA_TRAINEDDATA_MISSING";
 }
@@ -217,6 +219,21 @@ public static class CommandSettingsValidator
         if (settings is ILoopCommandSettings loop && loop.LoopCount < 0)
         {
             Add(issues, CommandValidationErrorCodes.LoopCountOutOfRange, nameof(loop.LoopCount), "ループ回数は0以上で指定してください。");
+        }
+
+        if (settings is IRetryCommandSettings retry)
+        {
+            if (retry.RetryCount <= 0)
+            {
+                Add(issues, CommandValidationErrorCodes.RetryCountOutOfRange, nameof(retry.RetryCount), "リトライ回数は1以上で指定してください。");
+            }
+
+            ValidateNonNegative(
+                retry.RetryInterval,
+                nameof(retry.RetryInterval),
+                CommandValidationErrorCodes.RetryIntervalOutOfRange,
+                "リトライ間隔は0以上で指定してください。",
+                issues);
         }
 
         return issues;

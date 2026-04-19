@@ -32,7 +32,9 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
             ["FindText"] = CommandTypeNames.FindText,
             ["ClickImageAI"] = CommandTypeNames.ClickImageAI,
             ["WaitImage"] = CommandTypeNames.WaitImage,
+            ["WaitImageDisappear"] = CommandTypeNames.WaitImageDisappear,
             ["EndLoop"] = CommandTypeNames.LoopEnd,
+            ["RetryEnd"] = CommandTypeNames.RetryEnd,
             ["Break"] = CommandTypeNames.LoopBreak,
             ["BreakLoop"] = CommandTypeNames.LoopBreak,
             ["EndIf"] = CommandTypeNames.IfEnd,
@@ -407,6 +409,8 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
             IIfEndItem endIfItem => () => endIfItem.Pair = null,
             ILoopItem loopItem => () => loopItem.Pair = null,
             ILoopEndItem endLoopItem => () => endLoopItem.Pair = null,
+            IRetryItem retryItem => () => retryItem.Pair = null,
+            IRetryEndItem retryEndItem => () => retryEndItem.Pair = null,
             _ => (Action?)null
         };
 

@@ -54,6 +54,31 @@ public class CommandListTests
     }
 
     [Fact]
+    public void Add_RetryBlock_RebuildsLineNumbersNestLevelAndPairs()
+    {
+        var list = CreateList();
+
+        var retry = new RetryItem { ItemType = CommandTypeNames.Retry, RetryCount = 3, RetryInterval = 100 };
+        var click = new ClickItem { ItemType = CommandTypeNames.Click };
+        var retryEnd = new RetryEndItem { ItemType = CommandTypeNames.RetryEnd };
+
+        list.Add(retry);
+        list.Add(click);
+        list.Add(retryEnd);
+
+        Assert.Equal(1, retry.LineNumber);
+        Assert.Equal(2, click.LineNumber);
+        Assert.Equal(3, retryEnd.LineNumber);
+
+        Assert.Equal(0, retry.NestLevel);
+        Assert.Equal(1, click.NestLevel);
+        Assert.Equal(0, retryEnd.NestLevel);
+
+        Assert.Same(retryEnd, retry.Pair);
+        Assert.Same(retry, retryEnd.Pair);
+    }
+
+    [Fact]
     public void Move_UpdatesLineNumbers()
     {
         var list = CreateList();
@@ -180,6 +205,97 @@ public class MacroFactoryTests
         var factory = provider.GetRequiredService<IMacroFactory>();
         var ex = Assert.Throws<InvalidOperationException>(() => factory.CreateMacro(list.Items));
         Assert.Contains("生成に失敗", ex.Message);
+    }
+
+    [Fact]
+    public void CreateMacro_WithRetryBlock_BuildsRetryCommand()
+    {
+        var services = new ServiceCollection();
+        services.AddCommandServices();
+        services.AddMacroRuntimeCoreServices();
+
+        using var provider = services.BuildServiceProvider();
+        var registry = provider.GetRequiredService<ICommandRegistry>();
+        registry.Initialize();
+
+        var list = new CommandList(provider.GetRequiredService<ICommandDefinitionProvider>());
+        list.Add(new RetryItem
+        {
+            ItemType = CommandTypeNames.Retry,
+            RetryCount = 2,
+            RetryInterval = 0
+        });
+        list.Add(new WaitItem { ItemType = CommandTypeNames.Wait, Wait = 1 });
+        list.Add(new RetryEndItem { ItemType = CommandTypeNames.RetryEnd });
+
+        var factory = provider.GetRequiredService<IMacroFactory>();
+        var macro = factory.CreateMacro(list.Items);
+
+        var topLoop = Assert.IsType<LoopCommand>(macro);
+        var firstChild = Assert.Single(topLoop.Children);
+        Assert.IsType<RetryCommand>(firstChild);
+    }
+}
+
+public class RetryCommandTests
+{
+    [Fact]
+    public async Task Execute_WhenChildFailsThenSucceeds_ReturnsTrue()
+    {
+        var retry = new RetryCommand(
+            null,
+            new RetryCommandSettings
+            {
+                RetryCount = 3,
+                RetryInterval = 0
+            });
+
+        var sequence = new SequenceCommand([false, true]);
+        retry.Children = [sequence];
+
+        var result = await retry.Execute(CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(2, sequence.ExecuteCount);
+    }
+
+    [Fact]
+    public async Task Execute_WhenAllRetriesFail_ReturnsFalse()
+    {
+        var retry = new RetryCommand(
+            null,
+            new RetryCommandSettings
+            {
+                RetryCount = 3,
+                RetryInterval = 0
+            });
+
+        var sequence = new SequenceCommand([false, false, false]);
+        retry.Children = [sequence];
+
+        var result = await retry.Execute(CancellationToken.None);
+
+        Assert.False(result);
+        Assert.Equal(3, sequence.ExecuteCount);
+    }
+
+    private sealed class SequenceCommand : BaseCommand
+    {
+        private readonly Queue<bool> _results;
+
+        public int ExecuteCount { get; private set; }
+
+        public SequenceCommand(IEnumerable<bool> results)
+            : base(null, new CommandSettings())
+        {
+            _results = new Queue<bool>(results);
+        }
+
+        protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            ExecuteCount++;
+            return ValueTask.FromResult(_results.Count > 0 && _results.Dequeue());
+        }
     }
 }
 
