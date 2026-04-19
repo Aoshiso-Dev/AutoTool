@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using AutoTool.Commands.Services;
+﻿using AutoTool.Commands.Services;
+using AutoTool.Infrastructure.Ui;
 
 namespace AutoTool.Infrastructure.Implementations;
 
@@ -10,22 +10,39 @@ public class WpfNotifier : INotifier
 {
     public void ShowInfo(string message, string title)
     {
-        MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+        _ = AutoToolDialog.Show(
+            title,
+            message,
+            [new("ok", "OK", IsDefault: true, IsCancel: true)],
+            AutoToolDialogTone.Info);
     }
 
     public void ShowWarning(string message, string title)
     {
-        MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+        _ = AutoToolDialog.Show(
+            title,
+            message,
+            [new("ok", "OK", IsDefault: true, IsCancel: true)],
+            AutoToolDialogTone.Warning);
     }
 
     public void ShowError(string message, string title)
     {
-        MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+        _ = AutoToolDialog.Show(
+            title,
+            message,
+            [new("ok", "OK", IsDefault: true, IsCancel: true)],
+            AutoToolDialogTone.Error);
     }
 
     public bool ShowConfirm(string message, string title)
     {
-        return MessageBox.Show(message, title, MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK;
+        var result = AutoToolDialog.Show(
+            title,
+            message,
+            [new("ok", "OK", IsDefault: true), new("cancel", "キャンセル", IsCancel: true)],
+            AutoToolDialogTone.Question);
+
+        return string.Equals(result, "ok", StringComparison.Ordinal);
     }
 }
-

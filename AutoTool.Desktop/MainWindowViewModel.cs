@@ -25,6 +25,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IRecentFileStore _recentFileStore;
     private EventHandler? _commandHistoryChangedHandler;
     private bool _lastKnownIsRunning;
+    private bool _isDirtyTrackingSuspended;
     private bool _disposed;
 
     [ObservableProperty]
@@ -92,6 +93,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _statusMessage = "準備完了";
 
+    [ObservableProperty]
+    private bool _hasUnsavedChanges;
+
     public MainWindowViewModel(
         INotifier notifier,
         IStatusMessageScheduler statusMessageScheduler,
@@ -142,8 +146,30 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void InitializeCommandHistory()
     {
         MacroPanelViewModel.SetCommandHistory(CommandHistory);
-        _commandHistoryChangedHandler = (_, _) => UpdateCommandStates();
+        _commandHistoryChangedHandler = (_, _) =>
+        {
+            if (!_isDirtyTrackingSuspended)
+            {
+                HasUnsavedChanges = true;
+            }
+
+            UpdateCommandStates();
+        };
         CommandHistory.HistoryChanged += _commandHistoryChangedHandler;
+    }
+
+    private void ClearDirtyState()
+    {
+        _isDirtyTrackingSuspended = true;
+        try
+        {
+            CommandHistory.Clear();
+            HasUnsavedChanges = false;
+        }
+        finally
+        {
+            _isDirtyTrackingSuspended = false;
+        }
     }
 
     private void UpdateCommandStates()
@@ -227,7 +253,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            CommandHistory.Clear();
+            ClearDirtyState();
             StatusMessage = $"ファイルを開きました: {CurrentFileName}";
             UpdateProperties();
         }
@@ -256,6 +282,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
             StatusMessage = "保存中...";
             fileManager.SaveFile();
+            HasUnsavedChanges = false;
             UpdateProperties();
 
             StatusMessage = $"保存しました: {CurrentFileName}";
@@ -286,6 +313,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                 return;
             }
 
+            HasUnsavedChanges = false;
             UpdateProperties();
 
             StatusMessage = $"保存しました: {CurrentFileName}";
@@ -339,6 +367,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
 
         macroFileManager.ResetToNewFile();
+        ClearDirtyState();
         StatusMessage = "全削除したため、新規保存モードに切り替えました。";
         _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
         UpdateProperties();
@@ -375,7 +404,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        CommandHistory.Clear();
+        ClearDirtyState();
         StatusMessage = $"前回の状態を復元しました: {macroFileManager.CurrentFileName}";
         _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
         UpdateProperties();

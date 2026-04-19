@@ -9,6 +9,7 @@ using AutoTool.Commands.Infrastructure;
 using AutoTool.Desktop.Model;
 using AutoTool.Desktop.Panels.ViewModel;
 using AutoTool.Desktop.View;
+using AutoTool.Infrastructure.Ui;
 using Wpf.Ui.Controls;
 
 namespace AutoTool.Desktop;
@@ -73,6 +74,12 @@ public partial class MainWindow : FluentWindow
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        if (!ConfirmCloseWhenUnsaved())
+        {
+            e.Cancel = true;
+            return;
+        }
+
         ResetEmergencyStopState();
         _windowSettings.UpdateFromWindow(this);
         if (_restorePreviousSession)
@@ -85,6 +92,40 @@ public partial class MainWindow : FluentWindow
         }
 
         _windowSettings.Save();
+    }
+
+    private bool ConfirmCloseWhenUnsaved()
+    {
+        if (!_viewModel.HasUnsavedChanges)
+        {
+            return true;
+        }
+
+        var result = AutoToolDialog.Show(
+            "未保存の変更",
+            "未保存の変更があります。このまま閉じると変更内容は失われます。閉じますか？",
+            [
+                new("save", "保存して閉じる", IsDefault: true),
+                new("discard", "保存せず閉じる"),
+                new("cancel", "キャンセル", IsCancel: true)
+            ],
+            AutoToolDialogTone.Warning,
+            this);
+
+        switch (result)
+        {
+            case "save":
+                if (_viewModel.SaveFileCommand.CanExecute(null))
+                {
+                    _viewModel.SaveFileCommand.Execute(null);
+                }
+
+                return !_viewModel.HasUnsavedChanges;
+            case "discard":
+                return true;
+            default:
+                return false;
+        }
     }
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
