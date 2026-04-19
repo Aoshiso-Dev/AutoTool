@@ -28,6 +28,8 @@ public partial class MacroPanelViewModel
         _favoritePanel.AddRequested += HandleFavoriteAddRequested;
         _favoritePanel.DeleteRequested += HandleFavoriteDeleteRequested;
         _favoritePanel.LoadRequested += HandleFavoriteLoadRequested;
+        _favoritePanel.InsertRequested += HandleFavoriteInsertRequested;
+        _logPanel.StatusMessageRequested += HandleLogPanelStatusMessageRequested;
     }
 
     private void UnsubscribeFromChildViewModelEvents()
@@ -50,6 +52,8 @@ public partial class MacroPanelViewModel
         _favoritePanel.AddRequested -= HandleFavoriteAddRequested;
         _favoritePanel.DeleteRequested -= HandleFavoriteDeleteRequested;
         _favoritePanel.LoadRequested -= HandleFavoriteLoadRequested;
+        _favoritePanel.InsertRequested -= HandleFavoriteInsertRequested;
+        _logPanel.StatusMessageRequested -= HandleLogPanelStatusMessageRequested;
     }
 
     private async Task HandleRunRequestedAsync()
@@ -61,10 +65,12 @@ public partial class MacroPanelViewModel
 
         if (!ValidateBeforeRun())
         {
+            PublishStatusMessage("実行前チェックで要修正項目が見つかりました。");
             return;
         }
 
         System.Windows.Application.Current.Dispatcher.Invoke(() => SetAllPanelsRunningState(true));
+        PublishStatusMessage("マクロを実行開始しました。");
 
         await Run();
     }
@@ -76,20 +82,31 @@ public partial class MacroPanelViewModel
         {
             SetAllPanelsRunningState(false);
         });
+        PublishStatusMessage("実行を停止しました。");
     }
 
-    private void HandleSaveRequested() => _listPanel.Save();
+    private void HandleSaveRequested()
+    {
+        _listPanel.Save();
+        PublishStatusMessage("保存処理を実行しました。");
+    }
 
     private void HandleLoadRequested()
     {
         _listPanel.Load();
         _editPanel.SetListCount(_listPanel.GetCount());
         _commandHistory?.Clear();
+        PublishStatusMessage("マクロを読み込みました。");
     }
 
     private void HandleSelectedItemChanged(ICommandListItem? item)
     {
         _editPanel.SetItem(item);
+    }
+
+    private void HandleLogPanelStatusMessageRequested(string message)
+    {
+        PublishStatusMessage(message);
     }
 
     private void RegisterCommandEventHandlers()

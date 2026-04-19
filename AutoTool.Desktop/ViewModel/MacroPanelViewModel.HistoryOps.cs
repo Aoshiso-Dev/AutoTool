@@ -2,6 +2,7 @@
 using AutoTool.Application.History;
 using AutoTool.Application.History.Commands;
 using AutoTool.Automation.Contracts.Lists;
+using AutoTool.Automation.Runtime.Lists;
 
 namespace AutoTool.Desktop.ViewModel;
 
@@ -11,6 +12,7 @@ public partial class MacroPanelViewModel
 
     private void HandleClear()
     {
+        var countBefore = _listPanel.GetCount();
         if (_commandHistory is not null)
         {
             var clearCommand = new ClearAllCommand(
@@ -25,7 +27,14 @@ public partial class MacroPanelViewModel
             _listPanel.Clear();
         }
 
-        _editPanel.SetListCount(_listPanel.GetCount());
+        var countAfter = _listPanel.GetCount();
+        _editPanel.SetListCount(countAfter);
+        if (countBefore > 0 && countAfter == 0)
+        {
+            RequestNewFileState();
+        }
+
+        PublishStatusMessage(countBefore > 0 ? $"コマンドを全削除しました（{countBefore}件）。" : "削除対象のコマンドはありません。");
     }
 
     private void HandleAdd(string itemType)
@@ -51,14 +60,21 @@ public partial class MacroPanelViewModel
         }
 
         _editPanel.SetListCount(_listPanel.GetCount());
+        var addedCommandName = CommandListItem.GetDisplayNameForType(itemType);
+        PublishStatusMessage($"{addedCommandName} を追加しました。");
     }
 
     private void HandleUp()
     {
         var fromIndex = _listPanel.SelectedLineNumber;
         var toIndex = fromIndex - 1;
+        if (fromIndex <= 0)
+        {
+            PublishStatusMessage("これ以上上へ移動できません。");
+            return;
+        }
 
-        if (toIndex >= 0 && _commandHistory is not null)
+        if (_commandHistory is not null)
         {
             var moveCommand = new MoveItemCommand(
                 fromIndex,
@@ -71,14 +87,21 @@ public partial class MacroPanelViewModel
         {
             _listPanel.Up();
         }
+
+        PublishStatusMessage("コマンドを上へ移動しました。");
     }
 
     private void HandleDown()
     {
         var fromIndex = _listPanel.SelectedLineNumber;
         var toIndex = fromIndex + 1;
+        if (fromIndex < 0 || toIndex >= _listPanel.GetCount())
+        {
+            PublishStatusMessage("これ以上下へ移動できません。");
+            return;
+        }
 
-        if (toIndex < _listPanel.GetCount() && _commandHistory is not null)
+        if (_commandHistory is not null)
         {
             var moveCommand = new MoveItemCommand(
                 fromIndex,
@@ -91,10 +114,13 @@ public partial class MacroPanelViewModel
         {
             _listPanel.Down();
         }
+
+        PublishStatusMessage("コマンドを下へ移動しました。");
     }
 
     private void HandleDelete()
     {
+        var countBefore = _listPanel.GetCount();
         var selectedItems = _listPanel.GetSelectedItems()
             .Distinct()
             .ToList();
@@ -111,6 +137,7 @@ public partial class MacroPanelViewModel
 
             if (selectedItem is null)
             {
+                PublishStatusMessage("削除するコマンドを選択してください。");
                 return;
             }
 
@@ -123,6 +150,7 @@ public partial class MacroPanelViewModel
             var selectedIndex = _listPanel.CommandList.Items.IndexOf(target);
             if (selectedIndex < 0)
             {
+                PublishStatusMessage("削除対象のコマンドが見つかりませんでした。");
                 return;
             }
 
@@ -171,7 +199,14 @@ public partial class MacroPanelViewModel
             }
         }
 
-        _editPanel.SetListCount(_listPanel.GetCount());
+        var countAfter = _listPanel.GetCount();
+        _editPanel.SetListCount(countAfter);
+        if (countBefore > 0 && countAfter == 0)
+        {
+            RequestNewFileState();
+        }
+
+        PublishStatusMessage($"{selectedItems.Count}件のコマンドを削除しました。");
     }
 
     private void HandleCopy()

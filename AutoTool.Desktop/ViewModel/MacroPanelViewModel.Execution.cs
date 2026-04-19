@@ -338,10 +338,65 @@ public partial class MacroPanelViewModel
                 lineLabel,
                 ResolveCommandName(validationError),
                 $"エラー [{validationError.ErrorCode}] {NormalizeLine(validationError.Message)}");
+
+            foreach (var guide in BuildRecoveryGuideMessages(validationError))
+            {
+                _logPanel.WriteLog(lineLabel, ResolveCommandName(validationError), guide);
+            }
             return;
         }
 
-        _logPanel.WriteLog(string.Empty, "システム", $"エラー: {NormalizeLine(ExceptionDetailsFormatter.GetMostRelevantMessage(ex))}");
+        var normalizedMessage = NormalizeLine(ExceptionDetailsFormatter.GetMostRelevantMessage(ex));
+        _logPanel.WriteLog(string.Empty, "システム", $"エラー: {normalizedMessage}");
+
+        foreach (var guide in BuildRecoveryGuideMessages(ex))
+        {
+            _logPanel.WriteLog(string.Empty, "システム", guide);
+        }
+    }
+
+    private static IReadOnlyList<string> BuildRecoveryGuideMessages(CommandValidationException validationError)
+    {
+        var propertyName = ToUserPropertyName(validationError.PropertyName);
+        var lineHint = validationError.LineNumber > 0
+            ? $"{FormatUiLineLabel(validationError.LineNumber)} を選択して設定を修正してください。"
+            : "該当コマンドの設定を見直してください。";
+
+        var recovery = validationError.ErrorCode switch
+        {
+            CommandValidationErrorCodes.ImagePathRequired => "対処: 画像ファイルを再選択してください。",
+            CommandValidationErrorCodes.ImagePathNotFound => "対処: 画像ファイルの保存場所を確認し、必要なら取り直してください。",
+            CommandValidationErrorCodes.ProgramPathRequired => "対処: 実行ファイルのパスを指定してください。",
+            CommandValidationErrorCodes.ProgramPathNotFound => "対処: 実行ファイルの存在と実行権限を確認してください。",
+            CommandValidationErrorCodes.ModelPathRequired => "対処: AIモデルファイルのパスを指定してください。",
+            CommandValidationErrorCodes.ModelPathNotFound => "対処: AIモデルファイルの配置先を確認してください。",
+            CommandValidationErrorCodes.TessdataPathNotFound => "対処: tessdata フォルダのパスを再指定してください。",
+            CommandValidationErrorCodes.TessdataDataMissing => "対処: tessdata フォルダに *.traineddata を配置してください。",
+            CommandValidationErrorCodes.TimeoutOutOfRange => "対処: タイムアウトを 0 以上に設定してください。",
+            CommandValidationErrorCodes.IntervalOutOfRange => "対処: 検索間隔を 0 以上に設定してください。",
+            CommandValidationErrorCodes.WaitOutOfRange => "対処: 待機時間を 0 以上に設定してください。",
+            _ => $"対処: {propertyName} の値を見直してください。"
+        };
+
+        return
+        [
+            $"復旧ガイド: 項目={propertyName}",
+            $"原因候補: {NormalizeLine(validationError.Message)}",
+            recovery,
+            $"次アクション: {lineHint}"
+        ];
+    }
+
+    private static IReadOnlyList<string> BuildRecoveryGuideMessages(Exception ex)
+    {
+        var cause = NormalizeLine(ExceptionDetailsFormatter.GetMostRelevantMessage(ex));
+
+        return
+        [
+            $"復旧ガイド: 原因候補={cause}",
+            "対処: 直前に編集したコマンド設定と対象ウィンドウ状態を確認してください。",
+            "次アクション: 実行前チェックを再実行し、要修正がないことを確認してから再実行してください。"
+        ];
     }
 
     private string ResolveCommandName(CommandValidationException validationError)

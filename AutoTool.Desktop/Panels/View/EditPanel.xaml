@@ -98,6 +98,129 @@
                         </StackPanel>
                     </Border>
 
+                    <Border Background="{ui:ThemeResource ControlFillColorSecondaryBrush}"
+                            BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10"
+                            Margin="0,0,0,8"
+                            Visibility="{Binding IsOcrPreviewAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <TextBlock Text="OCRプレビュー"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+                                <ui:Button Content="テスト実行"
+                                           Command="{Binding RunOcrPreviewCommand}"
+                                           Appearance="Primary"
+                                           Height="30"
+                                           MinWidth="88"
+                                           DockPanel.Dock="Right"/>
+                            </DockPanel>
+                            <TextBlock Text="{Binding OcrPreviewSummary}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding OcrPreviewConfidenceText}"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"
+                                       Visibility="{Binding HasOcrPreviewResult, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            <TextBox Text="{Binding OcrPreviewText}"
+                                     IsReadOnly="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     MinHeight="54"
+                                      MaxHeight="120"
+                                      Visibility="{Binding HasOcrPreviewResult, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{ui:ThemeResource ControlFillColorSecondaryBrush}"
+                            BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10"
+                            Margin="0,0,0,8"
+                            Visibility="{Binding IsImageSearchPreviewAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <TextBlock Text="画像検索テスト"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+                                <ui:Button Content="テスト実行"
+                                           Command="{Binding RunImageSearchPreviewCommand}"
+                                           Appearance="Primary"
+                                           Height="30"
+                                           MinWidth="88"
+                                           DockPanel.Dock="Right"/>
+                            </DockPanel>
+                            <TextBlock Text="{Binding ImageSearchPreviewSummary}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding ImageSearchSearchArea}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"
+                                       Visibility="{Binding HasImageSearchPreviewResult, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            <TextBlock Text="{Binding ImageSearchPreviewDetail}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"
+                                       Visibility="{Binding HasImageSearchPreviewResult, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            <TextBox Text="{Binding ImageSearchRecoveryGuide}"
+                                     IsReadOnly="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     MinHeight="54"
+                                     MaxHeight="120"
+                                     Visibility="{Binding HasImageSearchPreviewResult, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{ui:ThemeResource ControlFillColorSecondaryBrush}"
+                            BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10"
+                            Margin="0,0,0,8"
+                            Visibility="{Binding IsAiDetectionPreviewAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <TextBlock Text="AI検出テスト"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+                                <ui:Button Content="テスト実行"
+                                           Command="{Binding RunAiDetectionPreviewCommand}"
+                                           Appearance="Primary"
+                                           Height="30"
+                                           MinWidth="88"
+                                           DockPanel.Dock="Right"/>
+                            </DockPanel>
+                            <TextBlock Text="{Binding AiDetectionPreviewSummary}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding AiDetectionSearchArea}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"
+                                       Visibility="{Binding HasAiDetectionPreviewResult, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            <TextBlock Text="{Binding AiDetectionPreviewDetail}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"
+                                       Visibility="{Binding HasAiDetectionPreviewResult, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            <TextBox Text="{Binding AiDetectionRecoveryGuide}"
+                                     IsReadOnly="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     MinHeight="54"
+                                     MaxHeight="120"
+                                     Visibility="{Binding HasAiDetectionPreviewResult, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                        </StackPanel>
+                    </Border>
+
                     <ItemsControl ItemsSource="{Binding PropertyGroups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

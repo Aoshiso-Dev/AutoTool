@@ -116,6 +116,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _lastKnownIsRunning = IsRunning;
         MacroPanelViewModel.PropertyChanged += OnMacroPanelPropertyChanged;
         MacroPanelViewModel.StatusMessageRequested += OnMacroStatusMessageRequested;
+        MacroPanelViewModel.NewFileStateRequested += OnMacroNewFileStateRequested;
     }
 
     private void OnMacroPanelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -330,6 +331,19 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
     }
 
+    private void OnMacroNewFileStateRequested()
+    {
+        if (!TryGetMacroFileManager(out var macroFileManager))
+        {
+            return;
+        }
+
+        macroFileManager.ResetToNewFile();
+        StatusMessage = "全削除したため、新規保存モードに切り替えました。";
+        _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(2), () => StatusMessage = "準備完了");
+        UpdateProperties();
+    }
+
     public void RestoreSessionState(
         int selectedTabIndex,
         bool isFavoritePanelOpen,
@@ -391,6 +405,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         MacroPanelViewModel.PropertyChanged -= OnMacroPanelPropertyChanged;
         MacroPanelViewModel.StatusMessageRequested -= OnMacroStatusMessageRequested;
+        MacroPanelViewModel.NewFileStateRequested -= OnMacroNewFileStateRequested;
         MacroPanelViewModel.Dispose();
         _disposed = true;
 

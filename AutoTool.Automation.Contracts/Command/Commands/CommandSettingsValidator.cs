@@ -262,14 +262,23 @@ public static class CommandSettingsValidator
 
     private static void ValidateTessdataPath(string tessdataPath, string propertyName, IPathResolver? pathResolver, bool includeExistenceChecks, ICollection<CommandValidationIssue> issues)
     {
-        if (string.IsNullOrWhiteSpace(tessdataPath) || !includeExistenceChecks || !TryResolve(pathResolver, tessdataPath, out var absolutePath))
+        if (!includeExistenceChecks)
+        {
+            return;
+        }
+
+        var normalizedPath = string.IsNullOrWhiteSpace(tessdataPath) ? @".\Settings\tessdata" : tessdataPath;
+        if (!TryResolve(pathResolver, normalizedPath, out var absolutePath))
         {
             return;
         }
 
         if (!Directory.Exists(absolutePath))
         {
-            Add(issues, CommandValidationErrorCodes.TessdataPathNotFound, propertyName, $"フォルダが見つかりません: {tessdataPath}");
+            var message = string.IsNullOrWhiteSpace(tessdataPath)
+                ? "tessdata ディレクトリ未指定のため ./Settings/tessdata を確認しましたが、フォルダが見つかりません。"
+                : $"フォルダが見つかりません: {tessdataPath}";
+            Add(issues, CommandValidationErrorCodes.TessdataPathNotFound, propertyName, message);
             return;
         }
 
@@ -278,7 +287,10 @@ public static class CommandSettingsValidator
             var hasTrainedData = Directory.EnumerateFiles(absolutePath, "*.traineddata", SearchOption.TopDirectoryOnly).Any();
             if (!hasTrainedData)
             {
-                Add(issues, CommandValidationErrorCodes.TessdataDataMissing, propertyName, "*.traineddata が見つかりません。tessdata フォルダを選択してください。");
+                var message = string.IsNullOrWhiteSpace(tessdataPath)
+                    ? "*.traineddata が見つかりません。./Settings/tessdata に OCR データを配置してください。"
+                    : "*.traineddata が見つかりません。tessdata フォルダを選択してください。";
+                Add(issues, CommandValidationErrorCodes.TessdataDataMissing, propertyName, message);
             }
         }
         catch

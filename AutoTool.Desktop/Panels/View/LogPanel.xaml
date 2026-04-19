@@ -14,12 +14,33 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBox Grid.Row="0"
-                 Margin="0,0,0,8"
-                 Height="30"
-                 VerticalContentAlignment="Center"
-                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                 ToolTip="ログを検索"/>
+        <Grid Grid.Row="0" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox Grid.Column="0"
+                     Height="30"
+                     VerticalContentAlignment="Center"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="ログを検索"/>
+
+            <ui:Button Grid.Column="1"
+                       Content="コピー"
+                       Command="{Binding CopyLogsCommand}"
+                       Height="30"
+                       Margin="8,0,0,0"
+                       Appearance="Secondary"/>
+
+            <ui:Button Grid.Column="2"
+                       Content="クリア"
+                       Command="{Binding ClearLogsCommand}"
+                       Height="30"
+                       Margin="8,0,0,0"
+                       Appearance="Secondary"/>
+        </Grid>
 
         <ListBox x:Name="LogListBox"
                  Grid.Row="1"

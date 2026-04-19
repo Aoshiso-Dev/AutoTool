@@ -5,6 +5,7 @@ using AutoTool.Commands.Services;
 using AutoTool.Commands.Model.Input;
 using AutoTool.Infrastructure.Panels;
 using AutoTool.Application.Ports;
+using AutoTool.Desktop.Panels.Services;
 
 
 namespace AutoTool.Desktop.Panels.ViewModel;
@@ -15,6 +16,10 @@ public partial class EditPanelViewModel
         ICommandRegistry commandRegistry,
         IWindowService windowService,
         IPathResolver pathResolver,
+        IImageMatcher imageMatcher,
+        IOcrEngine ocrEngine,
+        IObjectDetector objectDetector,
+        IDetectionHighlightService detectionHighlightService,
         INotifier notifier,
         IPanelDialogService panelDialogService,
         ICapturePathProvider capturePathProvider)
@@ -22,12 +27,20 @@ public partial class EditPanelViewModel
         ArgumentNullException.ThrowIfNull(commandRegistry);
         ArgumentNullException.ThrowIfNull(windowService);
         ArgumentNullException.ThrowIfNull(pathResolver);
+        ArgumentNullException.ThrowIfNull(imageMatcher);
+        ArgumentNullException.ThrowIfNull(ocrEngine);
+        ArgumentNullException.ThrowIfNull(objectDetector);
+        ArgumentNullException.ThrowIfNull(detectionHighlightService);
         ArgumentNullException.ThrowIfNull(notifier);
         ArgumentNullException.ThrowIfNull(panelDialogService);
         ArgumentNullException.ThrowIfNull(capturePathProvider);
         _commandRegistry = commandRegistry;
         _windowService = windowService;
         _pathResolver = pathResolver;
+        _imageMatcher = imageMatcher;
+        _ocrEngine = ocrEngine;
+        _objectDetector = objectDetector;
+        _detectionHighlightService = detectionHighlightService;
         _notifier = notifier;
         _panelDialogService = panelDialogService;
         _capturePathProvider = capturePathProvider;

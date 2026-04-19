@@ -128,14 +128,21 @@ public sealed class TesseractOcrEngine : IOcrEngine
             return tessdataPath;
         }
 
-        var candidate = Path.Combine(AppContext.BaseDirectory, "tessdata");
-        if (Directory.Exists(candidate))
+        var settingsCandidate = Path.Combine(AppContext.BaseDirectory, "Settings", "tessdata");
+        if (Directory.Exists(settingsCandidate))
         {
-            return candidate;
+            return settingsCandidate;
+        }
+
+        // Backward-compatibility fallback for legacy deployments.
+        var legacyCandidate = Path.Combine(AppContext.BaseDirectory, "tessdata");
+        if (Directory.Exists(legacyCandidate))
+        {
+            return legacyCandidate;
         }
 
         throw new DirectoryNotFoundException(
-            "tessdata ディレクトリが見つかりません。GetVariable_OCR の tessdata 設定で有効なフォルダを指定してください。");
+            "tessdata ディレクトリが見つかりません。未指定時は ./Settings/tessdata を使用します。");
     }
 
     private static PageSegMode ParsePageSegMode(string? pageSegmentationMode)

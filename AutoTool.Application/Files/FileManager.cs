@@ -115,6 +115,13 @@ public partial class FileManager : ObservableObject
         return true;
     }
 
+    public void ResetToNewFile()
+    {
+        CurrentFilePath = string.Empty;
+        CurrentFileName = string.Empty;
+        IsFileOpened = false;
+    }
+
     private FileDialogOptions CreateDialogOptions() => new(
         _fileTypeInfo.Title,
         _fileTypeInfo.Filter,

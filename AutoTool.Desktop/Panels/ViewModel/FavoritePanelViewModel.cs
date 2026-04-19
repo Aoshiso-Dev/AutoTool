@@ -29,6 +29,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
     public event Action<string>? AddRequested;
     public event Action<FavoriteMacroEntry>? DeleteRequested;
     public event Action<FavoriteMacroEntry>? LoadRequested;
+    public event Action<FavoriteMacroEntry>? InsertRequested;
 
     public FavoritePanelViewModel(IFavoriteMacroStore favoriteMacroStore)
     {
@@ -61,6 +62,17 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
         LoadRequested?.Invoke(SelectedFavorite);
     }
 
+    [RelayCommand(CanExecute = nameof(CanInsertSelectedFavorite))]
+    private void InsertSelectedFavorite()
+    {
+        if (SelectedFavorite is null)
+        {
+            return;
+        }
+
+        InsertRequested?.Invoke(SelectedFavorite);
+    }
+
     [RelayCommand(CanExecute = nameof(CanDeleteSelectedFavorite))]
     private void DeleteSelectedFavorite()
     {
@@ -74,6 +86,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
 
     private bool CanAddFavorite() => !IsRunning && !string.IsNullOrWhiteSpace(FavoriteName);
     private bool CanLoadSelectedFavorite() => !IsRunning && SelectedFavorite is not null;
+    private bool CanInsertSelectedFavorite() => !IsRunning && SelectedFavorite is not null;
     private bool CanDeleteSelectedFavorite() => !IsRunning && SelectedFavorite is not null;
 
     partial void OnFavoriteNameChanged(string value)
@@ -84,6 +97,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
     partial void OnSelectedFavoriteChanged(FavoriteMacroEntry? value)
     {
         LoadSelectedFavoriteCommand.NotifyCanExecuteChanged();
+        InsertSelectedFavoriteCommand.NotifyCanExecuteChanged();
         DeleteSelectedFavoriteCommand.NotifyCanExecuteChanged();
     }
 
@@ -91,6 +105,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
     {
         AddFavoriteFromCurrentCommand.NotifyCanExecuteChanged();
         LoadSelectedFavoriteCommand.NotifyCanExecuteChanged();
+        InsertSelectedFavoriteCommand.NotifyCanExecuteChanged();
         DeleteSelectedFavoriteCommand.NotifyCanExecuteChanged();
     }
 

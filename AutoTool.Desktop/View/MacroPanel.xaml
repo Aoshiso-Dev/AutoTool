@@ -35,10 +35,17 @@
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0" Margin="8,0,8,8" ClipToBounds="True">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="6"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
                 <Border Background="{ui:ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
+                        Grid.Row="0"
                         VerticalAlignment="Stretch"
                         HorizontalAlignment="Stretch">
                     <panels:ListPanel DataContext="{Binding ListPanelViewModel}"
@@ -162,54 +169,37 @@
                     </Border>
                 </Border>
 
-                <Border HorizontalAlignment="Stretch"
-                        VerticalAlignment="Bottom"
-                        Height="220"
-                        Margin="0"
-                        Panel.ZIndex="30">
-                    <Border.RenderTransform>
-                        <TranslateTransform Y="240"/>
-                    </Border.RenderTransform>
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Opacity" Value="0"/>
-                            <Setter Property="IsHitTestVisible" Value="False"/>
+                <GridSplitter Grid.Row="1"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              ResizeDirection="Rows"
+                              ResizeBehavior="PreviousAndNext"
+                              Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}">
+                    <GridSplitter.Style>
+                        <Style TargetType="GridSplitter">
+                            <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsLogPanelOpen}" Value="True">
-                                    <Setter Property="IsHitTestVisible" Value="True"/>
-                                    <DataTrigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                                                 To="0"
-                                                                 Duration="0:0:0.22">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </DataTrigger.EnterActions>
-                                    <DataTrigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                                                 To="240"
-                                                                 Duration="0:0:0.2">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseIn"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </DataTrigger.ExitActions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </GridSplitter.Style>
+                </GridSplitter>
+
+                <Border Grid.Row="2"
+                        Height="220"
+                        Margin="0,8,0,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLogPanelOpen}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
-
                     <Border Background="{ui:ThemeResource SolidBackgroundFillColorBaseBrush}"
                             BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1"
@@ -280,21 +270,51 @@
                            ToolTip="お気に入りパネルの表示切替"
                            Width="36"
                            Height="36"
-                           Appearance="Primary"
-                           Margin="0,0,6,0"/>
+                           Margin="0,0,6,0">
+                    <ui:Button.Style>
+                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                            <Setter Property="Appearance" Value="Secondary"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFavoritePanelOpen}" Value="True">
+                                    <Setter Property="Appearance" Value="Primary"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:Button.Style>
+                </ui:Button>
                 <ui:Button Command="{Binding ToggleLogPanelCommand}"
                            Icon="{ui:SymbolIcon Document24}"
                            ToolTip="ログパネルの表示切替"
                            Width="36"
                            Height="36"
-                           Appearance="Secondary"
-                           Margin="0,0,6,0"/>
+                           Margin="0,0,6,0">
+                    <ui:Button.Style>
+                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                            <Setter Property="Appearance" Value="Secondary"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLogPanelOpen}" Value="True">
+                                    <Setter Property="Appearance" Value="Primary"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:Button.Style>
+                </ui:Button>
                 <ui:Button Command="{Binding TogglePreflightPanelCommand}"
                            Content="診断"
                            ToolTip="実行前チェックパネルの表示切替"
                            Width="56"
-                           Height="36"
-                           Appearance="Secondary"/>
+                           Height="36">
+                    <ui:Button.Style>
+                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                            <Setter Property="Appearance" Value="Secondary"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPreflightPanelOpen}" Value="True">
+                                    <Setter Property="Appearance" Value="Primary"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:Button.Style>
+                </ui:Button>
             </StackPanel>
         </Grid>
     </Grid>

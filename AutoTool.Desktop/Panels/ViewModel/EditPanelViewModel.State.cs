@@ -46,6 +46,36 @@ public partial class EditPanelViewModel
             UpdateProperties();
             UpdateIsProperties();
             UpdatePropertyGroups();
+            if (!IsOcrPreviewAvailable)
+            {
+                HasOcrPreviewResult = false;
+                IsOcrPreviewRunning = false;
+                OcrPreviewSummary = "OCRプレビューは未実行です。";
+                OcrPreviewText = string.Empty;
+                OcrPreviewConfidenceText = string.Empty;
+            }
+            if (!IsImageSearchPreviewAvailable)
+            {
+                HasImageSearchPreviewResult = false;
+                IsImageSearchPreviewRunning = false;
+                ImageSearchPreviewSummary = "画像検索テストは未実行です。";
+                ImageSearchPreviewDetail = string.Empty;
+                ImageSearchSearchArea = string.Empty;
+                ImageSearchRecoveryGuide = string.Empty;
+            }
+            if (!IsAiDetectionPreviewAvailable)
+            {
+                HasAiDetectionPreviewResult = false;
+                IsAiDetectionPreviewRunning = false;
+                AiDetectionPreviewSummary = "AI検出テストは未実行です。";
+                AiDetectionPreviewDetail = string.Empty;
+                AiDetectionSearchArea = string.Empty;
+                AiDetectionRecoveryGuide = string.Empty;
+            }
+
+            RunOcrPreviewCommand.NotifyCanExecuteChanged();
+            RunImageSearchPreviewCommand.NotifyCanExecuteChanged();
+            RunAiDetectionPreviewCommand.NotifyCanExecuteChanged();
         }
     }
 
@@ -84,7 +114,61 @@ public partial class EditPanelViewModel
     public bool IsSetVariableAIItem => Item is SetVariableAIItem;
     public bool IsIfVariableItem => Item is IfVariableItem;
     public bool IsScreenshotItem => Item is ScreenshotItem;
+    public bool IsOcrPreviewAvailable => Item is IFindTextItem or IIfTextExistItem or IIfTextNotExistItem or ISetVariableOCRItem;
+    public bool IsImageSearchPreviewAvailable => Item is IWaitImageItem or IClickImageItem or IIfImageExistItem or IIfImageNotExistItem or IFindImageItem;
+    public bool IsAiDetectionPreviewAvailable => Item is IIfImageExistAIItem or IIfImageNotExistAIItem or IClickImageAIItem or ISetVariableAIItem;
     public bool HasImagePreview => Item is WaitImageItem or ClickImageItem or IfImageExistItem or IfImageNotExistItem;
+
+    [ObservableProperty]
+    private bool _hasOcrPreviewResult;
+
+    [ObservableProperty]
+    private bool _isOcrPreviewRunning;
+
+    [ObservableProperty]
+    private string _ocrPreviewSummary = "OCRプレビューは未実行です。";
+
+    [ObservableProperty]
+    private string _ocrPreviewText = string.Empty;
+
+    [ObservableProperty]
+    private string _ocrPreviewConfidenceText = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasImageSearchPreviewResult;
+
+    [ObservableProperty]
+    private bool _isImageSearchPreviewRunning;
+
+    [ObservableProperty]
+    private string _imageSearchPreviewSummary = "画像検索テストは未実行です。";
+
+    [ObservableProperty]
+    private string _imageSearchPreviewDetail = string.Empty;
+
+    [ObservableProperty]
+    private string _imageSearchSearchArea = string.Empty;
+
+    [ObservableProperty]
+    private string _imageSearchRecoveryGuide = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasAiDetectionPreviewResult;
+
+    [ObservableProperty]
+    private bool _isAiDetectionPreviewRunning;
+
+    [ObservableProperty]
+    private string _aiDetectionPreviewSummary = "AI検出テストは未実行です。";
+
+    [ObservableProperty]
+    private string _aiDetectionPreviewDetail = string.Empty;
+
+    [ObservableProperty]
+    private string _aiDetectionSearchArea = string.Empty;
+
+    [ObservableProperty]
+    private string _aiDetectionRecoveryGuide = string.Empty;
 
     public string? PreviewImagePath
     {

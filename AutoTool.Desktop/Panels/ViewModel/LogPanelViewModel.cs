@@ -1,7 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Text;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using AutoTool.Desktop.Panels.ViewModel.Shared;
 
 namespace AutoTool.Desktop.Panels.ViewModel;
@@ -11,6 +13,7 @@ public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
     private readonly ObservableCollection<LogEntry> _logEntries = [];
     private readonly ICollectionView _filteredLogEntries;
     private readonly TimeProvider _timeProvider;
+    public event Action<string>? StatusMessageRequested;
 
     [ObservableProperty]
     private bool _isRunning;
@@ -40,6 +43,58 @@ public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
         }
 
         dispatcher.Invoke(() => _logEntries.Clear());
+    }
+
+    [RelayCommand]
+    private void CopyLogs()
+    {
+        var entries = _filteredLogEntries.Cast<LogEntry>().ToList();
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        var builder = new StringBuilder(entries.Count * 48);
+        foreach (var entry in entries)
+        {
+            builder.Append(entry.Timestamp)
+                .Append('\t')
+                .Append(entry.LineNumber)
+                .Append('\t')
+                .Append(entry.CommandName)
+                .Append('\t')
+                .Append(entry.Message)
+                .AppendLine();
+        }
+
+        var dispatcher = System.Windows.Application.Current.Dispatcher;
+        try
+        {
+            if (dispatcher.CheckAccess())
+            {
+                System.Windows.Clipboard.SetText(builder.ToString());
+            }
+            else
+            {
+                dispatcher.Invoke(() => System.Windows.Clipboard.SetText(builder.ToString()));
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteLog(string.Empty, "システム", $"警告: ログをクリップボードへコピーできませんでした。{ex.Message}");
+            StatusMessageRequested?.Invoke("ログのコピーに失敗しました。");
+            return;
+        }
+
+        StatusMessageRequested?.Invoke($"ログをコピーしました（{entries.Count}件）。");
+    }
+
+    [RelayCommand]
+    private void ClearLogs()
+    {
+        var count = _logEntries.Count;
+        Prepare();
+        StatusMessageRequested?.Invoke($"ログをクリアしました（{count}件）。");
     }
 
     public void WriteLog(string text)

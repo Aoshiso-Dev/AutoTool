@@ -53,7 +53,6 @@ public class IfImageExistCommand : BaseCommand, IIfCommand, IIfImageExistCommand
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
 
-        RaiseDoingCommand("非推奨: IF_ImageExist は将来的に Find_Image + If_Variable へ統合されます。");
         var absolutePath = _pathResolver.ToAbsolutePath(Settings.ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
             new FindImageOptions
@@ -108,7 +107,6 @@ public class IfImageNotExistCommand : BaseCommand, IIfCommand, IIfImageNotExistC
             throw new InvalidOperationException("条件ブロック内に実行するコマンドがありません。");
         }
 
-        RaiseDoingCommand("非推奨: IF_ImageNotExist は将来的に Find_Image + If_Variable へ統合されます。");
         var absolutePath = _pathResolver.ToAbsolutePath(Settings.ImagePath);
         var result = await FindImageExecutor.ExecuteAsync(
             new FindImageOptions

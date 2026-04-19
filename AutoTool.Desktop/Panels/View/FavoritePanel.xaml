@@ -44,9 +44,14 @@
                        VerticalAlignment="Center"
                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                <ui:Button Content="読み込み"
+                <ui:Button Content="置換読込"
                            Command="{Binding LoadSelectedFavoriteCommand}"
                            Appearance="Primary"
+                           Height="32"
+                           Margin="0,0,8,0"/>
+                <ui:Button Content="挿入"
+                           Command="{Binding InsertSelectedFavoriteCommand}"
+                           Appearance="Secondary"
                            Height="32"
                            Margin="0,0,8,0"/>
                 <ui:Button Content="削除"

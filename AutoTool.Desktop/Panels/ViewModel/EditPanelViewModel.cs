@@ -3,6 +3,7 @@ using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Desktop.Panels.ViewModel.Helpers;
 using AutoTool.Automation.Runtime.Definitions;
 using AutoTool.Desktop.Panels.ViewModel.Shared;
+using AutoTool.Desktop.Panels.Services;
 using AutoTool.Commands.Services;
 using AutoTool.Infrastructure.Panels;
 using AutoTool.Application.Ports;
@@ -15,6 +16,10 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     private readonly ICommandRegistry _commandRegistry;
     private readonly IWindowService _windowService;
     private readonly IPathResolver _pathResolver;
+    private readonly IImageMatcher _imageMatcher;
+    private readonly IOcrEngine _ocrEngine;
+    private readonly IObjectDetector _objectDetector;
+    private readonly IDetectionHighlightService _detectionHighlightService;
     private readonly INotifier _notifier;
     private readonly IPanelDialogService _panelDialogService;
     private readonly ICapturePathProvider _capturePathProvider;
@@ -35,7 +40,8 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         nameof(IsEndLoopItem), nameof(IsBreakItem), nameof(IsIfImageExistItem),
         nameof(IsIfImageNotExistItem), nameof(IsEndIfItem), nameof(IsIfImageExistAIItem),
         nameof(IsIfImageNotExistAIItem), nameof(IsExecuteProgramItem), nameof(IsSetVariableItem),
-        nameof(IsSetVariableAIItem), nameof(IsIfVariableItem), nameof(IsScreenshotItem)
+        nameof(IsSetVariableAIItem), nameof(IsIfVariableItem), nameof(IsScreenshotItem),
+        nameof(IsOcrPreviewAvailable), nameof(IsImageSearchPreviewAvailable), nameof(IsAiDetectionPreviewAvailable)
     ];
 
     private static readonly string[] AllPropertyNames = [
@@ -49,7 +55,15 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         nameof(ClassID), nameof(AIDetectMode), nameof(ProgramPath), nameof(Arguments),
         nameof(WorkingDirectory), nameof(WaitForExit), nameof(VariableName),
         nameof(VariableValue), nameof(CompareOperator), nameof(CompareValue),
-        nameof(SaveDirectory), nameof(Comment)
+        nameof(SaveDirectory), nameof(Comment), nameof(OcrPreviewSummary),
+        nameof(OcrPreviewText), nameof(OcrPreviewConfidenceText),
+        nameof(HasOcrPreviewResult), nameof(IsOcrPreviewRunning),
+        nameof(ImageSearchPreviewSummary), nameof(ImageSearchPreviewDetail),
+        nameof(ImageSearchSearchArea), nameof(ImageSearchRecoveryGuide),
+        nameof(HasImageSearchPreviewResult), nameof(IsImageSearchPreviewRunning),
+        nameof(AiDetectionPreviewSummary), nameof(AiDetectionPreviewDetail),
+        nameof(AiDetectionSearchArea), nameof(AiDetectionRecoveryGuide),
+        nameof(HasAiDetectionPreviewResult), nameof(IsAiDetectionPreviewRunning)
     ];
 
     private void UpdateIsProperties()

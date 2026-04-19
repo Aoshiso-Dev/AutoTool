@@ -33,7 +33,7 @@ else {
 }
 
 # Mirror deploy artifacts but preserve user data/config folders.
-robocopy $sourcePath $destinationPath /MIR /XD Macro Settings x86 /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
+robocopy $sourcePath $destinationPath /MIR /XD Macro Settings x86 tessdata /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
 $code = $LASTEXITCODE
 if ($code -gt 7) {
     throw "robocopy が失敗しました。終了コード: $code"

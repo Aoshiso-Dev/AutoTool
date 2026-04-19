@@ -188,7 +188,7 @@ public partial class EditPanelViewModel
             return;
         }
 
-        prop.HelperText = "未指定の場合は ./tessdata を使用します。";
+        prop.HelperText = "未指定の場合は ./Settings/tessdata を使用します。";
         prop.OpenReferenceCommand = new RelayCommand(OpenTessdataReferencePage);
         prop.DownloadRecommendedCommand = new AsyncRelayCommand(() => DownloadRecommendedTessdataAsync(prop));
     }
@@ -259,7 +259,7 @@ public partial class EditPanelViewModel
             }
         }
 
-        return Path.Combine(AppContext.BaseDirectory, "tessdata");
+        return Path.Combine(AppContext.BaseDirectory, "Settings", "tessdata");
     }
 
     private void ValidateCurrentItemSettings()

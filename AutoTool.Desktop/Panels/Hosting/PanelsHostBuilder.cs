@@ -3,6 +3,7 @@ using AutoTool.Commands.Infrastructure;
 using AutoTool.Application.Ports;
 using AutoTool.Infrastructure.DependencyInjection;
 using AutoTool.Infrastructure.Implementations;
+using AutoTool.Desktop.Panels.Services;
 using AutoTool.Desktop.Panels.ViewModel;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +37,7 @@ public static class PanelsHostBuilder
 
         services.AddSingleton<IPanelDialogService, WpfPanelDialogService>();
         services.AddSingleton<ICapturePathProvider, CapturePathProvider>();
+        services.AddSingleton<IDetectionHighlightService, DetectionHighlightService>();
         services.AddSingleton<IFavoriteMacroStore, XmlFavoriteMacroStore>();
 
         return services;

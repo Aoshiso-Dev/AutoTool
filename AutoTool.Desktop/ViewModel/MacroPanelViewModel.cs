@@ -35,6 +35,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private bool _isEditDialogOpen;
     public event Action<string>? StatusMessageRequested;
+    public event Action? NewFileStateRequested;
 
     [ObservableProperty]
     private bool _isRunning;
@@ -117,18 +118,21 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private void ToggleFavoritePanel()
     {
         IsFavoritePanelOpen = !IsFavoritePanelOpen;
+        PublishStatusMessage(IsFavoritePanelOpen ? "お気に入りパネルを表示しました。" : "お気に入りパネルを閉じました。");
     }
 
     [RelayCommand]
     private void ToggleLogPanel()
     {
         IsLogPanelOpen = !IsLogPanelOpen;
+        PublishStatusMessage(IsLogPanelOpen ? "ログパネルを表示しました。" : "ログパネルを閉じました。");
     }
 
     [RelayCommand]
     private void TogglePreflightPanel()
     {
         IsPreflightPanelOpen = !IsPreflightPanelOpen;
+        PublishStatusMessage(IsPreflightPanelOpen ? "診断パネルを表示しました。" : "診断パネルを閉じました。");
     }
 
     public void SetCommandHistory(CommandHistoryManager commandHistory)
@@ -198,5 +202,10 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         }
 
         StatusMessageRequested?.Invoke(message);
+    }
+
+    private void RequestNewFileState()
+    {
+        NewFileStateRequested?.Invoke();
     }
 }

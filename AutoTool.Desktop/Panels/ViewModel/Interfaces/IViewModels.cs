@@ -74,6 +74,7 @@ public interface IButtonPanelViewModel
 public interface ILogPanelViewModel
 {
     bool IsRunning { get; set; }
+    event Action<string>? StatusMessageRequested;
 
     void Prepare();
     void SetRunningState(bool isRunning);
@@ -89,6 +90,7 @@ public interface IFavoritePanelViewModel
     event Action<string>? AddRequested;
     event Action<FavoriteMacroEntry>? DeleteRequested;
     event Action<FavoriteMacroEntry>? LoadRequested;
+    event Action<FavoriteMacroEntry>? InsertRequested;
 
     void Prepare();
     void SetRunningState(bool isRunning);
