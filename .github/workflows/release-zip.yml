@@ -25,6 +25,32 @@ jobs:
       - name: Restore
         run: dotnet restore .\AutoTool.sln
 
+      - name: Resolve version from GitHub ref
+        id: version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $isTag = "${{ startsWith(github.ref, 'refs/tags/') }}" -eq "true"
+
+          if ($isTag) {
+            $tag = "${{ github.ref_name }}"
+            if ($tag -notmatch '^v(\d+)\.(\d+)\.(\d+)$') {
+              throw "タグ形式が不正です。'vMAJOR.MINOR.PATCH' を使用してください。受信値: $tag"
+            }
+
+            $semanticVersion = $Matches[1] + "." + $Matches[2] + "." + $Matches[3]
+            "is_tag=true" >> $env:GITHUB_OUTPUT
+            "zip_version=$tag" >> $env:GITHUB_OUTPUT
+            "semantic_version=$semanticVersion" >> $env:GITHUB_OUTPUT
+            "publish_version_args=/p:Version=$semanticVersion /p:FileVersion=$semanticVersion /p:AssemblyVersion=$semanticVersion" >> $env:GITHUB_OUTPUT
+            return
+          }
+
+          $manualVersion = "manual-${{ github.run_number }}"
+          "is_tag=false" >> $env:GITHUB_OUTPUT
+          "zip_version=$manualVersion" >> $env:GITHUB_OUTPUT
+          "publish_version_args=" >> $env:GITHUB_OUTPUT
+
       - name: Publish
         run: >
           dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
@@ -32,6 +58,24 @@ jobs:
           -r win-x64
           --self-contained false
           -o .\.deploy\AutoTool_publish
+          ${{ steps.version.outputs.publish_version_args }}
+
+      - name: Validate published version for tag release
+        if: steps.version.outputs.is_tag == 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $expected = "${{ steps.version.outputs.semantic_version }}"
+          $exePath = Resolve-Path ".\.deploy\AutoTool_publish\AutoTool.exe"
+          $version = (Get-Item -LiteralPath $exePath).VersionInfo
+
+          if ($version.FileVersion -ne $expected) {
+            throw "FileVersion 不一致: expected=$expected actual=$($version.FileVersion)"
+          }
+
+          if ($version.ProductVersion -notlike "$expected*") {
+            throw "ProductVersion 不一致: expected-prefix=$expected actual=$($version.ProductVersion)"
+          }
 
       - name: Prepare package files
         shell: pwsh
@@ -78,8 +122,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $isTag = "${{ startsWith(github.ref, 'refs/tags/') }}"
-          $version = if ($isTag -eq "true") { "${{ github.ref_name }}" } else { "manual-${{ github.run_number }}" }
+          $version = "${{ steps.version.outputs.zip_version }}"
           $zipName = "AutoTool-$version-win-x64.zip"
           $zipPath = Join-Path $pwd $zipName
           if (Test-Path -LiteralPath $zipPath) {

@@ -13,8 +13,10 @@ AutoTool は、Windows 上で定型操作をマクロとして作成・保存・
 
 ## GitHub 配布（ZIP）
 
+- 正式なバージョン番号の正は GitHub タグ（`vMAJOR.MINOR.PATCH`）です。
 - `v*` タグ（例: `v1.2.3`）を push すると、GitHub Actions の `Release Zip` が実行されます。
 - 実行後、GitHub Release に `AutoTool-<tag>-win-x64.zip` が添付されます。
+- タグ実行時は publish にタグ由来のバージョンを注入し、生成された `AutoTool.exe` の `FileVersion` / `ProductVersion` がタグと一致することを検証します。
 - ZIP には `AutoTool.exe`、必要な `*.dll`、`Readme*.txt`、実行構成ファイルが含まれます。
 
 ## 最短で動かす

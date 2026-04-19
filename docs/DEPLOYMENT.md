@@ -79,6 +79,9 @@ dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -o .\.d
   - `v*` タグ push（例: `v1.0.0`）
   - 手動実行（`workflow_dispatch`）
 - 実行内容
+  - タグ形式 `vMAJOR.MINOR.PATCH` を検証
+  - タグ実行時はタグから算出したバージョン（例: `v1.0.1` → `1.0.1`）を publish に注入
+  - publish された `AutoTool.exe` の `FileVersion` / `ProductVersion` がタグ由来バージョンと一致することを検証
   - `AutoTool.Bootstrap` を `win-x64` で publish
   - 配布対象（`AutoTool.exe`、`*.dll`、`Readme*.txt`、実行構成ファイル）を収集
   - ZIP（`AutoTool-<version>-win-x64.zip`）を生成
@@ -93,5 +96,6 @@ git push origin v1.0.0
 
 ### 注意
 
+- GitHub 配布の正式バージョンはタグを正とする。
 - ZIP には `*.pdb` / `*.lib` を含めない。
 - 配布版説明書（`Readme.txt` / `Readme_コマンド詳細.txt`）はリポジトリ root に置き、ZIP へ同梱する。
