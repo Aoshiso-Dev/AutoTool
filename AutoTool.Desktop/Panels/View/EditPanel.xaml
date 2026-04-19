@@ -110,14 +110,24 @@
                                 <TextBlock Text="OCRプレビュー"
                                            FontWeight="SemiBold"
                                            VerticalAlignment="Center"/>
-                                <ui:Button Content="テスト実行"
-                                           Command="{Binding RunOcrPreviewCommand}"
-                                           Appearance="Primary"
-                                           Height="30"
-                                           MinWidth="88"
-                                           DockPanel.Dock="Right"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <ui:Button Content="自動調整"
+                                               Command="{Binding RunOcrAutoTuneCommand}"
+                                               Height="30"
+                                               MinWidth="88"
+                                               Margin="0,0,8,0"/>
+                                    <ui:Button Content="テスト実行"
+                                            Command="{Binding RunOcrPreviewCommand}"
+                                            Appearance="Primary"
+                                            Height="30"
+                                            MinWidth="88"/>
+                                </StackPanel>
                             </DockPanel>
                             <TextBlock Text="{Binding OcrPreviewSummary}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding OcrAutoTuneSummary}"
                                        TextWrapping="Wrap"
                                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                                        Margin="0,0,0,4"/>
@@ -147,14 +157,24 @@
                                 <TextBlock Text="画像検索テスト"
                                            FontWeight="SemiBold"
                                            VerticalAlignment="Center"/>
-                                <ui:Button Content="テスト実行"
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <ui:Button Content="自動調整"
+                                               Command="{Binding RunImageSearchAutoTuneCommand}"
+                                               Height="30"
+                                               MinWidth="88"
+                                               Margin="0,0,8,0"/>
+                                    <ui:Button Content="テスト実行"
                                            Command="{Binding RunImageSearchPreviewCommand}"
                                            Appearance="Primary"
                                            Height="30"
-                                           MinWidth="88"
-                                           DockPanel.Dock="Right"/>
+                                           MinWidth="88"/>
+                                </StackPanel>
                             </DockPanel>
                             <TextBlock Text="{Binding ImageSearchPreviewSummary}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding ImageSearchAutoTuneSummary}"
                                        TextWrapping="Wrap"
                                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                                        Margin="0,0,0,4"/>
@@ -190,14 +210,24 @@
                                 <TextBlock Text="AI検出テスト"
                                            FontWeight="SemiBold"
                                            VerticalAlignment="Center"/>
-                                <ui:Button Content="テスト実行"
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <ui:Button Content="自動調整"
+                                               Command="{Binding RunAiDetectionAutoTuneCommand}"
+                                               Height="30"
+                                               MinWidth="88"
+                                               Margin="0,0,8,0"/>
+                                    <ui:Button Content="テスト実行"
                                            Command="{Binding RunAiDetectionPreviewCommand}"
                                            Appearance="Primary"
                                            Height="30"
-                                           MinWidth="88"
-                                           DockPanel.Dock="Right"/>
+                                           MinWidth="88"/>
+                                </StackPanel>
                             </DockPanel>
                             <TextBlock Text="{Binding AiDetectionPreviewSummary}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding AiDetectionAutoTuneSummary}"
                                        TextWrapping="Wrap"
                                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                                        Margin="0,0,0,4"/>

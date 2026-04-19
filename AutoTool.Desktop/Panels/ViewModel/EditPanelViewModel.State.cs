@@ -50,7 +50,9 @@ public partial class EditPanelViewModel
             {
                 HasOcrPreviewResult = false;
                 IsOcrPreviewRunning = false;
+                IsOcrAutoTuning = false;
                 OcrPreviewSummary = "OCRプレビューは未実行です。";
+                OcrAutoTuneSummary = string.Empty;
                 OcrPreviewText = string.Empty;
                 OcrPreviewConfidenceText = string.Empty;
             }
@@ -58,7 +60,9 @@ public partial class EditPanelViewModel
             {
                 HasImageSearchPreviewResult = false;
                 IsImageSearchPreviewRunning = false;
+                IsImageSearchAutoTuning = false;
                 ImageSearchPreviewSummary = "画像検索テストは未実行です。";
+                ImageSearchAutoTuneSummary = string.Empty;
                 ImageSearchPreviewDetail = string.Empty;
                 ImageSearchSearchArea = string.Empty;
                 ImageSearchRecoveryGuide = string.Empty;
@@ -67,15 +71,20 @@ public partial class EditPanelViewModel
             {
                 HasAiDetectionPreviewResult = false;
                 IsAiDetectionPreviewRunning = false;
+                IsAiDetectionAutoTuning = false;
                 AiDetectionPreviewSummary = "AI検出テストは未実行です。";
+                AiDetectionAutoTuneSummary = string.Empty;
                 AiDetectionPreviewDetail = string.Empty;
                 AiDetectionSearchArea = string.Empty;
                 AiDetectionRecoveryGuide = string.Empty;
             }
 
             RunOcrPreviewCommand.NotifyCanExecuteChanged();
+            RunOcrAutoTuneCommand.NotifyCanExecuteChanged();
             RunImageSearchPreviewCommand.NotifyCanExecuteChanged();
+            RunImageSearchAutoTuneCommand.NotifyCanExecuteChanged();
             RunAiDetectionPreviewCommand.NotifyCanExecuteChanged();
+            RunAiDetectionAutoTuneCommand.NotifyCanExecuteChanged();
         }
     }
 
@@ -135,6 +144,12 @@ public partial class EditPanelViewModel
     private string _ocrPreviewConfidenceText = string.Empty;
 
     [ObservableProperty]
+    private bool _isOcrAutoTuning;
+
+    [ObservableProperty]
+    private string _ocrAutoTuneSummary = string.Empty;
+
+    [ObservableProperty]
     private bool _hasImageSearchPreviewResult;
 
     [ObservableProperty]
@@ -153,6 +168,12 @@ public partial class EditPanelViewModel
     private string _imageSearchRecoveryGuide = string.Empty;
 
     [ObservableProperty]
+    private bool _isImageSearchAutoTuning;
+
+    [ObservableProperty]
+    private string _imageSearchAutoTuneSummary = string.Empty;
+
+    [ObservableProperty]
     private bool _hasAiDetectionPreviewResult;
 
     [ObservableProperty]
@@ -169,6 +190,12 @@ public partial class EditPanelViewModel
 
     [ObservableProperty]
     private string _aiDetectionRecoveryGuide = string.Empty;
+
+    [ObservableProperty]
+    private bool _isAiDetectionAutoTuning;
+
+    [ObservableProperty]
+    private string _aiDetectionAutoTuneSummary = string.Empty;
 
     public string? PreviewImagePath
     {

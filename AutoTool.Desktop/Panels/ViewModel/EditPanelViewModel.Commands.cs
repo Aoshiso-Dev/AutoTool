@@ -182,6 +182,84 @@ public partial class EditPanelViewModel
         }
     }
 
+    [RelayCommand(CanExecute = nameof(CanRunOcrAutoTune))]
+    private async Task RunOcrAutoTuneAsync()
+    {
+        if (!TryBuildOcrRequest(out var request))
+        {
+            OcrAutoTuneSummary = "OCR自動調整の対象コマンドを選択してください。";
+            return;
+        }
+
+        IsOcrAutoTuning = true;
+        RunOcrAutoTuneCommand.NotifyCanExecuteChanged();
+
+        try
+        {
+            string[] preprocessModes = ["Gray", "Binarize", "AdaptiveThreshold", "None"];
+            string[] psmModes = ["6", "7", "11", "13"];
+            var candidates = new List<OcrTuneCandidate>();
+
+            foreach (var preprocess in preprocessModes)
+            {
+                foreach (var psm in psmModes)
+                {
+                    var tuneRequest = new OcrRequest
+                    {
+                        X = request.X,
+                        Y = request.Y,
+                        Width = request.Width,
+                        Height = request.Height,
+                        WindowTitle = request.WindowTitle,
+                        WindowClassName = request.WindowClassName,
+                        Language = request.Language,
+                        PageSegmentationMode = psm,
+                        Whitelist = request.Whitelist,
+                        PreprocessMode = preprocess,
+                        TessdataPath = request.TessdataPath
+                    };
+
+                    try
+                    {
+                        var result = await _ocrEngine.ExtractTextAsync(tuneRequest, CancellationToken.None);
+                        var trimmed = (result.Text ?? string.Empty).Trim();
+                        var lengthScore = Math.Min(20, trimmed.Length);
+                        var score = (string.IsNullOrWhiteSpace(trimmed) ? -100d : 0d) + result.Confidence + lengthScore;
+                        candidates.Add(new OcrTuneCandidate(preprocess, psm, result.Confidence, trimmed, score));
+                    }
+                    catch
+                    {
+                        candidates.Add(new OcrTuneCandidate(preprocess, psm, 0d, string.Empty, -200d));
+                    }
+                }
+            }
+
+            var best = candidates
+                .OrderByDescending(x => x.Score)
+                .ThenByDescending(x => x.Confidence)
+                .FirstOrDefault();
+
+            if (candidates.Count == 0 || best.Score <= -150d)
+            {
+                OcrAutoTuneSummary = "OCR自動調整: 推奨候補を作れませんでした。範囲・言語・tessdataを確認してください。";
+                return;
+            }
+
+            var recommendedMinConfidence = Math.Clamp(Math.Floor(best.Confidence * 0.8), 30d, 95d);
+            ApplyOcrTunedValues(best.PreprocessMode, best.PageSegmentationMode, recommendedMinConfidence);
+            OcrAutoTuneSummary = $"OCR自動調整: 推奨 前処理={best.PreprocessMode} / PSM={best.PageSegmentationMode} / 最小信頼度={recommendedMinConfidence:F0}";
+            OcrPreviewSummary = "OCR自動調整を適用しました。";
+            OcrPreviewText = string.IsNullOrWhiteSpace(best.TextSample) ? "（抽出結果なし）" : best.TextSample;
+            OcrPreviewConfidenceText = $"推奨候補の信頼度: {best.Confidence:F1}%";
+            HasOcrPreviewResult = true;
+        }
+        finally
+        {
+            IsOcrAutoTuning = false;
+            RunOcrAutoTuneCommand.NotifyCanExecuteChanged();
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanRunImageSearchPreview))]
     private async Task RunImageSearchPreviewAsync()
     {
@@ -236,6 +314,62 @@ public partial class EditPanelViewModel
         {
             IsImageSearchPreviewRunning = false;
             RunImageSearchPreviewCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunImageSearchAutoTune))]
+    private async Task RunImageSearchAutoTuneAsync()
+    {
+        if (!TryBuildImageSearchOptions(out var options))
+        {
+            ImageSearchAutoTuneSummary = "画像検索自動調整の対象コマンドを選択してください。";
+            return;
+        }
+
+        IsImageSearchAutoTuning = true;
+        RunImageSearchAutoTuneCommand.NotifyCanExecuteChanged();
+
+        try
+        {
+            double[] thresholds = [0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6];
+            var results = new List<(double Threshold, bool Found, int Elapsed, MatchPoint? Point)>();
+
+            foreach (var threshold in thresholds)
+            {
+                var probe = options with { Threshold = threshold };
+                var result = await FindImageExecutor.ExecuteAsync(
+                    probe,
+                    (imagePath, th, searchColor, windowTitle, windowClassName, cancellationToken) =>
+                        _imageMatcher.SearchImageAsync(imagePath, cancellationToken, th, searchColor, windowTitle, windowClassName),
+                    _ => { },
+                    CancellationToken.None);
+                results.Add((threshold, result.Found, result.ElapsedMilliseconds, result.Point));
+            }
+
+            var best = results
+                .Where(x => x.Found)
+                .OrderByDescending(x => x.Threshold)
+                .ThenBy(x => x.Elapsed)
+                .FirstOrDefault();
+
+            if (!best.Found)
+            {
+                ImageSearchAutoTuneSummary = "画像検索自動調整: 一致するしきい値候補が見つかりませんでした。";
+                return;
+            }
+
+            ApplyImageSearchTunedThreshold(best.Threshold);
+            ImageSearchAutoTuneSummary = $"画像検索自動調整: 推奨しきい値 {best.Threshold:F2}";
+            ImageSearchPreviewSummary = $"画像検索テスト: 推奨しきい値を適用しました（{best.Threshold:F2}）";
+            if (best.Point is { } point)
+            {
+                ImageSearchPreviewDetail = $"推奨候補ヒット座標: X={point.X}, Y={point.Y} / 所要時間: {best.Elapsed}ms";
+            }
+        }
+        finally
+        {
+            IsImageSearchAutoTuning = false;
+            RunImageSearchAutoTuneCommand.NotifyCanExecuteChanged();
         }
     }
 
@@ -303,17 +437,88 @@ public partial class EditPanelViewModel
             RunAiDetectionPreviewCommand.NotifyCanExecuteChanged();
         }
     }
+
+    [RelayCommand(CanExecute = nameof(CanRunAiDetectionAutoTune))]
+    private async Task RunAiDetectionAutoTuneAsync()
+    {
+        await Task.Yield();
+
+        if (!TryBuildAiDetectionPreviewRequest(out var request))
+        {
+            AiDetectionAutoTuneSummary = "AI検出自動調整の対象コマンドを選択してください。";
+            return;
+        }
+
+        IsAiDetectionAutoTuning = true;
+        RunAiDetectionAutoTuneCommand.NotifyCanExecuteChanged();
+
+        try
+        {
+            if (!File.Exists(request.ModelPath))
+            {
+                throw new FileNotFoundException($"モデルファイルが見つかりません: {request.ModelPath}");
+            }
+
+            _objectDetector.Initialize(request.ModelPath, 640, true);
+            float[] confCandidates = [0.35f, 0.45f, 0.55f, 0.65f, 0.75f];
+            float[] iouCandidates = [0.2f, 0.3f, 0.45f];
+
+            var candidates = new List<AiTuneCandidate>();
+            foreach (var conf in confCandidates)
+            {
+                foreach (var iou in iouCandidates)
+                {
+                    var detections = _objectDetector.Detect(request.WindowTitle, conf, iou);
+                    var targets = request.TargetClassId is { } classId
+                        ? detections.Where(x => x.ClassId == classId).ToList()
+                        : detections.ToList();
+                    var bestScore = targets.Count > 0 ? targets.Max(x => x.Score) : 0f;
+                    candidates.Add(new AiTuneCandidate(conf, iou, detections.Count, targets.Count, bestScore));
+                }
+            }
+
+            var best = candidates
+                .OrderByDescending(x => x.TargetCount > 0)
+                .ThenByDescending(x => x.TargetCount)
+                .ThenBy(x => x.TotalCount)
+                .ThenByDescending(x => x.BestScore)
+                .ThenByDescending(x => x.ConfThreshold)
+                .FirstOrDefault();
+
+            if (candidates.Count == 0 || best.TargetCount <= 0)
+            {
+                AiDetectionAutoTuneSummary = "AI検出自動調整: 一致候補が見つかりませんでした。";
+                return;
+            }
+
+            ApplyAiTunedValues(best.ConfThreshold, best.IoUThreshold);
+            AiDetectionAutoTuneSummary = $"AI検出自動調整: 推奨 conf={best.ConfThreshold:F2} / iou={best.IoUThreshold:F2}";
+            AiDetectionPreviewSummary = "AI検出テスト: 推奨しきい値を適用しました。";
+            AiDetectionPreviewDetail = $"推奨候補: 対象検出={best.TargetCount} / 全検出={best.TotalCount} / 最高スコア={best.BestScore:F2}";
+        }
+        finally
+        {
+            IsAiDetectionAutoTuning = false;
+            RunAiDetectionAutoTuneCommand.NotifyCanExecuteChanged();
+        }
+    }
     #endregion
 
     private bool CanRunOcrPreview() => !IsRunning && !IsOcrPreviewRunning && IsOcrPreviewAvailable;
+    private bool CanRunOcrAutoTune() => !IsRunning && !IsOcrPreviewRunning && !IsOcrAutoTuning && IsOcrPreviewAvailable;
     private bool CanRunImageSearchPreview() => !IsRunning && !IsImageSearchPreviewRunning && IsImageSearchPreviewAvailable;
+    private bool CanRunImageSearchAutoTune() => !IsRunning && !IsImageSearchPreviewRunning && !IsImageSearchAutoTuning && IsImageSearchPreviewAvailable;
     private bool CanRunAiDetectionPreview() => !IsRunning && !IsAiDetectionPreviewRunning && IsAiDetectionPreviewAvailable;
+    private bool CanRunAiDetectionAutoTune() => !IsRunning && !IsAiDetectionPreviewRunning && !IsAiDetectionAutoTuning && IsAiDetectionPreviewAvailable;
 
     partial void OnIsRunningChanged(bool value)
     {
         RunOcrPreviewCommand.NotifyCanExecuteChanged();
+        RunOcrAutoTuneCommand.NotifyCanExecuteChanged();
         RunImageSearchPreviewCommand.NotifyCanExecuteChanged();
+        RunImageSearchAutoTuneCommand.NotifyCanExecuteChanged();
         RunAiDetectionPreviewCommand.NotifyCanExecuteChanged();
+        RunAiDetectionAutoTuneCommand.NotifyCanExecuteChanged();
     }
 
     private bool TryBuildOcrRequest(out OcrRequest request)
@@ -722,6 +927,103 @@ public partial class EditPanelViewModel
             && Math.Abs(a.B - b.B) <= tolerance;
     }
 
+    private void ApplyAiTunedValues(float confThreshold, float iouThreshold)
+    {
+        _ = TryApplyToEditableClone(clone =>
+        {
+            switch (clone)
+            {
+                case IIfImageExistAIItem ifExistAi:
+                    ifExistAi.ConfThreshold = confThreshold;
+                    ifExistAi.IoUThreshold = iouThreshold;
+                    break;
+                case IIfImageNotExistAIItem ifNotExistAi:
+                    ifNotExistAi.ConfThreshold = confThreshold;
+                    ifNotExistAi.IoUThreshold = iouThreshold;
+                    break;
+                case IClickImageAIItem clickAi:
+                    clickAi.ConfThreshold = confThreshold;
+                    clickAi.IoUThreshold = iouThreshold;
+                    break;
+                case ISetVariableAIItem setVariableAi:
+                    setVariableAi.ConfThreshold = confThreshold;
+                    setVariableAi.IoUThreshold = iouThreshold;
+                    break;
+            }
+        });
+    }
+
+    private void ApplyOcrTunedValues(string preprocessMode, string pageSegmentationMode, double minConfidence)
+    {
+        _ = TryApplyToEditableClone(clone =>
+        {
+            switch (clone)
+            {
+                case IFindTextItem findText:
+                    findText.PreprocessMode = preprocessMode;
+                    findText.PageSegmentationMode = pageSegmentationMode;
+                    findText.MinConfidence = minConfidence;
+                    break;
+                case IIfTextExistItem ifTextExist:
+                    ifTextExist.PreprocessMode = preprocessMode;
+                    ifTextExist.PageSegmentationMode = pageSegmentationMode;
+                    ifTextExist.MinConfidence = minConfidence;
+                    break;
+                case IIfTextNotExistItem ifTextNotExist:
+                    ifTextNotExist.PreprocessMode = preprocessMode;
+                    ifTextNotExist.PageSegmentationMode = pageSegmentationMode;
+                    ifTextNotExist.MinConfidence = minConfidence;
+                    break;
+                case ISetVariableOCRItem setVariableOcr:
+                    setVariableOcr.PreprocessMode = preprocessMode;
+                    setVariableOcr.PageSegmentationMode = pageSegmentationMode;
+                    setVariableOcr.MinConfidence = minConfidence;
+                    break;
+            }
+        });
+    }
+
+    private void ApplyImageSearchTunedThreshold(double threshold)
+    {
+        _ = TryApplyToEditableClone(clone =>
+        {
+            switch (clone)
+            {
+                case IWaitImageItem waitImage:
+                    waitImage.Threshold = threshold;
+                    break;
+                case IClickImageItem clickImage:
+                    clickImage.Threshold = threshold;
+                    break;
+                case IIfImageExistItem ifExistImage:
+                    ifExistImage.Threshold = threshold;
+                    break;
+                case IIfImageNotExistItem ifNotExistImage:
+                    ifNotExistImage.Threshold = threshold;
+                    break;
+                case IFindImageItem findImage:
+                    findImage.Threshold = threshold;
+                    break;
+            }
+        });
+    }
+
+    private bool TryApplyToEditableClone(Action<ICommandListItem> apply)
+    {
+        if (Item is null)
+        {
+            return false;
+        }
+
+        var clone = Item.Clone();
+        apply(clone);
+        Item = clone;
+        UpdateProperties();
+        UpdatePropertyGroups();
+        ItemEdited?.Invoke(clone);
+        return true;
+    }
+
     private bool TryBuildAiDetectionPreviewRequest(out AiDetectionPreviewRequest request)
     {
         request = new AiDetectionPreviewRequest(string.Empty, string.Empty, string.Empty, null, 0.5f, 0.25f);
@@ -829,4 +1131,18 @@ public partial class EditPanelViewModel
         int? TargetClassId,
         float ConfThreshold,
         float IoUThreshold);
+
+    private readonly record struct OcrTuneCandidate(
+        string PreprocessMode,
+        string PageSegmentationMode,
+        double Confidence,
+        string TextSample,
+        double Score);
+
+    private readonly record struct AiTuneCandidate(
+        float ConfThreshold,
+        float IoUThreshold,
+        int TotalCount,
+        int TargetCount,
+        float BestScore);
 }

@@ -61,6 +61,9 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
         nameof(ImageSearchPreviewSummary), nameof(ImageSearchPreviewDetail),
         nameof(ImageSearchSearchArea), nameof(ImageSearchRecoveryGuide),
         nameof(HasImageSearchPreviewResult), nameof(IsImageSearchPreviewRunning),
+        nameof(IsOcrAutoTuning), nameof(OcrAutoTuneSummary),
+        nameof(IsImageSearchAutoTuning), nameof(ImageSearchAutoTuneSummary),
+        nameof(IsAiDetectionAutoTuning), nameof(AiDetectionAutoTuneSummary),
         nameof(AiDetectionPreviewSummary), nameof(AiDetectionPreviewDetail),
         nameof(AiDetectionSearchArea), nameof(AiDetectionRecoveryGuide),
         nameof(HasAiDetectionPreviewResult), nameof(IsAiDetectionPreviewRunning)
