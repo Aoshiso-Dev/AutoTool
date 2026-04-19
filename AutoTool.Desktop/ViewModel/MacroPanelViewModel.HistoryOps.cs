@@ -329,6 +329,9 @@ public partial class MacroPanelViewModel
         {
             _listPanel.ReplaceAt(index, item);
         }
+
+        var current = _listPanel.GetItem(index + 1);
+        UpdateValidationErrorForEditedItem(oldItem, current);
     }
 
     private void HandleItemDoubleClick(ICommandListItem? item)
@@ -371,6 +374,7 @@ public partial class MacroPanelViewModel
                 }
 
                 var current = _listPanel.GetItem(index + 1);
+                UpdateValidationErrorForEditedItem(backup, current);
                 if (current is not null)
                 {
                     _editPanel.SetItem(current);

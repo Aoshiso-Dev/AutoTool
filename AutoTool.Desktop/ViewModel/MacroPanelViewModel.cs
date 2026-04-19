@@ -221,7 +221,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         NewFileStateRequested?.Invoke();
     }
 
-    private void ClosePreflightPanelForListInteraction()
+    private void ClosePreflightPanelOnly()
     {
         if (!IsPreflightPanelOpen)
         {
@@ -229,5 +229,10 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         }
 
         IsPreflightPanelOpen = false;
+    }
+
+    private void ClosePreflightPanelForListInteraction()
+    {
+        ClosePreflightPanelOnly();
     }
 }

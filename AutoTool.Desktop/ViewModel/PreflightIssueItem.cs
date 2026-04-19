@@ -1,3 +1,5 @@
+using AutoTool.Automation.Contracts.Lists;
+
 namespace AutoTool.Desktop.ViewModel;
 
 public sealed record PreflightIssueItem(
@@ -5,4 +7,6 @@ public sealed record PreflightIssueItem(
     string Line,
     string CommandName,
     string PropertyName,
-    string Message);
+    string Message,
+    int LineNumber = 0,
+    ICommandListItem? CommandItem = null);

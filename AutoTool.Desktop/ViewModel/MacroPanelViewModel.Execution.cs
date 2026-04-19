@@ -217,7 +217,9 @@ public partial class MacroPanelViewModel
                     Line: lineLabel,
                     CommandName: commandName,
                     PropertyName: ToUserPropertyName(issue.PropertyName),
-                    Message: $"[{issue.Code}] {NormalizeLine(issue.Message)}"));
+                    Message: $"[{issue.Code}] {NormalizeLine(issue.Message)}",
+                    LineNumber: item.LineNumber,
+                    CommandItem: item));
             }
         }
 
@@ -233,6 +235,11 @@ public partial class MacroPanelViewModel
             {
                 PreflightIssues.Add(issue);
             }
+
+            _listPanel.SetValidationErrorItems(
+                report.Issues
+                    .Where(static x => x.Level == "要修正" && x.CommandItem is not null)
+                    .Select(static x => x.CommandItem!));
 
             var now = _timeProvider.GetLocalNow();
             PreflightSummary = report.BlockingCount > 0
@@ -565,6 +572,39 @@ public partial class MacroPanelViewModel
         return command is LoopCommand
             && command.LineNumber <= 0
             && command.Parent is RootCommand;
+    }
+
+    private bool HasBlockingValidationIssue(ICommandListItem item)
+    {
+        if (!item.IsEnable || item is not ICommandSettings settings)
+        {
+            return false;
+        }
+
+        var issues = CommandSettingsValidator.GetIssues(
+            settings,
+            _pathResolver,
+            includeExistenceChecks: true);
+        return issues.Count > 0;
+    }
+
+    private void UpdateValidationErrorForEditedItem(ICommandListItem? beforeEdit, ICommandListItem? afterEdit)
+    {
+        OnUiThread(() =>
+        {
+            var trackedItems = _listPanel.ValidationErrorItems.ToList();
+            if (beforeEdit is not null)
+            {
+                trackedItems.RemoveAll(x => ReferenceEquals(x, beforeEdit));
+            }
+
+            if (afterEdit is not null && HasBlockingValidationIssue(afterEdit))
+            {
+                trackedItems.Add(afterEdit);
+            }
+
+            _listPanel.SetValidationErrorItems(trackedItems);
+        });
     }
 
     private sealed record PreflightValidationReport(int TargetCount, IReadOnlyList<PreflightIssueItem> Issues)

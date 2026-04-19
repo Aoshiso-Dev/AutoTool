@@ -28,6 +28,9 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     [ObservableProperty]
     private CommandList _commandList;
 
+    [ObservableProperty]
+    private IReadOnlyList<ICommandListItem> _validationErrorItems = [];
+
     private int _selectedLineNumber;
     public int SelectedLineNumber
     {
@@ -429,6 +432,18 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public void SetSelectedLineNumber(int lineNumber)
     {
         SelectedLineNumber = lineNumber;
+    }
+
+    public void SetValidationErrorItems(IEnumerable<ICommandListItem> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+
+        ValidationErrorItems =
+        [
+            .. items
+                .Where(static x => x is not null)
+                .Distinct()
+        ];
     }
 
     public void Prepare()

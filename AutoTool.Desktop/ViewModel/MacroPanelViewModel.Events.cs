@@ -101,7 +101,7 @@ public partial class MacroPanelViewModel
 
     private void HandleSelectedItemChanged(ICommandListItem? item)
     {
-        ClosePreflightPanelForListInteraction();
+        ClosePreflightPanelOnly();
         _editPanel.SetItem(item);
     }
 

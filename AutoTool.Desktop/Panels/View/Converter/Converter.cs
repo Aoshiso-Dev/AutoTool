@@ -72,6 +72,29 @@ public class NumberToBooleanConverter : IValueConverter
     }
 }
 
+public class ValidationErrorContainsItemConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2 || values[0] is not ICommandListItem item)
+        {
+            return false;
+        }
+
+        if (values[1] is not IEnumerable<ICommandListItem> items)
+        {
+            return false;
+        }
+
+        return items.Contains(item);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return [];
+    }
+}
+
 public class BooleanToTextConverter : IValueConverter
 {
     public string TrueText { get; set; } = "有効";

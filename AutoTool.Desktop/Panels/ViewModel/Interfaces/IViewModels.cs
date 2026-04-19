@@ -9,6 +9,7 @@ public interface IListPanelViewModel
     bool IsRunning { get; set; }
     bool IsAllSelectedVisual { get; set; }
     CommandList CommandList { get; }
+    IReadOnlyList<ICommandListItem> ValidationErrorItems { get; }
     int SelectedLineNumber { get; set; }
     ICommandListItem? SelectedItem { get; set; }
 
@@ -36,6 +37,7 @@ public interface IListPanelViewModel
     void SetSelectedItems(IReadOnlyList<ICommandListItem> items);
     void SetSelectedItem(ICommandListItem? item);
     void SetSelectedLineNumber(int lineNumber);
+    void SetValidationErrorItems(IEnumerable<ICommandListItem> items);
 }
 
 public interface IEditPanelViewModel

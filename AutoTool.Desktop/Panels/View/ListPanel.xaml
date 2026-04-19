@@ -13,6 +13,7 @@
         <converter:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converter:NumberToBooleanConverter x:Key="NumberToBooleanConverter"/>
         <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <converter:ValidationErrorContainsItemConverter x:Key="ValidationErrorContainsItemConverter"/>
         <converter:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter"/>
         <converter:CommandTypeToCategoryColorConverter x:Key="CommandTypeToCategoryColorConverter"/>
         <converter:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
@@ -86,6 +87,17 @@
                             </MultiTrigger.Conditions>
                             <Setter Property="Background" Value="#4050A0FF"/>
                         </MultiTrigger>
+                        <DataTrigger Value="True">
+                            <DataTrigger.Binding>
+                                <MultiBinding Converter="{StaticResource ValidationErrorContainsItemConverter}">
+                                    <Binding/>
+                                    <Binding Path="DataContext.ValidationErrorItems" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                </MultiBinding>
+                            </DataTrigger.Binding>
+                            <Setter Property="Background" Value="#20DC2626"/>
+                            <Setter Property="BorderBrush" Value="#C81E1E"/>
+                            <Setter Property="BorderThickness" Value="2,0,0,0"/>
+                        </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </ui:DataGrid.RowStyle>
@@ -132,9 +144,27 @@
                 <DataGridTemplateColumn x:Name="LineNumberColumn" Header="#" Width="35">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding LineNumber}" 
+                            <TextBlock Text="{Binding LineNumber}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       FontSize="12" Opacity="0.5"/>
+                                       FontSize="12" Opacity="0.5">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Value="True">
+                                                <DataTrigger.Binding>
+                                                    <MultiBinding Converter="{StaticResource ValidationErrorContainsItemConverter}">
+                                                        <Binding/>
+                                                        <Binding Path="DataContext.ValidationErrorItems" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                    </MultiBinding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="Opacity" Value="0.95"/>
+                                                <Setter Property="Foreground" Value="#C81E1E"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
