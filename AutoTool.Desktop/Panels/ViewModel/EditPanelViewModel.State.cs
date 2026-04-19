@@ -361,10 +361,18 @@ public partial class EditPanelViewModel
 
     partial void OnSelectedItemTypeObjChanged(CommandDisplayItem? value)
     {
-        if (value is not null)
+        if (value is null || Item is null || _isUpdating)
         {
-            OnSelectedItemTypeChanged(value.TypeName);
+            return;
         }
+
+        // 選択同期（一覧から項目選択）では再生成しない。型を実際に変更した場合のみ再生成する。
+        if (string.Equals(Item.ItemType, value.TypeName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        OnSelectedItemTypeChanged(value.TypeName);
     }
 
     private void SetPathAndRefresh(Action<ICommandListItem?, string> setter, string value)
