@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Automation.Runtime.Attributes;
 

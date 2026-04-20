@@ -1,4 +1,4 @@
-using AutoTool.Application.Ports;
+﻿using AutoTool.Application.Ports;
 using System.Windows.Threading;
 
 namespace AutoTool.Desktop.Services;
