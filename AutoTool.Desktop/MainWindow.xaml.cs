@@ -13,7 +13,7 @@ using Wpf.Ui.Controls;
 namespace AutoTool.Desktop;
 
 /// <summary>
-/// Interaction logic for MainWindow.xaml
+/// MainWindow.xaml のコードビハインドです。
 /// </summary>
 public partial class MainWindow : FluentWindow
 {
@@ -155,7 +155,7 @@ public partial class MainWindow : FluentWindow
         Win32MouseHookHelper.StopHook();
         System.Windows.Application.Current?.Shutdown();
 
-        // Shutdown が何らかの理由で完了しないケース向けのフェイルセーフ
+        // `Shutdown` が完了しない異常系に備えたフェイルセーフです。
         _ = ForceExitAsync();
     }
 

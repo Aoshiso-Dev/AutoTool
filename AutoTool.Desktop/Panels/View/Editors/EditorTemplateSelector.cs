@@ -6,7 +6,7 @@ using EditorPropertyMetadata = AutoTool.Automation.Runtime.Attributes.PropertyMe
 namespace AutoTool.Desktop.Panels.View.Editors;
 
 /// <summary>
-/// PropertyMetadataのEditorTypeに基づいてDataTemplateを選択
+/// `PropertyMetadata.EditorType` に基づいて `DataTemplate` を選択します。
 /// </summary>
 public class EditorTemplateSelector : DataTemplateSelector
 {

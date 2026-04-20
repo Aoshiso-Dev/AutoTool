@@ -21,13 +21,13 @@ public class CommandPropertyAttribute : Attribute
     /// <summary>説明文</summary>
     public string? Description { get; set; }
 
-    /// <summary>最小値（NumberBox / Slider）</summary>
+    /// <summary>最小値（`NumberBox` / `Slider`）</summary>
     public double Min { get; set; } = 0;
 
-    /// <summary>最大値（NumberBox / Slider）</summary>
+    /// <summary>最大値（`NumberBox` / `Slider`）</summary>
     public double Max { get; set; } = double.MaxValue;
 
-    /// <summary>ステップ値（Slider）</summary>
+    /// <summary>ステップ値（`Slider`）</summary>
     public double Step { get; set; } = 1;
 
     /// <summary>単位（表示用）</summary>
@@ -36,7 +36,7 @@ public class CommandPropertyAttribute : Attribute
     /// <summary>コンボボックス選択肢（カンマ区切り）</summary>
     public string? Options { get; set; }
 
-    /// <summary>ファイルフィルター（FilePicker）</summary>
+    /// <summary>ファイルフィルター（`FilePicker`）</summary>
     public string? FileFilter { get; set; }
 
     public CommandPropertyAttribute(string displayName, EditorType editorType)

@@ -60,7 +60,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<PreflightIssueItem> PreflightIssues { get; } = [];
 
-    // Exposed for view binding without concrete casts.
+    // View バインディング側で具象型キャスト不要にするため、インターフェースとして公開します。
     public IListPanelViewModel ListPanelViewModel => _listPanel;
     public IEditPanelViewModel EditPanelViewModel => _editPanel;
     public IButtonPanelViewModel ButtonPanelViewModel => _buttonPanel;

@@ -1,5 +1,8 @@
 ﻿namespace AutoTool.Commands.Model.Input;
 
+/// <summary>
+/// コマンドで使用するマウスボタン種別です。
+/// </summary>
 public enum CommandMouseButton
 {
     Left,
@@ -7,6 +10,9 @@ public enum CommandMouseButton
     Middle,
 }
 
+/// <summary>
+/// コマンドで使用するキーコード種別です。
+/// </summary>
 public enum CommandKey
 {
     None = 0,
@@ -176,6 +182,9 @@ public enum CommandKey
     System,
 }
 
+/// <summary>
+/// RGBA 形式の色指定値です。
+/// </summary>
 public readonly record struct CommandColor(byte A, byte R, byte G, byte B)
 {
     public static CommandColor FromRgb(byte r, byte g, byte b) => new(255, r, g, b);

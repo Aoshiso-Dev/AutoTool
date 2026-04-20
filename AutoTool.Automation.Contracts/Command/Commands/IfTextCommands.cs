@@ -3,6 +3,9 @@ using AutoTool.Commands.Services;
 
 namespace AutoTool.Commands.Commands;
 
+/// <summary>
+/// OCR 抽出文字が条件に一致したときに子コマンドを実行する `if` コマンドです。
+/// </summary>
 public class IfTextExistCommand : BaseCommand, IIfCommand, IIfTextExistCommand
 {
     private readonly IOcrEngine _ocrEngine;
@@ -55,6 +58,9 @@ public class IfTextExistCommand : BaseCommand, IIfCommand, IIfTextExistCommand
     }
 }
 
+/// <summary>
+/// OCR 抽出文字が条件に一致しないときに子コマンドを実行する `if` コマンドです。
+/// </summary>
 public class IfTextNotExistCommand : BaseCommand, IIfCommand, IIfTextNotExistCommand
 {
     private readonly IOcrEngine _ocrEngine;
@@ -107,6 +113,9 @@ public class IfTextNotExistCommand : BaseCommand, IIfCommand, IIfTextNotExistCom
     }
 }
 
+/// <summary>
+/// OCR 結果と条件設定の一致判定ロジックです。
+/// </summary>
 internal static class TextMatchEvaluator
 {
     public static bool IsMatched(string extractedText, double confidence, IIfTextCommandSettings settings)

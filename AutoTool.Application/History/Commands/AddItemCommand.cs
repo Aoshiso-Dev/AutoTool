@@ -3,6 +3,9 @@ using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Application.History.Commands;
 
+/// <summary>
+/// 項目追加の取り消し/やり直しを実装するコマンドです。
+/// </summary>
 public class AddItemCommand : IUndoRedoCommand
 {
     private readonly Action<ICommandListItem, int> _addAction;
@@ -24,7 +27,13 @@ public class AddItemCommand : IUndoRedoCommand
         _removeAction = removeAction;
     }
 
+    /// <summary>
+    /// 指定位置へ項目を追加します。
+    /// </summary>
     public void Execute() => _addAction(_item, _index);
 
+    /// <summary>
+    /// 追加した項目を取り消します。
+    /// </summary>
     public void Undo() => _removeAction(_index);
 }

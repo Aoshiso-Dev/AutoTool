@@ -2,6 +2,9 @@
 
 namespace AutoTool.Commands.Services;
 
+/// <summary>
+/// コマンドイベント種別です。
+/// </summary>
 public enum CommandEventKind
 {
     Started,
@@ -10,6 +13,9 @@ public enum CommandEventKind
     ProgressUpdated
 }
 
+/// <summary>
+/// コマンドログの追加情報ペイロード基底型です。
+/// </summary>
 public abstract record CommandLogPayload;
 
 public sealed record ProcessOutputLogPayload(
@@ -17,6 +23,9 @@ public sealed record ProcessOutputLogPayload(
     string Text,
     DateTimeOffset Timestamp) : CommandLogPayload;
 
+/// <summary>
+/// コマンドイベントバスで配信されるイベント本体です。
+/// </summary>
 public sealed record CommandBusEvent(
     CommandEventKind Kind,
     ICommand Command,
@@ -24,6 +33,9 @@ public sealed record CommandBusEvent(
     int Progress = 0,
     CommandLogPayload? Payload = null);
 
+/// <summary>
+/// コマンド実行イベントを配信・購読するバス契約です。
+/// </summary>
 public interface ICommandEventBus
 {
     event EventHandler<CommandEventArgs>? Started;
@@ -43,6 +55,7 @@ public interface ICommandEventBus
 
 public class CommandEventArgs(ICommand command) : EventArgs
 {
+    /// <summary>対象コマンドです。</summary>
     public ICommand Command { get; } = EnsureNotNull(command);
 
     private static ICommand EnsureNotNull(ICommand value)
@@ -60,7 +73,9 @@ public sealed class CommandLogEventArgs : CommandEventArgs
         Payload = payload;
     }
 
+    /// <summary>ログ本文です。</summary>
     public string Detail { get; }
+    /// <summary>追加の構造化ペイロードです。</summary>
     public CommandLogPayload? Payload { get; }
 }
 

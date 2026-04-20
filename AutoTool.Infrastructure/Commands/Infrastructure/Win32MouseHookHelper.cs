@@ -6,8 +6,14 @@ using AutoTool.Commands.Threading;
 
 namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// 低レベルマウスフックを提供し、同期イベントと非同期ストリームの両方で通知するヘルパーです。
+/// </summary>
 public static partial class Win32MouseHookHelper
 {
+    /// <summary>
+    /// フックイベントの種別です。
+    /// </summary>
     public enum MouseHookEventKind
     {
         LButtonDown,
@@ -16,6 +22,9 @@ public static partial class Win32MouseHookHelper
         MouseMove
     }
 
+    /// <summary>
+    /// マウスフックイベント本体です。
+    /// </summary>
     public sealed record MouseHookEvent(MouseHookEventKind Kind, MouseEventArgs Args);
 
     [StructLayout(LayoutKind.Sequential)]
@@ -94,6 +103,9 @@ public static partial class Win32MouseHookHelper
         return ReadEventsInternalAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// マウスフックを開始します。複数利用時は参照カウントで管理します。
+    /// </summary>
     public static void StartHook()
     {
         lock (Gate)
@@ -128,6 +140,9 @@ public static partial class Win32MouseHookHelper
         }
     }
 
+    /// <summary>
+    /// マウスフックの利用を終了します。参照カウントが 0 のときのみ解放します。
+    /// </summary>
     public static void StopHook()
     {
         IntPtr hookToRelease = IntPtr.Zero;

@@ -35,7 +35,7 @@ public sealed class YoloV8Detector : IDisposable
             if (useDirectML)
             {
                 var so = new SessionOptions();
-                try { so.AppendExecutionProvider_DML(); } catch { /* ignore */ }
+                try { so.AppendExecutionProvider_DML(); } catch { /* DML 利用不可時は既定プロバイダーへフォールバック */ }
                 _session = new InferenceSession(resolved, so);
             }
             else
@@ -64,24 +64,24 @@ public sealed class YoloV8Detector : IDisposable
     }
 
     /// <summary>
-    /// 推論 (BGR入力を明示的にRGBへ変換後、swapRB=false でBlob化)
+    /// 推論（BGR入力を明示的にRGBへ変換後、`swapRB=false` で Blob 化）
     /// </summary>
     public List<Detection> Detect(Mat frameBgr, float confTh = 0.25f, float iouTh = 0.45f)
     {
         if (frameBgr is null || frameBgr.Empty())
             throw new ArgumentException("入力フレーム(frameBgr) が空です。", nameof(frameBgr));
 
-        // 1) Letterbox
+        // 1) レターボックス変換
         var lb = Letterbox(frameBgr, new Size(_inputSize, _inputSize), 32);
 
         // 2) チャネル正規化
         using var bgr3 = EnsureBgr3(lb.Image);
 
-        // 3) BGR -> RGB
+        // 3) BGR から RGB へ変換
         using var rgb = new Mat();
         Cv2.CvtColor(bgr3, rgb, ColorConversionCodes.BGR2RGB);
 
-        // 4) Blob
+        // 4) Blob 作成
         using var blob = CvDnn.BlobFromImage(
             rgb,
             scaleFactor: 1f / 255f,
@@ -93,18 +93,18 @@ public sealed class YoloV8Detector : IDisposable
         if (blob.Empty())
             throw new InvalidOperationException("BlobFromImage の結果が空です。入力画像を確認してください。");
 
-        // Blob shape 調査
-        // OpenCV の 4D blob: N,C,H,W
+        // Blob 形状を確認
+        // OpenCV の 4次元 Blob: N,C,H,W
         int dims = blob.Dims; // 4 期待
         var shape = Enumerable.Range(0, dims).Select(i => blob.Size(i)).ToArray(); // [1,3,H,W] 期待
         long expected = 1L * shape.Aggregate(1, (a, b) => a * b);
 
-        // 5) Mat -> float[]
+        // 5) `Mat` から `float[]` へ変換
         float[] inputData = new float[expected];
 
         if (!blob.IsContinuous())
         {
-            // 念のため連続化
+            // 念のため連続領域へ変換
             using var continuous = blob.Clone();
             CopyMatToArray(continuous, inputData);
         }
@@ -118,7 +118,7 @@ public sealed class YoloV8Detector : IDisposable
         float max = inputData.Max();
         System.Diagnostics.Debug.WriteLine($"[YOLO] blob 形状={string.Join("x", shape)} / 要素数={inputData.Length} / 値域=({min:F3},{max:F3})");
 
-        // 6) Tensor 構築 (NCHW)
+        // 6) Tensor 構築（NCHW）
         var tensor = new DenseTensor<float>([shape[0], shape[1], shape[2], shape[3]]);
         inputData.CopyTo(tensor.Buffer.Span);
 
@@ -144,7 +144,7 @@ public sealed class YoloV8Detector : IDisposable
             throw new ArgumentException($"Blob の MatType は CV_32F が必要ですが、実際は {m.Type()} です。", nameof(m));
         if (dst.Length == 0) return;
 
-        // Mat のデータは NCHW 連続領域
+        // Mat データは NCHW の連続領域として格納されています。
         Marshal.Copy(m.Data, dst, 0, dst.Length);
     }
 
@@ -175,7 +175,7 @@ public sealed class YoloV8Detector : IDisposable
         int anchors = channelFirst ? dims[2] : dims[1];
         int ch = channelFirst ? dims[1] : dims[2];
 
-        // 想定: ch = 4 + numClasses (objectness 無) = 7
+        // 想定: ch = 4 + numClasses（objectness なし）= 7
         if (ch < 5)
             throw new NotSupportedException($"想定外チャンネル数 ch={ch}");
 
@@ -183,7 +183,7 @@ public sealed class YoloV8Detector : IDisposable
         int numClasses = ch - classesStart;
         bool hasObj = false; // 今回 end2end: objectness なし
 
-        // クラス値が既に [0,1] か判定 (最大値 <=1 かつ 最小値 >=0 なら生値使用)
+        // クラス値が既に [0,1] か判定（最大値 <= 1 かつ最小値 >= 0 なら生値を使用）
         bool classAlreadyProb;
         {
             double cMin = double.PositiveInfinity, cMax = double.NegativeInfinity;
@@ -222,7 +222,7 @@ public sealed class YoloV8Detector : IDisposable
 
         void AddDet(float cx, float cy, float w, float h, float score, int cls)
         {
-            // Letterbox Undo
+            // レターボックス補正を元の座標系へ戻す
             float x0 = (cx - w / 2f - lb.PadX) / lb.Gain;
             float y0 = (cy - h / 2f - lb.PadY) / lb.Gain;
             float ww = w / lb.Gain;

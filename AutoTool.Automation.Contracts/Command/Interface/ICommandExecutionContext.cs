@@ -4,77 +4,77 @@ using AutoTool.Commands.Services;
 namespace AutoTool.Commands.Interface;
 
 /// <summary>
-/// Command execution context - provides services to commands during execution
+/// コマンド実行時に必要なサービスを提供する実行コンテキストです。
 /// </summary>
 public interface ICommandExecutionContext
 {
     /// <summary>
-    /// Get current local time from the configured time source
+    /// 構成済みの時刻ソースから現在のローカル時刻を取得します。
     /// </summary>
     DateTimeOffset GetLocalNow();
 
     /// <summary>
-    /// Report progress (0-100)
+    /// 進捗（0-100）を報告します。
     /// </summary>
     void ReportProgress(int progress);
     
     /// <summary>
-    /// Log a message
+    /// ログメッセージを出力します。
     /// </summary>
     void Log(string message);
     
     /// <summary>
-    /// Get a variable value
+    /// 変数値を取得します。
     /// </summary>
     string? GetVariable(string name);
     
     /// <summary>
-    /// Set a variable value
+    /// 変数値を設定します。
     /// </summary>
     void SetVariable(string name, string value);
     
     /// <summary>
-    /// Convert relative path to absolute path
+    /// 相対パスを絶対パスへ変換します。
     /// </summary>
     string ToAbsolutePath(string relativePath);
     
     /// <summary>
-    /// Mouse click service
+    /// マウスクリックを実行します。
     /// </summary>
     Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent", bool simulateMouseMove = false);
     
     /// <summary>
-    /// Send hotkey
+    /// ホットキー入力を送信します。
     /// </summary>
     Task SendHotkeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null);
     
     /// <summary>
-    /// Execute a program
+    /// プログラムを実行します。
     /// </summary>
     Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken);
     
     /// <summary>
-    /// Take a screenshot
+    /// スクリーンショットを取得します。
     /// </summary>
     Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken);
     
     /// <summary>
-    /// Search for an image on screen
+    /// 画面上で画像検索を行います。
     /// </summary>
     Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, CommandColor? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken);
     
     /// <summary>
-    /// Initialize AI detection model
+    /// AI 検出モデルを初期化します。
     /// </summary>
     void InitializeAIModel(string modelPath, int inputSize = 640, bool useGpu = true);
     
     /// <summary>
-    /// Detect objects using AI
+    /// AI による物体検出を実行します。
     /// </summary>
     IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold);
 
     /// <summary>
-    /// Extract text from a screen region using OCR
+    /// OCR で画面領域から文字を抽出します。
     /// </summary>
     Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken);
 }

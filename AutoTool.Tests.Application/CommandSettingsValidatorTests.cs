@@ -5,6 +5,9 @@ using System.IO;
 
 namespace AutoTool.Automation.Runtime.Tests;
 
+/// <summary>
+/// コマンド設定バリデーションのテストです。
+/// </summary>
 public class CommandSettingsValidatorTests
 {
     [Fact]

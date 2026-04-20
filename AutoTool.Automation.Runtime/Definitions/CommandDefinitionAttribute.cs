@@ -29,12 +29,12 @@ public class CommandDefinitionAttribute : Attribute
     public CommandCategory Category { get; }
     
     /// <summary>
-    /// If 開始コマンドかどうか
+    /// 条件開始コマンドかどうか
     /// </summary>
     public bool IsIfCommand { get; }
     
     /// <summary>
-    /// Loop 開始コマンドかどうか
+    /// ループ開始コマンドかどうか
     /// </summary>
     public bool IsLoopCommand { get; }
     

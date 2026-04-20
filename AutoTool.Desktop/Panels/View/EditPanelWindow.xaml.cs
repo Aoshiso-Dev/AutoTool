@@ -17,7 +17,7 @@ public partial class EditPanelWindow : FluentWindow
     }
 
     /// <summary>
-    /// EditPanelのDataContextを設定
+    /// EditPanel の `DataContext` を設定します。
     /// </summary>
     public void SetEditPanelDataContext(object dataContext)
     {

@@ -45,7 +45,7 @@ public class PairMismatchException : CommandCreationException
 }
 
 /// <summary>
-/// 空の構造（If/Loop 内に要素がない）の例外
+/// 空の構造（条件/ループ内に要素がない）の例外
 /// </summary>
 public class EmptyStructureException : CommandCreationException
 {

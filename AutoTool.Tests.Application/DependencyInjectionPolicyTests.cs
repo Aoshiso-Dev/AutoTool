@@ -3,6 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace AutoTool.Automation.Runtime.Tests;
 
+/// <summary>
+/// DI 方針と依存ルール違反がないことを検証するテストです。
+/// </summary>
 public class DependencyInjectionPolicyTests
 {
     private static readonly Regex[] ForbiddenPatterns =

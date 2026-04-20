@@ -13,6 +13,9 @@ namespace AutoTool.Automation.Runtime.Benchmarks.Benchmarks;
 
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
+/// <summary>
+/// マクロ生成処理の性能を測定するベンチマークです。
+/// </summary>
 public class MacroFactoryBenchmarks
 {
     private ServiceProvider _provider = null!;

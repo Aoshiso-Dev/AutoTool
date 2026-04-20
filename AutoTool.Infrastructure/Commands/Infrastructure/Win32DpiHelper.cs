@@ -2,6 +2,9 @@
 
 namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// 指定座標が属するモニターの DPI を取得する Win32 ヘルパーです。
+/// </summary>
 public static partial class Win32DpiHelper
 {
     private const uint MonitorDefaultToNearest = 2;
@@ -24,6 +27,9 @@ public static partial class Win32DpiHelper
     [LibraryImport("Shcore.dll", EntryPoint = "GetDpiForMonitor")]
     private static partial int NativeGetDpiForMonitor(IntPtr monitor, MonitorDpiType dpiType, out uint dpiX, out uint dpiY);
 
+    /// <summary>
+    /// 指定座標のモニター DPI を返します。取得失敗時は既定の 96 DPI を返します。
+    /// </summary>
     public static (double DpiX, double DpiY) GetMonitorDpiAt(int x, int y)
     {
         var monitor = NativeMonitorFromPoint(new Point { X = x, Y = y }, MonitorDefaultToNearest);

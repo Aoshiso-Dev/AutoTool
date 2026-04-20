@@ -135,7 +135,7 @@ public sealed class TesseractOcrEngine : IOcrEngine
             return settingsCandidate;
         }
 
-        // Backward-compatibility fallback for legacy deployments.
+        // 旧配置との互換性維持のため、レガシー配置もフォールバックで探索します。
         var legacyCandidate = Path.Combine(AppContext.BaseDirectory, "tessdata");
         if (Directory.Exists(legacyCandidate))
         {
@@ -191,7 +191,7 @@ public sealed class TesseractOcrEngine : IOcrEngine
         }
         catch
         {
-            // ignore cleanup errors
+            // 一時ファイル削除失敗は処理継続を優先して無視します。
         }
     }
 }

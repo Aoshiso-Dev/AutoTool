@@ -32,7 +32,7 @@ public sealed class DetectionHighlightService : IDetectionHighlightService
         }
         catch (OperationCanceledException)
         {
-            // ignore
+            // キャンセルは想定内のため握りつぶします。
         }
         finally
         {

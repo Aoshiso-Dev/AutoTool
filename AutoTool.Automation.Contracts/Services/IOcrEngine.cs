@@ -1,5 +1,8 @@
 ﻿namespace AutoTool.Commands.Services;
 
+/// <summary>
+/// OCR 抽出要求パラメータです。
+/// </summary>
 public sealed class OcrRequest
 {
     public int X { get; set; }
@@ -15,8 +18,14 @@ public sealed class OcrRequest
     public string TessdataPath { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// OCR 抽出結果です。
+/// </summary>
 public readonly record struct OcrExtractionResult(string Text, double Confidence);
 
+/// <summary>
+/// OCR エンジンの抽象契約です。
+/// </summary>
 public interface IOcrEngine
 {
     Task<OcrExtractionResult> ExtractTextAsync(

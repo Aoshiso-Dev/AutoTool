@@ -3,6 +3,9 @@ using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Application.History.Commands;
 
+/// <summary>
+/// 項目削除の取り消し/やり直しを実装するコマンドです。
+/// </summary>
 public class RemoveItemCommand : IUndoRedoCommand
 {
     private readonly Action<ICommandListItem, int> _addAction;
@@ -24,7 +27,13 @@ public class RemoveItemCommand : IUndoRedoCommand
         _removeAction = removeAction;
     }
 
+    /// <summary>
+    /// 指定位置の項目を削除します。
+    /// </summary>
     public void Execute() => _removeAction(_index);
 
+    /// <summary>
+    /// 削除した項目を元の位置へ戻します。
+    /// </summary>
     public void Undo() => _addAction(_item, _index);
 }

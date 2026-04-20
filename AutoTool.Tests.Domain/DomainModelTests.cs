@@ -3,6 +3,9 @@ using AutoTool.Domain.Macros;
 
 namespace AutoTool.Tests.Domain;
 
+/// <summary>
+/// 条件種別モデルのテストです。
+/// </summary>
 public class ConditionTypeTests
 {
     [Fact]
@@ -57,6 +60,9 @@ public class ConditionTypeTests
     }
 }
 
+/// <summary>
+/// お気に入りマクロエントリモデルのテストです。
+/// </summary>
 public class FavoriteMacroEntryTests
 {
     [Fact]

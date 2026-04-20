@@ -16,7 +16,7 @@ using System.Windows.Shapes;
 namespace AutoTool.Desktop.Panels.View;
 
 /// <summary>
-/// ListPanel.xaml の相互作用ロジック
+/// FavoritePanel.xaml の相互作用ロジック
 /// </summary>
 public partial class FavoritePanel : UserControl
 {

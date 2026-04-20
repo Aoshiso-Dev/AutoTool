@@ -8,7 +8,7 @@ using ICommand = AutoTool.Commands.Interface.ICommand;
 namespace AutoTool.Commands.Commands;
 
 /// <summary>
-/// Command execution context implementation
+/// コマンド実行コンテキストの標準実装です。
 /// </summary>
 public class CommandExecutionContext : ICommandExecutionContext
 {

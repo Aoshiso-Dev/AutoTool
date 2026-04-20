@@ -127,7 +127,7 @@ public class XmlRecentFileStore : IRecentFileStore
         }
         catch
         {
-            // No-op: keep legacy file when deletion fails.
+            // 削除に失敗しても旧ファイルは保持し、処理は継続します。
         }
     }
 }

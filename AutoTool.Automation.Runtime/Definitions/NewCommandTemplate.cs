@@ -14,13 +14,13 @@ namespace AutoTool.Automation.Runtime.Lists;
 // 新規コマンドの追加手順:
 // 1. 下記のテンプレートをコピー
 // 2. クラス名を変更（例: MyNewCommandItem）
-// 3. CommandDefinition 属性のパラメータを変更
+// 3. `CommandDefinition` 属性のパラメータを変更
 // 4. 必要なプロパティを追加
-// 5. Description プロパティを実装
+// 5. `Description` プロパティを実装
 // 
 // これで以下が自動的に反映されます:
-// - ItemType.GetTypes() に自動追加
-// - EditPanelViewModel の選択リストに自動追加
+// - `ItemType.GetTypes()` に自動追加
+// - `EditPanelViewModel` の選択リストに自動追加
 // - ファクトリでの生成処理に対応
 // - シリアライゼーションに対応
 // ============================================
@@ -37,7 +37,7 @@ public partial class MyNewCommandItem : CommandListItem, IMyNewCommandItem, IMyN
     [NotifyPropertyChangedFor(nameof(Description))]
     private string _myProperty = string.Empty;
 
-    // Description プロパティは必須
+    // `Description` プロパティは必須
     public new string Description => $"MyNewCommand: {MyProperty}";
 
     public MyNewCommandItem() { }
@@ -58,7 +58,7 @@ public partial class MyNewCommandItem : CommandListItem, IMyNewCommandItem, IMyN
 */
 
 /*
-// 対応するインターフェースを Command.Interface に追加
+// 対応するインターフェースを `Command.Interface` に追加
 public interface IMyNewCommandItem : ICommandListItem
 {
     string MyProperty { get; set; }
@@ -76,7 +76,7 @@ public interface IMyNewCommand : ICommand
 */
 
 /*
-// 対応する Command 実装を Command.Class に追加
+// 対応する `Command` 実装を `Command.Class` に追加
 public class MyNewCommand : BaseCommand, ICommand, IMyNewCommand
 {
     new public IMyNewCommandSettings Settings => (IMyNewCommandSettings)base.Settings;

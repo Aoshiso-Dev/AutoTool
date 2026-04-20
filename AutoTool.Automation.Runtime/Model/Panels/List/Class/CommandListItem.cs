@@ -128,7 +128,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
         
         /// <summary>
-        /// Execute the command logic (override in derived classes)
+        /// コマンド処理を実行します（派生クラスでオーバーライドします）。
         /// </summary>
         public virtual ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {

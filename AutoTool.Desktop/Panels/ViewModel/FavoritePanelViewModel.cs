@@ -230,7 +230,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
         }
         catch
         {
-            // No-op: keep legacy file when cleanup fails.
+            // クリーンアップに失敗しても旧ファイルは保持し、処理は継続します。
         }
     }
 }

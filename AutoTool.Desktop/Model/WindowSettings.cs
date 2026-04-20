@@ -139,7 +139,7 @@ public class WindowSettings
         }
         catch
         {
-            // No-op: keep legacy settings when cleanup fails.
+            // クリーンアップに失敗しても旧設定は保持し、処理は継続します。
         }
     }
 

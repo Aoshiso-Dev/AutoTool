@@ -1,5 +1,8 @@
 ﻿namespace AutoTool.Commands.Interface;
 
+/// <summary>
+/// 実行可能コマンドの共通契約です。
+/// </summary>
 public interface ICommand
 {
     int LineNumber { get; set; }
@@ -15,9 +18,13 @@ public interface ICommand
     bool CanExecute();
 }
 
+/// <summary>ルートコマンドを表すマーカー契約です。</summary>
 public interface IRootCommand : ICommand { }
+/// <summary>条件分岐コマンドを表すマーカー契約です。</summary>
 public interface IIfCommand : ICommand { }
+/// <summary>画像待機コマンドの契約です。</summary>
 public interface IWaitImageCommand : ICommand { new IWaitImageCommandSettings Settings { get; } }
+/// <summary>画像検索コマンドの契約です。</summary>
 public interface IFindImageCommand : ICommand { new IFindImageCommandSettings Settings { get; } }
 public interface IFindTextCommand : ICommand { new IFindTextCommandSettings Settings { get; } }
 public interface IClickImageCommand : ICommand { new IClickImageCommandSettings Settings { get; } }

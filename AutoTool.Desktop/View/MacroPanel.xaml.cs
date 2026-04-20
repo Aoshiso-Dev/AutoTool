@@ -12,7 +12,7 @@ using System.Windows.Shapes;
 namespace AutoTool.Desktop.View;
 
 /// <summary>
-/// Interaction logic for MainWindow.xaml
+/// MacroPanel.xaml のコードビハインドです。
 /// </summary>
 public partial class MacroPanel : UserControl
 {

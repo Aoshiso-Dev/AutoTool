@@ -9,6 +9,9 @@ using System.IO;
 
 namespace AutoTool.Automation.Runtime.Tests;
 
+/// <summary>
+/// 履歴コマンドの回帰テストです。
+/// </summary>
 public class HistoryCommandRegressionTests
 {
     [Fact]
@@ -150,6 +153,9 @@ public class HistoryCommandRegressionTests
     }
 }
 
+/// <summary>
+/// `FileManager` の回帰テストです。
+/// </summary>
 public class FileManagerRegressionTests
 {
     [Fact]

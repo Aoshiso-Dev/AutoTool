@@ -1,5 +1,8 @@
 ﻿namespace AutoTool.Desktop.Model;
 
+/// <summary>
+/// ウィンドウサイズのプリセット種別です。
+/// </summary>
 public enum WindowSizePreset
 {
     Compact = 0,

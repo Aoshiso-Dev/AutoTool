@@ -3,6 +3,9 @@ using AutoTool.Commands.Interface;
 
 namespace AutoTool.Commands.Commands;
 
+/// <summary>
+/// 共通の空設定オブジェクトです。
+/// </summary>
 public class CommandSettings : ICommandSettings { }
 
 public class WaitImageCommandSettings : ICommandSettings, IWaitImageCommandSettings

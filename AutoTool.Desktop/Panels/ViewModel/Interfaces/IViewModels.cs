@@ -4,6 +4,9 @@ using AutoTool.Domain.Macros;
 
 namespace AutoTool.Desktop.Panels.ViewModel;
 
+/// <summary>
+/// コマンド一覧パネルの表示状態と編集操作を提供する ViewModel 契約です。
+/// </summary>
 public interface IListPanelViewModel
 {
     bool IsRunning { get; set; }
@@ -13,8 +16,11 @@ public interface IListPanelViewModel
     int SelectedLineNumber { get; set; }
     ICommandListItem? SelectedItem { get; set; }
 
+    /// <summary>選択項目が変わったときに通知します。</summary>
     event Action<ICommandListItem?>? SelectedItemChanged;
+    /// <summary>項目がダブルクリックされたときに通知します。</summary>
     event Action<ICommandListItem?>? ItemDoubleClicked;
+    /// <summary>一覧とのユーザー操作が発生したときに通知します。</summary>
     event Action? InteractionRequested;
 
     void Prepare();
@@ -42,6 +48,9 @@ public interface IListPanelViewModel
     void NotifyInteraction();
 }
 
+/// <summary>
+/// 選択中コマンドのプロパティ編集を担当する ViewModel 契約です。
+/// </summary>
 public interface IEditPanelViewModel
 {
     bool IsRunning { get; set; }
@@ -55,6 +64,9 @@ public interface IEditPanelViewModel
     ICommandListItem? GetItem();
 }
 
+/// <summary>
+/// 実行・停止・保存など主要ボタン操作を仲介する ViewModel 契約です。
+/// </summary>
 public interface IButtonPanelViewModel
 {
     bool IsRunning { get; set; }
@@ -76,6 +88,9 @@ public interface IButtonPanelViewModel
     void RequestStop();
 }
 
+/// <summary>
+/// ログ表示パネルの出力と状態を管理する ViewModel 契約です。
+/// </summary>
 public interface ILogPanelViewModel
 {
     bool IsRunning { get; set; }
@@ -87,6 +102,9 @@ public interface ILogPanelViewModel
     void WriteLog(string lineNumber, string commandName, string detail);
 }
 
+/// <summary>
+/// お気に入りマクロの登録・読込・削除を管理する ViewModel 契約です。
+/// </summary>
 public interface IFavoritePanelViewModel
 {
     bool IsRunning { get; set; }

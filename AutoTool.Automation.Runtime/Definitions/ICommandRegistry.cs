@@ -58,12 +58,12 @@ public interface ICommandRegistry
     CommandCreationResult CreateSimple(ICommand parent, ICommandListItem item);
 
     /// <summary>
-    /// If 開始コマンドか判定
+    /// 条件開始コマンドか判定
     /// </summary>
     bool IsIfCommand(string typeName);
 
     /// <summary>
-    /// Loop 開始コマンドか判定
+    /// ループ開始コマンドか判定
     /// </summary>
     bool IsLoopCommand(string typeName);
 

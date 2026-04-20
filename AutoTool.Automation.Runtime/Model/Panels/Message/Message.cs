@@ -12,7 +12,7 @@ public class LogMessage
 }
 
 // 以下のメッセージクラスは廃止され、直接イベントに置き換えられました:
-// - RunMessage, StopMessage, SaveMessage, LoadMessage
-// - ClearMessage, AddMessage, UpMessage, DownMessage, DeleteMessage
-// - ChangeSelectedMessage, EditCommandMessage, RefreshListViewMessage
+// - 実行/停止/保存/読み込みメッセージ
+// - 全消去/追加/上へ/下へ/削除メッセージ
+// - 選択変更/編集/一覧更新メッセージ
 

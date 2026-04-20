@@ -19,6 +19,9 @@ using System.Windows.Input;
 
 namespace AutoTool.Automation.Runtime.Tests;
 
+/// <summary>
+/// コマンド一覧モデルの挙動を検証するテストです。
+/// </summary>
 public class CommandListTests
 {
     private static CommandList CreateList()
@@ -110,6 +113,9 @@ public class CommandListTests
     }
 }
 
+/// <summary>
+/// マクロファクトリ生成処理のテストです。
+/// </summary>
 public class MacroFactoryTests
 {
     [Fact]
@@ -237,6 +243,9 @@ public class MacroFactoryTests
     }
 }
 
+/// <summary>
+/// リトライコマンドの実行制御テストです。
+/// </summary>
 public class RetryCommandTests
 {
     [Fact]
@@ -299,6 +308,9 @@ public class RetryCommandTests
     }
 }
 
+/// <summary>
+/// 履歴管理クラスのテストです。
+/// </summary>
 public class CommandHistoryManagerTests
 {
     [Fact]
@@ -335,6 +347,9 @@ public class CommandHistoryManagerTests
     }
 }
 
+/// <summary>
+/// マクロファイルシリアライザー互換性テストです。
+/// </summary>
 public class MacroFileSerializerCompatibilityTests
 {
     [Fact]
@@ -452,6 +467,9 @@ internal sealed class FakeMacroFileSerializer : IMacroFileSerializer
     }
 }
 
+/// <summary>
+/// `FileManager` の単体テストです。
+/// </summary>
 public class FileManagerTests
 {
     [Fact]
@@ -625,6 +643,9 @@ public class FileManagerTests
     }
 }
 
+/// <summary>
+/// 文字検索コマンド項目の実行テストです。
+/// </summary>
 public class FindTextItemTests
 {
     [Fact]

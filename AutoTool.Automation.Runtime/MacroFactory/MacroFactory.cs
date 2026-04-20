@@ -8,6 +8,9 @@ using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Automation.Runtime.MacroFactory;
 
+/// <summary>
+/// コマンド一覧から実行可能なマクロコマンドツリーを生成します。
+/// </summary>
 public class MacroFactory(
     ICommandRegistry commandRegistry,
     ICommandFactory commandFactory,
@@ -19,6 +22,9 @@ public class MacroFactory(
     private readonly object _builderMapLock = new();
     private Dictionary<string, ICompositeCommandBuilder>? _builderByType;
 
+    /// <summary>
+    /// UI のコマンド一覧を走査し、実行エンジン用のルートコマンドを作成します。
+    /// </summary>
     public ICommand CreateMacro(IEnumerable<ICommandListItem> items)
     {
         _commandRegistry.Initialize();

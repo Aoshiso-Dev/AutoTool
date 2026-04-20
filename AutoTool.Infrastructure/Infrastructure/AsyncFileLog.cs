@@ -60,7 +60,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         }
         catch (InvalidOperationException)
         {
-            // ignore when writer is already completed
+            // すでに完了済みのライターへ書き込んだ場合は無視します。
         }
     }
 
@@ -134,7 +134,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
-            // normal on shutdown
+            // シャットダウン時の想定内キャンセルです。
         }
         catch (Exception ex)
         {
@@ -177,7 +177,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
-            // normal on shutdown
+            // シャットダウン時の想定内キャンセルです。
         }
         catch (Exception ex)
         {
@@ -209,7 +209,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         }
         catch (Exception)
         {
-            // Best-effort logging; ignore enqueue failures during shutdown.
+            // 終了処理中はベストエフォートで、キュー投入失敗は無視します。
         }
     }
 

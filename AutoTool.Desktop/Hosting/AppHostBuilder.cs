@@ -17,7 +17,7 @@ public static class AppHostBuilder
         return Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((_, configuration) =>
             {
-                // Prefer per-install settings under the Settings folder.
+                // インストール単位で設定を分離できるよう、Settings 配下の設定ファイルを優先します。
                 configuration.AddJsonFile("Settings/appsettings.json", optional: true, reloadOnChange: true);
             })
             .ConfigureServices((context, services) =>

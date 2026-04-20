@@ -8,7 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace AutoTool.Automation.Runtime.Attributes;
 
 /// <summary>
-/// UI editor metadata for a reflected command property.
+/// 反射で取得したコマンドプロパティを UI エディタで表示・編集するためのメタデータです。
 /// </summary>
 public partial class PropertyMetadata : ObservableObject
 {

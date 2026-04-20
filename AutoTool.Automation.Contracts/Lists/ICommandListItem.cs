@@ -20,7 +20,7 @@ public interface ICommandListItem
     ICommandListItem Clone();
     
     /// <summary>
-    /// Execute the command logic (override in derived classes)
+    /// コマンド処理を実行します（必要に応じて派生側でオーバーライドします）。
     /// </summary>
     ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         => ValueTask.FromResult(true);
@@ -294,7 +294,7 @@ public interface IIfVariableItem : ICommandListItem, IIfItem
     public string Value { get; set; }
 }
 
-// Screenshot item interface for panel editing
+// パネル編集で使用するスクリーンショット項目のインターフェース
 public interface IScreenshotItem : ICommandListItem
 {
     string SaveDirectory { get; set; }

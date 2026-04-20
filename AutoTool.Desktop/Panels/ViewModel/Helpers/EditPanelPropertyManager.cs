@@ -58,7 +58,7 @@ public class EditPanelPropertyManager
     // スクリーンショット関連
     public PropertyAccessor<ScreenshotItem, string> SaveDirectory { get; }
     
-    // AI thresholds
+    // AI 検出しきい値
     public MultiInterfacePropertyAccessor<double> ConfThreshold { get; }
     public MultiInterfacePropertyAccessor<double> IoUThreshold { get; }
 

@@ -5,8 +5,14 @@ using AutoTool.Application.Ports;
 
 namespace AutoTool.Application.Files;
 
+/// <summary>
+/// マクロファイルの開く・保存・最近使ったファイル管理を担うクラスです。
+/// </summary>
 public partial class FileManager : ObservableObject
 {
+    /// <summary>
+    /// ダイアログ表示に必要なファイル種別情報です。
+    /// </summary>
     public class FileTypeInfo
     {
         [SetsRequiredMembers]
@@ -67,6 +73,9 @@ public partial class FileManager : ObservableObject
         LoadRecentFiles();
     }
 
+    /// <summary>
+    /// ファイルを開いて読み込み、現在ファイル情報と最近使ったファイルを更新します。
+    /// </summary>
     public bool OpenFile(string filePath = "")
     {
         if (string.IsNullOrEmpty(filePath))
@@ -93,6 +102,9 @@ public partial class FileManager : ObservableObject
         return true;
     }
 
+    /// <summary>
+    /// 現在開いているファイルパスへ上書き保存します。
+    /// </summary>
     public void SaveFile()
     {
         if (!string.IsNullOrEmpty(CurrentFilePath))
@@ -101,6 +113,9 @@ public partial class FileManager : ObservableObject
         }
     }
 
+    /// <summary>
+    /// 保存先を選択して保存し、現在ファイル情報と最近使ったファイルを更新します。
+    /// </summary>
     public bool SaveFileAs()
     {
         var filePath = _filePicker.SaveFile(CreateDialogOptions());
@@ -118,6 +133,9 @@ public partial class FileManager : ObservableObject
         return true;
     }
 
+    /// <summary>
+    /// 現在ファイル状態を未保存の新規状態へ戻します。
+    /// </summary>
     public void ResetToNewFile()
     {
         CurrentFilePath = string.Empty;
@@ -125,6 +143,9 @@ public partial class FileManager : ObservableObject
         IsFileOpened = false;
     }
 
+    /// <summary>
+    /// ファイルダイアログ設定を生成します。
+    /// </summary>
     private FileDialogOptions CreateDialogOptions() => new(
         _fileTypeInfo.Title,
         _fileTypeInfo.Filter,
@@ -132,16 +153,25 @@ public partial class FileManager : ObservableObject
         _fileTypeInfo.RestoreDirectory,
         _fileTypeInfo.DefaultExt);
 
+    /// <summary>
+    /// 永続ストアから最近使ったファイル一覧を読み込みます。
+    /// </summary>
     private void LoadRecentFiles()
     {
         RecentFiles = _recentFileStore.Load(GetRecentFilesKey()) ?? [];
     }
 
+    /// <summary>
+    /// 最近使ったファイル一覧を永続化します。
+    /// </summary>
     private void SaveRecentFiles()
     {
         _recentFileStore.Save(GetRecentFilesKey(), RecentFiles);
     }
 
+    /// <summary>
+    /// 最近使ったファイル一覧の先頭へ追加し、重複除去と件数上限を適用します。
+    /// </summary>
     private void AddToRecentFiles(string filePath)
     {
         var existingItem = RecentFiles?.FirstOrDefault(f =>
@@ -165,6 +195,9 @@ public partial class FileManager : ObservableObject
         SaveRecentFiles();
     }
 
+    /// <summary>
+    /// 指定パスを最近使ったファイル一覧から削除します。
+    /// </summary>
     private void RemoveFromRecentFiles(string filePath)
     {
         var existingItem = RecentFiles?.FirstOrDefault(f =>
@@ -178,5 +211,8 @@ public partial class FileManager : ObservableObject
         SaveRecentFiles();
     }
 
+    /// <summary>
+    /// このファイル種別専用の最近使ったファイル保存キーを返します。
+    /// </summary>
     private string GetRecentFilesKey() => $"RecentFiles_{_fileTypeInfo.DefaultExt}";
 }

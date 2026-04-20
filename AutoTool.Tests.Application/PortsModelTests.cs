@@ -3,6 +3,9 @@ using AutoTool.Application.Ports;
 
 namespace AutoTool.Automation.Runtime.Tests;
 
+/// <summary>
+/// ポート層モデルの基本挙動テストです。
+/// </summary>
 public class PortsModelTests
 {
     [Fact]

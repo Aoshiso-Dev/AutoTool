@@ -12,7 +12,7 @@ using System.Windows.Shapes;
 namespace AutoTool.Desktop.View;
 
 /// <summary>
-/// Interaction logic for MainWindow.xaml
+/// MonitoringPanel.xaml のコードビハインドです。
 /// </summary>
 public partial class MonitoringPanel : UserControl
 {

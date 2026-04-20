@@ -3,6 +3,9 @@ using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Application.History.Commands;
 
+/// <summary>
+/// 一覧全削除の取り消し/やり直しを実装するコマンドです。
+/// </summary>
 public class ClearAllCommand : IUndoRedoCommand
 {
     private readonly Action _clearAction;
@@ -21,7 +24,13 @@ public class ClearAllCommand : IUndoRedoCommand
         _restoreAction = restoreAction;
     }
 
+    /// <summary>
+    /// 一覧を全削除します。
+    /// </summary>
     public void Execute() => _clearAction();
 
+    /// <summary>
+    /// 退避していた項目一覧を復元します。
+    /// </summary>
     public void Undo() => _restoreAction(_savedItems);
 }

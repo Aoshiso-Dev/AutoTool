@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AutoTool.Automation.Runtime.Tests;
 
+/// <summary>
+/// コマンド依存解決のテストです。
+/// </summary>
 public class CommandDependencyResolverTests
 {
     [Fact]

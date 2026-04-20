@@ -5,8 +5,8 @@ using AutoTool.Automation.Contracts.Lists;
 namespace AutoTool.Commands.Commands;
 
 /// <summary>
-/// Simple command that delegates execution to ICommandListItem.ExecuteAsync
-/// Used for commands marked with [SimpleCommandBinding]
+/// `ICommandListItem.ExecuteAsync` へ実行を委譲するシンプルコマンドです。
+/// `[SimpleCommandBinding]` が付与された項目に使用されます。
 /// </summary>
 public class SimpleCommand : BaseCommand
 {

@@ -181,7 +181,7 @@ public interface IExecuteCommandSettings : ICommandSettings
     bool WaitForExit { get; set; }
 }
 
-// Variable commands
+// 変数操作コマンド
 public interface ISetVariableCommandSettings : ICommandSettings
 {
     string Name { get; set; }
@@ -195,7 +195,7 @@ public interface IIfVariableCommandSettings : ICommandSettings
     string Value { get; set; }
 }
 
-// AI variable set command
+// AI による変数設定コマンド
 public interface ISetVariableAICommandSettings : ICommandSettings
 {
     string WindowTitle { get; set; }
@@ -207,7 +207,7 @@ public interface ISetVariableAICommandSettings : ICommandSettings
     string Name { get; set; }
 }
 
-// OCR variable set command
+// OCR による変数設定コマンド
 public interface ISetVariableOCRCommandSettings : ICommandSettings
 {
     string Name { get; set; }
@@ -225,7 +225,7 @@ public interface ISetVariableOCRCommandSettings : ICommandSettings
     string TessdataPath { get; set; }
 }
 
-// AI Click Image command
+// AI 画像クリックコマンド
 public interface IClickImageAICommandSettings : ICommandSettings
 {
     string ModelPath { get; set; }
@@ -240,7 +240,7 @@ public interface IClickImageAICommandSettings : ICommandSettings
     bool SimulateMouseMove { get; set; }
 }
 
-// Screenshot command
+// スクリーンショットコマンド
 public interface IScreenshotCommandSettings : ICommandSettings
 {
     string SaveDirectory { get; set; }

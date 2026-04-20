@@ -6,6 +6,9 @@ using AutoTool.Automation.Runtime.Definitions;
 
 namespace AutoTool.Automation.Runtime.Serialization;
 
+/// <summary>
+/// コマンド一覧の保存・読込を実ファイルへ中継するゲートウェイ実装です。
+/// </summary>
 public class CommandListFileGateway(
     IMacroFileSerializer macroFileSerializer,
     ICommandDefinitionProvider commandDefinitionProvider) : ICommandListFileGateway
@@ -13,12 +16,18 @@ public class CommandListFileGateway(
     private readonly IMacroFileSerializer _macroFileSerializer = macroFileSerializer;
     private readonly ICommandDefinitionProvider _commandDefinitionProvider = commandDefinitionProvider;
 
+    /// <summary>
+    /// コマンド一覧をシリアライズしてファイルへ保存します。
+    /// </summary>
     public void Save(IReadOnlyList<ICommandListItem> items, string filePath)
     {
         ArgumentNullException.ThrowIfNull(items);
         _macroFileSerializer.SerializeToFile(items, filePath);
     }
 
+    /// <summary>
+    /// ファイルからコマンド一覧を読み込み、型解決して実行時アイテムへ再構成します。
+    /// </summary>
     public IReadOnlyList<ICommandListItem> Load(string filePath)
     {
         var deserializedItems = _macroFileSerializer.DeserializeFromFile<ObservableCollection<ICommandListItem>>(filePath);

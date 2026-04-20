@@ -10,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 namespace AutoTool.Bootstrap;
 
 /// <summary>
-/// Interaction logic for App.xaml
+/// App.xaml のコードビハインドです。
 /// </summary>
 public partial class App : System.Windows.Application
 {

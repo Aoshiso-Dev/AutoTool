@@ -1,6 +1,6 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
-//using OpenCvSharp.Extensions;
+// `OpenCvSharp.Extensions` が必要な場合は参照を有効化してください。
 using System;
 using System.Drawing;
 
@@ -86,13 +86,13 @@ public static class YoloWin
     }
 }
 
-// もし BitmapConverter が使えない場合は、以下のような変換メソッドを追加してください。
+// `BitmapConverter` が使えない場合は、以下のような変換メソッドを追加してください。
 
 public static class BitmapConverter
 {
     public static Mat ToMat(System.Drawing.Bitmap bitmap)
     {
-        // Windows API依存のため、プラットフォームチェックを追加
+        // Windows API 依存のため、プラットフォームチェックを行います。
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("BitmapからMatへの変換はWindowsのみサポートされています。");
 
@@ -103,9 +103,9 @@ public static class BitmapConverter
             var matType = bitmap.PixelFormat == System.Drawing.Imaging.PixelFormat.Format24bppRgb
                 ? MatType.CV_8UC3
                 : MatType.CV_8UC4;
-            // 非推奨コンストラクタの代わりに FromPixelData を使用
+            // 非推奨コンストラクタの代わりに `FromPixelData` を使用します。
             var mat = Mat.FromPixelData(bitmap.Height, bitmap.Width, matType, bmpData.Scan0, bmpData.Stride);
-            return mat.Clone(); // メモリ解放のため Clone
+            return mat.Clone(); // 元 `Bitmap` のメモリ解放後も使えるように複製します。
         }
         finally
         {
