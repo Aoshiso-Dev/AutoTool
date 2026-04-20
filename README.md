@@ -3,17 +3,22 @@
 AutoTool は、Windows 上で定型操作をマクロとして作成・保存・実行するための WPF デスクトップアプリです。  
 画面操作（クリック・キー入力）、画像認識、OCR、AI 検出を組み合わせた自動化フローを構築できます。
 
-## ドキュメント
+## ドキュメント導線
 
-- [利用者向けガイド](docs/USER_GUIDE.md)
-- [開発者向けガイド](docs/DEVELOPER_GUIDE.md)
-- [アーキテクチャ概要](docs/ARCHITECTURE.md)
-- [配布ガイド](docs/DEPLOYMENT.md)
-- [コマンド開発ガイド](docs/COMMAND_DEVELOPMENT_GUIDE.md)
+- 利用者向け
+  - [利用者向けガイド（リポジトリ）](docs/USER_GUIDE.md)
+  - [配布版ガイド（ZIP 同梱）](Readme.txt)
+  - [配布版コマンド詳細（ZIP 同梱）](Readme_コマンド詳細.txt)
+- 開発者向け
+  - [開発者向けガイド](docs/DEVELOPER_GUIDE.md)
+  - [アーキテクチャ概要](docs/ARCHITECTURE.md)
+  - [クラス図（主要関係）](docs/CLASS_DIAGRAM.md)
+  - [配布ガイド](docs/DEPLOYMENT.md)
+  - [コマンド開発ガイド](docs/COMMAND_DEVELOPMENT_GUIDE.md)
 
 ## GitHub 配布（ZIP）
 
-- 正式なバージョン番号の正は GitHub タグ（`vMAJOR.MINOR.PATCH`）です。
+- 正式バージョンの正は GitHub タグ（`vMAJOR.MINOR.PATCH`）です。
 - `v*` タグ（例: `v1.2.3`）を push すると、GitHub Actions の `Release Zip` が実行されます。
 - 実行後、GitHub Release に `AutoTool-<tag>-win-x64.zip` が添付されます。
 - タグ実行時は publish にタグ由来のバージョンを注入し、生成された `AutoTool.exe` の `FileVersion` / `ProductVersion` がタグと一致することを検証します。

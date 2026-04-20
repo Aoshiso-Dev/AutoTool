@@ -1,159 +1,143 @@
-﻿# AutoTool クラス図
+﻿# AutoTool クラス図（主要関係）
+
+この図は代表的なクラス/インターフェース間の関係を示した「抜粋」です。  
+詳細実装は各プロジェクト内のソースを参照してください。
 
 ```mermaid
 classDiagram
 direction LR
 
+namespace Bootstrap {
+  class App
+}
+
 namespace Desktop {
-  class MainWindowViewModel
+  class MainWindowHostedService
   class MacroPanelViewModel
+  class MonitoringPanelViewModel
   class ListPanelViewModel
   class EditPanelViewModel
   class ButtonPanelViewModel
   class FavoritePanelViewModel
   class LogPanelViewModel
-  class IListPanelViewModel
-  class IEditPanelViewModel
-  class IButtonPanelViewModel
-  class IFavoritePanelViewModel
-  class ILogPanelViewModel
+  class DetectionHighlightService
+  class WpfFilePicker
+  class WpfPanelDialogService
+  class WpfAppDialogService
+  class DispatcherStatusMessageScheduler
 }
 
 namespace Application {
   class FileManager
+  class CommandListFileUseCase
   class CommandHistoryManager
   class IUndoRedoCommand
   class IFilePicker
+  class IPanelDialogService
+  class IAppDialogService
   class IRecentFileStore
   class IFavoriteMacroStore
+  class IUiStatePreferenceStore
   class ILogWriter
   class IStatusMessageScheduler
-  class ICapturePathProvider
-  class IPanelDialogService
 }
 
 namespace Runtime {
-  class CommandList
+  class ReflectionCommandRegistry
   class ICommandRegistry
   class ICommandDefinitionProvider
-  class ReflectionCommandRegistry
-  class IMacroFactory
+  class CommandList
+  class CommandListItem
   class MacroFactory
-  class IMacroFileSerializer
+  class IMacroFactory
   class ICompositeCommandBuilder
   class IfCompositeCommandBuilder
   class LoopCompositeCommandBuilder
+  class CommandListFileGateway
 }
 
 namespace Contracts {
   class ICommand
   class BaseCommand
   class RootCommand
-  class LoopCommand
-  class SimpleCommand
   class ICommandFactory
   class ICommandDependencyResolver
   class ICommandEventBus
-  class ICommandListItem
   class ICommandExecutionContext
+  class ICommandListItem
 }
 
 namespace Infrastructure {
   class CommandEventBus
   class OpenCvImageMatcher
   class OpenCvScreenCapturer
+  class TesseractOcrEngine
+  class YoloObjectDetector
   class Win32MouseInput
   class Win32KeyboardInput
   class Win32WindowService
   class PathResolver
-  class InMemoryVariableStore
   class ProcessLauncher
-  class TesseractOcrEngine
-  class YoloObjectDetector
-  class WpfFilePicker
+  class CapturePathProvider
+  class DelegatingLogWriter
   class XmlRecentFileStore
   class XmlFavoriteMacroStore
-  class DelegatingLogWriter
-  class DispatcherStatusMessageScheduler
-  class CapturePathProvider
-  class WpfPanelDialogService
-  class WpfNotifier
+  class JsonUiStatePreferenceStore
 }
 
-MainWindowViewModel *-- MacroPanelViewModel
-MainWindowViewModel *-- CommandHistoryManager
-MainWindowViewModel *-- FileManager
+App --> MainWindowHostedService
+MainWindowHostedService --> MacroPanelViewModel
+MainWindowHostedService --> MonitoringPanelViewModel
 
+MacroPanelViewModel --> FileManager
+MacroPanelViewModel --> CommandHistoryManager
 MacroPanelViewModel --> IMacroFactory
-MacroPanelViewModel --> IMacroFileSerializer
 MacroPanelViewModel --> ICommandRegistry
-MacroPanelViewModel --> ICommandEventBus
 MacroPanelViewModel --> ILogWriter
-MacroPanelViewModel --> IListPanelViewModel
-MacroPanelViewModel --> IEditPanelViewModel
-MacroPanelViewModel --> IButtonPanelViewModel
-MacroPanelViewModel --> ILogPanelViewModel
-MacroPanelViewModel --> IFavoritePanelViewModel
+MacroPanelViewModel --> ListPanelViewModel
+MacroPanelViewModel --> EditPanelViewModel
+MacroPanelViewModel --> ButtonPanelViewModel
+MacroPanelViewModel --> FavoritePanelViewModel
+MacroPanelViewModel --> LogPanelViewModel
+MacroPanelViewModel --> DetectionHighlightService
 
-ListPanelViewModel ..|> IListPanelViewModel
-EditPanelViewModel ..|> IEditPanelViewModel
-ButtonPanelViewModel ..|> IButtonPanelViewModel
-FavoritePanelViewModel ..|> IFavoritePanelViewModel
-LogPanelViewModel ..|> ILogPanelViewModel
-
-ListPanelViewModel --> CommandList
-ListPanelViewModel --> ICommandRegistry
-EditPanelViewModel --> ICommandRegistry
-ButtonPanelViewModel --> ICommandRegistry
-FavoritePanelViewModel --> IFavoriteMacroStore
-
+FileManager --> CommandListFileUseCase
 FileManager --> IFilePicker
 FileManager --> IRecentFileStore
+CommandListFileUseCase --> CommandListFileGateway
 CommandHistoryManager o-- IUndoRedoCommand
-
-CommandList --> ICommandDefinitionProvider
-CommandList --> IMacroFileSerializer
-CommandList o-- ICommandListItem
 
 ReflectionCommandRegistry ..|> ICommandRegistry
 ReflectionCommandRegistry ..|> ICommandDefinitionProvider
-ReflectionCommandRegistry --> ICommandFactory
-
 MacroFactory ..|> IMacroFactory
-MacroFactory --> ICommandRegistry
-MacroFactory --> ICommandFactory
-MacroFactory --> ICompositeCommandBuilder
 IfCompositeCommandBuilder ..|> ICompositeCommandBuilder
 LoopCompositeCommandBuilder ..|> ICompositeCommandBuilder
+CommandList o-- CommandListItem
+CommandListItem ..|> ICommandListItem
 
 BaseCommand ..|> ICommand
 RootCommand --|> BaseCommand
-LoopCommand --|> BaseCommand
-SimpleCommand --|> BaseCommand
-SimpleCommand --> ICommandListItem
-SimpleCommand --> ICommandEventBus
+ICommandFactory --> ICommandDependencyResolver
+ICommandFactory --> ICommandEventBus
 
-ICommandFactory <|.. CommandFactory
-CommandFactory --> ICommandDependencyResolver
-CommandFactory --> ICommandEventBus
+WpfFilePicker ..|> IFilePicker
+WpfPanelDialogService ..|> IPanelDialogService
+WpfAppDialogService ..|> IAppDialogService
+DispatcherStatusMessageScheduler ..|> IStatusMessageScheduler
 
 CommandEventBus ..|> ICommandEventBus
 OpenCvImageMatcher ..|> IImageMatcher
 OpenCvScreenCapturer ..|> IScreenCapturer
+TesseractOcrEngine ..|> IOcrEngine
+YoloObjectDetector ..|> IObjectDetector
 Win32MouseInput ..|> IMouseInput
 Win32KeyboardInput ..|> IKeyboardInput
 Win32WindowService ..|> IWindowService
 PathResolver ..|> IPathResolver
-InMemoryVariableStore ..|> IVariableStore
 ProcessLauncher ..|> IProcessLauncher
-TesseractOcrEngine ..|> IOcrEngine
-YoloObjectDetector ..|> IObjectDetector
-WpfFilePicker ..|> IFilePicker
+CapturePathProvider ..|> ICapturePathProvider
+DelegatingLogWriter ..|> ILogWriter
 XmlRecentFileStore ..|> IRecentFileStore
 XmlFavoriteMacroStore ..|> IFavoriteMacroStore
-DelegatingLogWriter ..|> ILogWriter
-DispatcherStatusMessageScheduler ..|> IStatusMessageScheduler
-CapturePathProvider ..|> ICapturePathProvider
-WpfPanelDialogService ..|> IPanelDialogService
-WpfNotifier ..|> INotifier
+JsonUiStatePreferenceStore ..|> IUiStatePreferenceStore
 ```

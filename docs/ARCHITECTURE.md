@@ -1,67 +1,67 @@
 ﻿# アーキテクチャ概要
 
-## 1. 全体像
+## 1. 目的
 
-AutoTool は、`AutoTool.Bootstrap` を起点に UI / Application / Domain / Infrastructure を分離した構成です。  
-現在の実装は、リファクタリング後の以下レイヤを中心に構成されています。
+このドキュメントは、現在の AutoTool 実装における責務分離と依存方向を短時間で把握するための概要です。
 
-## 2. レイヤ構成
+## 2. レイヤ構成（現行）
 
 - `AutoTool.Bootstrap`
   - WPF アプリ起動エントリ
-  - `IHost` 構築とライフサイクル管理
+  - `AutoTool.Desktop` を参照し、起動ライフサイクルを開始
 - `AutoTool.Desktop`
-  - View / ViewModel
-  - 画面イベントとユースケース呼び出し
-  - DI 登録（Host 構成）
+  - View / ViewModel / 画面イベント制御
+  - `AppHostBuilder` で DI 設定
+  - WPF 固有 UI アダプタ（ダイアログ、ファイルピッカー、ステータスメッセージ更新）
 - `AutoTool.Application`
-  - 履歴管理（Undo/Redo）
-  - ファイル操作ユースケース
-  - Infrastructure が実装する Port 抽象
+  - ユースケース（ファイル操作、履歴管理）
+  - Port（`IFilePicker` / `ILogWriter` など）定義
 - `AutoTool.Domain`
-  - ドメインモデルと不変条件
+  - ドメインモデル
+  - ビジネスルールと不変条件
 - `AutoTool.Automation.Contracts`
-  - コマンド実行契約（`ICommandExecutionContext` など）
-  - 入力モデル・サービス抽象
+  - 実行契約（`ICommand`、`ICommandExecutionContext` など）
+  - 実行時サービス抽象（`IImageMatcher`、`IOcrEngine` など）
 - `AutoTool.Automation.Runtime`
-  - コマンド定義メタデータ
-  - マクロ生成（Factory）
-  - シリアライズ
+  - コマンド定義レジストリ
+  - `MacroFactory` によるコマンド木生成
+  - `.macro` シリアライズ
 - `AutoTool.Infrastructure`
-  - Win32 入出力
-  - OpenCV / OCR / AI
-  - XML 永続化、ログ、パス解決
+  - Win32 / OpenCV / OCR / AI 実装
+  - XML/JSON 永続化、ログ、実行パス解決
 
-## 3. 依存関係（実装上）
+## 3. 依存関係（プロジェクト参照ベース）
 
 - `Bootstrap -> Desktop`
 - `Desktop -> Application / Automation.Runtime / Infrastructure`
 - `Automation.Runtime -> Application / Automation.Contracts`
 - `Application -> Domain / Automation.Contracts`
-- `Domain -> (no external project references)`
 - `Infrastructure -> Application / Automation.Runtime / Automation.Contracts`
+- `Domain -> (外部プロジェクト参照なし)`
 
 ## 4. 起動シーケンス
 
-1. `AutoTool.Bootstrap/App.xaml.cs` で Host を構築
-2. `AutoTool.Desktop/Hosting/AppHostBuilder.cs` で設定と DI を登録
-3. `CommandRegistryInitializationHostedService` が `ICommandRegistry.Initialize()` を実行
-4. `MainWindowHostedService` がメインウィンドウを起動
+1. `AutoTool.Bootstrap` がアプリ起動
+2. `AutoTool.Desktop/Hosting/AppHostBuilder.cs` で構成/DI を組み立て
+3. `ICommandRegistry.Initialize()` でコマンド定義を初期化
+4. `MainWindowHostedService` がメインウィンドウを表示
 
-## 5. データと設定
+## 5. 設定とデータの配置
 
 - マクロ: `.macro`
 - 設定: `Settings\appsettings.json`
-- 実行ログ: `ILogWriter` 経由で出力
+- UI 状態: `Settings\window_settings.json`
+- 最近使ったファイル: `Settings\RecentFiles_*.xml`
+- お気に入り: `Settings\favorites.xml`
+- ログ: `ILogWriter` 経由（実体は `Infrastructure` 側）
 
-## 6. 拡張ポイント
+## 6. 方針（AGENTS 準拠で重要な点）
 
-- コマンド定義追加: `CommandDefinition` 属性 + `CommandListItem` 実装
-- UI エディタ追加: `CommandProperty` 属性により編集 UI を自動生成
-- 外部依存差し替え: `AutoTool.Infrastructure` 実装を DI で差し替え
+- `Application` / `Domain` から `System.Windows` / `Microsoft.Win32` / `AutoTool.Desktop` を参照しない
+- `DllImport` / `LibraryImport` は `Infrastructure` のみに置く
+- WPF 固有アダプタ（ダイアログ、Dispatcher、ファイルピッカー）は `Desktop` に置く
+- Service Locator（`IServiceProvider` 直参照、`GetService(...)`）を使わず、コンストラクタ DI を使う
 
-## 7. テスト戦略
+## 7. 補足: 旧プロジェクト
 
-- `AutoTool.Tests.Domain`: ドメイン不変条件の回帰を検証
-- `AutoTool.Tests.Application`: 履歴管理・ファイル操作・DI 方針の回帰を検証
-- UI 依存や OS 依存が強い箇所は結合テスト/手動確認で補完
+リポジトリには `AutoTool.Commands` / `AutoTool.Core.Tests` / `AutoTool.Core.Benchmarks` も存在しますが、`AutoTool.sln` の現行構成には含めていません。現行の改修・検証は `AutoTool.sln` 採用プロジェクトを正として進めます。
