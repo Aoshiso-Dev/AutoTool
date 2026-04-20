@@ -3,6 +3,9 @@ using AutoTool.Commands.Infrastructure;
 
 namespace AutoTool.Infrastructure.Vision.Yolo;
 
+/// <summary>
+/// 対象ウィンドウを画像として取得し、推論入力に使えるフレームを生成します。
+/// </summary>
 internal static class WindowCapturer
 {
     /// <summary>
@@ -19,6 +22,9 @@ internal static class WindowCapturer
     }
 }
 
+/// <summary>
+/// DPI スケーリング値の取得と座標変換補助を行い、高 DPI 環境でも正しい座標処理を維持します。
+/// </summary>
 internal static class DpiUtil
 {
     public static void TryEnablePerMonitorDpi()

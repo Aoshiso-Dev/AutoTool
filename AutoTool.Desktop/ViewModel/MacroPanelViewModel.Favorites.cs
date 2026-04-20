@@ -8,6 +8,9 @@ using System.IO;
 
 namespace AutoTool.Desktop.ViewModel;
 
+/// <summary>
+/// マクロ編集パネルの状態と操作を管理する ViewModel です。
+/// </summary>
 public partial class MacroPanelViewModel
 {
     private void HandleFavoriteAddRequested(string favoriteName)

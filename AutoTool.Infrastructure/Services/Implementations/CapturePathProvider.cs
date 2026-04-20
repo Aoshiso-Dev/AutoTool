@@ -4,6 +4,9 @@ using AutoTool.Infrastructure.Paths;
 
 namespace AutoTool.Infrastructure.Implementations;
 
+/// <summary>
+/// 呼び出し元が必要とする値やパスを取得して提供します。
+/// </summary>
 public sealed class CapturePathProvider : ICapturePathProvider
 {
     private readonly TimeProvider _timeProvider;

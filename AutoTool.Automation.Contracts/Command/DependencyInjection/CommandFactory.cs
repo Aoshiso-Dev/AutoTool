@@ -12,12 +12,20 @@ namespace AutoTool.Commands.DependencyInjection;
 /// </summary>
 public class CommandFactory(ICommandDependencyResolver dependencyResolver, ICommandEventBus? commandEventBus = null) : ICommandFactory
 {
+    /// <summary>
+    /// この機能で扱う状態や種別の選択肢を列挙し、分岐条件を明確にします。
+    /// </summary>
+
     private enum ParameterSource
     {
         ParentCommand,
         CommandSettings,
         ExplicitOrService
     }
+
+    /// <summary>
+    /// コンストラクタ引数ごとの解決方針を保持し、実行時の依存解決手順を再利用できるようにします。
+    /// </summary>
 
     private sealed class ParameterPlan
     {
@@ -27,12 +35,20 @@ public class CommandFactory(ICommandDependencyResolver dependencyResolver, IComm
         public object? DefaultValue { get; init; }
     }
 
+    /// <summary>
+    /// 選択したコンストラクタと引数解決計画を保持し、インスタンス生成処理で利用できるようにします。
+    /// </summary>
+
     private sealed class ConstructorPlan
     {
         public required ConstructorInfo Constructor { get; init; }
         public required IReadOnlyList<ParameterPlan> Parameters { get; init; }
         public required Func<object?[], ICommand> Activator { get; init; }
     }
+
+    /// <summary>
+    /// 実行時に必要な型や依存関係を解決し、利用可能なインスタンスを返します。
+    /// </summary>
 
     private sealed class ExplicitArgumentResolver
     {

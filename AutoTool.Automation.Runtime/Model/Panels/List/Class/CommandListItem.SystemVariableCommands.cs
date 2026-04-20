@@ -10,6 +10,9 @@ using CommandDef = AutoTool.Automation.Runtime.Definitions;
 namespace AutoTool.Automation.Runtime.Lists;
 
     [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Execute, typeof(SimpleCommand), typeof(IExecuteCommandSettings), CommandDef.CommandCategory.System, displayPriority: 6, displaySubPriority: 1, displayNameJa: "プログラム実行", displayNameEn: "Execute Program")]
+    /// <summary>
+    /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
+    /// </summary>
     public partial class ExecuteItem : CommandListItem, IExecuteItem, IExecuteCommandSettings
     {
         [ObservableProperty]
@@ -75,6 +78,9 @@ namespace AutoTool.Automation.Runtime.Lists;
     }
 
     [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.SetVariable, typeof(SimpleCommand), typeof(ISetVariableCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 5, displaySubPriority: 1, displayNameJa: "変数設定", displayNameEn: "Set Variable")]
+    /// <summary>
+    /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
+    /// </summary>
     public partial class SetVariableItem : CommandListItem, ISetVariableItem, ISetVariableCommandSettings
     {
         [ObservableProperty]
@@ -112,6 +118,9 @@ namespace AutoTool.Automation.Runtime.Lists;
     }
 
     [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.SetVariableAI, typeof(SimpleCommand), typeof(ISetVariableAICommandSettings), CommandDef.CommandCategory.AI, displayPriority: 5, displaySubPriority: 2, displayNameJa: "変数設定(AI検出)", displayNameEn: "Set AI Variable")]
+    /// <summary>
+    /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
+    /// </summary>
     public partial class SetVariableAIItem : CommandListItem, ISetVariableAIItem, ISetVariableAICommandSettings
     {
         [ObservableProperty]
@@ -201,6 +210,9 @@ namespace AutoTool.Automation.Runtime.Lists;
     }
 
     [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.SetVariableOCR, typeof(SimpleCommand), typeof(ISetVariableOCRCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 5, displaySubPriority: 3, displayNameJa: "変数設定(OCR)", displayNameEn: "Set OCR Variable")]
+    /// <summary>
+    /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
+    /// </summary>
     public partial class SetVariableOCRItem : CommandListItem, ISetVariableOCRItem, ISetVariableOCRCommandSettings
     {
         [ObservableProperty]
@@ -331,6 +343,9 @@ namespace AutoTool.Automation.Runtime.Lists;
 
 
     [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfVariable, typeof(IfVariableCommand), typeof(IIfVariableCommandSettings), CommandDef.CommandCategory.Variable, isIfCommand: true, displayPriority: 4, displaySubPriority: 5, displayNameJa: "条件 - 変数比較", displayNameEn: "If Variable")]
+    /// <summary>
+    /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
+    /// </summary>
     public partial class IfVariableItem : CommandListItem, IIfVariableItem, IIfVariableCommandSettings, IIfItem
     {
         [ObservableProperty]
@@ -373,6 +388,9 @@ namespace AutoTool.Automation.Runtime.Lists;
     }
 
     [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Screenshot, typeof(SimpleCommand), typeof(IScreenshotCommandSettings), CommandDef.CommandCategory.System, displayPriority: 6, displaySubPriority: 2, displayNameJa: "スクリーンショット", displayNameEn: "Screenshot")]
+    /// <summary>
+    /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
+    /// </summary>
     public partial class ScreenshotItem : CommandListItem, IScreenshotItem, IScreenshotCommandSettings
     {
         [ObservableProperty]
@@ -439,6 +457,9 @@ namespace AutoTool.Automation.Runtime.Lists;
     }
 
     [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.ClickImageAI, typeof(SimpleCommand), typeof(IClickImageAICommandSettings), CommandDef.CommandCategory.AI, displayPriority: 1, displaySubPriority: 3, displayNameJa: "画像クリック(AI検出)", displayNameEn: "AI Click")]
+    /// <summary>
+    /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
+    /// </summary>
     public partial class ClickImageAIItem : CommandListItem, IClickImageAIItem, IClickImageAICommandSettings
     {
         [ObservableProperty]

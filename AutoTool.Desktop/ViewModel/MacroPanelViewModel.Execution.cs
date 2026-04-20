@@ -9,6 +9,9 @@ using System.Text.RegularExpressions;
 
 namespace AutoTool.Desktop.ViewModel;
 
+/// <summary>
+/// マクロ編集パネルの状態と操作を管理する ViewModel です。
+/// </summary>
 public partial class MacroPanelViewModel
 {
     private void HandleStartCommand(ICommand command)
@@ -606,6 +609,10 @@ public partial class MacroPanelViewModel
             _listPanel.SetValidationErrorItems(trackedItems);
         });
     }
+
+    /// <summary>
+    /// 不変前提で扱うデータをまとめ、比較やコピーを安全に行えるようにします。
+    /// </summary>
 
     private sealed record PreflightValidationReport(int TargetCount, IReadOnlyList<PreflightIssueItem> Issues)
     {

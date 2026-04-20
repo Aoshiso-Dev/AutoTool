@@ -3,6 +3,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace AutoTool.Desktop.Hosting;
 
+/// <summary>
+/// ホスト起動時にメインウィンドウを生成・表示し、アプリの初期表示を開始します。
+/// </summary>
 public sealed class MainWindowHostedService(MainWindow mainWindow) : IHostedService
 {
     private readonly MainWindow _mainWindow = EnsureNotNull(mainWindow);

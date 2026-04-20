@@ -29,6 +29,9 @@ namespace AutoTool.Serialization;
 [JsonSerializable(typeof(IfVariableItem))]
 [JsonSerializable(typeof(ScreenshotItem))]
 [JsonSerializable(typeof(ClickImageAIItem))]
+/// <summary>
+/// AutoTool 用の System.Text.Json 事前生成メタデータを提供し、シリアライズ処理の性能と型安全性を高めます。
+/// </summary>
 internal partial class AutoToolJsonSerializerContext : JsonSerializerContext
 {
 }

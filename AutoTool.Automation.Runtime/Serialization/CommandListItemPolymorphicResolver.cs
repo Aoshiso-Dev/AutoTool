@@ -6,6 +6,9 @@ using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Serialization;
 
+/// <summary>
+/// 型情報や依存関係を解決し、実行に必要なインスタンスを返します。
+/// </summary>
 internal sealed class CommandListItemPolymorphicResolver : IJsonTypeInfoResolver
 {
     private readonly IJsonTypeInfoResolver _innerResolver = new DefaultJsonTypeInfoResolver();

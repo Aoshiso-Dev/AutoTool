@@ -3,9 +3,17 @@ using System.Runtime.InteropServices;
 
 namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// 低レベル API 呼び出しをラップして共通化し、呼び出し側の実装を簡潔にします。
+/// </summary>
+
 public static partial class Win32KeyboardHookHelper
 {
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct KbdLlHookStruct
     {
         public uint VkCode;
@@ -41,6 +49,9 @@ public static partial class Win32KeyboardHookHelper
     private static IntPtr _hookId = IntPtr.Zero;
     private static int _hookUserCount;
 
+    /// <summary>
+    /// イベント発生時に通知する追加情報を保持し、受信側が状態を判断できるようにします。
+    /// </summary>
     public sealed class KeyboardHookEventArgs(int virtualKey, bool isKeyDown) : EventArgs
     {
         public int VirtualKey { get; } = virtualKey;

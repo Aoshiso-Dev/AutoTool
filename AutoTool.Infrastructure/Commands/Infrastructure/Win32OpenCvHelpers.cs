@@ -6,6 +6,9 @@ using OpenCvSharp.Extensions;
 
 namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// 低レベル API 呼び出しをラップして共通化し、呼び出し側の実装を簡潔にします。
+/// </summary>
 public static class Win32ScreenCaptureHelper
 {
     public static Mat CaptureScreen()
@@ -39,6 +42,9 @@ public static class Win32ScreenCaptureHelper
     }
 }
 
+/// <summary>
+/// 低レベル API 呼び出しをラップして共通化し、呼び出し側の実装を簡潔にします。
+/// </summary>
 internal static class OpenCvImageSearchHelper
 {
     public static Task<OpenCvSharp.Point?> SearchImageAsync(

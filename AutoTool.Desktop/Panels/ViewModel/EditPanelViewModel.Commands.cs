@@ -15,6 +15,9 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AutoTool.Desktop.Panels.ViewModel;
 
+/// <summary>
+/// 画面状態とユーザー操作を管理する ViewModel です。
+/// </summary>
 public partial class EditPanelViewModel
 {
     #region Commands
@@ -1128,6 +1131,10 @@ public partial class EditPanelViewModel
         return string.Join(Environment.NewLine, hints);
     }
 
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private readonly record struct AiDetectionPreviewRequest(
         string ModelPath,
         string WindowTitle,
@@ -1136,12 +1143,20 @@ public partial class EditPanelViewModel
         float ConfThreshold,
         float IoUThreshold);
 
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private readonly record struct OcrTuneCandidate(
         string PreprocessMode,
         string PageSegmentationMode,
         double Confidence,
         string TextSample,
         double Score);
+
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
 
     private readonly record struct AiTuneCandidate(
         float ConfThreshold,

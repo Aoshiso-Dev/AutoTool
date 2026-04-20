@@ -9,6 +9,9 @@ using Wpf.Ui.Controls;
 
 namespace AutoTool.Desktop.Panels.View;
 
+/// <summary>
+/// コマンド編集パネルの表示と入力イベントを処理し、編集対象に応じた UI 更新を行います。
+/// </summary>
 public partial class EditPanelWindow : FluentWindow
 {
     public EditPanelWindow()

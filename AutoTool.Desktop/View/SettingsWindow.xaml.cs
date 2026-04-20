@@ -3,6 +3,9 @@ using Wpf.Ui.Controls;
 
 namespace AutoTool.Desktop.View;
 
+/// <summary>
+/// アプリ設定の編集画面を表示し、保存・キャンセルなどの設定操作を処理します。
+/// </summary>
 public partial class SettingsWindow : FluentWindow
 {
     public bool RestorePreviousSession { get; private set; }

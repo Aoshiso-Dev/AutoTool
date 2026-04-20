@@ -4,6 +4,9 @@ using OpenCvSharp;
 namespace AutoTool.Infrastructure.Vision.Yolo;
 
 
+/// <summary>
+/// YOLO 検出結果を画像上へ描画し、検出状況を視覚的に確認できるようにします。
+/// </summary>
 internal static class YoloDrawer
 {
     public static void Draw(Mat img, IReadOnlyList<Detection> dets, string[]? labels = null)

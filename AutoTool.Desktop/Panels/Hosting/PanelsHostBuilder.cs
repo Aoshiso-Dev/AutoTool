@@ -12,6 +12,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace AutoTool.Desktop.Panels.Hosting;
 
+/// <summary>
+/// パネル機能向けの Host 構成を組み立て、必要なサービスと ViewModel を登録します。
+/// </summary>
 public static class PanelsHostBuilder
 {
     public static IHostBuilder CreateHostBuilder(string[]? args = null)

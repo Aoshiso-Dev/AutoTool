@@ -6,6 +6,9 @@ using AutoTool.Infrastructure.Paths;
 
 namespace AutoTool.Infrastructure.Implementations;
 
+/// <summary>
+/// 永続化データの保存と読み込みを担当します。
+/// </summary>
 public sealed class JsonUiStatePreferenceStore : IUiStatePreferenceStore
 {
     private const string RestorePreviousSessionKey = "RestorePreviousSession";

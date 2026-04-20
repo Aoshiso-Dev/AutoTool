@@ -8,6 +8,9 @@ using AutoTool.Desktop.Panels.ViewModel.Shared;
 
 namespace AutoTool.Desktop.Panels.ViewModel;
 
+/// <summary>
+/// 画面状態とユーザー操作を管理する ViewModel です。
+/// </summary>
 public partial class LogPanelViewModel : ObservableObject, ILogPanelViewModel
 {
     private readonly ObservableCollection<LogEntry> _logEntries = [];

@@ -5,6 +5,9 @@ using AutoTool.Infrastructure.Paths;
 
 namespace AutoTool.Desktop.Model;
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class WindowSettings
 {
     private const int CurrentSchemaVersion = 3;

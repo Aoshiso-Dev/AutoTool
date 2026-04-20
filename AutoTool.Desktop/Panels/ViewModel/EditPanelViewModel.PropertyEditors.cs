@@ -10,6 +10,9 @@ using System.Net.Http;
 
 namespace AutoTool.Desktop.Panels.ViewModel;
 
+/// <summary>
+/// 画面状態とユーザー操作を管理する ViewModel です。
+/// </summary>
 public partial class EditPanelViewModel
 {
     private void UpdatePropertyGroups()

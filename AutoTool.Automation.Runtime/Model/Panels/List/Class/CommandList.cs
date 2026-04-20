@@ -5,6 +5,9 @@ using AutoTool.Automation.Runtime.Definitions;
 
 namespace AutoTool.Automation.Runtime.Lists;
 
+/// <summary>
+/// コマンド一覧の追加・削除・再構築を管理し、実行順を保ったまま編集できるようにします。
+/// </summary>
 public partial class CommandList : ObservableObject
 {
     private readonly ICommandDefinitionProvider _commandDefinitionProvider;

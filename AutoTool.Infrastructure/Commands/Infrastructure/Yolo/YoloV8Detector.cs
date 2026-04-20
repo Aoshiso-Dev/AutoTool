@@ -7,6 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace AutoTool.Infrastructure.Vision.Yolo;
 
+/// <summary>
+/// 画像や画面情報を解析し、検出結果を呼び出し側へ返します。
+/// </summary>
 public sealed class YoloV8Detector : IDisposable
 {
     private readonly InferenceSession _session;
@@ -349,5 +352,13 @@ public sealed class YoloV8Detector : IDisposable
     }
 }
 
+/// <summary>
+/// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+/// </summary>
+
 public readonly record struct Detection(OpenCvSharp.Rect2f Rect, float Score, int ClassId);
+/// <summary>
+/// 実行結果や検出結果をまとめ、後続処理で必要な値を参照しやすくします。
+/// </summary>
+
 internal readonly record struct LetterboxResult(Mat Image, float Gain, float PadX, float PadY);

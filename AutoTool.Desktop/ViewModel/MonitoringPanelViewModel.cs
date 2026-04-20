@@ -17,6 +17,9 @@ using System.Security.Policy;
 
 namespace AutoTool.Desktop.ViewModel;
 
+/// <summary>
+/// 画面状態とユーザー操作を管理する ViewModel です。
+/// </summary>
 public partial class MonitoringPanelViewModel : ObservableObject
 {
     public MonitoringPanelViewModel()

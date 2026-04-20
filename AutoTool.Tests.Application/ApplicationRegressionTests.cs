@@ -142,6 +142,10 @@ public class HistoryCommandRegressionTests
         Assert.Equal(4, changedCount);
     }
 
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
+
     private sealed class RecordingCommand(string description) : IUndoRedoCommand
     {
         public string Description { get; } = description;
@@ -217,11 +221,19 @@ public class FileManagerRegressionTests
             new TestFileSystemPathService());
     }
 
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
+
     private sealed class TestFilePicker : IFilePicker
     {
         public string? OpenFile(FileDialogOptions options) => null;
         public string? SaveFile(FileDialogOptions options) => null;
     }
+
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
 
     private sealed class TestRecentFileStore : IRecentFileStore
     {
@@ -234,6 +246,10 @@ public class FileManagerRegressionTests
             Files = files;
         }
     }
+
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
 
     private sealed class TestFileSystemPathService : IFileSystemPathService
     {

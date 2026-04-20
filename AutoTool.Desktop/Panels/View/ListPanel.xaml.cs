@@ -13,6 +13,10 @@ namespace AutoTool.Desktop.Panels.View;
 /// </summary>
 public partial class ListPanel : UserControl
 {
+    /// <summary>
+    /// この機能で扱う状態や種別の選択肢を列挙し、分岐条件を明確にします。
+    /// </summary>
+
     private enum ListPanelLayoutMode
     {
         Compact,

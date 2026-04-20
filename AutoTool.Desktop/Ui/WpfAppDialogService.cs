@@ -5,6 +5,9 @@ using AutoTool.Application.Ports;
 
 namespace AutoTool.Desktop.Ui;
 
+/// <summary>
+/// 関連機能の共通処理を提供し、呼び出し側の重複実装を減らします。
+/// </summary>
 public sealed class WpfAppDialogService : IAppDialogService
 {
     private static readonly System.Text.RegularExpressions.Regex UrlPattern = new(

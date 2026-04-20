@@ -3,7 +3,7 @@
 namespace AutoTool.Automation.Runtime.Definitions;
 
 /// <summary>
-/// コマンドアイテムと実行コマンドを結び付ける属性。
+/// 一覧アイテム型と実行コマンド型を関連付け、UI 編集結果から実行インスタンスを生成できるようにします。
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class SimpleCommandBindingAttribute : Attribute

@@ -59,16 +59,26 @@ public partial class MyNewCommandItem : CommandListItem, IMyNewCommandItem, IMyN
 
 /*
 // 対応するインターフェースを `Command.Interface` に追加
+/// <summary>
+/// 一覧項目として扱うデータを保持し、表示と操作で共通利用できるようにします。
+/// </summary>
+
 public interface IMyNewCommandItem : ICommandListItem
 {
     string MyProperty { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IMyNewCommandSettings : ICommandSettings
 {
     string MyProperty { get; set; }
 }
 
+/// <summary>
+/// My New コマンドの実行契約を定義し、実装差し替え時も同じ呼び出し方で利用できるようにします。
+/// </summary>
 public interface IMyNewCommand : ICommand
 {
     new IMyNewCommandSettings Settings { get; }
@@ -77,6 +87,10 @@ public interface IMyNewCommand : ICommand
 
 /*
 // 対応する `Command` 実装を `Command.Class` に追加
+/// <summary>
+/// 新規コマンド実装の雛形として、実行メソッドと設定受け取りの基本形を示します。
+/// </summary>
+
 public class MyNewCommand : BaseCommand, ICommand, IMyNewCommand
 {
     new public IMyNewCommandSettings Settings => (IMyNewCommandSettings)base.Settings;

@@ -10,6 +10,9 @@ using RuntimeMacroFactory = AutoTool.Automation.Runtime.MacroFactory.MacroFactor
 
 namespace AutoTool.Infrastructure.DependencyInjection;
 
+/// <summary>
+/// 関連機能の登録や初期化を行う拡張メソッドを提供します。
+/// </summary>
 public static class MacroRuntimeServiceCollectionExtensions
 {
     public static IServiceCollection AddMacroRuntimeCoreServices(this IServiceCollection services)

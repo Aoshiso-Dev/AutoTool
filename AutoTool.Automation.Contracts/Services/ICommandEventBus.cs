@@ -18,6 +18,9 @@ public enum CommandEventKind
 /// </summary>
 public abstract record CommandLogPayload;
 
+/// <summary>
+/// 関連データを不変に保持するレコード型です。
+/// </summary>
 public sealed record ProcessOutputLogPayload(
     bool IsError,
     string Text,
@@ -53,6 +56,9 @@ public interface ICommandEventBus
     IAsyncEnumerable<CommandBusEvent> ReadEventsAsync(CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// イベント発生時に通知する追加情報を保持し、受信側が状態を判断できるようにします。
+/// </summary>
 public class CommandEventArgs(ICommand command) : EventArgs
 {
     /// <summary>対象コマンドです。</summary>
@@ -65,6 +71,9 @@ public class CommandEventArgs(ICommand command) : EventArgs
     }
 }
 
+/// <summary>
+/// イベント発生時に通知する追加情報を保持し、受信側が状態を判断できるようにします。
+/// </summary>
 public sealed class CommandLogEventArgs : CommandEventArgs
 {
     public CommandLogEventArgs(ICommand command, string detail, CommandLogPayload? payload = null) : base(command)
@@ -79,6 +88,9 @@ public sealed class CommandLogEventArgs : CommandEventArgs
     public CommandLogPayload? Payload { get; }
 }
 
+/// <summary>
+/// イベント発生時に通知する追加情報を保持し、受信側が状態を判断できるようにします。
+/// </summary>
 public sealed class CommandProgressEventArgs : CommandEventArgs
 {
     public CommandProgressEventArgs(ICommand command, int progress) : base(command)

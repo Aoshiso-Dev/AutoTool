@@ -3,6 +3,9 @@ using Microsoft.Win32;
 
 namespace AutoTool.Desktop.Services;
 
+/// <summary>
+/// 関連機能の共通処理を提供し、呼び出し側の重複実装を減らします。
+/// </summary>
 public sealed class WpfPanelDialogService : IPanelDialogService
 {
     public string? SelectImageFile()

@@ -2,6 +2,9 @@
 
 namespace AutoTool.Application.History.Commands;
 
+/// <summary>
+/// コマンド一覧から項目を削除する Undo/Redo 操作を保持し、取り消し時に元の状態へ戻せるようにします。
+/// </summary>
 public sealed class RemoveItemsCommand : IUndoRedoCommand
 {
     private readonly IReadOnlyList<(ICommandListItem Item, int Index)> _items;

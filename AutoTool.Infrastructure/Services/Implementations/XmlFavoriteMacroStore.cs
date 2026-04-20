@@ -6,6 +6,9 @@ using AutoTool.Domain.Macros;
 
 namespace AutoTool.Infrastructure.Implementations;
 
+/// <summary>
+/// 永続化データの保存と読み込みを担当します。
+/// </summary>
 public class XmlFavoriteMacroStore : IFavoriteMacroStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()

@@ -1,5 +1,8 @@
 ﻿namespace AutoTool.Automation.Runtime.Definitions;
 
+/// <summary>
+/// コマンド種別名の定数を集約し、シリアライズや判定ロジックで同一の識別子を利用できるようにします。
+/// </summary>
 public static class CommandTypeNames
 {
     public const string Click = "Click";

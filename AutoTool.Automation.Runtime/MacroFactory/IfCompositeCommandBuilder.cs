@@ -6,6 +6,9 @@ using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Automation.Runtime.MacroFactory;
 
+/// <summary>
+/// 複数の入力をもとに対象オブジェクトを組み立てます。
+/// </summary>
 public sealed class IfCompositeCommandBuilder(ICommandFactory commandFactory) : ICompositeCommandBuilder
 {
     private readonly ICommandFactory _commandFactory = EnsureNotNull(commandFactory);

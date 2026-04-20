@@ -4,6 +4,10 @@ using System.Runtime.InteropServices;
 
 namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// Win32 API を使った画面キャプチャの中核処理を提供し、ビットマップ取得を共通化します。
+/// </summary>
+
 internal static partial class Win32CaptureCore
 {
     private const int SmCxScreen = 0;
@@ -12,6 +16,10 @@ internal static partial class Win32CaptureCore
     private const int CaptureBlt = 0x40000000;
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct RECT
     {
         public int Left;

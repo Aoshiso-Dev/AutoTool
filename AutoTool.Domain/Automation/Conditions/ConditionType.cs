@@ -1,5 +1,8 @@
 ﻿namespace AutoTool.Domain.Automation.Conditions;
 
+/// <summary>
+/// 条件判定コマンドで利用する比較種別を定義し、分岐ロジックの判定基準を明確にします。
+/// </summary>
 public static class ConditionType
 {
     public static readonly string True = "True";

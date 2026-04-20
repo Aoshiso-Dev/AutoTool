@@ -3,6 +3,9 @@ using System.Reflection;
 
 namespace AutoTool.Automation.Runtime.Definitions;
 
+/// <summary>
+/// コマンド定義の表示名・型名・カテゴリなどのメタデータを保持し、一覧表示や生成処理から参照できるようにします。
+/// </summary>
 public sealed class CommandMetadata
 {
     public required string TypeName { get; init; }
@@ -19,6 +22,9 @@ public sealed class CommandMetadata
     public required string DisplayNameEn { get; init; }
 }
 
+/// <summary>
+/// 定義情報を収集して一覧として提供します。
+/// </summary>
 public static class CommandMetadataCatalog
 {
     private static readonly Lazy<IReadOnlyDictionary<string, CommandMetadata>> ByTypeName =

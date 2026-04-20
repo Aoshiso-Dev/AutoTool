@@ -216,9 +216,16 @@ public partial class PropertyMetadata : ObservableObject
         return property?.PropertyType == typeof(bool) ? property : null;
     }
 
+    /// <summary>
+    /// 不変前提で扱うデータをまとめ、比較やコピーを安全に行えるようにします。
+    /// </summary>
+
     private sealed record ModifierPropertyCache(PropertyInfo? Ctrl, PropertyInfo? Alt, PropertyInfo? Shift);
 }
 
+/// <summary>
+/// プロパティエディタで表示する項目をグループ化し、画面上で関連設定をまとめて扱えるようにします。
+/// </summary>
 public class PropertyGroup
 {
     public string GroupName { get; init; } = string.Empty;

@@ -8,8 +8,15 @@ using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Automation.Runtime.Definitions;
 
+/// <summary>
+/// 実行対象の定義を登録・検索する仕組みを提供します。
+/// </summary>
 public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = null) : ICommandRegistry, ICommandDefinitionProvider
 {
+    /// <summary>
+    /// 一覧の 1 件分として扱うデータを保持し、保存・表示で共通利用できるようにします。
+    /// </summary>
+
     private sealed class Entry
     {
         public required CommandMetadata Metadata { get; init; }

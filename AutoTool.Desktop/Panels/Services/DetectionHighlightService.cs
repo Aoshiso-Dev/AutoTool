@@ -6,6 +6,9 @@ using DrawingRectangle = System.Drawing.Rectangle;
 
 namespace AutoTool.Desktop.Panels.Services;
 
+/// <summary>
+/// 関連機能の共通処理を提供し、呼び出し側の重複実装を減らします。
+/// </summary>
 public sealed class DetectionHighlightService : IDetectionHighlightService
 {
     public async Task BlinkAsync(DrawingRectangle bounds, CancellationToken cancellationToken = default)

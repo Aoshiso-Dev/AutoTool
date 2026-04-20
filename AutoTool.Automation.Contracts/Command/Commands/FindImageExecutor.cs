@@ -4,6 +4,9 @@ using System.IO;
 
 namespace AutoTool.Commands.Commands;
 
+/// <summary>
+/// オプション値を保持するレコード型です。
+/// </summary>
 public sealed record FindImageOptions
 {
     public required string ImagePath { get; init; }
@@ -15,8 +18,15 @@ public sealed record FindImageOptions
     public string WindowClassName { get; init; } = string.Empty;
 }
 
+/// <summary>
+/// 実行結果や検出結果をまとめ、後続処理で必要な値を参照しやすくします。
+/// </summary>
+
 public readonly record struct FindImageResult(bool Found, MatchPoint? Point, int ElapsedMilliseconds);
 
+/// <summary>
+/// 画像探索処理を実行し、探索結果の座標や一致情報を呼び出し元へ返します。
+/// </summary>
 public static class FindImageExecutor
 {
     public static async Task<FindImageResult> ExecuteAsync(

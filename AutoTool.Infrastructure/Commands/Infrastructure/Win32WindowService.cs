@@ -17,6 +17,10 @@ public partial class Win32WindowService : IWindowService
     private static partial bool NativeGetWindowRect(IntPtr hWnd, out RECT lpRect);
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct RECT
     {
         public int Left;

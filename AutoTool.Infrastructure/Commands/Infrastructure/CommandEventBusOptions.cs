@@ -1,5 +1,8 @@
 ﻿namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// 機能動作に利用するオプション設定値を保持します。
+/// </summary>
 public sealed class CommandEventBusOptions
 {
     public const string SectionName = "CommandEventBus";

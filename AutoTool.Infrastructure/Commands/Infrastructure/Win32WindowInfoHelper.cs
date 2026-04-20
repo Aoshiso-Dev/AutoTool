@@ -3,9 +3,17 @@ using System.Runtime.InteropServices;
 
 namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// 低レベル API 呼び出しをラップして共通化し、呼び出し側の実装を簡潔にします。
+/// </summary>
+
 public static partial class Win32WindowInfoHelper
 {
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct POINT
     {
         public int X;

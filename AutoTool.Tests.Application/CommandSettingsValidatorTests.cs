@@ -120,6 +120,10 @@ public class CommandSettingsValidatorTests
         Assert.Equal(nameof(IWaitImageCommandSettings.ImagePath), ex.PropertyName);
     }
 
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
+
     private sealed class TestPathResolver : IPathResolver
     {
         public TestPathResolver(string baseDirectory)
@@ -141,6 +145,10 @@ public class CommandSettingsValidatorTests
 
         public string ToRelativePath(string absolutePath) => absolutePath;
     }
+
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
 
     private sealed class TestValidationCommand : BaseCommand
     {

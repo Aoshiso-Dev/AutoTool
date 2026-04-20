@@ -8,6 +8,9 @@ namespace AutoTool.Commands.Commands;
 /// </summary>
 public class CommandSettings : ICommandSettings { }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class WaitImageCommandSettings : ICommandSettings, IWaitImageCommandSettings
 {
     public string ImagePath { get; set; } = string.Empty;
@@ -19,6 +22,9 @@ public class WaitImageCommandSettings : ICommandSettings, IWaitImageCommandSetti
     public string WindowClassName { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class FindImageCommandSettings : ICommandSettings, IFindImageCommandSettings
 {
     public string ImagePath { get; set; } = string.Empty;
@@ -34,6 +40,9 @@ public class FindImageCommandSettings : ICommandSettings, IFindImageCommandSetti
     public string WindowClassName { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class FindTextCommandSettings : ICommandSettings, IFindTextCommandSettings
 {
     public string TargetText { get; set; } = string.Empty;
@@ -59,6 +68,9 @@ public class FindTextCommandSettings : ICommandSettings, IFindTextCommandSetting
     public string TessdataPath { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class IfImageCommandSettings : ICommandSettings, IIfImageCommandSettings
 {
     public string ImagePath { get; set; } = string.Empty;
@@ -76,6 +88,9 @@ public class IfImageCommandSettings : ICommandSettings, IIfImageCommandSettings
     }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class ClickImageCommandSettings : ICommandSettings, IClickImageCommandSettings
 {
     public string ImagePath { get; set; } = string.Empty;
@@ -91,6 +106,9 @@ public class ClickImageCommandSettings : ICommandSettings, IClickImageCommandSet
     public string WindowClassName { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class HotkeyCommandSettings : ICommandSettings, IHotkeyCommandSettings
 {
     public bool Ctrl { get; set; }
@@ -101,6 +119,9 @@ public class HotkeyCommandSettings : ICommandSettings, IHotkeyCommandSettings
     public string WindowClassName { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class ClickCommandSettings : ICommandSettings, IClickCommandSettings
 {
     public CommandMouseButton Button { get; set; } = CommandMouseButton.Left;
@@ -113,11 +134,17 @@ public class ClickCommandSettings : ICommandSettings, IClickCommandSettings
     public string WindowClassName { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class WaitCommandSettings : ICommandSettings, IWaitCommandSettings
 {
     public int Wait { get; set; } = 1000;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class LoopCommandSettings : ICommandSettings, ILoopCommandSettings
 {
     public int LoopCount { get; set; } = 1;
@@ -130,18 +157,27 @@ public class LoopCommandSettings : ICommandSettings, ILoopCommandSettings
     }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class LoopEndCommandSettings : ICommandSettings, ILoopEndCommandSettings
 {
     public int LoopCount { get; set; } = 1;
     public ICommand? Pair { get; set; }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class RetryCommandSettings : ICommandSettings, IRetryCommandSettings
 {
     public int RetryCount { get; set; } = 3;
     public int RetryInterval { get; set; } = 500;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class AIImageDetectCommandSettings : ICommandSettings, IIfImageExistAISettings
 {
     public string ModelPath { get; set; } = string.Empty;
@@ -164,6 +200,9 @@ public class AIImageDetectCommandSettings : ICommandSettings, IIfImageExistAISet
     }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class AIImageNotDetectCommandSettings : ICommandSettings, IIfImageNotExistAISettings
 {
     public string ModelPath { get; set; } = string.Empty;
@@ -184,6 +223,9 @@ public class AIImageNotDetectCommandSettings : ICommandSettings, IIfImageNotExis
     }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class ExecuteCommandSettings : ICommandSettings, IExecuteCommandSettings
 {
     public string ProgramPath { get; set; } = string.Empty;
@@ -198,6 +240,9 @@ public class ExecuteCommandSettings : ICommandSettings, IExecuteCommandSettings
     }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class SetVariableCommandSettings : ICommandSettings, ISetVariableCommandSettings
 {
     public string Name { get; set; } = string.Empty;
@@ -210,6 +255,9 @@ public class SetVariableCommandSettings : ICommandSettings, ISetVariableCommandS
     }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class SetVariableAISettings : ICommandSettings, ISetVariableAICommandSettings
 {
     public string Name { get; set; } = string.Empty;
@@ -229,6 +277,9 @@ public class SetVariableAISettings : ICommandSettings, ISetVariableAICommandSett
     }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class IfTextCommandSettings : ICommandSettings, IIfTextCommandSettings
 {
     public string TargetText { get; set; } = string.Empty;
@@ -248,6 +299,9 @@ public class IfTextCommandSettings : ICommandSettings, IIfTextCommandSettings
     public string TessdataPath { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class SetVariableOCRCommandSettings : ICommandSettings, ISetVariableOCRCommandSettings
 {
     public string Name { get; set; } = string.Empty;
@@ -277,6 +331,9 @@ public class SetVariableOCRCommandSettings : ICommandSettings, ISetVariableOCRCo
     }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class IfVariableCommandSettings : ICommandSettings, IIfVariableCommandSettings
 {
     public string Name { get; set; } = string.Empty;
@@ -284,6 +341,9 @@ public class IfVariableCommandSettings : ICommandSettings, IIfVariableCommandSet
     public string Value { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class ClickImageAICommandSettings : ICommandSettings, IClickImageAICommandSettings
 {
     public string ModelPath { get; set; } = string.Empty;
@@ -308,6 +368,9 @@ public class ClickImageAICommandSettings : ICommandSettings, IClickImageAIComman
     }
 }
 
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
 public class ScreenshotCommandSettings : ICommandSettings, IScreenshotCommandSettings
 {
     public string SaveDirectory { get; set; } = string.Empty;

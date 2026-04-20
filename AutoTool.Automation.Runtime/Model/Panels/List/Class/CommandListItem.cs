@@ -7,6 +7,9 @@ using CommandDef = AutoTool.Automation.Runtime.Definitions;
 
 namespace AutoTool.Automation.Runtime.Lists;
 
+    /// <summary>
+    /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
+    /// </summary>
     public partial class CommandListItem : ObservableObject, ICommandListItem
     {
         public static string GetDisplayNameForType(string itemType)

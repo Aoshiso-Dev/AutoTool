@@ -28,6 +28,10 @@ public static partial class Win32MouseHookHelper
     public sealed record MouseHookEvent(MouseHookEventKind Kind, MouseEventArgs Args);
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct POINT
     {
         public int X;
@@ -35,6 +39,10 @@ public static partial class Win32MouseHookHelper
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct MSLLHOOKSTRUCT
     {
         public POINT Point;
@@ -73,6 +81,9 @@ public static partial class Win32MouseHookHelper
     private static int _hookUserCount;
     private static long _droppedEventCount;
 
+    /// <summary>
+    /// イベント発生時に通知する追加情報を保持し、受信側が状態を判断できるようにします。
+    /// </summary>
     public sealed class MouseEventArgs(int x, int y, int delta, int hWheel) : EventArgs
     {
         public int X { get; } = x;

@@ -4,6 +4,9 @@ using AutoTool.Commands.Threading;
 
 namespace AutoTool.Desktop.Panels.View;
 
+/// <summary>
+/// 対象ウィンドウ情報の取得操作を提供し、取得結果を設定入力へ利用できるようにします。
+/// </summary>
 public partial class GetWindowInfoWindow : Window
 {
     private bool _hookRegistered;

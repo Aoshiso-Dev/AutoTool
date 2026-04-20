@@ -5,6 +5,9 @@ using AutoTool.Commands.Services;
 
 namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// Tesseract を利用して画像から文字列を抽出し、OCR コマンドの結果を返します。
+/// </summary>
 public sealed class TesseractOcrEngine : IOcrEngine
 {
     public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken)

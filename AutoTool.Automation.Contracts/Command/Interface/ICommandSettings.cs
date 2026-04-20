@@ -3,8 +3,14 @@ using System;
 
 namespace AutoTool.Commands.Interface;
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface ICommandSettings { }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IWaitImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
@@ -16,6 +22,9 @@ public interface IWaitImageCommandSettings : ICommandSettings
     string WindowClassName { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IFindImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
@@ -31,6 +40,9 @@ public interface IFindImageCommandSettings : ICommandSettings
     string WindowClassName { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IFindTextCommandSettings : ICommandSettings
 {
     string TargetText { get; set; }
@@ -56,6 +68,9 @@ public interface IFindTextCommandSettings : ICommandSettings
     string TessdataPath { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IIfImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
@@ -65,6 +80,9 @@ public interface IIfImageCommandSettings : ICommandSettings
     string WindowClassName { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IIfTextCommandSettings : ICommandSettings
 {
     string TargetText { get; set; }
@@ -84,6 +102,9 @@ public interface IIfTextCommandSettings : ICommandSettings
     string TessdataPath { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IClickImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
@@ -99,6 +120,9 @@ public interface IClickImageCommandSettings : ICommandSettings
     string WindowClassName { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IHotkeyCommandSettings : ICommandSettings
 {
     bool Ctrl { get; set; }
@@ -109,6 +133,9 @@ public interface IHotkeyCommandSettings : ICommandSettings
     string WindowClassName { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IClickCommandSettings : ICommandSettings
 {
     CommandMouseButton Button { get; set; }
@@ -121,29 +148,44 @@ public interface IClickCommandSettings : ICommandSettings
     string WindowClassName { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IWaitCommandSettings : ICommandSettings
 {
     int Wait { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface ILoopCommandSettings : ICommandSettings
 {
     int LoopCount { get; set; }
     ICommand? Pair { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface ILoopEndCommandSettings : ICommandSettings
 {
     int LoopCount { get; set; }
     ICommand? Pair { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IRetryCommandSettings : ICommandSettings
 {
     int RetryCount { get; set; }
     int RetryInterval { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IIfWaitImageCommandSettings : ICommandSettings
 {
     string ImagePath { get; set; }
@@ -154,6 +196,10 @@ public interface IIfWaitImageCommandSettings : ICommandSettings
 }
 
 // Items/Commands 側の実装に合わせた定義（YOLO の ClassId 判定）
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
+
 public interface IIfImageExistAISettings : ICommandSettings
 {
     string ModelPath { get; set; }
@@ -163,6 +209,9 @@ public interface IIfImageExistAISettings : ICommandSettings
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
 }
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IIfImageNotExistAISettings : ICommandSettings
 {
     string ModelPath { get; set; }
@@ -173,6 +222,9 @@ public interface IIfImageNotExistAISettings : ICommandSettings
     double IoUThreshold { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IExecuteCommandSettings : ICommandSettings
 {
     string ProgramPath { get; set; }
@@ -182,12 +234,19 @@ public interface IExecuteCommandSettings : ICommandSettings
 }
 
 // 変数操作コマンド
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
+
 public interface ISetVariableCommandSettings : ICommandSettings
 {
     string Name { get; set; }
     string Value { get; set; }
 }
 
+/// <summary>
+/// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
+/// </summary>
 public interface IIfVariableCommandSettings : ICommandSettings
 {
     string Name { get; set; }
@@ -196,6 +255,10 @@ public interface IIfVariableCommandSettings : ICommandSettings
 }
 
 // AI による変数設定コマンド
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
+
 public interface ISetVariableAICommandSettings : ICommandSettings
 {
     string WindowTitle { get; set; }
@@ -208,6 +271,10 @@ public interface ISetVariableAICommandSettings : ICommandSettings
 }
 
 // OCR による変数設定コマンド
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
+
 public interface ISetVariableOCRCommandSettings : ICommandSettings
 {
     string Name { get; set; }
@@ -226,6 +293,10 @@ public interface ISetVariableOCRCommandSettings : ICommandSettings
 }
 
 // AI 画像クリックコマンド
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
+
 public interface IClickImageAICommandSettings : ICommandSettings
 {
     string ModelPath { get; set; }
@@ -241,6 +312,10 @@ public interface IClickImageAICommandSettings : ICommandSettings
 }
 
 // スクリーンショットコマンド
+/// <summary>
+/// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
+/// </summary>
+
 public interface IScreenshotCommandSettings : ICommandSettings
 {
     string SaveDirectory { get; set; }

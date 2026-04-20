@@ -2,6 +2,9 @@
 
 namespace AutoTool.Desktop.ViewModel;
 
+/// <summary>
+/// 関連データを不変に保持するレコード型です。
+/// </summary>
 public sealed record PreflightIssueItem(
     string Level,
     string Line,

@@ -72,6 +72,9 @@ public sealed class DelegateCommandDependencyResolver(Func<Type, object?> resolv
     }
 }
 
+/// <summary>
+/// 型情報や依存関係を解決し、実行に必要なインスタンスを返します。
+/// </summary>
 internal sealed class CompositeCommandDependencyResolver(IReadOnlyList<ICommandDependencyResolver> resolvers)
     : ICommandDependencyResolver
 {
@@ -100,6 +103,9 @@ internal sealed class CompositeCommandDependencyResolver(IReadOnlyList<ICommandD
     }
 }
 
+/// <summary>
+/// 型情報や依存関係を解決し、実行に必要なインスタンスを返します。
+/// </summary>
 internal sealed class CoreCommandDependencyResolver(
     IVariableStore variableStore,
     IObjectDetector objectDetector,
@@ -163,6 +169,9 @@ internal sealed class CoreCommandDependencyResolver(
     }
 }
 
+/// <summary>
+/// 型情報や依存関係を解決し、実行に必要なインスタンスを返します。
+/// </summary>
 internal sealed class AmbientCommandDependencyResolver(
     ICommandEventBus? commandEventBus,
     TimeProvider timeProvider) : ICommandDependencyResolver

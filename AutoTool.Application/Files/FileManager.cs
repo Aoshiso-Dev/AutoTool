@@ -6,7 +6,7 @@ using AutoTool.Application.Ports;
 namespace AutoTool.Application.Files;
 
 /// <summary>
-/// マクロファイルの開く・保存・最近使ったファイル管理を担うクラスです。
+/// マクロファイルの読み込み・保存と最近使ったファイル一覧の更新を一元管理します。
 /// </summary>
 public partial class FileManager : ObservableObject
 {

@@ -3,6 +3,10 @@ using System.Threading;
 
 namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// ネイティブ API との橋渡しを担い、Win32 呼び出しを安全に利用できるようにします。
+/// </summary>
+
 public static partial class Win32MouseInterop
 {
     public const string ClickInjectionModeMouseEvent = "MouseEvent";
@@ -27,6 +31,10 @@ public static partial class Win32MouseInterop
     private static int _dpiAwarenessInitialized;
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct POINT
     {
         public int X;
@@ -34,6 +42,10 @@ public static partial class Win32MouseInterop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct RECT
     {
         public int Left;
@@ -43,6 +55,10 @@ public static partial class Win32MouseInterop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct INPUT
     {
         public int Type;
@@ -50,6 +66,10 @@ public static partial class Win32MouseInterop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct MOUSEINPUT
     {
         public int Dx;
@@ -61,6 +81,10 @@ public static partial class Win32MouseInterop
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct TOKEN_ELEVATION
     {
         public int TokenIsElevated;
@@ -69,6 +93,10 @@ public static partial class Win32MouseInterop
     [UnmanagedFunctionPointer(CallingConvention.Winapi)]
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
+    /// <summary>
+    /// 処理途中で参照する状態値を保持し、複数ステップ間で共有できるようにします。
+    /// </summary>
+
     private sealed class WindowSearchState
     {
         public required string? ExpectedTitle { get; init; }
@@ -76,6 +104,10 @@ public static partial class Win32MouseInterop
         public IntPtr BestHandle { get; set; }
         public int BestScore { get; set; } = int.MinValue;
     }
+
+    /// <summary>
+    /// 処理途中で参照する状態値を保持し、複数ステップ間で共有できるようにします。
+    /// </summary>
 
     private readonly record struct WindowZOrderState(IntPtr NextWindow, IntPtr PrevWindow);
 

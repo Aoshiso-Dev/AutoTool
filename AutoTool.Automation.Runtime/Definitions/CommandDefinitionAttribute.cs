@@ -3,7 +3,7 @@
 namespace AutoTool.Automation.Runtime.Definitions;
 
 /// <summary>
-/// コマンド定義メタデータを表す属性。
+/// コマンド種別名・表示名・カテゴリなどの定義メタデータを付与し、登録と表示に利用できるようにします。
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class CommandDefinitionAttribute : Attribute

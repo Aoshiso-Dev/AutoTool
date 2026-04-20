@@ -4,6 +4,9 @@ using System.IO;
 
 namespace AutoTool.Commands.Commands;
 
+/// <summary>
+/// 設定検証で利用するエラーコード定数を集約し、判定結果を一貫した識別子で扱えるようにします。
+/// </summary>
 public static class CommandValidationErrorCodes
 {
     public const string ImagePathRequired = "E_IMG_PATH_EMPTY";
@@ -31,8 +34,14 @@ public static class CommandValidationErrorCodes
     public const string TessdataDataMissing = "E_TESSDATA_TRAINEDDATA_MISSING";
 }
 
+/// <summary>
+/// 関連データを不変に保持するレコード型です。
+/// </summary>
 public sealed record CommandValidationIssue(string Code, string PropertyName, string Message);
 
+/// <summary>
+/// 不正な入力や実行時エラーの詳細を保持して呼び出し元へ通知します。
+/// </summary>
 public sealed class CommandSettingsValidationException : ArgumentException
 {
     public string ErrorCode { get; }
@@ -46,6 +55,9 @@ public sealed class CommandSettingsValidationException : ArgumentException
     }
 }
 
+/// <summary>
+/// 入力値や設定値を検証し、エラー内容を収集します。
+/// </summary>
 public static class CommandSettingsValidator
 {
     private static readonly HashSet<string> SupportedVariableOperators = new(StringComparer.Ordinal)

@@ -2,6 +2,9 @@
 
 namespace AutoTool.Automation.Runtime.Diagnostics;
 
+/// <summary>
+/// 情報を表示・ログ出力しやすい形式へ整形します。
+/// </summary>
 public static class ExceptionDetailsFormatter
 {
     public static string GetMostRelevantMessage(Exception exception)

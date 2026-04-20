@@ -9,6 +9,9 @@ using AutoTool.Commands.Infrastructure;
 
 namespace AutoTool.Desktop.Panels.View;
 
+/// <summary>
+/// キャプチャ範囲の指定と取得処理を行い、選択領域の画像を編集処理へ渡せるようにします。
+/// </summary>
 public partial class CaptureWindow : Window
 {
     private System.Drawing.Point _screenStartPoint;

@@ -4,6 +4,9 @@ using AutoTool.Desktop.Panels.ViewModel;
 
 namespace AutoTool.Desktop.Panels.View;
 
+/// <summary>
+/// 実行ログの表示更新と操作イベントを処理し、ログ確認作業を行いやすくします。
+/// </summary>
 public partial class LogPanel : UserControl
 {
     private LogPanelViewModel? _viewModel;

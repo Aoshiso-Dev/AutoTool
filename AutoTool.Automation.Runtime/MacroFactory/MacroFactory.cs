@@ -256,6 +256,10 @@ public class MacroFactory(
         return value;
     }
 
+    /// <summary>
+    /// 実行時の計測値を集約し、性能分析やログ出力に利用できるようにします。
+    /// </summary>
+
     private sealed class MacroBuildMetrics
     {
         public int SimpleSuccess { get; private set; }

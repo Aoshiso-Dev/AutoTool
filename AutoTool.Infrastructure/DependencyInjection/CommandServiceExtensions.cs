@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AutoTool.Commands.DependencyInjection;
 
+/// <summary>
+/// コマンド実行に必要なサービス群を DI コンテナへ登録する拡張メソッドを提供します。
+/// </summary>
 public static class CommandServiceExtensions
 {
     public static IServiceCollection AddCommandServices(

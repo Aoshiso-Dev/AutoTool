@@ -243,6 +243,10 @@ public class CommandExecutionContext : ICommandExecutionContext
         return _ocrEngine.ExtractTextAsync(request, cancellationToken);
     }
 
+    /// <summary>
+    /// イベント通知を行わない無効実装として動作し、イベントバスが不要な場面で安全に置き換えられるようにします。
+    /// </summary>
+
     private sealed class NullCommandEventBus : ICommandEventBus
     {
         public static NullCommandEventBus Instance { get; } = new();

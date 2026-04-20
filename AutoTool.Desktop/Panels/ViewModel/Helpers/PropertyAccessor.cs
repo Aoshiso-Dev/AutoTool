@@ -5,7 +5,7 @@ using AutoTool.Automation.Contracts.Lists;
 namespace AutoTool.Desktop.Panels.ViewModel.Helpers;
 
 /// <summary>
-/// 型安全なプロパティアクセサ
+/// 式ツリーから getter/setter を生成し、型安全にプロパティへアクセスできるようにします。
 /// </summary>
 /// <typeparam name="TInterface">アクセス対象のインターフェース型</typeparam>
 /// <typeparam name="TProperty">プロパティの型</typeparam>
@@ -51,7 +51,7 @@ public class PropertyAccessor<TInterface, TProperty> where TInterface : class
 }
 
 /// <summary>
-/// 複数のインターフェースに対応するプロパティアクセサ
+/// 複数インターフェースに対するプロパティアクセス定義を保持し、対象型に応じて getter/setter を切り替えます。
 /// </summary>
 /// <typeparam name="TProperty">プロパティの型</typeparam>
 public class MultiInterfacePropertyAccessor<TProperty>

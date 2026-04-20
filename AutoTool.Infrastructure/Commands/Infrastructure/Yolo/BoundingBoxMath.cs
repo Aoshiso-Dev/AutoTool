@@ -1,6 +1,9 @@
 ﻿namespace AutoTool.Infrastructure.Vision.Yolo;
 
 
+/// <summary>
+/// 検出矩形の重なり計算や変換処理を行い、物体検出後の判定ロジックで利用できるようにします。
+/// </summary>
 internal static class BoundingBoxMath
 {
     public static OpenCvSharp.Rect2f Xywh2Xyxy(float x, float y, float w, float h)

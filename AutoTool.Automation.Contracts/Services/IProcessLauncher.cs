@@ -1,5 +1,8 @@
 ﻿namespace AutoTool.Commands.Services;
 
+/// <summary>
+/// 関連データを不変に保持するレコード型です。
+/// </summary>
 public sealed record ProcessOutputLine(string Text, bool IsError, DateTimeOffset Timestamp);
 
 /// <summary>

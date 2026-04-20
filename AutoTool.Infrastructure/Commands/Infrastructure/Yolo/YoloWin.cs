@@ -88,6 +88,10 @@ public static class YoloWin
 
 // `BitmapConverter` が使えない場合は、以下のような変換メソッドを追加してください。
 
+/// <summary>
+/// バインディングや表示用途に合わせて値の変換を行います。
+/// </summary>
+
 public static class BitmapConverter
 {
     public static Mat ToMat(System.Drawing.Bitmap bitmap)

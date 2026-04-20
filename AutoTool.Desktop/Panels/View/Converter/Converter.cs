@@ -11,6 +11,9 @@ using AutoTool.Commands.Model.Input;
 
 namespace AutoTool.Desktop.Panels.View.Converter;
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class InverseBooleanConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -24,6 +27,9 @@ public class InverseBooleanConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class BoolToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -40,6 +46,9 @@ public class BoolToVisibilityConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class BoolToVisibilityMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -56,6 +65,9 @@ public class BoolToVisibilityMultiConverter : IMultiValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class NumberToBooleanConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -72,6 +84,9 @@ public class NumberToBooleanConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class ValidationErrorContainsItemConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -95,6 +110,9 @@ public class ValidationErrorContainsItemConverter : IMultiValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class BooleanToTextConverter : IValueConverter
 {
     public string TrueText { get; set; } = "有効";
@@ -114,6 +132,9 @@ public class BooleanToTextConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class StringToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -130,6 +151,9 @@ public class StringToVisibilityConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class KeyToStringConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -145,6 +169,9 @@ public class KeyToStringConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class NestLevelToMarginConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -259,6 +286,9 @@ public class ProgressToWidthConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class OcrRegionNumberEditorVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -284,6 +314,9 @@ public class OcrRegionNumberEditorVisibilityConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class OcrRegionNumberEditorVisibilityMultiConverter : IMultiValueConverter
 {
     private static readonly HashSet<string> OcrPointPickerItemTypes = new(StringComparer.Ordinal)
@@ -317,6 +350,9 @@ public class OcrRegionNumberEditorVisibilityMultiConverter : IMultiValueConverte
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -330,6 +366,9 @@ public class NullToVisibilityConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class CommandPairBadgeVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -352,6 +391,9 @@ public class CommandPairBadgeVisibilityConverter : IValueConverter
     };
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class CommandPairBadgeTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -374,6 +416,9 @@ public class CommandPairBadgeTextConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class CommandPairGuideBrushConverter : IValueConverter
 {
     private static readonly SolidColorBrush LoopBrush = new(Color.FromRgb(37, 99, 235));
@@ -396,6 +441,9 @@ public class CommandPairGuideBrushConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class CommandPairGuideThicknessConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -414,6 +462,9 @@ public class CommandPairGuideThicknessConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class CommandPairGlyphConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -432,6 +483,9 @@ public class CommandPairGlyphConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class CommandPairOrderBadgeMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -517,6 +571,9 @@ public class CommandPairOrderBadgeMultiConverter : IMultiValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class LoopGuideVisibilityMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -539,6 +596,9 @@ public class LoopGuideVisibilityMultiConverter : IMultiValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class IfGuideVisibilityMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -561,6 +621,9 @@ public class IfGuideVisibilityMultiConverter : IMultiValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class LoopGuideMarginMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -583,6 +646,9 @@ public class LoopGuideMarginMultiConverter : IMultiValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class IfGuideMarginMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -605,6 +671,9 @@ public class IfGuideMarginMultiConverter : IMultiValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class SelectedAndNonEmptyToVisibilityMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -620,6 +689,9 @@ public class SelectedAndNonEmptyToVisibilityMultiConverter : IMultiValueConverte
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class LoopGuideGlyphMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -649,6 +721,9 @@ public class LoopGuideGlyphMultiConverter : IMultiValueConverter
     }
 }
 
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class IfGuideGlyphMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
@@ -678,6 +753,9 @@ public class IfGuideGlyphMultiConverter : IMultiValueConverter
     }
 }
 
+/// <summary>
+/// 型情報や依存関係を解決し、実行に必要なインスタンスを返します。
+/// </summary>
 file static class CommandGuideSpanResolver
 {
     public static bool TryGetActiveLoopSpan(int lineNumber, IEnumerable<ICommandListItem> items, out int nestLevel, out (int startLine, int endLine) span)

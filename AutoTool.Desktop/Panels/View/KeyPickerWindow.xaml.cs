@@ -4,6 +4,9 @@ using AutoTool.Commands.Model.Input;
 
 namespace AutoTool.Desktop.Panels.View;
 
+/// <summary>
+/// キー入力を待ち受けて選択結果を確定し、ホットキー設定へ反映できるようにします。
+/// </summary>
 public partial class KeyPickerWindow : Window
 {
     public CommandKey SelectedKey { get; private set; } = CommandKey.None;

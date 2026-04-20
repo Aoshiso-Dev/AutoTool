@@ -1,5 +1,8 @@
 ﻿namespace AutoTool.Infrastructure;
 
+/// <summary>
+/// オブジェクトと保存形式の相互変換を担当します。
+/// </summary>
 public static class XmlFileSerializer
 {
     public static string Serialize<T>(T obj)

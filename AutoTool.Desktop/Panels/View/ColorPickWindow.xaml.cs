@@ -7,6 +7,9 @@ using AutoTool.Commands.Threading;
 
 namespace AutoTool.Desktop.Panels.View;
 
+/// <summary>
+/// 画面上の色取得操作を受け付け、選択した色を編集値として反映できるようにします。
+/// </summary>
 public partial class ColorPickWindow : Window
 {
     private bool _hookRegistered;

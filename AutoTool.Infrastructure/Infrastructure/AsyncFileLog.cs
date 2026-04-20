@@ -6,6 +6,9 @@ using System.IO;
 
 namespace AutoTool.Infrastructure;
 
+/// <summary>
+/// ログメッセージを受け取り、指定先へ非同期で書き込みます。
+/// </summary>
 public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
 {
     private readonly Channel<string> _logChannel;

@@ -11,12 +11,18 @@ using System.ComponentModel;
 
 namespace AutoTool.Desktop;
 
+/// <summary>
+/// メイン画面タブのインデックス定義を集約し、選択状態の保存や復元で共通利用できるようにします。
+/// </summary>
 public static class TabIndexes
 {
     public const int Macro = 0;
     public const int Monitor = 1;
 }
 
+/// <summary>
+/// メイン画面全体の状態と操作を管理する ViewModel です。
+/// </summary>
 public partial class MainWindowViewModel : ObservableObject, IDisposable
 {
     private readonly INotifier _notifier;

@@ -2,6 +2,9 @@
 
 namespace AutoTool.Domain.Macros;
 
+/// <summary>
+/// 関連データを不変に保持するレコード型です。
+/// </summary>
 public sealed record FavoriteMacroEntry
 {
     [SetsRequiredMembers]

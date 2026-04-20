@@ -9,12 +9,20 @@ public static partial class Win32DpiHelper
 {
     private const uint MonitorDefaultToNearest = 2;
 
+    /// <summary>
+    /// この機能で扱う状態や種別の選択肢を列挙し、分岐条件を明確にします。
+    /// </summary>
+
     private enum MonitorDpiType
     {
         Effective = 0
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    /// <summary>
+    /// 処理で利用する値を軽量に保持し、受け渡し時のオーバーヘッドを抑えます。
+    /// </summary>
+
     private struct Point
     {
         public int X;

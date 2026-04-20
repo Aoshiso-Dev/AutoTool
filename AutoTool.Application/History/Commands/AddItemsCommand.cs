@@ -2,6 +2,9 @@
 
 namespace AutoTool.Application.History.Commands;
 
+/// <summary>
+/// コマンド一覧へ項目を挿入する Undo/Redo 操作を保持し、再実行時に同じ位置へ復元できるようにします。
+/// </summary>
 public sealed class AddItemsCommand : IUndoRedoCommand
 {
     private readonly IReadOnlyList<ICommandListItem> _items;

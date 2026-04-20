@@ -12,6 +12,9 @@ using System.Collections.ObjectModel;
 
 namespace AutoTool.Desktop.ViewModel;
 
+/// <summary>
+/// マクロ編集パネルの状態と操作を管理する ViewModel です。
+/// </summary>
 public partial class MacroPanelViewModel : ObservableObject, IDisposable
 {
     private readonly INotifier _notifier;

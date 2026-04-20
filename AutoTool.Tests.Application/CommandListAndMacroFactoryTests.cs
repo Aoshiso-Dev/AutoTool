@@ -288,6 +288,10 @@ public class RetryCommandTests
         Assert.Equal(3, sequence.ExecuteCount);
     }
 
+    /// <summary>
+    /// テスト用シナリオの準備と検証処理をまとめ、期待動作を回帰確認できるようにします。
+    /// </summary>
+
     private sealed class SequenceCommand : BaseCommand
     {
         private readonly Queue<bool> _results;
@@ -329,6 +333,10 @@ public class CommandHistoryManagerTests
         Assert.Contains("cmd-11", UndoHistory);
         Assert.DoesNotContain("cmd-1", UndoHistory);
     }
+
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
 
     private sealed class TestUndoRedoCommand : IUndoRedoCommand
     {
@@ -450,6 +458,9 @@ public class MacroFileSerializerCompatibilityTests
     }
 }
 
+/// <summary>
+/// オブジェクトと保存形式の相互変換を担当します。
+/// </summary>
 internal sealed class FakeMacroFileSerializer : IMacroFileSerializer
 {
     private readonly object? _deserializedObject;
@@ -612,6 +623,10 @@ public class FileManagerTests
             new FakeFileSystemPathService());
     }
 
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
+
     private sealed class FakeFilePicker : IFilePicker
     {
         public string? OpenFilePath { get; init; }
@@ -620,6 +635,10 @@ public class FileManagerTests
         public string? OpenFile(FileDialogOptions options) => OpenFilePath;
         public string? SaveFile(FileDialogOptions options) => SaveFilePath;
     }
+
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
 
     private sealed class FakeRecentFileStore : IRecentFileStore
     {
@@ -634,6 +653,10 @@ public class FileManagerTests
             Files = files;
         }
     }
+
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
 
     private sealed class FakeFileSystemPathService : IFileSystemPathService
     {
@@ -707,6 +730,10 @@ public class FindTextItemTests
 
         Assert.False(result);
     }
+
+    /// <summary>
+    /// テストで利用する差し替え実装として、呼び出し内容の記録や固定結果の返却を行います。
+    /// </summary>
 
     private sealed class FakeCommandExecutionContext : ICommandExecutionContext
     {

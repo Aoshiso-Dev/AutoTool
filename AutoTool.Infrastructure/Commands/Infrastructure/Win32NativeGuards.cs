@@ -3,6 +3,9 @@ using System.Runtime.InteropServices;
 
 namespace AutoTool.Commands.Infrastructure;
 
+/// <summary>
+/// 前提条件を検証し、失敗時は例外を送出して処理を保護します。
+/// </summary>
 internal static class Win32NativeGuards
 {
     public static void ThrowIfFalse(bool result, string apiName)

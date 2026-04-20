@@ -3,6 +3,9 @@ using AutoTool.Automation.Contracts.Lists;
 
 namespace AutoTool.Automation.Runtime.Definitions;
 
+/// <summary>
+/// 処理で利用する種別を表す列挙型です。
+/// </summary>
 public enum CommandCreationFailureReason
 {
     None = 0,
@@ -13,6 +16,9 @@ public enum CommandCreationFailureReason
     FactoryException
 }
 
+/// <summary>
+/// 処理結果を保持するレコード型です。
+/// </summary>
 public sealed record CommandCreationResult(
     bool Success,
     ICommand? Command,

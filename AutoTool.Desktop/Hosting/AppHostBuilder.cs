@@ -10,6 +10,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace AutoTool.Desktop.Hosting;
 
+/// <summary>
+/// アプリ起動時の Host 構成を組み立て、`Settings/appsettings.json` の読み込みと各サービスの DI 登録を行います。
+/// </summary>
 public static class AppHostBuilder
 {
     public static IHostBuilder CreateHostBuilder(string[]? args = null)
@@ -30,6 +33,9 @@ public static class AppHostBuilder
 
 }
 
+/// <summary>
+/// AutoTool 本体で利用する通知・ダイアログ・保存ストア・ViewModel などを DI コンテナへ登録する拡張メソッドを提供します。
+/// </summary>
 public static class AutoToolServiceExtensions
 {
     public static IServiceCollection AddAutoToolServices(this IServiceCollection services)
