@@ -28,6 +28,7 @@ public sealed class TesseractOcrEngine : IOcrEngine
             var tessdataPath = ResolveTessdataPath(request.TessdataPath);
             var psm = ParsePageSegMode(request.PageSegmentationMode);
             var language = string.IsNullOrWhiteSpace(request.Language) ? "jpn" : request.Language;
+            ValidateTrainedDataFiles(tessdataPath, language);
 
             using var engine = new TesseractEngine(tessdataPath, language, EngineMode.Default);
             engine.DefaultPageSegMode = psm;
@@ -155,6 +156,28 @@ public sealed class TesseractOcrEngine : IOcrEngine
             "13" => PageSegMode.RawLine,
             _ => PageSegMode.SingleBlock
         };
+    }
+
+    private static void ValidateTrainedDataFiles(string tessdataPath, string language)
+    {
+        var languages = (string.IsNullOrWhiteSpace(language) ? "jpn" : language)
+            .Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (languages.Length == 0)
+        {
+            throw new FileNotFoundException("OCR言語設定が空です。");
+        }
+
+        foreach (var lang in languages)
+        {
+            var trainedDataPath = Path.Combine(tessdataPath, $"{lang}.traineddata");
+            if (!File.Exists(trainedDataPath))
+            {
+                throw new FileNotFoundException(
+                    $"tessdata に '{lang}.traineddata' が見つかりません。OCR言語設定または tessdata を確認してください。",
+                    trainedDataPath);
+            }
+        }
     }
 
     private static void TryDelete(string path)

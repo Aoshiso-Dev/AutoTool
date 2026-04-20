@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Input;
 using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Automation.Runtime.Attributes;
+using AutoTool.Automation.Runtime.Diagnostics;
 using AutoTool.Automation.Runtime.Lists;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.Infrastructure;
@@ -173,7 +174,7 @@ public partial class EditPanelViewModel
             HasOcrPreviewResult = true;
             OcrPreviewText = string.Empty;
             OcrPreviewConfidenceText = string.Empty;
-            OcrPreviewSummary = $"OCRプレビューに失敗しました: {ex.Message}";
+            OcrPreviewSummary = $"OCRプレビューに失敗しました: {ExceptionDetailsFormatter.GetMostRelevantMessage(ex)}";
         }
         finally
         {
@@ -199,6 +200,7 @@ public partial class EditPanelViewModel
             string[] preprocessModes = ["Gray", "Binarize", "AdaptiveThreshold", "None"];
             string[] psmModes = ["6", "7", "11", "13"];
             var candidates = new List<OcrTuneCandidate>();
+            string? firstFailureMessage = null;
 
             foreach (var preprocess in preprocessModes)
             {
@@ -227,8 +229,9 @@ public partial class EditPanelViewModel
                         var score = (string.IsNullOrWhiteSpace(trimmed) ? -100d : 0d) + result.Confidence + lengthScore;
                         candidates.Add(new OcrTuneCandidate(preprocess, psm, result.Confidence, trimmed, score));
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        firstFailureMessage ??= ExceptionDetailsFormatter.GetMostRelevantMessage(ex);
                         candidates.Add(new OcrTuneCandidate(preprocess, psm, 0d, string.Empty, -200d));
                     }
                 }
@@ -241,7 +244,9 @@ public partial class EditPanelViewModel
 
             if (candidates.Count == 0 || best.Score <= -150d)
             {
-                OcrAutoTuneSummary = "OCR自動調整: 推奨候補を作れませんでした。範囲・言語・tessdataを確認してください。";
+                OcrAutoTuneSummary = string.IsNullOrWhiteSpace(firstFailureMessage)
+                    ? "OCR自動調整: 推奨候補を作れませんでした。範囲・言語・tessdataを確認してください。"
+                    : $"OCR自動調整: 推奨候補を作れませんでした（原因: {firstFailureMessage}）。";
                 return;
             }
 
