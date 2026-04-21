@@ -14,6 +14,14 @@
 
   <ItemGroup>
     <Content Include="Resource\AutoTool.ico" />
+    <Content Include="Distribution\THIRD_PARTY_NOTICES.txt">
+      <Link>THIRD_PARTY_NOTICES.txt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Distribution\licenses\*.txt">
+      <Link>licenses\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

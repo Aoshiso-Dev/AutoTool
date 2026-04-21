@@ -1,0 +1,56 @@
+﻿AutoTool Third-Party Notices
+
+本配布物には第三者ソフトウェアが含まれます。
+各ライセンス本文は `licenses` フォルダを参照してください。
+- MIT: licenses\MIT.txt
+- Apache License 2.0: licenses\Apache-2.0.txt
+- GNU LGPL v2.1: licenses\LGPL-2.1.txt
+- Leptonica License: licenses\Leptonica-LICENSE.txt
+- ONNX Runtime Third Party Notices: licenses\ONNXRuntime-ThirdPartyNotices.txt
+
+[同梱・利用している主な第三者コンポーネント]
+
+1) CommunityToolkit.Mvvm 8.3.0
+- License: MIT
+- Source: https://github.com/CommunityToolkit/dotnet
+
+2) WPF-UI 3.0.5 (Wpf.Ui)
+- License: MIT
+- Source: https://github.com/lepoco/wpfui
+
+3) Microsoft.Extensions.* 8.x
+- License: MIT
+- Source: https://github.com/dotnet/runtime
+
+4) Microsoft.ML.OnnxRuntime 1.22.1
+5) Microsoft.ML.OnnxRuntime.Managed 1.22.1
+6) Microsoft.ML.OnnxRuntime.DirectML 1.22.1
+- License: MIT
+- Source: https://github.com/microsoft/onnxruntime
+- Additional notices: licenses\ONNXRuntime-ThirdPartyNotices.txt
+
+7) OpenCvSharp4 4.10.0.20240616
+8) OpenCvSharp4.Extensions 4.10.0.20240616
+9) OpenCvSharp4.runtime.win 4.10.0.20240616
+- License: Apache License 2.0
+- Source: https://github.com/shimat/opencvsharp
+- Note: OpenCvSharp runtime には `opencv_videoio_ffmpeg*.dll` が含まれる場合があります。
+        FFmpeg 関連の配布条件（LGPL v2.1 以上）に従ってください。
+
+10) Tesseract (charlesw wrapper) 5.2.0
+- License: Apache License 2.0
+- Source: https://github.com/charlesw/tesseract
+
+11) Native OCR engines shipped with Tesseract package
+- tesseract50.dll (Tesseract OCR)
+  - License: Apache License 2.0
+  - Source: https://github.com/tesseract-ocr/tesseract
+- leptonica-1.82.0.dll (Leptonica)
+  - License: Leptonica license (BSD 2-Clause equivalent)
+  - Source: https://github.com/DanBloomberg/leptonica
+
+[配布時の注意]
+- 本ファイルおよび licenses フォルダは、配布ZIP・配置先の両方に同梱したまま配布してください。
+- 依存パッケージ更新時は、ライセンス種別と notice の追加有無を再確認してください。
+- 学習済みモデル（ONNX）や tessdata（traineddata）を追加同梱する場合は、
+  モデル/データ側の個別ライセンスを別途確認してください。

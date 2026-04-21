@@ -10,6 +10,7 @@
 - 設定は `Settings\appsettings.json` に配置する
 - ユーザーデータ（`Macro`）と既存設定は保護する
 - 不要成果物（`*.pdb`、`*.lib`、`x86` など）は削除する
+- 第三者ライセンス情報（`THIRD_PARTY_NOTICES.txt` と `licenses\*.txt`）を配布物へ同梱する
 
 ## 3. 配置スクリプト実行（推奨）
 
@@ -68,6 +69,8 @@ dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -o .\.d
 - 配布先にメイン EXE がある
 - 配布先に `Settings\appsettings.json` がある
 - `Macro` 配下の既存データ件数が保持されている
+- 配布先に `THIRD_PARTY_NOTICES.txt` がある
+- 配布先に `licenses\` フォルダがある
 
 ## 7. 失敗時の確認
 

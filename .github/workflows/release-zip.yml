@@ -105,6 +105,14 @@ jobs:
           Get-ChildItem -LiteralPath $pwd -File -Filter "Readme*.txt" | ForEach-Object {
             Copy-Item -LiteralPath $_.FullName -Destination $packageRoot -Force
           }
+          Get-ChildItem -LiteralPath $publishDir -File -Filter "THIRD_PARTY_NOTICES*.txt" | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $packageRoot -Force
+          }
+
+          $publishLicensesDir = Join-Path $publishDir "licenses"
+          if (Test-Path -LiteralPath $publishLicensesDir) {
+            Copy-Item -LiteralPath $publishLicensesDir -Destination (Join-Path $packageRoot "licenses") -Recurse -Force
+          }
 
           $settingsJson = Join-Path $publishDir "Settings\appsettings.json"
           if (Test-Path -LiteralPath $settingsJson) {

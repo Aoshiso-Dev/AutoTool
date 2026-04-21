@@ -23,6 +23,8 @@
     *.deps.json / *.runtimeconfig.json
     Readme.txt
     Readme_コマンド詳細.txt
+    THIRD_PARTY_NOTICES.txt
+    licenses\*.txt
     Settings\appsettings.json
 
 --------------------------------------------------
@@ -78,6 +80,7 @@
 7. 関連資料
 --------------------------------------------------
 - `Readme_コマンド詳細.txt`（コマンド別の詳細説明）
+- `THIRD_PARTY_NOTICES.txt`（同梱している第三者ライセンス情報）
 - リポジトリ版の詳細ガイド: `docs\USER_GUIDE.md`
 
 --------------------------------------------------

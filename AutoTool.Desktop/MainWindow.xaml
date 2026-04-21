@@ -53,12 +53,14 @@
                             <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
                                 <Setter Property="Icon" Value="{ui:SymbolIcon Play24}"/>
                                 <Setter Property="ToolTip" Value="実行"/>
+                                <Setter Property="Appearance" Value="Primary"/>
                                 <Setter Property="Background" Value="#10B981"/>
                                 <Setter Property="BorderBrush" Value="#10B981"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsRunning}" Value="True">
                                         <Setter Property="Icon" Value="{ui:SymbolIcon Stop24}"/>
                                         <Setter Property="ToolTip" Value="停止"/>
+                                        <Setter Property="Appearance" Value="Danger"/>
                                         <Setter Property="Background" Value="#EF4444"/>
                                         <Setter Property="BorderBrush" Value="#EF4444"/>
                                     </DataTrigger>
