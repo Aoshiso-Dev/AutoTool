@@ -38,6 +38,10 @@ public interface IListPanelViewModel
     void Clear();
     void Save(string filePath = "");
     void Load(string filePath = "");
+    bool IsBlockStartCommand(ICommandListItem item);
+    bool IsBlockCollapsed(ICommandListItem item);
+    void ToggleBlockCollapse(ICommandListItem item);
+    bool ShouldHideCommandInCollapsedScope(ICommandListItem item);
     int GetCount();
     ICommandListItem? GetItem(int lineNumber);
     IReadOnlyList<ICommandListItem> GetSelectedItems();
@@ -46,6 +50,7 @@ public interface IListPanelViewModel
     void SetSelectedLineNumber(int lineNumber);
     void SetValidationErrorItems(IEnumerable<ICommandListItem> items);
     void NotifyInteraction();
+    void OnItemDoubleClick();
 }
 
 /// <summary>

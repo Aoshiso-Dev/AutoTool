@@ -889,7 +889,7 @@ public class CommandRowCollapsedConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (values.Length < 2 || values[0] is not ICommandListItem item || values[1] is not ListPanelViewModel viewModel)
+        if (values.Length < 2 || values[0] is not ICommandListItem item || values[1] is not IListPanelViewModel viewModel)
         {
             return false;
         }
@@ -910,9 +910,10 @@ public class CommandBlockToggleVisibilityConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (values.Length < 2 || values[0] is not ICommandListItem item || values[1] is not ListPanelViewModel viewModel)
+        var item = values.Length > 0 ? values[0] as ICommandListItem : null;
+        if (item is null || values.Length < 2 || values[1] is not IListPanelViewModel viewModel)
         {
-            return false;
+            return item is not null && IsBlockStartCommandType(item.ItemType);
         }
 
         return viewModel.IsBlockStartCommand(item);
@@ -921,6 +922,19 @@ public class CommandBlockToggleVisibilityConverter : IMultiValueConverter
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
         return [];
+    }
+
+    private static bool IsBlockStartCommandType(string itemType)
+    {
+        return itemType is
+            CommandTypeNames.Loop or
+            CommandTypeNames.IfImageExist or
+            CommandTypeNames.IfImageNotExist or
+            CommandTypeNames.IfTextExist or
+            CommandTypeNames.IfTextNotExist or
+            CommandTypeNames.IfImageExistAI or
+            CommandTypeNames.IfImageNotExistAI or
+            CommandTypeNames.IfVariable;
     }
 }
 
@@ -931,9 +945,10 @@ public class CommandBlockToggleGlyphConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (values.Length < 2 || values[0] is not ICommandListItem item || values[1] is not ListPanelViewModel viewModel)
+        var item = values.Length > 0 ? values[0] as ICommandListItem : null;
+        if (item is null || values.Length < 2 || values[1] is not IListPanelViewModel viewModel)
         {
-            return string.Empty;
+            return item is not null && IsBlockStartCommandType(item.ItemType) ? "▾" : string.Empty;
         }
 
         if (!viewModel.IsBlockStartCommand(item))
@@ -947,6 +962,19 @@ public class CommandBlockToggleGlyphConverter : IMultiValueConverter
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
         return [];
+    }
+
+    private static bool IsBlockStartCommandType(string itemType)
+    {
+        return itemType is
+            CommandTypeNames.Loop or
+            CommandTypeNames.IfImageExist or
+            CommandTypeNames.IfImageNotExist or
+            CommandTypeNames.IfTextExist or
+            CommandTypeNames.IfTextNotExist or
+            CommandTypeNames.IfImageExistAI or
+            CommandTypeNames.IfImageNotExistAI or
+            CommandTypeNames.IfVariable;
     }
 }
 
