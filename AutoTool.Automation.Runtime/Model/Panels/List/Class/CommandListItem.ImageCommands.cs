@@ -8,6 +8,37 @@ using CommandDef = AutoTool.Automation.Runtime.Definitions;
 
 namespace AutoTool.Automation.Runtime.Lists;
 
+internal static class ImageCommandExecutionHelper
+{
+    public static Task<FindImageResult> FindImageAsync(
+        ICommandExecutionContext context,
+        string imagePath,
+        double threshold,
+        CommandColor? searchColor,
+        int timeout,
+        int interval,
+        string windowTitle,
+        string windowClassName,
+        CancellationToken cancellationToken)
+    {
+        var absolutePath = context.ToAbsolutePath(imagePath);
+        return FindImageExecutor.ExecuteAsync(
+            new FindImageOptions
+            {
+                ImagePath = absolutePath,
+                Threshold = threshold,
+                SearchColor = searchColor,
+                Timeout = timeout,
+                Interval = interval,
+                WindowTitle = windowTitle,
+                WindowClassName = windowClassName
+            },
+            context.SearchImageAsync,
+            context.ReportProgress,
+            cancellationToken);
+    }
+}
+
 [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.FindImage, typeof(SimpleCommand), typeof(IFindImageCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 5, displaySubPriority: 4, displayNameJa: "変数設定 - 画像検索", displayNameEn: "Set Variable - Image Search")]
 /// <summary>
 /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
@@ -112,20 +143,15 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
     public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var absolutePath = context.ToAbsolutePath(ImagePath);
-        var result = await FindImageExecutor.ExecuteAsync(
-            new FindImageOptions
-            {
-                ImagePath = absolutePath,
-                Threshold = Threshold,
-                SearchColor = SearchColor,
-                Timeout = Timeout,
-                Interval = Interval,
-                WindowTitle = WindowTitle,
-                WindowClassName = WindowClassName
-            },
-            context.SearchImageAsync,
-            context.ReportProgress,
+        var result = await ImageCommandExecutionHelper.FindImageAsync(
+            context,
+            ImagePath,
+            Threshold,
+            SearchColor,
+            Timeout,
+            Interval,
+            WindowTitle,
+            WindowClassName,
             cancellationToken).ConfigureAwait(false);
 
         SetResultVariables(context, result);
@@ -237,20 +263,15 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
 
     public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
-        var absolutePath = context.ToAbsolutePath(ImagePath);
-        var result = await FindImageExecutor.ExecuteAsync(
-            new FindImageOptions
-            {
-                ImagePath = absolutePath,
-                Threshold = Threshold,
-                SearchColor = SearchColor,
-                Timeout = Timeout,
-                Interval = Interval,
-                WindowTitle = WindowTitle,
-                WindowClassName = WindowClassName
-            },
-            context.SearchImageAsync,
-            context.ReportProgress,
+        var result = await ImageCommandExecutionHelper.FindImageAsync(
+            context,
+            ImagePath,
+            Threshold,
+            SearchColor,
+            Timeout,
+            Interval,
+            WindowTitle,
+            WindowClassName,
             cancellationToken).ConfigureAwait(false);
 
         if (result.Found)
@@ -483,20 +504,15 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
 
     public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
     {
-        var absolutePath = context.ToAbsolutePath(ImagePath);
-        var result = await FindImageExecutor.ExecuteAsync(
-            new FindImageOptions
-            {
-                ImagePath = absolutePath,
-                Threshold = Threshold,
-                SearchColor = SearchColor,
-                Timeout = Timeout,
-                Interval = Interval,
-                WindowTitle = WindowTitle,
-                WindowClassName = WindowClassName
-            },
-            context.SearchImageAsync,
-            context.ReportProgress,
+        var result = await ImageCommandExecutionHelper.FindImageAsync(
+            context,
+            ImagePath,
+            Threshold,
+            SearchColor,
+            Timeout,
+            Interval,
+            WindowTitle,
+            WindowClassName,
             cancellationToken).ConfigureAwait(false);
 
         if (!result.Found || result.Point is null)

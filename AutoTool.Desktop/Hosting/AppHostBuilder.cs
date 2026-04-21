@@ -47,8 +47,8 @@ public static class AutoToolServiceExtensions
         services.AddSingleton<IStatusMessageScheduler, DispatcherStatusMessageScheduler>();
         services.AddSingleton<IFilePicker, WpfFilePicker>();
         services.AddSingleton<IFileSystemPathService, FileSystemPathService>();
-        services.AddSingleton<IRecentFileStore, XmlRecentFileStore>();
-        services.AddSingleton<IFavoriteMacroStore, XmlFavoriteMacroStore>();
+        services.AddSingleton<IRecentFileStore, JsonRecentFileStore>();
+        services.AddSingleton<IFavoriteMacroStore, JsonFavoriteMacroStore>();
         services.AddSingleton<IUiStatePreferenceStore, JsonUiStatePreferenceStore>();
 
         services.AddSingleton<AutoTool.Infrastructure.AsyncFileLog>();

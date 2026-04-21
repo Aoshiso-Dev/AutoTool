@@ -11,7 +11,7 @@ namespace AutoTool.Infrastructure.Implementations;
 /// <summary>
 /// 永続化データの保存と読み込みを担当します。
 /// </summary>
-public class XmlRecentFileStore : IRecentFileStore
+public class JsonRecentFileStore : IRecentFileStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -37,7 +37,7 @@ public class XmlRecentFileStore : IRecentFileStore
             }
 
             Save(key, legacyEntries);
-            TryDeleteLegacyFile(legacyPath);
+            LegacyFileCleanup.TryDeleteFile(legacyPath);
             return legacyEntries;
         }
 
@@ -117,20 +117,5 @@ public class XmlRecentFileStore : IRecentFileStore
     {
         var json = JsonSerializer.Serialize(files, JsonOptions);
         File.WriteAllText(path, json);
-    }
-
-    private static void TryDeleteLegacyFile(string legacyPath)
-    {
-        try
-        {
-            if (File.Exists(legacyPath))
-            {
-                File.Delete(legacyPath);
-            }
-        }
-        catch
-        {
-            // 削除に失敗しても旧ファイルは保持し、処理は継続します。
-        }
     }
 }

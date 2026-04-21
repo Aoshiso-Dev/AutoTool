@@ -42,7 +42,7 @@ public static class PanelsHostBuilder
         services.AddSingleton<IPanelDialogService, WpfPanelDialogService>();
         services.AddSingleton<ICapturePathProvider, CapturePathProvider>();
         services.AddSingleton<IDetectionHighlightService, DetectionHighlightService>();
-        services.AddSingleton<IFavoriteMacroStore, XmlFavoriteMacroStore>();
+        services.AddSingleton<IFavoriteMacroStore, JsonFavoriteMacroStore>();
 
         return services;
     }

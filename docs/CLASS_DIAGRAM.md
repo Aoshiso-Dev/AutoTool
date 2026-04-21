@@ -80,8 +80,8 @@ namespace Infrastructure {
   class ProcessLauncher
   class CapturePathProvider
   class DelegatingLogWriter
-  class XmlRecentFileStore
-  class XmlFavoriteMacroStore
+  class JsonRecentFileStore
+  class JsonFavoriteMacroStore
   class JsonUiStatePreferenceStore
 }
 
@@ -137,7 +137,7 @@ PathResolver ..|> IPathResolver
 ProcessLauncher ..|> IProcessLauncher
 CapturePathProvider ..|> ICapturePathProvider
 DelegatingLogWriter ..|> ILogWriter
-XmlRecentFileStore ..|> IRecentFileStore
-XmlFavoriteMacroStore ..|> IFavoriteMacroStore
+JsonRecentFileStore ..|> IRecentFileStore
+JsonFavoriteMacroStore ..|> IFavoriteMacroStore
 JsonUiStatePreferenceStore ..|> IUiStatePreferenceStore
 ```

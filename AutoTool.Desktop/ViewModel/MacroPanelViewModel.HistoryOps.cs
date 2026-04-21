@@ -103,19 +103,7 @@ public partial class MacroPanelViewModel
             return;
         }
 
-        if (_commandHistory is not null)
-        {
-            var moveCommand = new MoveItemCommand(
-                fromIndex,
-                toIndex,
-                (from, to) => _listPanel.MoveItem(from, to)
-            );
-            _commandHistory.ExecuteCommand(moveCommand);
-        }
-        else
-        {
-            _listPanel.Up();
-        }
+        ExecuteMoveItemCommandOrFallback(fromIndex, toIndex, () => _listPanel.Up());
 
         PublishStatusMessage("コマンドを上へ移動しました。");
     }
@@ -131,19 +119,7 @@ public partial class MacroPanelViewModel
             return;
         }
 
-        if (_commandHistory is not null)
-        {
-            var moveCommand = new MoveItemCommand(
-                fromIndex,
-                toIndex,
-                (from, to) => _listPanel.MoveItem(from, to)
-            );
-            _commandHistory.ExecuteCommand(moveCommand);
-        }
-        else
-        {
-            _listPanel.Down();
-        }
+        ExecuteMoveItemCommandOrFallback(fromIndex, toIndex, () => _listPanel.Down());
 
         PublishStatusMessage("コマンドを下へ移動しました。");
     }
@@ -156,6 +132,11 @@ public partial class MacroPanelViewModel
             return;
         }
 
+        ExecuteMoveItemCommandOrFallback(fromIndex, toIndex, () => _listPanel.MoveItem(fromIndex, toIndex));
+    }
+
+    private void ExecuteMoveItemCommandOrFallback(int fromIndex, int toIndex, Action fallback)
+    {
         if (_commandHistory is not null)
         {
             var moveCommand = new MoveItemCommand(
@@ -164,11 +145,10 @@ public partial class MacroPanelViewModel
                 (from, to) => _listPanel.MoveItem(from, to)
             );
             _commandHistory.ExecuteCommand(moveCommand);
+            return;
         }
-        else
-        {
-            _listPanel.MoveItem(fromIndex, toIndex);
-        }
+
+        fallback();
     }
 
     private void HandleDelete()

@@ -183,7 +183,7 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
             if (loaded is not null)
             {
                 _favoriteMacroStore.Save(storagePath, loaded);
-                TryDeleteLegacyFavoritesFile(legacyPath);
+                LegacyFileCleanup.TryDeleteFile(legacyPath);
             }
         }
 
@@ -222,18 +222,4 @@ public partial class FavoritePanelViewModel : ObservableObject, IFavoritePanelVi
         return Path.Combine(appDir, "favorites.xml");
     }
 
-    private static void TryDeleteLegacyFavoritesFile(string legacyPath)
-    {
-        try
-        {
-            if (File.Exists(legacyPath))
-            {
-                File.Delete(legacyPath);
-            }
-        }
-        catch
-        {
-            // クリーンアップに失敗しても旧ファイルは保持し、処理は継続します。
-        }
-    }
 }

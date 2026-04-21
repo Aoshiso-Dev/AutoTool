@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.Json;
+using AutoTool.Application.Files;
 using AutoTool.Application.Ports;
 using AutoTool.Domain.Macros;
 
@@ -9,7 +10,7 @@ namespace AutoTool.Infrastructure.Implementations;
 /// <summary>
 /// 永続化データの保存と読み込みを担当します。
 /// </summary>
-public class XmlFavoriteMacroStore : IFavoriteMacroStore
+public class JsonFavoriteMacroStore : IFavoriteMacroStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -32,7 +33,7 @@ public class XmlFavoriteMacroStore : IFavoriteMacroStore
         }
 
         Save(key, xmlFavorites);
-        TryDeleteLegacyFile(legacyXmlPath);
+        LegacyFileCleanup.TryDeleteFile(legacyXmlPath);
         return xmlFavorites;
     }
 
@@ -63,21 +64,6 @@ public class XmlFavoriteMacroStore : IFavoriteMacroStore
         catch
         {
             return null;
-        }
-    }
-
-    private static void TryDeleteLegacyFile(string legacyPath)
-    {
-        try
-        {
-            if (File.Exists(legacyPath))
-            {
-                File.Delete(legacyPath);
-            }
-        }
-        catch
-        {
-            // 削除に失敗しても旧ファイルは保持し、処理は継続します。
         }
     }
 }
