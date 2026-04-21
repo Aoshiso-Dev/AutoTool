@@ -6,6 +6,7 @@ using System.Windows.Input;
 using AutoTool.Application.Ports;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Desktop.Model;
+using AutoTool.Desktop.Panels.View;
 using AutoTool.Desktop.Panels.ViewModel;
 using AutoTool.Desktop.View;
 using Wpf.Ui.Controls;
@@ -144,6 +145,29 @@ public partial class MainWindow : FluentWindow
         _windowSettings.UpdateWindowSizePreset(settingsWindow.SelectedWindowSizePreset);
         _windowSettings.Save();
         _windowSettings.ApplyToWindow(this);
+    }
+
+    private void AddCommandButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.MacroPanelViewModel.ButtonPanelViewModel is not ButtonPanelViewModel buttonPanelViewModel)
+        {
+            return;
+        }
+
+        var commandSelectionWindow = new CommandSelectionWindow(
+            buttonPanelViewModel.ItemTypes,
+            buttonPanelViewModel.SelectedItemType)
+        {
+            Owner = this
+        };
+
+        if (commandSelectionWindow.ShowDialog() != true || commandSelectionWindow.SelectedCommand is null)
+        {
+            return;
+        }
+
+        buttonPanelViewModel.SelectedItemType = commandSelectionWindow.SelectedCommand;
+        buttonPanelViewModel.Add();
     }
 
     private void MainWindow_Closed(object? sender, EventArgs e)

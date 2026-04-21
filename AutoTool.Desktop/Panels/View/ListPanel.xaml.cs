@@ -15,6 +15,9 @@ namespace AutoTool.Desktop.Panels.View;
 public partial class ListPanel : UserControl
 {
     private const string DragItemDataFormat = "AutoTool.CommandListItem";
+    private const double AutoScrollHotZone = 36.0;
+    private const double AutoScrollMinStep = 1.0;
+    private const double AutoScrollMaxStep = 6.0;
     /// <summary>
     /// この機能で扱う状態や種別の選択肢を列挙し、分岐条件を明確にします。
     /// </summary>
@@ -305,7 +308,9 @@ public partial class ListPanel : UserControl
         }
 
         var fromIndex = CommandDataGrid.Items.IndexOf(sourceItem);
-        var toIndex = GetDropTargetIndex(fromIndex, e.GetPosition(CommandDataGrid), out var indicatorY);
+        var position = e.GetPosition(CommandDataGrid);
+        TryAutoScrollDuringDrag(position);
+        var toIndex = GetDropTargetIndex(fromIndex, position, out var indicatorY);
         e.Effects = toIndex >= 0 && toIndex != fromIndex ? DragDropEffects.Move : DragDropEffects.None;
         if (e.Effects == DragDropEffects.Move)
         {
@@ -318,6 +323,40 @@ public partial class ListPanel : UserControl
         e.Handled = true;
     }
 
+
+    private void TryAutoScrollDuringDrag(Point position)
+    {
+        _scrollViewer ??= FindVisualChild<ScrollViewer>(CommandDataGrid);
+        if (_scrollViewer is null || _scrollViewer.ScrollableHeight <= 0 || CommandDataGrid.ActualHeight <= 0)
+        {
+            return;
+        }
+
+        if (position.Y <= AutoScrollHotZone)
+        {
+            var proximity = 1.0 - Math.Clamp(position.Y / AutoScrollHotZone, 0.0, 1.0);
+            var step = GetAutoScrollStepByProximity(proximity);
+            var nextOffset = Math.Max(0, _scrollViewer.VerticalOffset - step);
+            _scrollViewer.ScrollToVerticalOffset(nextOffset);
+            return;
+        }
+
+        var bottomBoundary = CommandDataGrid.ActualHeight - AutoScrollHotZone;
+        if (position.Y >= bottomBoundary)
+        {
+            var distanceFromBottomBoundary = position.Y - bottomBoundary;
+            var proximity = Math.Clamp(distanceFromBottomBoundary / AutoScrollHotZone, 0.0, 1.0);
+            var step = GetAutoScrollStepByProximity(proximity);
+            var nextOffset = Math.Min(_scrollViewer.ScrollableHeight, _scrollViewer.VerticalOffset + step);
+            _scrollViewer.ScrollToVerticalOffset(nextOffset);
+        }
+    }
+
+    private static double GetAutoScrollStepByProximity(double proximity)
+    {
+        var clamped = Math.Clamp(proximity, 0.0, 1.0);
+        return AutoScrollMinStep + ((AutoScrollMaxStep - AutoScrollMinStep) * clamped);
+    }
     private void CommandDataGrid_DragLeave(object sender, DragEventArgs e)
     {
         var position = e.GetPosition(CommandDataGrid);

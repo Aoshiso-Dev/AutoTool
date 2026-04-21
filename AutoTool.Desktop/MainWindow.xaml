@@ -44,6 +44,47 @@
         <ui:TitleBar Grid.Row="0" Title="{Binding AutoToolTitle}" ShowMinimize="True" ShowMaximize="True" ShowClose="True">
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" Margin="8,0">
+                    <ui:Button
+                               Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.RunCommand}"
+                               Foreground="White"
+                               Appearance="Primary"
+                               Padding="8,2">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Icon" Value="{ui:SymbolIcon Play24}"/>
+                                <Setter Property="ToolTip" Value="実行"/>
+                                <Setter Property="Background" Value="#10B981"/>
+                                <Setter Property="BorderBrush" Value="#10B981"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                        <Setter Property="Icon" Value="{ui:SymbolIcon Stop24}"/>
+                                        <Setter Property="ToolTip" Value="停止"/>
+                                        <Setter Property="Background" Value="#EF4444"/>
+                                        <Setter Property="BorderBrush" Value="#EF4444"/>
+                                    </DataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsRunning}" Value="True"/>
+                                            <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Background" Value="#DC2626"/>
+                                        <Setter Property="BorderBrush" Value="#DC2626"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
+                    <ui:Button Icon="{ui:SymbolIcon Add24}"
+                               ToolTip="コマンド追加"
+                               Click="AddCommandButton_Click"
+                               Foreground="White"
+                               Background="#F59E0B"
+                               BorderBrush="#F59E0B"
+                               Appearance="Primary"
+                               Padding="8,2"
+                               IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
                     <ui:Button Icon="{ui:SymbolIcon FolderOpen24}" 
                                ToolTip="開く (Ctrl+O)" 
                                Command="{Binding OpenFileCommand}"
@@ -53,7 +94,7 @@
                                ToolTip="保存 (Ctrl+S)" 
                                Command="{Binding SaveFileCommand}"
                                Appearance="Transparent"/>
-                    <ui:Button Content="📝"
+                    <ui:Button Icon="{ui:SymbolIcon Save24}"
                                ToolTip="名前を付けて保存 (Ctrl+Shift+S)"
                                Command="{Binding SaveFileAsCommand}"
                                Appearance="Transparent"/>
@@ -67,10 +108,28 @@
                                Command="{Binding RedoCommand}"
                                Appearance="Transparent"/>
                     <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
+                    <ui:Button Icon="{ui:SymbolIcon Copy24}"
+                               ToolTip="コピー (Ctrl+C)"
+                               Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.CopyCommand}"
+                               Appearance="Transparent"
+                               IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                    <ui:Button Icon="{ui:SymbolIcon ClipboardPaste24}"
+                               ToolTip="貼り付け (Ctrl+V)"
+                               Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.PasteCommand}"
+                               Appearance="Transparent"
+                               IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
+                    <ui:Button Icon="{ui:SymbolIcon DismissCircle24}"
+                               ToolTip="すべてクリア"
+                               Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.ClearCommand}"
+                               Appearance="Transparent"
+                               IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
                     <ui:Button Icon="{ui:SymbolIcon Settings24}"
                                ToolTip="設定"
                                Appearance="Transparent"
                                Click="SettingsButton_Click"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
                     <ui:Button Icon="{ui:SymbolIcon Info24}"
                                ToolTip="バージョン情報"
                                Command="{Binding VersionInfoCommand}"
@@ -95,6 +154,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" 
@@ -110,7 +170,65 @@
                                FontSize="12"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="12,0,8,0">
+                    <ui:Button Command="{Binding MacroPanelViewModel.ToggleFavoritePanelCommand}"
+                               Content="☆"
+                               ToolTip="お気に入りパネルの表示切替"
+                               MinWidth="36"
+                               Height="28"
+                               Padding="8,2"
+                               Margin="0,0,6,0">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Appearance" Value="Secondary"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MacroPanelViewModel.IsFavoritePanelOpen}" Value="True">
+                                        <Setter Property="Appearance" Value="Primary"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+
+                    <ui:Button Command="{Binding MacroPanelViewModel.ToggleLogPanelCommand}"
+                               Content="ログ"
+                               ToolTip="ログパネルの表示切替"
+                               MinWidth="48"
+                               Height="28"
+                               Padding="10,2"
+                               Margin="0,0,6,0">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Appearance" Value="Secondary"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MacroPanelViewModel.IsLogPanelOpen}" Value="True">
+                                        <Setter Property="Appearance" Value="Primary"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+
+                    <ui:Button Command="{Binding MacroPanelViewModel.TogglePreflightPanelCommand}"
+                               Content="診断"
+                               ToolTip="実行前チェックパネルの表示切替"
+                               MinWidth="48"
+                               Height="28"
+                               Padding="10,2">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Appearance" Value="Secondary"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MacroPanelViewModel.IsPreflightPanelOpen}" Value="True">
+                                        <Setter Property="Appearance" Value="Primary"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" Orientation="Horizontal">
                     <Ellipse Width="8" Height="8" Margin="0,0,6,0">
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">

@@ -10,6 +10,7 @@ public class CommandDisplayItem
     public string TypeName { get; init; } = string.Empty;      // 内部で使用する英語名
     public string DisplayName { get; init; } = string.Empty;   // UI表示用の日本語名
     public string Category { get; init; } = string.Empty;      // カテゴリ名
+    public string Description { get; init; } = string.Empty;   // コマンドの説明文
 
     /// <summary>
     /// デバッグ用の文字列表現（DisplayNameではなくTypeNameを返す）

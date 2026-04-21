@@ -184,7 +184,7 @@ public partial class MacroPanelViewModel
 
     private PreflightValidationReport BuildPreflightReport()
     {
-        var items = _listPanel.CommandList.Items.Where(static x => x.IsEnable).ToList();
+        var items = GetEffectivelyEnabledItems(_listPanel.CommandList.Items).ToList();
         List<PreflightIssueItem> issues = [];
 
         if (items.Count == 0)
@@ -617,5 +617,49 @@ public partial class MacroPanelViewModel
     private sealed record PreflightValidationReport(int TargetCount, IReadOnlyList<PreflightIssueItem> Issues)
     {
         public int BlockingCount => Issues.Count(x => x.Level == "要修正");
+    }
+
+    private static IEnumerable<ICommandListItem> GetEffectivelyEnabledItems(IEnumerable<ICommandListItem> items)
+    {
+        var sortedItems = items.OrderBy(static x => x.LineNumber);
+        Stack<int> disabledBlockEndLines = [];
+
+        foreach (var item in sortedItems)
+        {
+            while (disabledBlockEndLines.Count > 0 && item.LineNumber > disabledBlockEndLines.Peek())
+            {
+                _ = disabledBlockEndLines.Pop();
+            }
+
+            if (disabledBlockEndLines.Count > 0)
+            {
+                continue;
+            }
+
+            if (!item.IsEnable)
+            {
+                if (TryGetBlockEndLine(item, out var blockEndLine) && blockEndLine > item.LineNumber)
+                {
+                    disabledBlockEndLines.Push(blockEndLine);
+                }
+
+                continue;
+            }
+
+            yield return item;
+        }
+    }
+
+    private static bool TryGetBlockEndLine(ICommandListItem item, out int endLine)
+    {
+        endLine = item switch
+        {
+            IIfItem { Pair.LineNumber: > 0 } x when x.Pair!.LineNumber > x.LineNumber => x.Pair.LineNumber,
+            ILoopItem { Pair.LineNumber: > 0 } x when x.Pair!.LineNumber > x.LineNumber => x.Pair.LineNumber,
+            IRetryItem { Pair.LineNumber: > 0 } x when x.Pair!.LineNumber > x.LineNumber => x.Pair.LineNumber,
+            _ => -1
+        };
+
+        return endLine > 0;
     }
 }

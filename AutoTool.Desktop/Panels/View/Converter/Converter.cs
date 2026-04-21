@@ -156,6 +156,161 @@ public class BooleanToTextConverter : IValueConverter
 }
 
 /// <summary>
+/// 有効/無効フラグを表示用の不透明度に変換します。
+/// </summary>
+public class EnabledToOpacityConverter : IValueConverter
+{
+    public double EnabledOpacity { get; set; } = 1.0;
+    public double DisabledOpacity { get; set; } = 0.45;
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool isEnabled && isEnabled ? EnabledOpacity : DisabledOpacity;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}
+
+/// <summary>
+/// 親ブロックの無効化を含めた実効有効状態を不透明度に変換します。
+/// </summary>
+public class CommandEffectiveEnabledOpacityConverter : IMultiValueConverter
+{
+    public double EnabledOpacity { get; set; } = 1.0;
+    public double DisabledOpacity { get; set; } = 0.45;
+
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2 || values[0] is not ICommandListItem target || values[1] is not IEnumerable<ICommandListItem> items)
+        {
+            return DisabledOpacity;
+        }
+
+        return IsEffectivelyEnabled(target, items) ? EnabledOpacity : DisabledOpacity;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return [];
+    }
+
+    private static bool IsEffectivelyEnabled(ICommandListItem target, IEnumerable<ICommandListItem> items)
+    {
+        var sortedItems = items.OrderBy(static x => x.LineNumber).ToList();
+        Stack<int> disabledBlockEndLines = [];
+
+        foreach (var item in sortedItems)
+        {
+            while (disabledBlockEndLines.Count > 0 && item.LineNumber > disabledBlockEndLines.Peek())
+            {
+                _ = disabledBlockEndLines.Pop();
+            }
+
+            var isInsideDisabledBlock = disabledBlockEndLines.Count > 0;
+            var isTarget = ReferenceEquals(item, target) || item.LineNumber == target.LineNumber;
+            if (isTarget)
+            {
+                return !isInsideDisabledBlock && item.IsEnable;
+            }
+
+            if (!isInsideDisabledBlock && !item.IsEnable && TryGetBlockEndLine(item, out var blockEndLine))
+            {
+                disabledBlockEndLines.Push(blockEndLine);
+            }
+        }
+
+        return target.IsEnable;
+    }
+
+    private static bool TryGetBlockEndLine(ICommandListItem item, out int endLine)
+    {
+        endLine = item switch
+        {
+            IIfItem { Pair.LineNumber: > 0 } x when x.Pair!.LineNumber > x.LineNumber => x.Pair.LineNumber,
+            ILoopItem { Pair.LineNumber: > 0 } x when x.Pair!.LineNumber > x.LineNumber => x.Pair.LineNumber,
+            IRetryItem { Pair.LineNumber: > 0 } x when x.Pair!.LineNumber > x.LineNumber => x.Pair.LineNumber,
+            _ => -1
+        };
+
+        return endLine > 0;
+    }
+}
+
+/// <summary>
+/// 実行中ハイライト対象行かどうかを判定します。
+/// </summary>
+public class CommandRunningRowHighlightConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2 || values[0] is not bool isRunning || values[1] is not string itemType)
+        {
+            return false;
+        }
+
+        if (!isRunning)
+        {
+            return false;
+        }
+
+        return !IsBlockStructure(itemType);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return [];
+    }
+
+    private static bool IsBlockStructure(string itemType)
+    {
+        if (CommandMetadataCatalog.TryGetByTypeName(itemType, out var metadata))
+        {
+            return metadata.IsIfCommand || metadata.IsLoopCommand || metadata.IsEndCommand;
+        }
+
+        return false;
+    }
+}
+
+/// <summary>
+/// 実行中バッジの表示テキストを生成します。
+/// </summary>
+public class CommandRunningBadgeTextConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 3 || values[0] is not ICommandListItem item || values[1] is not bool isRunning)
+        {
+            return string.Empty;
+        }
+
+        // values[2] (Progress) を受け取り、進捗更新時に再評価されるようにします。
+        _ = values[2];
+
+        if (!isRunning)
+        {
+            return string.Empty;
+        }
+
+        return item switch
+        {
+            ILoopItem => "LOOP 実行中",
+            IIfItem => "IF 実行中",
+            IRetryItem => "RETRY 実行中",
+            _ => string.Empty
+        };
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return [];
+    }
+}
+
+/// <summary>
 /// 値を画面表示やバインディング向けの形式へ変換します。
 /// </summary>
 public class StringToVisibilityConverter : IValueConverter
@@ -374,6 +529,186 @@ public class CommandDescriptionToMultilineConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
         return Binding.DoNothing;
+    }
+}
+
+/// <summary>
+/// コメント優先で説明テキストを返し、コメント未設定時は代表的な設定例を返します。
+/// </summary>
+public class CommandCommentOrExampleConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not ICommandListItem item)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.Comment))
+        {
+            return item.Comment.Trim();
+        }
+
+        return BuildExampleText(item);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+
+    private static string BuildExampleText(ICommandListItem item)
+    {
+        return item.ItemType switch
+        {
+            CommandTypeNames.Click when item is IClickItem clickItem =>
+                $"({clickItem.X}, {clickItem.Y}) を{ToMouseButtonText(clickItem.Button)}",
+
+            CommandTypeNames.ClickImage when item is IClickImageItem clickImageItem =>
+                $"{GetFileNameOrPlaceholder(clickImageItem.ImagePath, "target.png")} が見つかった位置を{ToMouseButtonText(clickImageItem.Button)} (閾値 {clickImageItem.Threshold:0.00})",
+
+            CommandTypeNames.ClickImageAI when item is IClickImageAIItem clickImageAiItem =>
+                $"ClassID={clickImageAiItem.ClassID} を検出して{ToMouseButtonText(clickImageAiItem.Button)} (信頼度 {clickImageAiItem.ConfThreshold:0.00})",
+
+            CommandTypeNames.Hotkey when item is IHotkeyItem hotkeyItem =>
+                $"{FormatHotkey(hotkeyItem)} を送信",
+
+            CommandTypeNames.Wait when item is IWaitItem waitItem =>
+                $"{FormatDuration(waitItem.Wait)} 待機",
+
+            CommandTypeNames.WaitImage when item is IWaitImageItem waitImageItem =>
+                $"{GetFileNameOrPlaceholder(waitImageItem.ImagePath, "target.png")} が表示されるまで待機 (最大{FormatDuration(waitImageItem.Timeout)})",
+
+            CommandTypeNames.WaitImageDisappear when item is IWaitImageItem waitImageDisappearItem =>
+                $"{GetFileNameOrPlaceholder(waitImageDisappearItem.ImagePath, "loading.png")} が消えるまで待機 (最大{FormatDuration(waitImageDisappearItem.Timeout)})",
+
+            CommandTypeNames.Execute when item is IExecuteItem executeItem =>
+                $"{GetFileNameOrPlaceholder(executeItem.ProgramPath, "app.exe")} を起動",
+
+            CommandTypeNames.Screenshot when item is IScreenshotItem screenshotItem =>
+                $"アクティブ画面を {GetDirectoryOrPlaceholder(screenshotItem.SaveDirectory, @"C:\AutoTool\Screenshots")} に保存",
+
+            CommandTypeNames.SetVariable when item is ISetVariableItem setVariableItem =>
+                $"変数 {GetTextOrPlaceholder(setVariableItem.Name, "name")} に \"{GetTextOrPlaceholder(setVariableItem.Value, "value")}\" を設定",
+
+            CommandTypeNames.SetVariableAI when item is ISetVariableAIItem setVariableAiItem =>
+                $"検出結果の座標を変数 {GetTextOrPlaceholder(setVariableAiItem.Name, "resultVar")} に設定",
+
+            CommandTypeNames.SetVariableOCR when item is ISetVariableOCRItem setVariableOcrItem =>
+                $"OCR結果を変数 {GetTextOrPlaceholder(setVariableOcrItem.Name, "textVar")} に設定",
+
+            CommandTypeNames.FindImage when item is IFindImageItem findImageItem =>
+                $"検索結果を {GetTextOrPlaceholder(findImageItem.FoundVariableName, "found")} / {GetTextOrPlaceholder(findImageItem.XVariableName, "posX")} / {GetTextOrPlaceholder(findImageItem.YVariableName, "posY")} に設定",
+
+            CommandTypeNames.FindText when item is IFindTextItem findTextItem =>
+                $"検索結果を {GetTextOrPlaceholder(findTextItem.FoundVariableName, "textFound")} / {GetTextOrPlaceholder(findTextItem.TextVariableName, "textValue")} / {GetTextOrPlaceholder(findTextItem.ConfidenceVariableName, "confidence")} に設定",
+
+            CommandTypeNames.IfImageExist when item is IIfImageExistItem ifImageExistItem =>
+                $"if {GetFileNameOrPlaceholder(ifImageExistItem.ImagePath, "target.png")} が存在するなら実行",
+
+            CommandTypeNames.IfImageNotExist when item is IIfImageNotExistItem ifImageNotExistItem =>
+                $"if {GetFileNameOrPlaceholder(ifImageNotExistItem.ImagePath, "target.png")} が存在しないなら実行",
+
+            CommandTypeNames.IfTextExist when item is IIfTextExistItem ifTextExistItem =>
+                $"if \"{GetTextOrPlaceholder(ifTextExistItem.TargetText, "キーワード")}\" が含まれるなら実行",
+
+            CommandTypeNames.IfTextNotExist when item is IIfTextNotExistItem ifTextNotExistItem =>
+                $"if \"{GetTextOrPlaceholder(ifTextNotExistItem.TargetText, "キーワード")}\" が見つからないなら実行",
+
+            CommandTypeNames.IfImageExistAI when item is IIfImageExistAIItem ifImageExistAiItem =>
+                $"if ClassID={ifImageExistAiItem.ClassID} が検出されたら実行",
+
+            CommandTypeNames.IfImageNotExistAI when item is IIfImageNotExistAIItem ifImageNotExistAiItem =>
+                $"if ClassID={ifImageNotExistAiItem.ClassID} が未検出なら実行",
+
+            CommandTypeNames.IfVariable when item is IIfVariableItem ifVariableItem =>
+                $"if {GetTextOrPlaceholder(ifVariableItem.Name, "value")} {GetTextOrPlaceholder(ifVariableItem.Operator, "==")} \"{GetTextOrPlaceholder(ifVariableItem.Value, "expected")}\" なら実行",
+
+            CommandTypeNames.IfEnd =>
+                "if ブロック終了",
+
+            CommandTypeNames.Loop when item is ILoopItem loopItem =>
+                $"{loopItem.LoopCount}回 ループ",
+
+            CommandTypeNames.LoopBreak =>
+                "ループを中断",
+
+            CommandTypeNames.LoopEnd =>
+                "ループ終了",
+
+            CommandTypeNames.Retry when item is IRetryItem retryItem =>
+                $"最大{retryItem.RetryCount}回 リトライ (間隔{retryItem.RetryInterval}ms)",
+
+            CommandTypeNames.RetryEnd =>
+                "リトライブロック終了",
+
+            _ => string.IsNullOrWhiteSpace(item.Description)
+                ? $"{ResolveDisplayName(item.ItemType)} の設定例"
+                : item.Description
+        };
+    }
+
+    private static string FormatDuration(int milliseconds)
+    {
+        if (milliseconds <= 0)
+        {
+            return "0秒";
+        }
+
+        if (milliseconds % 60000 == 0)
+        {
+            return $"{milliseconds / 60000}分";
+        }
+
+        if (milliseconds % 1000 == 0)
+        {
+            return $"{milliseconds / 1000}秒";
+        }
+
+        return $"{milliseconds}ms";
+    }
+
+    private static string ToMouseButtonText(CommandMouseButton button)
+    {
+        return button switch
+        {
+            CommandMouseButton.Left => "左クリック",
+            CommandMouseButton.Right => "右クリック",
+            CommandMouseButton.Middle => "中クリック",
+            _ => "クリック"
+        };
+    }
+
+    private static string FormatHotkey(IHotkeyItem hotkeyItem)
+    {
+        List<string> keys = [];
+        if (hotkeyItem.Ctrl) keys.Add("Ctrl");
+        if (hotkeyItem.Alt) keys.Add("Alt");
+        if (hotkeyItem.Shift) keys.Add("Shift");
+        keys.Add(hotkeyItem.Key.ToString());
+        return string.Join(" + ", keys);
+    }
+
+    private static string GetTextOrPlaceholder(string value, string placeholder)
+    {
+        return string.IsNullOrWhiteSpace(value) ? placeholder : value.Trim();
+    }
+
+    private static string GetFileNameOrPlaceholder(string path, string placeholder)
+    {
+        return string.IsNullOrWhiteSpace(path) ? placeholder : System.IO.Path.GetFileName(path);
+    }
+
+    private static string GetDirectoryOrPlaceholder(string path, string placeholder)
+    {
+        return string.IsNullOrWhiteSpace(path) ? placeholder : path.Trim();
+    }
+
+    private static string ResolveDisplayName(string itemType)
+    {
+        return CommandMetadataCatalog.TryGetByTypeName(itemType, out var metadata)
+            ? metadata.DisplayNameJa
+            : itemType;
     }
 }
 

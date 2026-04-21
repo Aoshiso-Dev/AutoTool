@@ -241,6 +241,49 @@ public class MacroFactoryTests
         var firstChild = Assert.Single(topLoop.Children);
         Assert.IsType<RetryCommand>(firstChild);
     }
+
+    [Fact]
+    public void CreateMacro_WhenParentBlockDisabled_SkipsAllNestedCommands()
+    {
+        var services = new ServiceCollection();
+        services.AddCommandServices();
+        services.AddMacroRuntimeCoreServices();
+
+        using var provider = services.BuildServiceProvider();
+        var registry = provider.GetRequiredService<ICommandRegistry>();
+        registry.Initialize();
+
+        var list = new CommandList(provider.GetRequiredService<ICommandDefinitionProvider>());
+        list.Add(new LoopItem
+        {
+            ItemType = CommandTypeNames.Loop,
+            LoopCount = 1,
+            IsEnable = false
+        });
+        list.Add(new ClickItem
+        {
+            ItemType = CommandTypeNames.Click,
+            IsEnable = true
+        });
+        list.Add(new LoopEndItem
+        {
+            ItemType = CommandTypeNames.LoopEnd,
+            IsEnable = true
+        });
+        list.Add(new WaitItem
+        {
+            ItemType = CommandTypeNames.Wait,
+            Wait = 1,
+            IsEnable = true
+        });
+
+        var factory = provider.GetRequiredService<IMacroFactory>();
+        var macro = factory.CreateMacro(list.Items);
+
+        var topLoop = Assert.IsType<LoopCommand>(macro);
+        var child = Assert.Single(topLoop.Children);
+        Assert.Equal(4, child.LineNumber);
+    }
 }
 
 /// <summary>

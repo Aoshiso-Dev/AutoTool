@@ -63,12 +63,27 @@ public class MacroFactory(
 
         List<ICommand> commands = [];
         var skipUntilLine = int.MinValue;
+        Stack<int> disabledBlockEndLines = [];
 
         for (var index = startIndex; index <= endIndex; index++)
         {
             var item = items[index];
+            while (disabledBlockEndLines.Count > 0 && item.LineNumber > disabledBlockEndLines.Peek())
+            {
+                _ = disabledBlockEndLines.Pop();
+            }
+
+            if (disabledBlockEndLines.Count > 0)
+            {
+                continue;
+            }
+
             if (item.LineNumber <= skipUntilLine) continue;
-            if (!item.IsEnable) continue;
+            if (!item.IsEnable)
+            {
+                RegisterDisabledBlockEndLine(item, disabledBlockEndLines);
+                continue;
+            }
             Debug.WriteLine($"コマンド生成: 行={item.LineNumber}, 種別={item.ItemType}");
 
             try
@@ -240,6 +255,16 @@ public class MacroFactory(
         };
 
         return lineNumber >= 0;
+    }
+
+    private static void RegisterDisabledBlockEndLine(ICommandListItem item, Stack<int> disabledBlockEndLines)
+    {
+        if (!TryGetSkipUntilLine(item, out var blockEndLine) || blockEndLine <= item.LineNumber)
+        {
+            return;
+        }
+
+        disabledBlockEndLines.Push(blockEndLine);
     }
 
     private static string GetCommandDisplayName(string itemType)

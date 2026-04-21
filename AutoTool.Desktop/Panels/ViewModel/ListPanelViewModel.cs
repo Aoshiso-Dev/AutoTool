@@ -1,6 +1,7 @@
 ﻿﻿using CommunityToolkit.Mvvm.ComponentModel;
 using AutoTool.Automation.Runtime.Lists;
 using AutoTool.Automation.Contracts.Lists;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows.Data;
 using AutoTool.Application.Files;
@@ -17,6 +18,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     private readonly CommandListFileUseCase _commandListFileUseCase;
     private readonly List<ICommandListItem> _selectedItems = [];
     private readonly HashSet<ICommandListItem> _collapsedBlockStarts = [];
+    private bool _isPropagatingEnableState;
 
     // イベント
     public event Action<ICommandListItem?>? SelectedItemChanged;
@@ -43,6 +45,12 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
     [ObservableProperty]
     private int _collapsedStateVersion;
+
+    [ObservableProperty]
+    private int _enableVisualStateVersion;
+
+    [ObservableProperty]
+    private int _indentLayoutVersion;
 
     public ICommandListItem? SelectedItem
     {
@@ -113,6 +121,12 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         _commandRegistry = commandRegistry;
         _commandList = commandList;
         _commandListFileUseCase = commandListFileUseCase;
+
+        CommandList.Items.CollectionChanged += CommandItems_CollectionChanged;
+        foreach (var item in CommandList.Items)
+        {
+            AttachCommandItemEvents(item);
+        }
     }
 
     #region OnChanged
@@ -563,6 +577,29 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
                 return false;
         }
     }
+
+    private static bool GetEnablePropagationRange(ICommandListItem item, out int startLine, out int endLine)
+    {
+        switch (item)
+        {
+            case ILoopItem { Pair.LineNumber: > 0 } loop when loop.Pair!.LineNumber > loop.LineNumber:
+                startLine = loop.LineNumber;
+                endLine = loop.Pair.LineNumber;
+                return true;
+            case IIfItem { Pair.LineNumber: > 0 } @if when @if.Pair!.LineNumber > @if.LineNumber:
+                startLine = @if.LineNumber;
+                endLine = @if.Pair.LineNumber;
+                return true;
+            case IRetryItem { Pair.LineNumber: > 0 } retry when retry.Pair!.LineNumber > retry.LineNumber:
+                startLine = retry.LineNumber;
+                endLine = retry.Pair.LineNumber;
+                return true;
+            default:
+                startLine = 0;
+                endLine = 0;
+                return false;
+        }
+    }
     #endregion
 
     #region Call from MainWindowViewModel
@@ -674,6 +711,81 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         ItemDoubleClicked?.Invoke(selectedItem);
     }
     #endregion
+
+    private void CommandItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action is NotifyCollectionChangedAction.Add
+            or NotifyCollectionChangedAction.Remove
+            or NotifyCollectionChangedAction.Move
+            or NotifyCollectionChangedAction.Reset
+            or NotifyCollectionChangedAction.Replace)
+        {
+            IndentLayoutVersion++;
+        }
+
+        if (e.OldItems is not null)
+        {
+            foreach (var oldItem in e.OldItems.OfType<ICommandListItem>())
+            {
+                DetachCommandItemEvents(oldItem);
+            }
+        }
+
+        if (e.NewItems is not null)
+        {
+            foreach (var newItem in e.NewItems.OfType<ICommandListItem>())
+            {
+                AttachCommandItemEvents(newItem);
+            }
+        }
+    }
+
+    private void AttachCommandItemEvents(ICommandListItem item)
+    {
+        if (item is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += CommandItem_PropertyChanged;
+        }
+    }
+
+    private void DetachCommandItemEvents(ICommandListItem item)
+    {
+        if (item is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= CommandItem_PropertyChanged;
+        }
+    }
+
+    private void CommandItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_isPropagatingEnableState || sender is not ICommandListItem item || e.PropertyName != nameof(ICommandListItem.IsEnable))
+        {
+            return;
+        }
+
+        EnableVisualStateVersion++;
+
+        var blockStart = ResolveBlockStartForToggle(item);
+        if (blockStart is null || !GetEnablePropagationRange(blockStart, out var startLine, out var endLine))
+        {
+            return;
+        }
+
+        _isPropagatingEnableState = true;
+        try
+        {
+            foreach (var target in CommandList.Items.Where(x => x.LineNumber >= startLine && x.LineNumber <= endLine))
+            {
+                target.IsEnable = item.IsEnable;
+            }
+        }
+        finally
+        {
+            _isPropagatingEnableState = false;
+        }
+
+        EnableVisualStateVersion++;
+    }
 }
 
 
