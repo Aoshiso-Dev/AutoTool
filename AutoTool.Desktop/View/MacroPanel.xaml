@@ -276,63 +276,6 @@
                 </ui:Card>
             </Grid>
 
-            <StackPanel Grid.ColumnSpan="3"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Bottom"
-                        Margin="0,0,16,16"
-                        Panel.ZIndex="5000">
-                <ui:Button Command="{Binding ToggleFavoritePanelCommand}"
-                           Content="☆"
-                           ToolTip="お気に入りパネルの表示切替"
-                           Width="36"
-                           Height="36"
-                           Margin="0,0,6,0">
-                    <ui:Button.Style>
-                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                            <Setter Property="Appearance" Value="Secondary"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsFavoritePanelOpen}" Value="True">
-                                    <Setter Property="Appearance" Value="Primary"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ui:Button.Style>
-                </ui:Button>
-                <ui:Button Command="{Binding ToggleLogPanelCommand}"
-                           Icon="{ui:SymbolIcon Document24}"
-                           ToolTip="ログパネルの表示切替"
-                           Width="36"
-                           Height="36"
-                           Margin="0,0,6,0">
-                    <ui:Button.Style>
-                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                            <Setter Property="Appearance" Value="Secondary"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsLogPanelOpen}" Value="True">
-                                    <Setter Property="Appearance" Value="Primary"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ui:Button.Style>
-                </ui:Button>
-                <ui:Button Command="{Binding TogglePreflightPanelCommand}"
-                           Content="診断"
-                           ToolTip="実行前チェックパネルの表示切替"
-                           Width="56"
-                           Height="36">
-                    <ui:Button.Style>
-                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                            <Setter Property="Appearance" Value="Secondary"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsPreflightPanelOpen}" Value="True">
-                                    <Setter Property="Appearance" Value="Primary"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ui:Button.Style>
-                </ui:Button>
-            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>

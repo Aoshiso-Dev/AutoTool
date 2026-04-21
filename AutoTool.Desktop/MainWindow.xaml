@@ -95,6 +95,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" 
@@ -110,7 +111,65 @@
                                FontSize="12"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="12,0,8,0">
+                    <ui:Button Command="{Binding MacroPanelViewModel.ToggleFavoritePanelCommand}"
+                               Content="☆"
+                               ToolTip="お気に入りパネルの表示切替"
+                               MinWidth="36"
+                               Height="28"
+                               Padding="8,2"
+                               Margin="0,0,6,0">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Appearance" Value="Secondary"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MacroPanelViewModel.IsFavoritePanelOpen}" Value="True">
+                                        <Setter Property="Appearance" Value="Primary"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+
+                    <ui:Button Command="{Binding MacroPanelViewModel.ToggleLogPanelCommand}"
+                               Content="ログ"
+                               ToolTip="ログパネルの表示切替"
+                               MinWidth="48"
+                               Height="28"
+                               Padding="10,2"
+                               Margin="0,0,6,0">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Appearance" Value="Secondary"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MacroPanelViewModel.IsLogPanelOpen}" Value="True">
+                                        <Setter Property="Appearance" Value="Primary"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+
+                    <ui:Button Command="{Binding MacroPanelViewModel.TogglePreflightPanelCommand}"
+                               Content="診断"
+                               ToolTip="実行前チェックパネルの表示切替"
+                               MinWidth="48"
+                               Height="28"
+                               Padding="10,2">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Appearance" Value="Secondary"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MacroPanelViewModel.IsPreflightPanelOpen}" Value="True">
+                                        <Setter Property="Appearance" Value="Primary"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" Orientation="Horizontal">
                     <Ellipse Width="8" Height="8" Margin="0,0,6,0">
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">
