@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using AutoTool.Commands.Infrastructure;
@@ -11,16 +12,28 @@ namespace AutoTool.Desktop.Panels.Services;
 /// </summary>
 public sealed class DetectionHighlightService : IDetectionHighlightService
 {
-    public async Task BlinkAsync(DrawingRectangle bounds, CancellationToken cancellationToken = default)
+    public Task BlinkAsync(DrawingRectangle bounds, CancellationToken cancellationToken = default)
+        => BlinkAsync([bounds], cancellationToken);
+
+    public async Task BlinkAsync(IReadOnlyList<DrawingRectangle> bounds, CancellationToken cancellationToken = default)
     {
-        if (bounds.Width <= 0 || bounds.Height <= 0)
+        var validBounds = bounds
+            .Where(static x => x.Width > 0 && x.Height > 0)
+            .ToArray();
+        if (validBounds.Length == 0)
         {
             return;
         }
 
         var dispatcher = System.Windows.Application.Current?.Dispatcher ?? System.Windows.Threading.Dispatcher.CurrentDispatcher;
-        var window = await dispatcher.InvokeAsync(() => CreateWindow(bounds));
-        await dispatcher.InvokeAsync(window.Show);
+        var windows = await dispatcher.InvokeAsync(() => validBounds.Select(CreateWindow).ToArray());
+        await dispatcher.InvokeAsync(() =>
+        {
+            foreach (var window in windows)
+            {
+                window.Show();
+            }
+        });
 
         try
         {
@@ -29,7 +42,13 @@ public sealed class DetectionHighlightService : IDetectionHighlightService
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 isVisible = !isVisible;
-                await dispatcher.InvokeAsync(() => window.Opacity = isVisible ? 1.0 : 0.15);
+                await dispatcher.InvokeAsync(() =>
+                {
+                    foreach (var window in windows)
+                    {
+                        window.Opacity = isVisible ? 1.0 : 0.15;
+                    }
+                });
                 await Task.Delay(120, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -39,7 +58,13 @@ public sealed class DetectionHighlightService : IDetectionHighlightService
         }
         finally
         {
-            await dispatcher.InvokeAsync(window.Close);
+            await dispatcher.InvokeAsync(() =>
+            {
+                foreach (var window in windows)
+                {
+                    window.Close();
+                }
+            });
         }
     }
 
@@ -81,3 +106,4 @@ public sealed class DetectionHighlightService : IDetectionHighlightService
         return window;
     }
 }
+

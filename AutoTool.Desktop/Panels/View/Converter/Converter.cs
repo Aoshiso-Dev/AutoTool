@@ -587,7 +587,7 @@ public class CommandCommentOrExampleConverter : IValueConverter
                 $"{GetFileNameOrPlaceholder(clickImageItem.ImagePath, "target.png")} が見つかった位置を{ToMouseButtonText(clickImageItem.Button)} (閾値 {clickImageItem.Threshold:0.00})",
 
             CommandTypeNames.ClickImageAI when item is IClickImageAIItem clickImageAiItem =>
-                $"ClassID={clickImageAiItem.ClassID} を検出して{ToMouseButtonText(clickImageAiItem.Button)} (信頼度 {clickImageAiItem.ConfThreshold:0.00})",
+                $"{BuildAiMatchTargetText(clickImageAiItem.LabelName, clickImageAiItem.ClassID)} を検出して{ToMouseButtonText(clickImageAiItem.Button)} (信頼度 {clickImageAiItem.ConfThreshold:0.00})",
 
             CommandTypeNames.Hotkey when item is IHotkeyItem hotkeyItem =>
                 $"{FormatHotkey(hotkeyItem)} を送信",
@@ -635,10 +635,10 @@ public class CommandCommentOrExampleConverter : IValueConverter
                 $"if \"{GetTextOrPlaceholder(ifTextNotExistItem.TargetText, "キーワード")}\" が見つからないなら実行",
 
             CommandTypeNames.IfImageExistAI when item is IIfImageExistAIItem ifImageExistAiItem =>
-                $"if ClassID={ifImageExistAiItem.ClassID} が検出されたら実行",
+                $"if {BuildAiMatchTargetText(ifImageExistAiItem.LabelName, ifImageExistAiItem.ClassID)} が検出されたら実行",
 
             CommandTypeNames.IfImageNotExistAI when item is IIfImageNotExistAIItem ifImageNotExistAiItem =>
-                $"if ClassID={ifImageNotExistAiItem.ClassID} が未検出なら実行",
+                $"if {BuildAiMatchTargetText(ifImageNotExistAiItem.LabelName, ifImageNotExistAiItem.ClassID)} が未検出なら実行",
 
             CommandTypeNames.IfVariable when item is IIfVariableItem ifVariableItem =>
                 $"if {GetTextOrPlaceholder(ifVariableItem.Name, "value")} {GetTextOrPlaceholder(ifVariableItem.Operator, "==")} \"{GetTextOrPlaceholder(ifVariableItem.Value, "expected")}\" なら実行",
@@ -711,6 +711,11 @@ public class CommandCommentOrExampleConverter : IValueConverter
     private static string GetTextOrPlaceholder(string value, string placeholder)
     {
         return string.IsNullOrWhiteSpace(value) ? placeholder : value.Trim();
+    }
+
+    private static string BuildAiMatchTargetText(string labelName, int classId)
+    {
+        return string.IsNullOrWhiteSpace(labelName) ? $"ClassID={classId}" : $"ラベル={labelName}";
     }
 
     private static string GetFileNameOrPlaceholder(string path, string placeholder)

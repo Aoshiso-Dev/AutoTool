@@ -116,6 +116,8 @@ public sealed class IfCompositeCommandBuilder(ICommandFactory commandFactory) : 
                 new AIImageDetectCommandSettings
                 {
                     ModelPath = existAI.ModelPath,
+                    LabelsPath = existAI.LabelsPath,
+                    LabelName = existAI.LabelName,
                     ClassID = existAI.ClassID,
                     ConfThreshold = existAI.ConfThreshold,
                     IoUThreshold = existAI.IoUThreshold,
@@ -127,6 +129,8 @@ public sealed class IfCompositeCommandBuilder(ICommandFactory commandFactory) : 
                 new AIImageNotDetectCommandSettings
                 {
                     ModelPath = notExistAI.ModelPath,
+                    LabelsPath = notExistAI.LabelsPath,
+                    LabelName = notExistAI.LabelName,
                     ClassID = notExistAI.ClassID,
                     ConfThreshold = notExistAI.ConfThreshold,
                     IoUThreshold = notExistAI.IoUThreshold,

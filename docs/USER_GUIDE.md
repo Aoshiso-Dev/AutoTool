@@ -113,6 +113,11 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 - OCR が動かない / 精度が低い
   - `tessdata` ディレクトリを確認
   - `jpn+eng取得` または手動で `jpn.traineddata` / `eng.traineddata` を配置
+- AI検出が動かない / モデルがない
+  - ONNXモデル欄の `推奨取得` で `yolo11n.onnx` を取得
+  - ONNXモデル欄の `公式ページ` でモデル情報を確認
+  - `ラベル名` はコンボボックスで選択可能（モデルmetadata優先）
+  - metadata にラベルがない場合は `ラベルファイル`（`.txt` / `.names` / `.yaml`）を指定
 - 保存できない
   - 書き込み先フォルダの権限を確認
 

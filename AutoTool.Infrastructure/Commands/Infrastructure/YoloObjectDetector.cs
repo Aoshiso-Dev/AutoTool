@@ -32,6 +32,27 @@ public class YoloObjectDetector : IObjectDetector
             .ToList()
             .AsReadOnly();
     }
+
+    public IReadOnlyDictionary<int, string> GetLabels(string modelPath, string? labelsPath = null)
+    {
+        if (string.IsNullOrWhiteSpace(modelPath))
+        {
+            return new Dictionary<int, string>();
+        }
+
+        return YoloLabelCatalog.Load(modelPath, labelsPath);
+    }
+
+    public bool TryResolveClassId(string modelPath, string labelName, string? labelsPath, out int classId)
+    {
+        if (string.IsNullOrWhiteSpace(modelPath))
+        {
+            classId = -1;
+            return false;
+        }
+
+        return YoloLabelCatalog.TryResolveClassId(modelPath, labelName, labelsPath, out classId);
+    }
 }
 
 

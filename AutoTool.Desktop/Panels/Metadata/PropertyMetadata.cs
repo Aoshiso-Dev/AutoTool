@@ -27,7 +27,8 @@ public partial class PropertyMetadata : ObservableObject
     public double Max => Attribute.Max;
     public double Step => Attribute.Step;
     public string? Unit => Attribute.Unit;
-    public string[]? Options => Attribute.Options?.Split(',').Select(s => s.Trim()).ToArray();
+    public string[]? Options => DynamicOptions ?? Attribute.Options?.Split(',').Select(s => s.Trim()).ToArray();
+    public bool HasOptions => Options is { Length: > 0 };
     public string? FileFilter => Attribute.FileFilter;
     public Type PropertyType => PropertyInfo.PropertyType;
 
@@ -61,6 +62,15 @@ public partial class PropertyMetadata : ObservableObject
     [ObservableProperty]
     private bool _hasValidationError;
 
+    [ObservableProperty]
+    private string[]? _dynamicOptions;
+
+    partial void OnDynamicOptionsChanged(string[]? value)
+    {
+        OnPropertyChanged(nameof(Options));
+        OnPropertyChanged(nameof(HasOptions));
+    }
+
     public object? Value
     {
         get => PropertyInfo.GetValue(Target);
@@ -89,6 +99,8 @@ public partial class PropertyMetadata : ObservableObject
         OnPropertyChanged(nameof(KeyValue));
         OnPropertyChanged(nameof(KeyDisplayText));
         OnPropertyChanged(nameof(HelperText));
+        OnPropertyChanged(nameof(Options));
+        OnPropertyChanged(nameof(HasOptions));
         OnPropertyChanged(nameof(ValidationMessage));
         OnPropertyChanged(nameof(HasValidationError));
     }

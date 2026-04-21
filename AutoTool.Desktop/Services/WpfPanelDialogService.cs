@@ -32,6 +32,18 @@ public sealed class WpfPanelDialogService : IPanelDialogService
         return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
 
+    public string? SelectLabelFile()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = "Label Files (*.txt;*.names;*.yaml;*.yml)|*.txt;*.names;*.yaml;*.yml|All Files (*.*)|*.*",
+            FilterIndex = 1,
+            Multiselect = false,
+        };
+
+        return dialog.ShowDialog() == true ? dialog.FileName : null;
+    }
+
     public string? SelectExecutableFile()
     {
         var dialog = new OpenFileDialog

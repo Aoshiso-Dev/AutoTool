@@ -284,30 +284,39 @@ public partial class EditPanelViewModel
         try
         {
             ImageSearchSearchArea = BuildImageSearchAreaPreview(options.WindowTitle, options.WindowClassName);
-            var result = await FindImageExecutor.ExecuteAsync(
-                options,
-                (imagePath, threshold, searchColor, windowTitle, windowClassName, cancellationToken) =>
-                    _imageMatcher.SearchImageAsync(imagePath, cancellationToken, threshold, searchColor, windowTitle, windowClassName),
-                _ => { },
-                CancellationToken.None);
+            var sw = Stopwatch.StartNew();
+            var hits = await _imageMatcher.SearchImagesAsync(
+                options.ImagePath,
+                CancellationToken.None,
+                options.Threshold,
+                options.SearchColor,
+                options.WindowTitle,
+                options.WindowClassName,
+                20);
+            sw.Stop();
 
             HasImageSearchPreviewResult = true;
-            if (result.Found && result.Point is { } point)
+            if (hits.Count > 0)
             {
-                var imageHighlightBounds = BuildImageHighlightBounds(point, options);
-                if (imageHighlightBounds is { } imageBounds)
+                var highlightBounds = hits
+                    .Select(point => BuildImageHighlightBounds(point, options))
+                    .Where(static x => x is not null)
+                    .Select(static x => x!.Value)
+                    .ToArray();
+                if (highlightBounds.Length > 0)
                 {
-                    await _detectionHighlightService.BlinkAsync(imageBounds, CancellationToken.None);
+                    await _detectionHighlightService.BlinkAsync(highlightBounds, CancellationToken.None);
                 }
 
+                var first = hits[0];
                 ImageSearchPreviewSummary = $"画像検索テスト: 一致（しきい値 {options.Threshold:F2}）";
-                ImageSearchPreviewDetail = $"ヒット座標: X={point.X}, Y={point.Y} / 所要時間: {result.ElapsedMilliseconds}ms";
+                ImageSearchPreviewDetail = $"ヒット数: {hits.Count} / 先頭座標: X={first.X}, Y={first.Y} / 所要時間: {sw.ElapsedMilliseconds}ms";
                 ImageSearchRecoveryGuide = "次の操作: この設定で実行できます。誤検知が出る場合はしきい値を0.03〜0.05上げてください。";
             }
             else
             {
                 ImageSearchPreviewSummary = $"画像検索テスト: 不一致（しきい値 {options.Threshold:F2}）";
-                ImageSearchPreviewDetail = $"所要時間: {result.ElapsedMilliseconds}ms / テンプレート: {System.IO.Path.GetFileName(options.ImagePath)}";
+                ImageSearchPreviewDetail = $"所要時間: {sw.ElapsedMilliseconds}ms / テンプレート: {System.IO.Path.GetFileName(options.ImagePath)}";
                 ImageSearchRecoveryGuide = BuildImageSearchRecoveryGuide(options);
             }
         }
@@ -404,7 +413,8 @@ public partial class EditPanelViewModel
             AiDetectionSearchArea = BuildImageSearchAreaPreview(request.WindowTitle, request.WindowClassName);
             _objectDetector.Initialize(request.ModelPath, 640, true);
             var detections = _objectDetector.Detect(request.WindowTitle, request.ConfThreshold, request.IoUThreshold);
-            var targetDetections = request.TargetClassId is { } classId
+            var targetClassId = ResolveAiTargetClassIdForPreview(request);
+            var targetDetections = targetClassId is { } classId
                 ? detections.Where(x => x.ClassId == classId).ToList()
                 : detections.ToList();
 
@@ -412,7 +422,7 @@ public partial class EditPanelViewModel
 
             if (targetDetections.Count == 0)
             {
-                AiDetectionPreviewSummary = request.TargetClassId is { } missingClassId
+                AiDetectionPreviewSummary = targetClassId is { } missingClassId
                     ? $"AI検出テスト: 不一致（クラスID {missingClassId}）"
                     : "AI検出テスト: 不一致";
                 AiDetectionPreviewDetail = $"検出数: 全体={detections.Count} / 対象=0";
@@ -421,15 +431,17 @@ public partial class EditPanelViewModel
             }
 
             var best = targetDetections.OrderByDescending(x => x.Score).First();
-            if (TryBuildAiHighlightBounds(best, request, out var highlightBounds))
+            var highlightBounds = BuildAiHighlightBounds(targetDetections, request);
+            if (highlightBounds.Count > 0)
             {
                 await _detectionHighlightService.BlinkAsync(highlightBounds, CancellationToken.None);
             }
 
-            AiDetectionPreviewSummary = request.TargetClassId is { } targetClassId
-                ? $"AI検出テスト: 一致（クラスID {targetClassId}）"
+            AiDetectionPreviewSummary = targetClassId is { } resolvedClassId
+                ? $"AI検出テスト: 一致（クラスID {resolvedClassId}）"
                 : "AI検出テスト: 一致";
-            AiDetectionPreviewDetail = $"検出数: 全体={detections.Count} / 対象={targetDetections.Count} / 先頭スコア={best.Score:F2} / Rect=({best.Rect.X},{best.Rect.Y},{best.Rect.Width},{best.Rect.Height})";
+            var targetClassText = targetClassId is { } resolvedId ? resolvedId.ToString() : "全クラス";
+            AiDetectionPreviewDetail = $"検出数: 全体={detections.Count} / 対象={targetDetections.Count} / 対象クラス={targetClassText} / 先頭スコア={best.Score:F2} / Rect=({best.Rect.X},{best.Rect.Y},{best.Rect.Width},{best.Rect.Height})";
             AiDetectionRecoveryGuide = "次の操作: この設定で実行できます。誤検知が多い場合は信頼度しきい値を上げてください。";
         }
         catch (Exception ex)
@@ -470,6 +482,7 @@ public partial class EditPanelViewModel
             _objectDetector.Initialize(request.ModelPath, 640, true);
             float[] confCandidates = [0.35f, 0.45f, 0.55f, 0.65f, 0.75f];
             float[] iouCandidates = [0.2f, 0.3f, 0.45f];
+            var targetClassId = ResolveAiTargetClassIdForPreview(request);
 
             var candidates = new List<AiTuneCandidate>();
             foreach (var conf in confCandidates)
@@ -477,7 +490,7 @@ public partial class EditPanelViewModel
                 foreach (var iou in iouCandidates)
                 {
                     var detections = _objectDetector.Detect(request.WindowTitle, conf, iou);
-                    var targets = request.TargetClassId is { } classId
+                    var targets = targetClassId is { } classId
                         ? detections.Where(x => x.ClassId == classId).ToList()
                         : detections.ToList();
                     var bestScore = targets.Count > 0 ? targets.Max(x => x.Score) : 0f;
@@ -1033,12 +1046,14 @@ public partial class EditPanelViewModel
 
     private bool TryBuildAiDetectionPreviewRequest(out AiDetectionPreviewRequest request)
     {
-        request = new AiDetectionPreviewRequest(string.Empty, string.Empty, string.Empty, null, 0.5f, 0.25f);
+        request = new AiDetectionPreviewRequest(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, null, 0.5f, 0.25f);
         switch (Item)
         {
             case IIfImageExistAIItem ifExist:
                 request = new AiDetectionPreviewRequest(
                     ToAbsolutePathIfAny(ifExist.ModelPath),
+                    ToAbsolutePathIfAny(ifExist.LabelsPath),
+                    ifExist.LabelName,
                     ifExist.WindowTitle,
                     ifExist.WindowClassName,
                     ifExist.ClassID,
@@ -1048,6 +1063,8 @@ public partial class EditPanelViewModel
             case IIfImageNotExistAIItem ifNotExist:
                 request = new AiDetectionPreviewRequest(
                     ToAbsolutePathIfAny(ifNotExist.ModelPath),
+                    ToAbsolutePathIfAny(ifNotExist.LabelsPath),
+                    ifNotExist.LabelName,
                     ifNotExist.WindowTitle,
                     ifNotExist.WindowClassName,
                     ifNotExist.ClassID,
@@ -1057,6 +1074,8 @@ public partial class EditPanelViewModel
             case IClickImageAIItem clickAi:
                 request = new AiDetectionPreviewRequest(
                     ToAbsolutePathIfAny(clickAi.ModelPath),
+                    ToAbsolutePathIfAny(clickAi.LabelsPath),
+                    clickAi.LabelName,
                     clickAi.WindowTitle,
                     clickAi.WindowClassName,
                     clickAi.ClassID,
@@ -1066,6 +1085,8 @@ public partial class EditPanelViewModel
             case ISetVariableAIItem setVariableAi:
                 request = new AiDetectionPreviewRequest(
                     ToAbsolutePathIfAny(setVariableAi.ModelPath),
+                    ToAbsolutePathIfAny(setVariableAi.LabelsPath),
+                    setVariableAi.LabelName,
                     setVariableAi.WindowTitle,
                     setVariableAi.WindowClassName,
                     null,
@@ -1106,10 +1127,49 @@ public partial class EditPanelViewModel
         return true;
     }
 
+    private IReadOnlyList<Rectangle> BuildAiHighlightBounds(IReadOnlyList<DetectionResult> detections, AiDetectionPreviewRequest request)
+    {
+        var bounds = new List<Rectangle>(detections.Count);
+        foreach (var detection in detections)
+        {
+            if (!TryBuildAiHighlightBounds(detection, request, out var highlightBounds))
+            {
+                continue;
+            }
+
+            bounds.Add(highlightBounds);
+        }
+
+        return bounds;
+    }
+
+    private int? ResolveAiTargetClassIdForPreview(AiDetectionPreviewRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.LabelName))
+        {
+            return request.TargetClassId;
+        }
+
+        if (_objectDetector.TryResolveClassId(
+                request.ModelPath,
+                request.LabelName,
+                string.IsNullOrWhiteSpace(request.LabelsPath) ? null : request.LabelsPath,
+                out var classId))
+        {
+            return classId;
+        }
+
+        throw new InvalidOperationException($"ラベル '{request.LabelName}' をクラスIDへ解決できません。モデルのmetadataまたはラベルファイルを確認してください。");
+    }
+
     private static string BuildAiDetectionRecoveryGuide(AiDetectionPreviewRequest request, int totalCount)
     {
         var hints = new List<string>();
-        if (request.TargetClassId is { } classId)
+        if (!string.IsNullOrWhiteSpace(request.LabelName))
+        {
+            hints.Add($"ラベル '{request.LabelName}' が見つかりません。metadataまたはラベルファイルの対応を確認してください。");
+        }
+        else if (request.TargetClassId is { } classId)
         {
             hints.Add($"クラスID {classId} が見つかりません。モデルのラベル対応を確認してください。");
         }
@@ -1137,6 +1197,8 @@ public partial class EditPanelViewModel
 
     private readonly record struct AiDetectionPreviewRequest(
         string ModelPath,
+        string LabelsPath,
+        string LabelName,
         string WindowTitle,
         string WindowClassName,
         int? TargetClassId,

@@ -74,6 +74,11 @@ public interface ICommandExecutionContext
     IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold);
 
     /// <summary>
+    /// ラベル名が指定されている場合はラベル優先でクラスIDを解決します。
+    /// </summary>
+    int ResolveAiClassId(string modelPath, int fallbackClassId, string? labelName, string? labelsPath);
+
+    /// <summary>
     /// OCR で画面領域から文字を抽出します。
     /// </summary>
     Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken);

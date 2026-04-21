@@ -150,10 +150,16 @@
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
                     <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
                                Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding HelperText}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding HelperText, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding ValidationMessage}" Style="{StaticResource EditorDescription}"
+                               Foreground="#C42B1C"
+                               Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
                 </StackPanel>
                 <ComboBox Grid.Column="1" 
                           ItemsSource="{Binding Options}"
-                          SelectedItem="{Binding StringValue, Mode=TwoWay}"/>
+                          IsEnabled="{Binding HasOptions}"
+                          SelectedItem="{Binding StringValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             </Grid>
         </Border>
     </DataTemplate>
@@ -356,14 +362,24 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding HelperText}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding HelperText, Converter={StaticResource StringToVisibilityConverter}}"/>
                     <TextBlock Text="{Binding StringValue, TargetNullValue='未選択'}" 
                                Style="{StaticResource EditorDescription}" TextTrimming="CharacterEllipsis"/>
                     <TextBlock Text="{Binding ValidationMessage}" Style="{StaticResource EditorDescription}"
                                Foreground="#C42B1C"
                                Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
                 </StackPanel>
-                <ui:Button Grid.Column="1" Content="参照" Icon="{ui:SymbolIcon FolderOpen24}"
-                           Command="{Binding BrowseCommand}"/>
+                <StackPanel Grid.Column="1" Orientation="Vertical">
+                    <ui:Button Content="参照" Icon="{ui:SymbolIcon FolderOpen24}"
+                               Command="{Binding BrowseCommand}" Margin="0,0,0,4"/>
+                    <ui:Button Content="公式ページ"
+                               Command="{Binding OpenReferenceCommand}" Margin="0,0,0,4"
+                               Visibility="{Binding OpenReferenceCommand, Converter={StaticResource NullToVisibilityConverter}}"/>
+                    <ui:Button Content="推奨取得"
+                               Command="{Binding DownloadRecommendedCommand}"
+                               Visibility="{Binding DownloadRecommendedCommand, Converter={StaticResource NullToVisibilityConverter}}"/>
+                </StackPanel>
             </Grid>
         </Border>
     </DataTemplate>

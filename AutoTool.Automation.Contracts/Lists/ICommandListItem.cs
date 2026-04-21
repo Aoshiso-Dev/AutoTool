@@ -277,6 +277,8 @@ public interface IIfImageExistAIItem : ICommandListItem
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
     string ModelPath { get; set; }
+    string LabelsPath { get; set; }
+    string LabelName { get; set; }
     int ClassID { get; set; }
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
@@ -289,6 +291,8 @@ public interface IIfImageNotExistAIItem : ICommandListItem
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
     string ModelPath { get; set; }
+    string LabelsPath { get; set; }
+    string LabelName { get; set; }
     int ClassID { get; set; }
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
@@ -302,6 +306,8 @@ public interface IClickImageAIItem : ICommandListItem
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
     string ModelPath { get; set; }
+    string LabelsPath { get; set; }
+    string LabelName { get; set; }
     int ClassID { get; set; }
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
@@ -340,6 +346,8 @@ public interface ISetVariableAIItem : ICommandListItem
     string AIDetectMode { get; set; }
     string WindowClassName { get; set; }
     string ModelPath { get; set; }
+    string LabelsPath { get; set; }
+    string LabelName { get; set; }
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
     public string Name { get; set; }

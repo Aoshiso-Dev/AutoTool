@@ -31,4 +31,14 @@ public interface IObjectDetector
     /// <param name="iouThreshold">IoU閾値</param>
     /// <returns>検出結果のリスト</returns>
     IReadOnlyList<DetectionResult> Detect(string? windowTitle, float confThreshold, float iouThreshold);
+
+    /// <summary>
+    /// モデルから利用可能なラベル一覧を取得します。取得順はクラスID順です。
+    /// </summary>
+    IReadOnlyDictionary<int, string> GetLabels(string modelPath, string? labelsPath = null);
+
+    /// <summary>
+    /// ラベル名からクラスIDを解決します。
+    /// </summary>
+    bool TryResolveClassId(string modelPath, string labelName, string? labelsPath, out int classId);
 }

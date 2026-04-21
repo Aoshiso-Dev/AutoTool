@@ -41,21 +41,20 @@ public class IfImageExistAICommand : BaseCommand, IIfCommand, IIfImageExistAICom
         }
 
         _objectDetector.Initialize(absoluteModelPath, 640, true);
+        var absoluteLabelsPath = ResolveOptionalPath(Settings.LabelsPath);
+        var targetClassId = ResolveTargetClassId(absoluteModelPath, absoluteLabelsPath, Settings.ClassID, Settings.LabelName);
 
         var detections = _objectDetector.Detect(
             Settings.WindowTitle,
             (float)Settings.ConfThreshold,
             (float)Settings.IoUThreshold);
 
-        if (detections.Count > 0)
+        var targetDetections = detections.Where(d => d.ClassId == targetClassId).ToList();
+        if (targetDetections.Count > 0)
         {
-            var best = detections.OrderByDescending(d => d.Score).First();
-
-            if (best.ClassId == Settings.ClassID)
-            {
-                RaiseDoingCommand($"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) / クラスID: {best.ClassId}");
-                return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
-            }
+            var best = targetDetections.OrderByDescending(d => d.Score).First();
+            RaiseDoingCommand($"画像が見つかりました。({best.Rect.X}, {best.Rect.Y}) / クラスID: {best.ClassId}{BuildLabelSuffix()}");
+            return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
         if (cancellationToken.IsCancellationRequested)
@@ -63,9 +62,41 @@ public class IfImageExistAICommand : BaseCommand, IIfCommand, IIfImageExistAICom
             return false;
         }
 
-        RaiseDoingCommand("画像が見つかりませんでした。");
+        RaiseDoingCommand($"対象が見つかりませんでした。クラスID: {targetClassId}{BuildLabelSuffix()}");
         return true;
     }
+
+    private int ResolveTargetClassId(string absoluteModelPath, string? absoluteLabelsPath, int fallbackClassId, string? labelName)
+    {
+        if (string.IsNullOrWhiteSpace(labelName))
+        {
+            return fallbackClassId;
+        }
+
+        if (_objectDetector.TryResolveClassId(absoluteModelPath, labelName, absoluteLabelsPath, out var classId))
+        {
+            return classId;
+        }
+
+        throw new CommandSettingsValidationException(
+            new CommandValidationIssue(
+                CommandValidationErrorCodes.AiLabelNotFound,
+                "LabelName",
+                $"ラベル '{labelName}' をクラスIDへ解決できません。モデルのmetadataまたはラベルファイルを確認してください。"));
+    }
+
+    private string? ResolveOptionalPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        var absolutePath = _pathResolver.ToAbsolutePath(path);
+        return string.IsNullOrWhiteSpace(absolutePath) ? null : absolutePath;
+    }
+
+    private string BuildLabelSuffix() => string.IsNullOrWhiteSpace(Settings.LabelName) ? string.Empty : $" / ラベル: {Settings.LabelName}";
 }
 
 /// <summary>
@@ -105,17 +136,19 @@ public class IfImageNotExistAICommand : BaseCommand, IIfCommand, IIfImageNotExis
         }
 
         _objectDetector.Initialize(absoluteModelPath, 640, true);
+        var absoluteLabelsPath = ResolveOptionalPath(Settings.LabelsPath);
+        var targetClassId = ResolveTargetClassId(absoluteModelPath, absoluteLabelsPath, Settings.ClassID, Settings.LabelName);
 
         var detections = _objectDetector.Detect(
             Settings.WindowTitle,
             (float)Settings.ConfThreshold,
             (float)Settings.IoUThreshold);
 
-        var targetDetections = detections.Where(d => d.ClassId == Settings.ClassID).ToList();
+        var targetDetections = detections.Where(d => d.ClassId == targetClassId).ToList();
 
         if (targetDetections.Count == 0)
         {
-            RaiseDoingCommand($"クラスID {Settings.ClassID} の画像が見つかりませんでした。");
+            RaiseDoingCommand($"クラスID {targetClassId}{BuildLabelSuffix()} の画像が見つかりませんでした。");
             return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -124,9 +157,41 @@ public class IfImageNotExistAICommand : BaseCommand, IIfCommand, IIfImageNotExis
             return false;
         }
 
-        RaiseDoingCommand($"クラスID {Settings.ClassID} の画像が見つかりました。");
+        RaiseDoingCommand($"クラスID {targetClassId}{BuildLabelSuffix()} の画像が見つかりました。");
         return true;
     }
+
+    private int ResolveTargetClassId(string absoluteModelPath, string? absoluteLabelsPath, int fallbackClassId, string? labelName)
+    {
+        if (string.IsNullOrWhiteSpace(labelName))
+        {
+            return fallbackClassId;
+        }
+
+        if (_objectDetector.TryResolveClassId(absoluteModelPath, labelName, absoluteLabelsPath, out var classId))
+        {
+            return classId;
+        }
+
+        throw new CommandSettingsValidationException(
+            new CommandValidationIssue(
+                CommandValidationErrorCodes.AiLabelNotFound,
+                "LabelName",
+                $"ラベル '{labelName}' をクラスIDへ解決できません。モデルのmetadataまたはラベルファイルを確認してください。"));
+    }
+
+    private string? ResolveOptionalPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        var absolutePath = _pathResolver.ToAbsolutePath(path);
+        return string.IsNullOrWhiteSpace(absolutePath) ? null : absolutePath;
+    }
+
+    private string BuildLabelSuffix() => string.IsNullOrWhiteSpace(Settings.LabelName) ? string.Empty : $" / ラベル: {Settings.LabelName}";
 }
 
 

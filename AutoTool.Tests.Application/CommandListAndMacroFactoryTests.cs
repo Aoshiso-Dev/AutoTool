@@ -834,6 +834,7 @@ public class FindTextItemTests
         public Task<MatchPoint?> SearchImageAsync(string imagePath, double threshold, CommandColor? searchColor, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.FromResult<MatchPoint?>(null);
         public void InitializeAIModel(string modelPath, int inputSize = 640, bool useGpu = true) { }
         public IReadOnlyList<DetectionResult> DetectAI(string? windowTitle, float confThreshold, float iouThreshold) => [];
+        public int ResolveAiClassId(string modelPath, int fallbackClassId, string? labelName, string? labelsPath) => fallbackClassId;
         public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken) => Task.FromResult(_ocrResult);
     }
 }

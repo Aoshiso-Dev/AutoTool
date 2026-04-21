@@ -2,6 +2,7 @@
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Interface;
+using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Automation.Runtime.Attributes;
 using AutoTool.Desktop.Panels.View;
 using System.Diagnostics;
@@ -15,6 +16,15 @@ namespace AutoTool.Desktop.Panels.ViewModel;
 /// </summary>
 public partial class EditPanelViewModel
 {
+    private const string TessdataFastRepositoryUrl = "https://github.com/tesseract-ocr/tessdata_fast";
+    private const string AiModelReferencePageUrl = "https://github.com/ultralytics/ultralytics";
+    private const string RecommendedAiModelFileName = "yolo11n.onnx";
+    private static readonly string[] RecommendedAiModelDownloadUrls =
+    [
+        "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo11n.onnx",
+        "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.onnx"
+    ];
+
     private void UpdatePropertyGroups()
     {
         PropertyGroups.Clear();
@@ -42,11 +52,20 @@ public partial class EditPanelViewModel
                         or nameof(PropertyMetadata.KeyValue))
                     {
                         ValidateCurrentItemSettings();
+                        if (string.Equals(prop.PropertyInfo.Name, "LabelName", StringComparison.Ordinal))
+                        {
+                            SyncClassIdFromLabelSelection(prop);
+                        }
+                        if (IsAiLabelRelatedProperty(prop.PropertyInfo.Name))
+                        {
+                            RefreshAiLabelOptions();
+                        }
                     }
                 };
             }
         }
 
+        RefreshAiLabelOptions();
         ValidateCurrentItemSettings();
     }
 
@@ -74,6 +93,7 @@ public partial class EditPanelViewModel
             {
                 prop.BrowseCommand = new RelayCommand(() => BrowseFileForProperty(prop));
                 prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
+                ConfigureFilePickerMetadata(prop);
             },
             EditorType.DirectoryPicker => () =>
             {
@@ -81,6 +101,7 @@ public partial class EditPanelViewModel
                 prop.ClearCommand = new RelayCommand(() => { prop.Value = string.Empty; prop.NotifyAllValueProperties(); });
                 ConfigureDirectoryPickerMetadata(prop);
             },
+            EditorType.ComboBox => () => ConfigureComboBoxMetadata(prop),
             EditorType.KeyPicker => () => prop.PickKeyCommand = new RelayCommand(() => PickKeyForProperty(prop)),
             EditorType.PointPicker => () =>
             {
@@ -160,7 +181,9 @@ public partial class EditPanelViewModel
 
     private void BrowseFileForProperty(PropertyMetadata prop)
     {
-        var path = _panelDialogService.SelectModelFile();
+        var path = string.Equals(prop.PropertyInfo.Name, "LabelsPath", StringComparison.Ordinal)
+            ? _panelDialogService.SelectLabelFile()
+            : _panelDialogService.SelectModelFile();
         if (!string.IsNullOrEmpty(path))
         {
             prop.Value = _pathResolver.ToRelativePath(path);
@@ -190,13 +213,50 @@ public partial class EditPanelViewModel
         prop.DownloadRecommendedCommand = new AsyncRelayCommand(() => DownloadRecommendedTessdataAsync(prop));
     }
 
+    private void ConfigureFilePickerMetadata(PropertyMetadata prop)
+    {
+        if (string.Equals(prop.PropertyInfo.Name, "ModelPath", StringComparison.Ordinal))
+        {
+            prop.HelperText = "必要なら公式ページや推奨取得でONNXモデルを用意できます。";
+            prop.OpenReferenceCommand = new RelayCommand(OpenAiModelReferencePage);
+            prop.DownloadRecommendedCommand = new AsyncRelayCommand(() => DownloadRecommendedAiModelAsync(prop));
+            return;
+        }
+
+        if (string.Equals(prop.PropertyInfo.Name, "LabelsPath", StringComparison.Ordinal))
+        {
+            prop.HelperText = "未指定時はモデルmetadata、次に同階層の labels/coco.names/data.yaml を利用します。";
+        }
+    }
+
+    private static void ConfigureComboBoxMetadata(PropertyMetadata prop)
+    {
+        if (string.Equals(prop.PropertyInfo.Name, "LabelName", StringComparison.Ordinal))
+        {
+            prop.HelperText = "未選択ならクラスIDを使用します。モデル変更時に候補を再読み込みします。";
+        }
+    }
+
     private void OpenTessdataReferencePage()
     {
-        const string tessdataFastRepositoryUrl = "https://github.com/tesseract-ocr/tessdata_fast";
-
         try
         {
-            Process.Start(new ProcessStartInfo(tessdataFastRepositoryUrl)
+            Process.Start(new ProcessStartInfo(TessdataFastRepositoryUrl)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            _notifier.ShowError($"公式ページを開けませんでした。\n{ex.Message}", "エラー");
+        }
+    }
+
+    private void OpenAiModelReferencePage()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(AiModelReferencePageUrl)
             {
                 UseShellExecute = true
             });
@@ -245,6 +305,66 @@ public partial class EditPanelViewModel
         }
     }
 
+    private async Task DownloadRecommendedAiModelAsync(PropertyMetadata prop)
+    {
+        ArgumentNullException.ThrowIfNull(prop);
+
+        var targetFilePath = ResolveAiModelTargetPath(prop.StringValue);
+        var targetDirectory = Path.GetDirectoryName(targetFilePath);
+        if (string.IsNullOrWhiteSpace(targetDirectory))
+        {
+            _notifier.ShowError($"保存先フォルダを特定できませんでした。\n{targetFilePath}", "エラー");
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(targetDirectory);
+
+            using var client = new HttpClient();
+            var downloaded = false;
+            List<string> errors = [];
+
+            foreach (var url in RecommendedAiModelDownloadUrls)
+            {
+                try
+                {
+                    using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                    response.EnsureSuccessStatusCode();
+
+                    await using var source = await response.Content.ReadAsStreamAsync();
+                    await using var destination = File.Create(targetFilePath);
+                    await source.CopyToAsync(destination);
+                    downloaded = true;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"{url} => {ex.Message}");
+                }
+            }
+
+            if (!downloaded)
+            {
+                throw new InvalidOperationException(
+                    "推奨モデルの取得先に接続できませんでした。候補URLを確認してください。\n"
+                    + string.Join('\n', errors));
+            }
+
+            prop.Value = _pathResolver.ToRelativePath(targetFilePath);
+            prop.NotifyAllValueProperties();
+            RefreshEditorState();
+
+            _notifier.ShowInfo(
+                $"推奨AIモデルを取得しました。\n保存先: {targetFilePath}\n取得: {RecommendedAiModelFileName}",
+                "AIモデル取得完了");
+        }
+        catch (Exception ex)
+        {
+            _notifier.ShowError($"推奨AIモデルの取得に失敗しました。\n{ex.Message}", "エラー");
+        }
+    }
+
     private string ResolveTessdataTargetDirectory(string configuredValue)
     {
         if (!string.IsNullOrWhiteSpace(configuredValue))
@@ -257,6 +377,159 @@ public partial class EditPanelViewModel
         }
 
         return Path.Combine(AppContext.BaseDirectory, "Settings", "tessdata");
+    }
+
+    private string ResolveAiModelTargetPath(string configuredValue)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredValue))
+        {
+            var absolute = _pathResolver.ToAbsolutePath(configuredValue);
+            if (!string.IsNullOrWhiteSpace(absolute))
+            {
+                return Path.HasExtension(absolute)
+                    ? absolute
+                    : Path.Combine(absolute, RecommendedAiModelFileName);
+            }
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, "Settings", "models", RecommendedAiModelFileName);
+    }
+
+    private bool IsAiLabelRelatedProperty(string propertyName)
+    {
+        return propertyName is "ModelPath" or "LabelsPath";
+    }
+
+    private void SyncClassIdFromLabelSelection(PropertyMetadata labelNameProp)
+    {
+        if (!TryParseClassIdFromLabelSelection(labelNameProp.StringValue, out var classId))
+        {
+            return;
+        }
+
+        var classIdProp = PropertyGroups
+            .SelectMany(group => group.Properties)
+            .FirstOrDefault(prop => string.Equals(prop.PropertyInfo.Name, "ClassID", StringComparison.Ordinal) && ReferenceEquals(prop.Target, labelNameProp.Target));
+        if (classIdProp is null || classIdProp.IntValue == classId)
+        {
+            return;
+        }
+
+        classIdProp.Value = classId;
+        classIdProp.NotifyAllValueProperties();
+    }
+
+    private void RefreshAiLabelOptions()
+    {
+        if (Item is not IClickImageAIItem and not IIfImageExistAIItem and not IIfImageNotExistAIItem and not ISetVariableAIItem)
+        {
+            return;
+        }
+
+        var allProps = PropertyGroups.SelectMany(g => g.Properties).ToList();
+        var modelPathProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "ModelPath");
+        var labelsPathProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "LabelsPath");
+        var labelNameProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "LabelName");
+        if (modelPathProp is null || labelNameProp is null)
+        {
+            return;
+        }
+
+        var absoluteModelPath = ResolveExistingPath(modelPathProp.StringValue);
+        if (string.IsNullOrWhiteSpace(absoluteModelPath))
+        {
+            labelNameProp.DynamicOptions = [];
+            labelNameProp.HelperText = "モデルを読み込めないため、ラベル候補を表示できません。モデルパスを確認してください。";
+            return;
+        }
+
+        var absoluteLabelsPath = string.Empty;
+        if (labelsPathProp is not null && !string.IsNullOrWhiteSpace(labelsPathProp.StringValue))
+        {
+            absoluteLabelsPath = ResolveExistingPath(labelsPathProp.StringValue) ?? string.Empty;
+        }
+
+        try
+        {
+            var labels = _objectDetector.GetLabels(absoluteModelPath, string.IsNullOrWhiteSpace(absoluteLabelsPath) ? null : absoluteLabelsPath);
+            if (labels.Count == 0)
+            {
+                labelNameProp.DynamicOptions = [];
+                labelNameProp.HelperText = "ラベル情報を読み込めませんでした。モデルmetadataまたはラベルファイルを確認してください。";
+                return;
+            }
+
+            labelNameProp.DynamicOptions = [.. labels.OrderBy(pair => pair.Key).Select(pair => $"{pair.Key}: {pair.Value}")];
+            labelNameProp.HelperText = "候補を選択するとクラスIDへ同期されます。";
+        }
+        catch
+        {
+            labelNameProp.DynamicOptions = [];
+            labelNameProp.HelperText = "ラベル情報の読み込みに失敗しました。モデルmetadataまたはラベルファイルを確認してください。";
+        }
+    }
+
+    private string? ResolveExistingPath(string configuredValue)
+    {
+        if (string.IsNullOrWhiteSpace(configuredValue))
+        {
+            return null;
+        }
+
+        var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        void AddCandidate(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            candidates.Add(value);
+            try
+            {
+                candidates.Add(Path.GetFullPath(value));
+            }
+            catch
+            {
+                // ignore invalid path
+            }
+        }
+
+        AddCandidate(configuredValue);
+        AddCandidate(_pathResolver.ToAbsolutePath(configuredValue));
+        if (!Path.IsPathRooted(configuredValue))
+        {
+            AddCandidate(Path.Combine(Environment.CurrentDirectory, configuredValue));
+            AddCandidate(Path.Combine(AppContext.BaseDirectory, configuredValue));
+        }
+
+        foreach (var candidate in candidates)
+        {
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TryParseClassIdFromLabelSelection(string selectedLabel, out int classId)
+    {
+        classId = -1;
+        if (string.IsNullOrWhiteSpace(selectedLabel))
+        {
+            return false;
+        }
+
+        var separatorIndex = selectedLabel.IndexOf(':');
+        if (separatorIndex <= 0)
+        {
+            return int.TryParse(selectedLabel.Trim(), out classId);
+        }
+
+        var idPart = selectedLabel[..separatorIndex].Trim();
+        return int.TryParse(idPart, out classId);
     }
 
     private void ValidateCurrentItemSettings()

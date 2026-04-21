@@ -26,6 +26,8 @@ public static class CommandValidationErrorCodes
     public const string ProgramPathNotFound = "E_PROGRAM_PATH_NOT_FOUND";
     public const string ModelPathRequired = "E_MODEL_PATH_EMPTY";
     public const string ModelPathNotFound = "E_MODEL_PATH_NOT_FOUND";
+    public const string AiLabelsPathNotFound = "E_AI_LABELS_PATH_NOT_FOUND";
+    public const string AiLabelNotFound = "E_AI_LABEL_NOT_FOUND";
     public const string WaitOutOfRange = "E_WAIT_RANGE";
     public const string LoopCountOutOfRange = "E_LOOP_COUNT_RANGE";
     public const string RetryCountOutOfRange = "E_RETRY_COUNT_RANGE";
@@ -196,6 +198,7 @@ public static class CommandSettingsValidator
             }
 
             ValidateModelPath(setVariableAi.ModelPath, nameof(setVariableAi.ModelPath), pathResolver, includeExistenceChecks, issues);
+            ValidateOptionalFilePath(setVariableAi.LabelsPath, nameof(setVariableAi.LabelsPath), pathResolver, includeExistenceChecks, CommandValidationErrorCodes.AiLabelsPathNotFound, "ラベルファイルが見つかりません", issues);
             ValidateProbability(setVariableAi.ConfThreshold, nameof(setVariableAi.ConfThreshold), issues);
             ValidateProbability(setVariableAi.IoUThreshold, nameof(setVariableAi.IoUThreshold), issues);
         }
@@ -203,6 +206,7 @@ public static class CommandSettingsValidator
         if (settings is IClickImageAICommandSettings clickImageAi)
         {
             ValidateModelPath(clickImageAi.ModelPath, nameof(clickImageAi.ModelPath), pathResolver, includeExistenceChecks, issues);
+            ValidateOptionalFilePath(clickImageAi.LabelsPath, nameof(clickImageAi.LabelsPath), pathResolver, includeExistenceChecks, CommandValidationErrorCodes.AiLabelsPathNotFound, "ラベルファイルが見つかりません", issues);
             ValidateProbability(clickImageAi.ConfThreshold, nameof(clickImageAi.ConfThreshold), issues);
             ValidateProbability(clickImageAi.IoUThreshold, nameof(clickImageAi.IoUThreshold), issues);
             ValidateNonNegative(clickImageAi.HoldDurationMs, nameof(clickImageAi.HoldDurationMs), CommandValidationErrorCodes.HoldDurationOutOfRange, "押下維持時間は0以上で指定してください。", issues);
@@ -212,6 +216,7 @@ public static class CommandSettingsValidator
         if (settings is IIfImageExistAISettings ifImageExistAi)
         {
             ValidateModelPath(ifImageExistAi.ModelPath, nameof(ifImageExistAi.ModelPath), pathResolver, includeExistenceChecks, issues);
+            ValidateOptionalFilePath(ifImageExistAi.LabelsPath, nameof(ifImageExistAi.LabelsPath), pathResolver, includeExistenceChecks, CommandValidationErrorCodes.AiLabelsPathNotFound, "ラベルファイルが見つかりません", issues);
             ValidateProbability(ifImageExistAi.ConfThreshold, nameof(ifImageExistAi.ConfThreshold), issues);
             ValidateProbability(ifImageExistAi.IoUThreshold, nameof(ifImageExistAi.IoUThreshold), issues);
         }
@@ -219,6 +224,7 @@ public static class CommandSettingsValidator
         if (settings is IIfImageNotExistAISettings ifImageNotExistAi)
         {
             ValidateModelPath(ifImageNotExistAi.ModelPath, nameof(ifImageNotExistAi.ModelPath), pathResolver, includeExistenceChecks, issues);
+            ValidateOptionalFilePath(ifImageNotExistAi.LabelsPath, nameof(ifImageNotExistAi.LabelsPath), pathResolver, includeExistenceChecks, CommandValidationErrorCodes.AiLabelsPathNotFound, "ラベルファイルが見つかりません", issues);
             ValidateProbability(ifImageNotExistAi.ConfThreshold, nameof(ifImageNotExistAi.ConfThreshold), issues);
             ValidateProbability(ifImageNotExistAi.IoUThreshold, nameof(ifImageNotExistAi.IoUThreshold), issues);
         }
@@ -286,6 +292,31 @@ public static class CommandSettingsValidator
         if (!File.Exists(absolutePath))
         {
             Add(issues, CommandValidationErrorCodes.ModelPathNotFound, propertyName, $"モデルファイルが見つかりません: {modelPath}");
+        }
+    }
+
+    private static void ValidateOptionalFilePath(
+        string configuredPath,
+        string propertyName,
+        IPathResolver? pathResolver,
+        bool includeExistenceChecks,
+        string errorCode,
+        string messagePrefix,
+        ICollection<CommandValidationIssue> issues)
+    {
+        if (string.IsNullOrWhiteSpace(configuredPath))
+        {
+            return;
+        }
+
+        if (!includeExistenceChecks || !TryResolve(pathResolver, configuredPath, out var absolutePath))
+        {
+            return;
+        }
+
+        if (!File.Exists(absolutePath))
+        {
+            Add(issues, errorCode, propertyName, $"{messagePrefix}: {configuredPath}");
         }
     }
 

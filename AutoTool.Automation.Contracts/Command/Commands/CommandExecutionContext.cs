@@ -213,6 +213,30 @@ public class CommandExecutionContext : ICommandExecutionContext
         return _objectDetector.Detect(windowTitle, confThreshold, iouThreshold);
     }
 
+    public int ResolveAiClassId(string modelPath, int fallbackClassId, string? labelName, string? labelsPath)
+    {
+        if (_objectDetector is null)
+        {
+            throw new InvalidOperationException("AI検出サービスが構成されていません。");
+        }
+
+        if (string.IsNullOrWhiteSpace(labelName))
+        {
+            return fallbackClassId;
+        }
+
+        if (_objectDetector.TryResolveClassId(modelPath, labelName, labelsPath, out var classId))
+        {
+            return classId;
+        }
+
+        throw new CommandSettingsValidationException(
+            new CommandValidationIssue(
+                CommandValidationErrorCodes.AiLabelNotFound,
+                "LabelName",
+                $"ラベル '{labelName}' をクラスIDへ解決できません。モデルのmetadataまたはラベルファイルを確認してください。"));
+    }
+
     public Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken cancellationToken)
     {
         if (_ocrEngine is null)

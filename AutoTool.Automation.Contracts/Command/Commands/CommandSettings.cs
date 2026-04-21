@@ -181,6 +181,8 @@ public class RetryCommandSettings : ICommandSettings, IRetryCommandSettings
 public class AIImageDetectCommandSettings : ICommandSettings, IIfImageExistAISettings
 {
     public string ModelPath { get; set; } = string.Empty;
+    public string LabelsPath { get; set; } = string.Empty;
+    public string LabelName { get; set; } = string.Empty;
     public int ClassID { get; set; } = 0;
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;
@@ -206,6 +208,8 @@ public class AIImageDetectCommandSettings : ICommandSettings, IIfImageExistAISet
 public class AIImageNotDetectCommandSettings : ICommandSettings, IIfImageNotExistAISettings
 {
     public string ModelPath { get; set; } = string.Empty;
+    public string LabelsPath { get; set; } = string.Empty;
+    public string LabelName { get; set; } = string.Empty;
     public int ClassID { get; set; } = 0;
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;
@@ -262,6 +266,8 @@ public class SetVariableAISettings : ICommandSettings, ISetVariableAICommandSett
 {
     public string Name { get; set; } = string.Empty;
     public string ModelPath { get; set; } = string.Empty;
+    public string LabelsPath { get; set; } = string.Empty;
+    public string LabelName { get; set; } = string.Empty;
     public string AIDetectMode { get; set; } = string.Empty;
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;
@@ -347,6 +353,8 @@ public class IfVariableCommandSettings : ICommandSettings, IIfVariableCommandSet
 public class ClickImageAICommandSettings : ICommandSettings, IClickImageAICommandSettings
 {
     public string ModelPath { get; set; } = string.Empty;
+    public string LabelsPath { get; set; } = string.Empty;
+    public string LabelName { get; set; } = string.Empty;
     public int ClassID { get; set; } = 0;
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;

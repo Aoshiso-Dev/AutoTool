@@ -380,6 +380,8 @@ public partial class MacroPanelViewModel
             CommandValidationErrorCodes.ProgramPathNotFound => "対処: 実行ファイルの存在と実行権限を確認してください。",
             CommandValidationErrorCodes.ModelPathRequired => "対処: AIモデルファイルのパスを指定してください。",
             CommandValidationErrorCodes.ModelPathNotFound => "対処: AIモデルファイルの配置先を確認してください。",
+            CommandValidationErrorCodes.AiLabelsPathNotFound => "対処: ラベルファイルの配置先を確認するか、未指定でmetadata利用に切り替えてください。",
+            CommandValidationErrorCodes.AiLabelNotFound => "対処: ラベル名・モデルmetadata・ラベルファイルの対応を確認してください。",
             CommandValidationErrorCodes.TessdataPathNotFound => "対処: tessdata フォルダのパスを再指定してください。",
             CommandValidationErrorCodes.TessdataDataMissing => "対処: tessdata フォルダに *.traineddata を配置してください。",
             CommandValidationErrorCodes.TimeoutOutOfRange => "対処: タイムアウトを 0 以上に設定してください。",
@@ -435,6 +437,8 @@ public partial class MacroPanelViewModel
         {
             "ImagePath" => "画像パス",
             "ModelPath" => "モデルパス",
+            "LabelsPath" => "ラベルファイル",
+            "LabelName" => "ラベル名",
             "ProgramPath" => "プログラムパス",
             "Threshold" => "しきい値",
             "ConfThreshold" => "信頼度しきい値",

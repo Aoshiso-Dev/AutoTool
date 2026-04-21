@@ -203,6 +203,8 @@ public interface IIfWaitImageCommandSettings : ICommandSettings
 public interface IIfImageExistAISettings : ICommandSettings
 {
     string ModelPath { get; set; }
+    string LabelsPath { get; set; }
+    string LabelName { get; set; }
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
     int ClassID { get; set; }
@@ -215,6 +217,8 @@ public interface IIfImageExistAISettings : ICommandSettings
 public interface IIfImageNotExistAISettings : ICommandSettings
 {
     string ModelPath { get; set; }
+    string LabelsPath { get; set; }
+    string LabelName { get; set; }
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
     int ClassID { get; set; }
@@ -265,6 +269,8 @@ public interface ISetVariableAICommandSettings : ICommandSettings
     string WindowClassName { get; set; }
     string AIDetectMode { get; set; }
     string ModelPath { get; set; }
+    string LabelsPath { get; set; }
+    string LabelName { get; set; }
     double ConfThreshold { get; set; }
     double IoUThreshold { get; set; }
     string Name { get; set; }
@@ -300,6 +306,8 @@ public interface ISetVariableOCRCommandSettings : ICommandSettings
 public interface IClickImageAICommandSettings : ICommandSettings
 {
     string ModelPath { get; set; }
+    string LabelsPath { get; set; }
+    string LabelName { get; set; }
     int ClassID { get; set; }
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }

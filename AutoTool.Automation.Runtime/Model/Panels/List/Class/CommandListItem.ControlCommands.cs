@@ -636,10 +636,22 @@ namespace AutoTool.Automation.Runtime.Lists;
         [property: CommandProperty("ONNXモデル", EditorType.FilePicker, Group = "AI設定", Order = 1,
                          Description = "YOLOv8 ONNXモデルファイル")]
         private string _modelPath = string.Empty;
-        
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("クラスID", EditorType.NumberBox, Group = "AI設定", Order = 2,
+        [property: CommandProperty("ラベルファイル", EditorType.FilePicker, Group = "AI設定", Order = 2,
+                         Description = "未指定時はモデルmetadataと同階層のラベルファイルを利用")]
+        private string _labelsPath = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ラベル名", EditorType.ComboBox, Group = "AI設定", Order = 3,
+                         Description = "選択時はクラスIDより優先して一致判定")]
+        private string _labelName = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("クラスID", EditorType.NumberBox, Group = "AI設定", Order = 4,
                          Description = "検出する物体のクラス番号", Min = 0)]
         private int _classID = 0;
         
@@ -660,7 +672,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-             $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
+             $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / {(string.IsNullOrWhiteSpace(LabelName) ? $"クラスID:{ClassID}" : $"ラベル:{LabelName}")} / 閾値:{ConfThreshold}";
 
         public IfImageExistAIItem() { }
 
@@ -671,6 +683,8 @@ namespace AutoTool.Automation.Runtime.Lists;
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
                 ModelPath = item.ModelPath;
+                LabelsPath = item.LabelsPath;
+                LabelName = item.LabelName;
                 ClassID = item.ClassID;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
@@ -713,10 +727,22 @@ namespace AutoTool.Automation.Runtime.Lists;
         [property: CommandProperty("ONNXモデル", EditorType.FilePicker, Group = "AI設定", Order = 1,
                          Description = "YOLOv8 ONNXモデルファイル")]
         private string _modelPath = string.Empty;
-        
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("クラスID", EditorType.NumberBox, Group = "AI設定", Order = 2,
+        [property: CommandProperty("ラベルファイル", EditorType.FilePicker, Group = "AI設定", Order = 2,
+                         Description = "未指定時はモデルmetadataと同階層のラベルファイルを利用")]
+        private string _labelsPath = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ラベル名", EditorType.ComboBox, Group = "AI設定", Order = 3,
+                         Description = "選択時はクラスIDより優先して一致判定")]
+        private string _labelName = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("クラスID", EditorType.NumberBox, Group = "AI設定", Order = 4,
                          Description = "検出する物体のクラス番号", Min = 0)]
         private int _classID = 0;
         
@@ -737,7 +763,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         private ICommandListItem? _pair = null;
 
         new public string Description =>
-            $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / クラスID:{ClassID} / 閾値:{ConfThreshold}";
+            $"{LineNumber}->{Pair?.LineNumber} / 対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / {(string.IsNullOrWhiteSpace(LabelName) ? $"クラスID:{ClassID}" : $"ラベル:{LabelName}")} / 閾値:{ConfThreshold}";
 
         public IfImageNotExistAIItem() { }
         public IfImageNotExistAIItem(IfImageNotExistAIItem? item = null) : base(item)
@@ -747,6 +773,8 @@ namespace AutoTool.Automation.Runtime.Lists;
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
                 ModelPath = item.ModelPath;
+                LabelsPath = item.LabelsPath;
+                LabelName = item.LabelName;
                 ClassID = item.ClassID;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;

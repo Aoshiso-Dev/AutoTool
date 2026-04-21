@@ -146,16 +146,28 @@ namespace AutoTool.Automation.Runtime.Lists;
         [property: CommandProperty("ONNXモデル", EditorType.FilePicker, Group = "AI設定", Order = 2,
                          Description = "YOLOv8 ONNXモデルファイル")]
         private string _modelPath = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ラベルファイル", EditorType.FilePicker, Group = "AI設定", Order = 3,
+                         Description = "未指定時はモデルmetadataと同階層のラベルファイルを利用")]
+        private string _labelsPath = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ラベル名", EditorType.ComboBox, Group = "AI設定", Order = 4,
+                         Description = "指定時は該当ラベルの検出結果を優先します")]
+        private string _labelName = string.Empty;
         
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("信頼度しきい値", EditorType.Slider, Group = "AI設定", Order = 3,
+        [property: CommandProperty("信頼度しきい値", EditorType.Slider, Group = "AI設定", Order = 5,
                          Description = "検出の信頼度しきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _confThreshold = 0.5;
         
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("IoUしきい値", EditorType.Slider, Group = "AI設定", Order = 4,
+        [property: CommandProperty("IoUしきい値", EditorType.Slider, Group = "AI設定", Order = 6,
                          Description = "重なり除去のしきい値", Min = 0.01, Max = 1.0, Step = 0.01)]
         private double _ioUThreshold = 0.25;
         
@@ -166,7 +178,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         private string _name = string.Empty;
 
         new public string Description =>
-            $"変数:{Name} / モード:{AIDetectMode} / モデル:{System.IO.Path.GetFileName(ModelPath)} / 閾値:C{ConfThreshold}/I{IoUThreshold}";
+            $"変数:{Name} / モード:{AIDetectMode} / モデル:{System.IO.Path.GetFileName(ModelPath)} / {(string.IsNullOrWhiteSpace(LabelName) ? "全ラベル" : $"ラベル:{LabelName}")} / 閾値:C{ConfThreshold}/I{IoUThreshold}";
 
         public SetVariableAIItem() { }
         public SetVariableAIItem(SetVariableAIItem? item = null) : base(item)
@@ -177,6 +189,8 @@ namespace AutoTool.Automation.Runtime.Lists;
                 WindowClassName = item.WindowClassName;
                 AIDetectMode = item.AIDetectMode;
                 ModelPath = item.ModelPath;
+                LabelsPath = item.LabelsPath;
+                LabelName = item.LabelName;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
                 Name = item.Name;
@@ -190,21 +204,31 @@ namespace AutoTool.Automation.Runtime.Lists;
         public override ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
         {
             var absoluteModelPath = context.ToAbsolutePath(ModelPath);
+            var absoluteLabelsPath = string.IsNullOrWhiteSpace(LabelsPath) ? string.Empty : context.ToAbsolutePath(LabelsPath);
             context.InitializeAIModel(absoluteModelPath, 640, true);
 
             var detections = context.DetectAI(WindowTitle, (float)ConfThreshold, (float)IoUThreshold);
-        string value = AIDetectMode switch
-        {
-            "Class" => detections.Count > 0 ? detections[0].ClassId.ToString() : "-1",
-            "Count" => detections.Count.ToString(),
-            "X" => detections.Count > 0 ? (detections[0].Rect.X + detections[0].Rect.Width / 2).ToString() : "-1",
-            "Y" => detections.Count > 0 ? (detections[0].Rect.Y + detections[0].Rect.Height / 2).ToString() : "-1",
-            "Width" => detections.Count > 0 ? detections[0].Rect.Width.ToString() : "-1",
-            "Height" => detections.Count > 0 ? detections[0].Rect.Height.ToString() : "-1",
-            _ => "0",
-        };
-        context.SetVariable(Name, value);
-            context.Log($"AI検出結果: {Name} = {value} (モード: {AIDetectMode}, 検出数: {detections.Count})");
+            int? targetClassId = string.IsNullOrWhiteSpace(LabelName)
+                ? null
+                : context.ResolveAiClassId(absoluteModelPath, -1, LabelName, absoluteLabelsPath);
+            var scopedDetections = targetClassId is { } classId
+                ? detections.Where(d => d.ClassId == classId).ToList()
+                : detections.ToList();
+
+            string value = AIDetectMode switch
+            {
+                "Class" => scopedDetections.Count > 0 ? scopedDetections[0].ClassId.ToString() : "-1",
+                "Count" => scopedDetections.Count.ToString(),
+                "X" => scopedDetections.Count > 0 ? (scopedDetections[0].Rect.X + scopedDetections[0].Rect.Width / 2).ToString() : "-1",
+                "Y" => scopedDetections.Count > 0 ? (scopedDetections[0].Rect.Y + scopedDetections[0].Rect.Height / 2).ToString() : "-1",
+                "Width" => scopedDetections.Count > 0 ? scopedDetections[0].Rect.Width.ToString() : "-1",
+                "Height" => scopedDetections.Count > 0 ? scopedDetections[0].Rect.Height.ToString() : "-1",
+                _ => "0",
+            };
+
+            context.SetVariable(Name, value);
+            var labelSuffix = string.IsNullOrWhiteSpace(LabelName) ? string.Empty : $" / ラベル: {LabelName}";
+            context.Log($"AI検出結果: {Name} = {value} (モード: {AIDetectMode}, 対象検出数: {scopedDetections.Count}{labelSuffix})");
             return ValueTask.FromResult(true);
         }
     }
@@ -479,10 +503,22 @@ namespace AutoTool.Automation.Runtime.Lists;
         [property: CommandProperty("ONNXモデル", EditorType.FilePicker, Group = "AI設定", Order = 1,
                          Description = "YOLOv8 ONNXモデルファイル")]
         private string _modelPath = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ラベルファイル", EditorType.FilePicker, Group = "AI設定", Order = 2,
+                         Description = "未指定時はモデルmetadataと同階層のラベルファイルを利用")]
+        private string _labelsPath = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ラベル名", EditorType.ComboBox, Group = "AI設定", Order = 3,
+                         Description = "選択時はクラスIDより優先して一致判定")]
+        private string _labelName = string.Empty;
         
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("クラスID", EditorType.NumberBox, Group = "AI設定", Order = 2,
+        [property: CommandProperty("クラスID", EditorType.NumberBox, Group = "AI設定", Order = 4,
                          Description = "検出する物体のクラス番号", Min = 0)]
         private int _classID = 0;
         
@@ -523,7 +559,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         private bool _simulateMouseMove = false;
 
         new public string Description =>
-            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / モデル:{System.IO.Path.GetFileName(ModelPath)} / クラスID:{ClassID} / 閾値:{ConfThreshold} / ボタン:{Button} / 押下維持:{HoldDurationMs}ms / 方式:{ClickInjectionMode} / 移動シミュレート:{(SimulateMouseMove ? "ON" : "OFF")}";
+            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / モデル:{System.IO.Path.GetFileName(ModelPath)} / {(string.IsNullOrWhiteSpace(LabelName) ? $"クラスID:{ClassID}" : $"ラベル:{LabelName}")} / 閾値:{ConfThreshold} / ボタン:{Button} / 押下維持:{HoldDurationMs}ms / 方式:{ClickInjectionMode} / 移動シミュレート:{(SimulateMouseMove ? "ON" : "OFF")}";
 
         public ClickImageAIItem() { }
         public ClickImageAIItem(ClickImageAIItem? item = null) : base(item)
@@ -533,6 +569,8 @@ namespace AutoTool.Automation.Runtime.Lists;
                 WindowTitle = item.WindowTitle;
                 WindowClassName = item.WindowClassName;
                 ModelPath = item.ModelPath;
+                LabelsPath = item.LabelsPath;
+                LabelName = item.LabelName;
                 ClassID = item.ClassID;
                 ConfThreshold = item.ConfThreshold;
                 IoUThreshold = item.IoUThreshold;
@@ -549,10 +587,12 @@ namespace AutoTool.Automation.Runtime.Lists;
         {
             cancellationToken.ThrowIfCancellationRequested();
             var absoluteModelPath = context.ToAbsolutePath(ModelPath);
+            var absoluteLabelsPath = string.IsNullOrWhiteSpace(LabelsPath) ? string.Empty : context.ToAbsolutePath(LabelsPath);
             context.InitializeAIModel(absoluteModelPath, 640, true);
+            var targetClassId = context.ResolveAiClassId(absoluteModelPath, ClassID, LabelName, absoluteLabelsPath);
 
             var detections = context.DetectAI(WindowTitle, (float)ConfThreshold, (float)IoUThreshold);
-            var targetDetections = detections.Where(d => d.ClassId == ClassID).ToList();
+            var targetDetections = detections.Where(d => d.ClassId == targetClassId).ToList();
 
             if (targetDetections.Count > 0)
             {
@@ -562,11 +602,13 @@ namespace AutoTool.Automation.Runtime.Lists;
 
                 cancellationToken.ThrowIfCancellationRequested();
                 await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName, HoldDurationMs, ClickInjectionMode, SimulateMouseMove).ConfigureAwait(false);
-                context.Log($"AI画像をクリックしました。({centerX}, {centerY}) / クラスID: {best.ClassId} / スコア: {best.Score:F2}");
+                var labelSuffix = string.IsNullOrWhiteSpace(LabelName) ? string.Empty : $" / ラベル: {LabelName}";
+                context.Log($"AI画像をクリックしました。({centerX}, {centerY}) / クラスID: {best.ClassId}{labelSuffix} / スコア: {best.Score:F2}");
                 return true;
             }
 
-            context.Log($"クラスID {ClassID} の画像が見つかりませんでした。");
+            var missingLabelSuffix = string.IsNullOrWhiteSpace(LabelName) ? string.Empty : $" / ラベル: {LabelName}";
+            context.Log($"クラスID {targetClassId}{missingLabelSuffix} の画像が見つかりませんでした。");
             return false;
         }
     }
