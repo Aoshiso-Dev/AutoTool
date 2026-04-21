@@ -1,4 +1,4 @@
-ï»¿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -10,13 +10,13 @@ using AutoTool.Desktop.Panels.ViewModel;
 namespace AutoTool.Desktop.Panels.View;
 
 /// <summary>
-/// ListPanel.xaml ã®ç›¸äº’ä½œç”¨ãƒ­ã‚¸ãƒƒã‚¯
+/// ListPanel.xaml ‚Ì‘ŠŒİì—pƒƒWƒbƒN
 /// </summary>
 public partial class ListPanel : UserControl
 {
     private const string DragItemDataFormat = "AutoTool.CommandListItem";
     /// <summary>
-    /// ã“ã®æ©Ÿèƒ½ã§æ‰±ã†çŠ¶æ…‹ã‚„ç¨®åˆ¥ã®é¸æŠè‚¢ã‚’åˆ—æŒ™ã—ã€åˆ†å²æ¡ä»¶ã‚’æ˜ç¢ºã«ã—ã¾ã™ã€‚
+    /// ‚±‚Ì‹@”\‚Åˆµ‚¤ó‘Ô‚âí•Ê‚Ì‘I‘ğˆ‚ğ—ñ‹“‚µA•ªŠòğŒ‚ğ–¾Šm‚É‚µ‚Ü‚·B
     /// </summary>
 
     private enum ListPanelLayoutMode
@@ -120,8 +120,7 @@ public partial class ListPanel : UserControl
                 CommandDataGrid.ColumnHeaderHeight = 28;
                 CommandDataGrid.FontSize = 11;
                 SetColumnWidth(EnableColumn, 50);
-                SetColumnWidth(LineNumberColumn, 30);
-                SetColumnWidth(ProgressColumn, 58);
+                SetColumnWidth(LineNumberColumn, 44);
                 SetColumnWidth(CommandColumn, 130);
                 ApplyActionColumnWidths(CommandDataGrid.RowHeight);
                 DescriptionColumn.Visibility = Visibility.Collapsed;
@@ -131,8 +130,7 @@ public partial class ListPanel : UserControl
                 CommandDataGrid.ColumnHeaderHeight = 34;
                 CommandDataGrid.FontSize = 12;
                 SetColumnWidth(EnableColumn, 56);
-                SetColumnWidth(LineNumberColumn, 34);
-                SetColumnWidth(ProgressColumn, 72);
+                SetColumnWidth(LineNumberColumn, 48);
                 SetColumnWidth(CommandColumn, 170);
                 ApplyActionColumnWidths(CommandDataGrid.RowHeight);
                 DescriptionColumn.Visibility = Visibility.Visible;
@@ -143,8 +141,7 @@ public partial class ListPanel : UserControl
                 CommandDataGrid.ColumnHeaderHeight = 40;
                 CommandDataGrid.FontSize = 14;
                 SetColumnWidth(EnableColumn, 68);
-                SetColumnWidth(LineNumberColumn, 40);
-                SetColumnWidth(ProgressColumn, 96);
+                SetColumnWidth(LineNumberColumn, 56);
                 SetColumnWidth(CommandColumn, 260);
                 ApplyActionColumnWidths(CommandDataGrid.RowHeight);
                 DescriptionColumn.Visibility = Visibility.Visible;
@@ -155,10 +152,8 @@ public partial class ListPanel : UserControl
 
     private void ApplyActionColumnWidths(double rowHeight)
     {
-        SetColumnWidth(DeleteColumn, rowHeight);
-        SetColumnWidth(EditColumn, rowHeight);
-        // ä¸Šä¸‹ãƒœã‚¿ãƒ³ã¯2å€‹ã‚’æ¨ªä¸¦ã³ã«ã™ã‚‹ãŸã‚ã€1ã¤åˆ†ã®éš™é–“(2px)ã‚’åŠ ãˆã‚‹
-        SetColumnWidth(MoveColumn, rowHeight * 2 + 2);
+        // ‘€ìƒ{ƒ^ƒ“—ñiİ’è/ãˆÚ“®/‰ºˆÚ“®/íœj‚ğ1ƒZƒ‹‚Å•\¦
+        SetColumnWidth(ActionColumn, rowHeight * 4 + 6);
     }
 
     private static void SetColumnWidth(DataGridColumn column, double width)
@@ -180,7 +175,7 @@ public partial class ListPanel : UserControl
 
     private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (DataContext is ListPanelViewModel viewModel)
+        if (DataContext is IListPanelViewModel viewModel)
         {
             var selectedItems = CommandDataGrid.SelectedItems
                 .OfType<AutoTool.Automation.Contracts.Lists.ICommandListItem>()
@@ -216,7 +211,7 @@ public partial class ListPanel : UserControl
 
             if (element is DataGridRow)
             {
-                if (DataContext is ListPanelViewModel viewModel)
+                if (DataContext is IListPanelViewModel viewModel)
                 {
                     viewModel.OnItemDoubleClick();
                 }
@@ -229,7 +224,7 @@ public partial class ListPanel : UserControl
 
     private void DataGrid_PreviewInteraction(object sender, RoutedEventArgs e)
     {
-        if (DataContext is ListPanelViewModel viewModel)
+        if (DataContext is IListPanelViewModel viewModel)
         {
             viewModel.NotifyInteraction();
         }
@@ -237,7 +232,7 @@ public partial class ListPanel : UserControl
 
     private void CommandDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (DataContext is not ListPanelViewModel { IsRunning: false } viewModel)
+        if (DataContext is not IListPanelViewModel { IsRunning: false } viewModel)
         {
             _dragStartPoint = null;
             _dragSourceItem = null;
@@ -279,7 +274,7 @@ public partial class ListPanel : UserControl
         if (e.LeftButton != MouseButtonState.Pressed ||
             _dragStartPoint is not Point dragStartPoint ||
             _dragSourceItem is null ||
-            DataContext is not ListPanelViewModel { IsRunning: false })
+            DataContext is not IListPanelViewModel { IsRunning: false })
         {
             return;
         }
@@ -299,7 +294,7 @@ public partial class ListPanel : UserControl
 
     private void CommandDataGrid_DragOver(object sender, DragEventArgs e)
     {
-        if (DataContext is not ListPanelViewModel { IsRunning: false } ||
+        if (DataContext is not IListPanelViewModel { IsRunning: false } ||
             e.Data.GetData(DragItemDataFormat) is not ICommandListItem sourceItem ||
             CommandDataGrid.Items.IndexOf(sourceItem) < 0)
         {
@@ -339,7 +334,7 @@ public partial class ListPanel : UserControl
 
     private void CommandDataGrid_Drop(object sender, DragEventArgs e)
     {
-        if (DataContext is not ListPanelViewModel { IsRunning: false } viewModel ||
+        if (DataContext is not IListPanelViewModel { IsRunning: false } viewModel ||
             e.Data.GetData(DragItemDataFormat) is not ICommandListItem sourceItem)
         {
             HideDropInsertIndicator();
@@ -356,14 +351,14 @@ public partial class ListPanel : UserControl
             return;
         }
 
-        viewModel.MoveItem(fromIndex, toIndex);
+        viewModel.RequestMoveItem(fromIndex, toIndex);
         viewModel.SetSelectedItems([sourceItem]);
         viewModel.NotifyInteraction();
         e.Handled = true;
     }
 
     /// <summary>
-    /// è¨­å®šç·¨é›†ãƒœã‚¿ãƒ³ã‚¯ãƒªãƒƒã‚¯æ™‚ã®å‡¦ç†
+    /// İ’è•ÒWƒ{ƒ^ƒ“ƒNƒŠƒbƒN‚Ìˆ—
     /// </summary>
     private void EditSettingsButton_Click(object sender, RoutedEventArgs e)
     {
@@ -372,7 +367,7 @@ public partial class ListPanel : UserControl
             return;
         }
 
-        if (DataContext is not ListPanelViewModel viewModel)
+        if (DataContext is not IListPanelViewModel viewModel)
         {
             return;
         }
@@ -382,7 +377,7 @@ public partial class ListPanel : UserControl
     }
 
     /// <summary>
-    /// ã‚³ãƒãƒ³ãƒ‰è¡Œã®å‰Šé™¤ãƒœã‚¿ãƒ³ã‚¯ãƒªãƒƒã‚¯æ™‚ã®å‡¦ç†
+    /// ƒRƒ}ƒ“ƒhs‚Ìíœƒ{ƒ^ƒ“ƒNƒŠƒbƒN‚Ìˆ—
     /// </summary>
     private void DeleteCommandButton_Click(object sender, RoutedEventArgs e)
     {
@@ -391,17 +386,17 @@ public partial class ListPanel : UserControl
             return;
         }
 
-        if (DataContext is not ListPanelViewModel viewModel)
+        if (DataContext is not IListPanelViewModel viewModel)
         {
             return;
         }
 
         viewModel.SelectedLineNumber = item.LineNumber - 1;
-        viewModel.Delete();
+        viewModel.RequestDelete();
     }
 
     /// <summary>
-    /// ã‚³ãƒãƒ³ãƒ‰è¡Œã®ä¸Šç§»å‹•ãƒœã‚¿ãƒ³ã‚¯ãƒªãƒƒã‚¯æ™‚ã®å‡¦ç†
+    /// ƒRƒ}ƒ“ƒhs‚ÌãˆÚ“®ƒ{ƒ^ƒ“ƒNƒŠƒbƒN‚Ìˆ—
     /// </summary>
     private void MoveUpCommandButton_Click(object sender, RoutedEventArgs e)
     {
@@ -410,17 +405,18 @@ public partial class ListPanel : UserControl
             return;
         }
 
-        if (DataContext is not ListPanelViewModel viewModel)
+        if (DataContext is not IListPanelViewModel viewModel)
         {
             return;
         }
 
-        viewModel.SelectedLineNumber = item.LineNumber - 1;
-        viewModel.Up();
+        var fromIndex = item.LineNumber - 1;
+        viewModel.SelectedLineNumber = fromIndex;
+        viewModel.RequestMoveItem(fromIndex, fromIndex - 1);
     }
 
     /// <summary>
-    /// ã‚³ãƒãƒ³ãƒ‰è¡Œã®ä¸‹ç§»å‹•ãƒœã‚¿ãƒ³ã‚¯ãƒªãƒƒã‚¯æ™‚ã®å‡¦ç†
+    /// ƒRƒ}ƒ“ƒhs‚Ì‰ºˆÚ“®ƒ{ƒ^ƒ“ƒNƒŠƒbƒN‚Ìˆ—
     /// </summary>
     private void MoveDownCommandButton_Click(object sender, RoutedEventArgs e)
     {
@@ -429,17 +425,34 @@ public partial class ListPanel : UserControl
             return;
         }
 
-        if (DataContext is not ListPanelViewModel viewModel)
+        if (DataContext is not IListPanelViewModel viewModel)
         {
             return;
         }
 
-        viewModel.SelectedLineNumber = item.LineNumber - 1;
-        viewModel.Down();
+        var fromIndex = item.LineNumber - 1;
+        viewModel.SelectedLineNumber = fromIndex;
+        viewModel.RequestMoveItem(fromIndex, fromIndex + 1);
+    }
+
+    private void ToggleBlockCollapseButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: AutoTool.Automation.Contracts.Lists.ICommandListItem item })
+        {
+            return;
+        }
+
+        if (DataContext is not IListPanelViewModel viewModel)
+        {
+            return;
+        }
+
+        viewModel.ToggleBlockCollapse(item);
+        e.Handled = true;
     }
 
     /// <summary>
-    /// ãƒ“ã‚¸ãƒ¥ã‚¢ãƒ«ãƒ„ãƒªãƒ¼ã‹ã‚‰æŒ‡å®šã—ãŸå‹ã®å­è¦ç´ ã‚’æ¤œç´¢
+    /// ƒrƒWƒ…ƒAƒ‹ƒcƒŠ[‚©‚çw’è‚µ‚½Œ^‚Ìq—v‘f‚ğŒŸõ
     /// </summary>
     private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
     {

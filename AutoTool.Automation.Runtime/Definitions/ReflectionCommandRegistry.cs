@@ -76,13 +76,13 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
     public ICommandListItem? CreateCommandItem(string typeName)
     {
         Initialize();
-        if (string.IsNullOrWhiteSpace(typeName) || !_entries.TryGetValue(typeName, out var entry))
+        if (!TryGetEntry(typeName, out var entry))
         {
             return null;
         }
 
         var item = entry.ItemFactory();
-        item.ItemType = typeName;
+        item.ItemType = entry.Metadata.TypeName;
         return item;
     }
 
@@ -101,7 +101,7 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
         }
 
         Initialize();
-        if (!_entries.TryGetValue(item.ItemType, out var entry))
+        if (!TryGetEntry(item.ItemType, out var entry))
         {
             return CommandCreationResult.Fail(
                 CommandCreationFailureReason.UnknownItemType,
@@ -146,25 +146,19 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
     public bool IsIfCommand(string typeName)
     {
         Initialize();
-        return !string.IsNullOrWhiteSpace(typeName)
-               && _entries.TryGetValue(typeName, out var entry)
-               && entry.Metadata.IsIfCommand;
+        return TryGetEntry(typeName, out var entry) && entry.Metadata.IsIfCommand;
     }
 
     public bool IsLoopCommand(string typeName)
     {
         Initialize();
-        return !string.IsNullOrWhiteSpace(typeName)
-               && _entries.TryGetValue(typeName, out var entry)
-               && entry.Metadata.IsLoopCommand;
+        return TryGetEntry(typeName, out var entry) && entry.Metadata.IsLoopCommand;
     }
 
     public bool IsEndCommand(string typeName)
     {
         Initialize();
-        return !string.IsNullOrWhiteSpace(typeName)
-               && _entries.TryGetValue(typeName, out var entry)
-               && entry.Metadata.IsEndCommand;
+        return TryGetEntry(typeName, out var entry) && entry.Metadata.IsEndCommand;
     }
 
     public bool IsStartCommand(string typeName)
@@ -175,7 +169,7 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
     public string GetDisplayName(string typeName, string language = "ja")
     {
         Initialize();
-        if (!_entries.TryGetValue(typeName, out var entry))
+        if (!TryGetEntry(typeName, out var entry))
         {
             return typeName;
         }
@@ -186,7 +180,7 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
     public string GetCategoryName(string typeName, string language = "ja")
     {
         Initialize();
-        if (!_entries.TryGetValue(typeName, out var entry))
+        if (!TryGetEntry(typeName, out var entry))
         {
             return typeName;
         }
@@ -199,13 +193,39 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
     public int GetDisplayPriority(string typeName)
     {
         Initialize();
-        return _entries.TryGetValue(typeName, out var entry) ? entry.Metadata.DisplayPriority : 9;
+        return TryGetEntry(typeName, out var entry) ? entry.Metadata.DisplayPriority : 9;
     }
 
     public Type? GetItemType(string typeName)
     {
         Initialize();
-        return _entries.TryGetValue(typeName, out var entry) ? entry.Metadata.ItemType : null;
+        return TryGetEntry(typeName, out var entry) ? entry.Metadata.ItemType : null;
+    }
+
+    private bool TryGetEntry(string typeName, out Entry entry)
+    {
+        entry = null!;
+        if (string.IsNullOrWhiteSpace(typeName))
+        {
+            return false;
+        }
+
+        if (_entries.TryGetValue(typeName, out var direct) && direct is not null)
+        {
+            entry = direct;
+            return true;
+        }
+
+        var normalized = CommandMetadataCatalog.NormalizeTypeName(typeName);
+        if (!string.Equals(normalized, typeName, StringComparison.Ordinal)
+            && _entries.TryGetValue(normalized, out var mapped)
+            && mapped is not null)
+        {
+            entry = mapped;
+            return true;
+        }
+
+        return false;
     }
 
     private static bool HasExecuteAsyncOverride(Type itemType)

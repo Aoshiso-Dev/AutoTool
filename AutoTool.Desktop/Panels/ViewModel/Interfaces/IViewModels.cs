@@ -22,6 +22,10 @@ public interface IListPanelViewModel
     event Action<ICommandListItem?>? ItemDoubleClicked;
     /// <summary>一覧とのユーザー操作が発生したときに通知します。</summary>
     event Action? InteractionRequested;
+    /// <summary>項目移動が要求されたときに通知します。</summary>
+    event Action<int, int>? MoveItemRequested;
+    /// <summary>項目削除が要求されたときに通知します。</summary>
+    event Action? DeleteRequested;
 
     void Prepare();
     void SetRunningState(bool isRunning);
@@ -31,6 +35,8 @@ public interface IListPanelViewModel
     void RemoveAt(int index);
     void ReplaceAt(int index, ICommandListItem item);
     void MoveItem(int fromIndex, int toIndex);
+    void RequestMoveItem(int fromIndex, int toIndex);
+    void RequestDelete();
     void AddItem(ICommandListItem item);
     void Up();
     void Down();
@@ -38,6 +44,10 @@ public interface IListPanelViewModel
     void Clear();
     void Save(string filePath = "");
     void Load(string filePath = "");
+    bool IsBlockStartCommand(ICommandListItem item);
+    bool IsBlockCollapsed(ICommandListItem item);
+    void ToggleBlockCollapse(ICommandListItem item);
+    bool ShouldHideCommandInCollapsedScope(ICommandListItem item);
     int GetCount();
     ICommandListItem? GetItem(int lineNumber);
     IReadOnlyList<ICommandListItem> GetSelectedItems();
@@ -46,6 +56,7 @@ public interface IListPanelViewModel
     void SetSelectedLineNumber(int lineNumber);
     void SetValidationErrorItems(IEnumerable<ICommandListItem> items);
     void NotifyInteraction();
+    void OnItemDoubleClick();
 }
 
 /// <summary>

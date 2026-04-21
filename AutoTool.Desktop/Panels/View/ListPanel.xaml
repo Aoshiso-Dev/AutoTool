@@ -16,6 +16,14 @@
         <converter:ValidationErrorContainsItemConverter x:Key="ValidationErrorContainsItemConverter"/>
         <converter:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter"/>
         <converter:CommandTypeToCategoryColorConverter x:Key="CommandTypeToCategoryColorConverter"/>
+        <converter:CommandTypeToCompactNameConverter x:Key="CommandTypeToCompactNameConverter"/>
+        <converter:CommandTypeToFluentIconConverter x:Key="CommandTypeToFluentIconConverter"/>
+        <converter:CommandDescriptionToMultilineConverter x:Key="CommandDescriptionToMultilineConverter"/>
+        <converter:CommandIndentMarginConverter x:Key="CommandIndentMarginConverter"/>
+        <converter:CommandToggleLeadingMarginConverter x:Key="CommandToggleLeadingMarginConverter"/>
+        <converter:CommandRowCollapsedConverter x:Key="CommandRowCollapsedConverter"/>
+        <converter:CommandBlockToggleVisibilityConverter x:Key="CommandBlockToggleVisibilityConverter"/>
+        <converter:CommandBlockToggleGlyphConverter x:Key="CommandBlockToggleGlyphConverter"/>
         <converter:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
     </UserControl.Resources>
 
@@ -104,6 +112,16 @@
                             <Setter Property="BorderBrush" Value="#C81E1E"/>
                             <Setter Property="BorderThickness" Value="2,0,0,0"/>
                         </DataTrigger>
+                        <DataTrigger Value="True">
+                            <DataTrigger.Binding>
+                                <MultiBinding Converter="{StaticResource CommandRowCollapsedConverter}">
+                                    <Binding/>
+                                    <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                    <Binding Path="DataContext.CollapsedStateVersion" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                </MultiBinding>
+                            </DataTrigger.Binding>
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </ui:DataGrid.RowStyle>
@@ -150,88 +168,56 @@
                 <DataGridTemplateColumn x:Name="LineNumberColumn" Header="#" Width="35">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding LineNumber}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       FontSize="12" Opacity="0.5">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Style.Triggers>
-                                            <DataTrigger Value="True">
-                                                <DataTrigger.Binding>
-                                                    <MultiBinding Converter="{StaticResource ValidationErrorContainsItemConverter}">
-                                                        <Binding/>
-                                                        <Binding Path="DataContext.ValidationErrorItems" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
-                                                    </MultiBinding>
-                                                </DataTrigger.Binding>
-                                                <Setter Property="Opacity" Value="0.95"/>
-                                                <Setter Property="Foreground" Value="#C81E1E"/>
-                                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <!-- 進捗 -->
-                <DataGridTemplateColumn x:Name="ProgressColumn" Header="" Width="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Grid Margin="2,0"
-                                  Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <!-- 実行中：プログレス表示 -->
-                                <Border CornerRadius="6" Padding="3,2"
-                                        Background="#1510B981">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        
-                                        <!-- プログレスバー -->
-                                        <Grid Grid.Row="0" Height="8" Margin="0,0,0,2">
-                                            <Border Background="#30808080" CornerRadius="4"/>
-                                            <Border CornerRadius="4" HorizontalAlignment="Left"
-                                                    Width="{Binding Progress, Converter={StaticResource ProgressToWidthConverter}, ConverterParameter=60}">
-                                                <Border.Background>
-                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                        <GradientStop Color="#10B981" Offset="0"/>
-                                                        <GradientStop Color="#34D399" Offset="1"/>
-                                                    </LinearGradientBrush>
-                                                </Border.Background>
-                                            </Border>
-                                        </Grid>
-                                        
-                                        <!-- パーセント表示 -->
-                                        <TextBlock Grid.Row="1" 
-                                                   Text="{Binding Progress, StringFormat={}{0}%}"
-                                                   HorizontalAlignment="Center" 
-                                                   FontSize="11" FontWeight="SemiBold"
-                                                   Foreground="#10B981"/>
+                            <Grid>
+                                <Grid>
+                                    <Grid Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <ui:ProgressRing Width="24"
+                                                        Height="24"
+                                                        Progress="{Binding Progress}"
+                                                        IsIndeterminate="False"/>
+                                        <TextBlock Text="{Binding Progress, StringFormat={}{0}%}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="8"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="White"/>
                                     </Grid>
-                                </Border>
-                                
-                                <!-- 実行中インジケーター（左端のライン） -->
-                                <Border Width="3" HorizontalAlignment="Left" CornerRadius="2" Margin="-4,0,0,0">
-                                    <Border.Background>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Color="#10B981" Offset="0"/>
-                                            <GradientStop Color="#34D399" Offset="0.5"/>
-                                            <GradientStop Color="#10B981" Offset="1"/>
-                                        </LinearGradientBrush>
-                                    </Border.Background>
-                                </Border>
+                                    <TextBlock Text="{Binding LineNumber}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               FontSize="12"
+                                               Opacity="0.5"
+                                               Visibility="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource ValidationErrorContainsItemConverter}">
+                                                                <Binding/>
+                                                                <Binding Path="DataContext.ValidationErrorItems" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Opacity" Value="0.95"/>
+                                                        <Setter Property="Foreground" Value="#C81E1E"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
                 <!-- コマンド -->
-                <DataGridTemplateColumn x:Name="CommandColumn" Header="コマンド" Width="170">
+                <DataGridTemplateColumn x:Name="CommandColumn" Header="コマンド" Width="210">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                             <Setter Property="Padding" Value="0"/>
                             <Setter Property="VerticalContentAlignment" Value="Stretch"/>
                             <Style.Triggers>
@@ -253,18 +239,83 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid Margin="0" VerticalAlignment="Stretch">
-                                <Border Background="{Binding ItemType, Converter={StaticResource CommandTypeToCategoryColorConverter}}" 
+                                    <Border
                                         CornerRadius="4"
                                         Padding="8,0"
-                                        Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}"
                                         VerticalAlignment="Stretch">
-                                    <TextBlock Text="{Binding DisplayName}" 
-                                               FontWeight="Medium"
-                                               FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                               LineHeight="16"
-                                               LineStackingStrategy="BlockLineHeight"
-                                               VerticalAlignment="Center"
-                                               Foreground="#1a1a1a"/>
+                                        <Border.Margin>
+                                            <MultiBinding Converter="{StaticResource CommandIndentMarginConverter}">
+                                                <Binding/>
+                                                <Binding Path="DataContext.CommandList.Items" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                <Binding Path="DataContext.CollapsedStateVersion" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                            </MultiBinding>
+                                        </Border.Margin>
+                                    <Grid>
+                                        <ui:Button Width="18"
+                                                   Height="18"
+                                                   MinWidth="18"
+                                                   MinHeight="18"
+                                                   Padding="0"
+                                                   BorderThickness="0"
+                                                   Appearance="Secondary"
+                                                   Background="Transparent"
+                                                   Foreground="#FFFFFF"
+                                                   FontSize="10"
+                                                   FontFamily="Segoe UI"
+                                                   FocusVisualStyle="{x:Null}"
+                                                   Focusable="False"
+                                                   Click="ToggleBlockCollapseButton_Click"
+                                                   IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"
+                                                   HorizontalAlignment="Left"
+                                                   VerticalAlignment="Center"
+                                                   Margin="-20,0,2,0">
+                                            <ui:Button.Visibility>
+                                                <MultiBinding Converter="{StaticResource CommandBlockToggleVisibilityConverter}">
+                                                    <Binding/>
+                                                    <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                    <Binding Path="DataContext.CollapsedStateVersion" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                </MultiBinding>
+                                            </ui:Button.Visibility>
+                                            <ui:Button.Content>
+                                                <MultiBinding Converter="{StaticResource CommandBlockToggleGlyphConverter}">
+                                                    <Binding/>
+                                                    <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                    <Binding Path="DataContext.CollapsedStateVersion" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                </MultiBinding>
+                                            </ui:Button.Content>
+                                        </ui:Button>
+                                        <DockPanel LastChildFill="True" VerticalAlignment="Center">
+                                            <Border Width="22"
+                                                    Height="22"
+                                                    CornerRadius="4"
+                                                    Background="{Binding ItemType, Converter={StaticResource CommandTypeToCategoryColorConverter}}"
+                                                    Padding="3,0"
+                                                    Margin="0,0,8,0"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Left">
+                                                <ui:SymbolIcon Symbol="{Binding ItemType, Converter={StaticResource CommandTypeToFluentIconConverter}}" 
+                                                               Foreground="#FFFFFF"
+                                                               FontSize="16">
+                                                    <ui:SymbolIcon.Effect>
+                                                        <DropShadowEffect BlurRadius="2"
+                                                                          Direction="315"
+                                                                          ShadowDepth="1"
+                                                                          Opacity="0.75"
+                                                                          Color="#99000000"/>
+                                                    </ui:SymbolIcon.Effect>
+                                                </ui:SymbolIcon>
+                                            </Border>
+                                            <TextBlock Text="{Binding ItemType, Converter={StaticResource CommandTypeToCompactNameConverter}}" 
+                                                       FontWeight="Medium"
+                                                       FontSize="11"
+                                                       TextTrimming="None"
+                                                       LineHeight="14"
+                                                       LineStackingStrategy="BlockLineHeight"
+                                                       FontFamily="Segoe UI"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#FFFFFF"/>
+                                        </DockPanel>
+                                    </Grid>
                                 </Border>
                             </Grid>
                         </DataTemplate>
@@ -275,26 +326,47 @@
                 <DataGridTemplateColumn x:Name="DescriptionColumn" Header="説明" Width="*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel>
-                                <TextBlock Text="{Binding Description}" 
+                            <StackPanel VerticalAlignment="Center"
+                                        HorizontalAlignment="Stretch">
+                                <TextBlock Text="{Binding Comment}"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                           VerticalAlignment="Center"
                                            FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
                                            LineHeight="16"
                                            LineStackingStrategy="BlockLineHeight"
-                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{Binding Comment}" 
-                                           FontSize="11" FontStyle="Italic"
-                                           LineHeight="14"
-                                           LineStackingStrategy="BlockLineHeight"
-                                           Opacity="0.6"
-                                           Visibility="{Binding HasComment, Converter={StaticResource BoolToVisibilityConverter}}"
-                                           Margin="0,1,0,0"/>
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           FontWeight="SemiBold"
+                                           ToolTip="{Binding Description, Converter={StaticResource CommandDescriptionToMultilineConverter}}"
+                                           ToolTipService.ShowDuration="120000"
+                                           ToolTipService.InitialShowDelay="120"
+                                           ToolTipService.BetweenShowDelay="120"
+                                           ToolTipService.ShowOnDisabled="True"
+                                           Visibility="{Binding HasComment, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Value="True">
+                                                    <DataTrigger.Binding>
+                                                        <MultiBinding Converter="{StaticResource ValidationErrorContainsItemConverter}">
+                                                            <Binding/>
+                                                            <Binding Path="DataContext.ValidationErrorItems" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                        </MultiBinding>
+                                                    </DataTrigger.Binding>
+                                                    <Setter Property="Foreground" Value="#C81E1E"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- 行移動 -->
-                <DataGridTemplateColumn x:Name="MoveColumn" Header="" Width="52">
+                <!-- 操作ボタン -->
+                <DataGridTemplateColumn x:Name="ActionColumn" Header="" Width="158">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                             <Setter Property="Padding" Value="0"/>
@@ -320,12 +392,25 @@
                             <StackPanel Orientation="Horizontal"
                                         VerticalAlignment="Center"
                                         HorizontalAlignment="Center">
+                                <ui:Button Icon="{ui:SymbolIcon Settings24}" 
+                                           Appearance="Secondary"
+                                           Click="EditSettingsButton_Click"
+                                           ToolTip="設定を編集"
+                                           Padding="0"
+                                           Margin="0"
+                                           Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                           Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                           MinWidth="0"
+                                           MinHeight="0"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                                 <ui:Button Icon="{ui:SymbolIcon ArrowUp24}"
                                            Appearance="Secondary"
                                            Click="MoveUpCommandButton_Click"
                                            ToolTip="1行上へ移動"
                                            Padding="0"
-                                           Margin="0"
+                                           Margin="2,0,0,0"
                                            Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
                                            Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
                                            MinWidth="0"
@@ -346,89 +431,20 @@
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
+                                <ui:Button Icon="{ui:SymbolIcon Delete24}"
+                                           Appearance="Secondary"
+                                           Click="DeleteCommandButton_Click"
+                                           ToolTip="このコマンドを削除"
+                                           Padding="0"
+                                           Margin="2,0,0,0"
+                                           Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                           Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                           MinWidth="0"
+                                           MinHeight="0"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                             </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <!-- 行削除 -->
-                <DataGridTemplateColumn x:Name="DeleteColumn" Header="" Width="36">
-                    <DataGridTemplateColumn.CellStyle>
-                        <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                </Trigger>
-                                <MultiTrigger>
-                                    <MultiTrigger.Conditions>
-                                        <Condition Property="IsSelected" Value="True"/>
-                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
-                                    </MultiTrigger.Conditions>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                </MultiTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGridTemplateColumn.CellStyle>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ui:Button Icon="{ui:SymbolIcon Delete24}"
-                                       Appearance="Secondary"
-                                       Click="DeleteCommandButton_Click"
-                                       ToolTip="このコマンドを削除"
-                                       Padding="0"
-                                       Margin="0"
-                                       Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                       Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                       MinWidth="0"
-                                       MinHeight="0"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <!-- 設定編集ボタン -->
-                <DataGridTemplateColumn x:Name="EditColumn" Header="" Width="40">
-                    <DataGridTemplateColumn.CellStyle>
-                        <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                </Trigger>
-                                <MultiTrigger>
-                                    <MultiTrigger.Conditions>
-                                        <Condition Property="IsSelected" Value="True"/>
-                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
-                                    </MultiTrigger.Conditions>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                </MultiTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGridTemplateColumn.CellStyle>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ui:Button Icon="{ui:SymbolIcon Settings24}" 
-                                       Appearance="Secondary"
-                                       Click="EditSettingsButton_Click"
-                                       ToolTip="設定を編集"
-                                       Padding="0"
-                                       Margin="0"
-                                       Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                       Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                       MinWidth="0"
-                                       MinHeight="0"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

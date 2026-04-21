@@ -27,6 +27,8 @@ public partial class MacroPanelViewModel
         _listPanel.SelectedItemChanged += HandleSelectedItemChanged;
         _listPanel.ItemDoubleClicked += HandleItemDoubleClick;
         _listPanel.InteractionRequested += HandleListInteractionRequested;
+        _listPanel.MoveItemRequested += HandleMoveItemRequested;
+        _listPanel.DeleteRequested += HandleDelete;
 
         _editPanel.ItemEdited += HandleEdit;
         _favoritePanel.AddRequested += HandleFavoriteAddRequested;
@@ -53,6 +55,8 @@ public partial class MacroPanelViewModel
         _listPanel.SelectedItemChanged -= HandleSelectedItemChanged;
         _listPanel.ItemDoubleClicked -= HandleItemDoubleClick;
         _listPanel.InteractionRequested -= HandleListInteractionRequested;
+        _listPanel.MoveItemRequested -= HandleMoveItemRequested;
+        _listPanel.DeleteRequested -= HandleDelete;
         _editPanel.ItemEdited -= HandleEdit;
         _favoritePanel.AddRequested -= HandleFavoriteAddRequested;
         _favoritePanel.DeleteRequested -= HandleFavoriteDeleteRequested;
