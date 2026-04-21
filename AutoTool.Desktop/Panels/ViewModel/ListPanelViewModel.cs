@@ -1,5 +1,6 @@
-﻿﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using AutoTool.Automation.Runtime.Lists;
+using CommunityToolkit.Mvvm.Input;
 using AutoTool.Automation.Contracts.Lists;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -432,6 +433,79 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         }
 
         Delete();
+    }
+
+    [RelayCommand]
+    private void EditSettingsFromRow(ICommandListItem? item)
+    {
+        if (!TrySelectRowItem(item, out _))
+        {
+            return;
+        }
+
+        OnItemDoubleClick();
+    }
+
+    [RelayCommand]
+    private void DeleteFromRow(ICommandListItem? item)
+    {
+        if (!TrySelectRowItem(item, out _))
+        {
+            return;
+        }
+
+        RequestDelete();
+    }
+
+    [RelayCommand]
+    private void MoveUpFromRow(ICommandListItem? item)
+    {
+        if (!TrySelectRowItem(item, out var fromIndex))
+        {
+            return;
+        }
+
+        RequestMoveItem(fromIndex, fromIndex - 1);
+    }
+
+    [RelayCommand]
+    private void MoveDownFromRow(ICommandListItem? item)
+    {
+        if (!TrySelectRowItem(item, out var fromIndex))
+        {
+            return;
+        }
+
+        RequestMoveItem(fromIndex, fromIndex + 1);
+    }
+
+    [RelayCommand]
+    private void ToggleBlockCollapseFromRow(ICommandListItem? item)
+    {
+        if (item is null)
+        {
+            return;
+        }
+
+        ToggleBlockCollapse(item);
+    }
+
+    private bool TrySelectRowItem(ICommandListItem? item, out int selectedIndex)
+    {
+        selectedIndex = -1;
+        if (item is null)
+        {
+            return false;
+        }
+
+        selectedIndex = item.LineNumber - 1;
+        if (selectedIndex < 0 || selectedIndex >= CommandList.Items.Count)
+        {
+            return false;
+        }
+
+        SelectedLineNumber = selectedIndex;
+        return true;
     }
 
     /// <summary>

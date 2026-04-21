@@ -1,13 +1,13 @@
 ﻿using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
-using AutoTool.Infrastructure.DependencyInjection;
+using AutoTool.Commands.Infrastructure;
 using AutoTool.Automation.Runtime.Lists;
 using AutoTool.Automation.Runtime.Definitions;
 using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Automation.Runtime.MacroFactory;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Order;
-using Microsoft.Extensions.DependencyInjection;
+using RuntimeMacroFactory = AutoTool.Automation.Runtime.MacroFactory.MacroFactory;
 
 namespace AutoTool.Automation.Runtime.Benchmarks.Benchmarks;
 
@@ -18,7 +18,6 @@ namespace AutoTool.Automation.Runtime.Benchmarks.Benchmarks;
 /// </summary>
 public class MacroFactoryBenchmarks
 {
-    private ServiceProvider _provider = null!;
     private IMacroFactory _macroFactory = null!;
     private IReadOnlyList<ICommandListItem> _items = null!;
 
@@ -28,21 +27,32 @@ public class MacroFactoryBenchmarks
     [GlobalSetup]
     public void GlobalSetup()
     {
-        var services = new ServiceCollection();
-        services.AddCommandServices();
-        services.AddMacroRuntimeCoreServices();
+        var commandRegistry = new ReflectionCommandRegistry();
+        commandRegistry.Initialize();
 
-        _provider = services.BuildServiceProvider();
-        _provider.GetRequiredService<ICommandRegistry>().Initialize();
+        var dependencyResolver = new CommandDependencyResolver(
+            new InMemoryVariableStore(),
+            new YoloObjectDetector(),
+            new PathResolver(),
+            new OpenCvImageMatcher(),
+            new Win32MouseInput(),
+            new Win32KeyboardInput(),
+            new OpenCvScreenCapturer(),
+            new ProcessLauncher(),
+            new Win32WindowService(),
+            new TesseractOcrEngine(),
+            commandEventBus: null,
+            timeProvider: TimeProvider.System);
+        var commandFactory = new CommandFactory(dependencyResolver);
 
-        _macroFactory = _provider.GetRequiredService<IMacroFactory>();
+        ICompositeCommandBuilder[] compositeBuilders =
+        [
+            new IfCompositeCommandBuilder(commandFactory),
+            new LoopCompositeCommandBuilder(commandFactory)
+        ];
+
+        _macroFactory = new RuntimeMacroFactory(commandRegistry, commandFactory, compositeBuilders);
         _items = BuildItems(ItemCount);
-    }
-
-    [GlobalCleanup]
-    public void GlobalCleanup()
-    {
-        _provider.Dispose();
     }
 
     [Benchmark]

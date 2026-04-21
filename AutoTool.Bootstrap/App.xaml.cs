@@ -7,6 +7,9 @@ using AutoTool.Automation.Runtime.Diagnostics;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Services;
 using AutoTool.Desktop.Hosting;
+using AutoTool.Desktop.Ui;
+using AutoTool.Infrastructure;
+using AutoTool.Infrastructure.Implementations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -24,10 +27,24 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // 例外通知で使う依存は明示的に組み立てて共有し、Service Locator を回避します。
+        var asyncFileLog = new AsyncFileLog();
+        var logWriter = new DelegatingLogWriter(asyncFileLog);
+        var notifier = new WpfNotifier(new WpfAppDialogService(), logWriter);
+
+        _logWriter = logWriter;
+        _notifier = notifier;
+
         // ホストを構築して初期化
-        _host = AppHostBuilder.CreateHostBuilder(e.Args).Build();
-        _notifier = _host.Services.GetRequiredService<INotifier>();
-        _logWriter = _host.Services.GetRequiredService<ILogWriter>();
+        _host = AppHostBuilder
+            .CreateHostBuilder(e.Args)
+            .ConfigureServices((_, services) =>
+            {
+                services.AddSingleton(asyncFileLog);
+                services.AddSingleton<ILogWriter>(logWriter);
+                services.AddSingleton<INotifier>(notifier);
+            })
+            .Build();
 
         // UIスレッドで発生した未処理の例外をキャッチ
         DispatcherUnhandledException += App_DispatcherUnhandledException;
