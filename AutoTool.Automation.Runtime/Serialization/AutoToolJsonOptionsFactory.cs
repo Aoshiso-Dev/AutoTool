@@ -9,13 +9,10 @@ public static class AutoToolJsonOptionsFactory
 {
     public static JsonSerializerOptions CreateMacroSerializerOptions()
     {
-        var options = new JsonSerializerOptions
+        return new JsonSerializerOptions
         {
             WriteIndented = true
         };
-
-        options.TypeInfoResolverChain.Insert(0, new CommandListItemPolymorphicResolver());
-        return options;
     }
 
 }

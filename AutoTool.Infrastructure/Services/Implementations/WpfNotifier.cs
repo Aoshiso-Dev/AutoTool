@@ -9,11 +9,14 @@ namespace AutoTool.Infrastructure.Implementations;
 public class WpfNotifier : INotifier
 {
     private readonly IAppDialogService _appDialogService;
+    private readonly ILogWriter _logWriter;
 
-    public WpfNotifier(IAppDialogService appDialogService)
+    public WpfNotifier(IAppDialogService appDialogService, ILogWriter logWriter)
     {
         ArgumentNullException.ThrowIfNull(appDialogService);
+        ArgumentNullException.ThrowIfNull(logWriter);
         _appDialogService = appDialogService;
+        _logWriter = logWriter;
     }
 
     public void ShowInfo(string message, string title)
@@ -36,10 +39,22 @@ public class WpfNotifier : INotifier
 
     public void ShowError(string message, string title)
     {
+        _logWriter.WriteStructured(
+            "Notifier",
+            "ShowError",
+            new Dictionary<string, object?>
+            {
+                ["Title"] = title,
+                ["Message"] = message
+            });
+
         _ = _appDialogService.Show(
             title,
             message,
-            [new("ok", "OK", IsDefault: true, IsCancel: true)],
+            [
+                new("copy", "コピー", CloseDialogOnClick: false),
+                new("ok", "OK", IsDefault: true, IsCancel: true)
+            ],
             AppDialogTone.Error);
     }
 

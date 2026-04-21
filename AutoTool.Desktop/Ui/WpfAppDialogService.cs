@@ -181,6 +181,16 @@ public sealed class WpfAppDialogService : IAppDialogService
 
             button.Click += (_, _) =>
             {
+                if (string.Equals(action.Id, "copy", StringComparison.OrdinalIgnoreCase))
+                {
+                    TryCopyMessageToClipboard(message);
+                }
+
+                if (!action.CloseDialogOnClick)
+                {
+                    return;
+                }
+
                 selectedActionId = action.Id;
                 dialogWindow.Close();
             };
@@ -266,6 +276,18 @@ public sealed class WpfAppDialogService : IAppDialogService
         catch
         {
             // 通知ダイアログからのリンク遷移失敗は無視する。
+        }
+    }
+
+    private static void TryCopyMessageToClipboard(string message)
+    {
+        try
+        {
+            Clipboard.SetText(message);
+        }
+        catch
+        {
+            // クリップボードの一時競合などは通知表示を妨げない。
         }
     }
 

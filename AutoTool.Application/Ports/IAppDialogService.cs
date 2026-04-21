@@ -14,7 +14,12 @@ public enum AppDialogTone
 /// <summary>
 /// ダイアログ上の選択アクション定義です。
 /// </summary>
-public sealed record AppDialogAction(string Id, string Label, bool IsDefault = false, bool IsCancel = false);
+public sealed record AppDialogAction(
+    string Id,
+    string Label,
+    bool IsDefault = false,
+    bool IsCancel = false,
+    bool CloseDialogOnClick = true);
 
 /// <summary>
 /// アプリ汎用ダイアログを表示するポートです。

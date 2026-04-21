@@ -484,6 +484,39 @@ public class MacroFileSerializerCompatibilityTests
         }
     }
 
+    [Fact]
+    public void SerializeToFile_WithIfImageExistItem_DoesNotThrow()
+    {
+        var serializer = new MacroFileSerializer();
+        var filePath = Path.Combine(Path.GetTempPath(), $"if-image-exist-{Guid.NewGuid()}.macro");
+
+        try
+        {
+            var items = new ObservableCollection<ICommandListItem>
+            {
+                new IfImageExistItem
+                {
+                    ItemType = CommandTypeNames.IfImageExist,
+                    ImagePath = @"C:\Images\target.png",
+                    Threshold = 0.85
+                }
+            };
+
+            var exception = Record.Exception(() => serializer.SerializeToFile(items, filePath));
+            Assert.Null(exception);
+
+            var savedJson = File.ReadAllText(filePath);
+            Assert.Contains(@"""ItemType"": ""IF_ImageExist""", savedJson, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+    }
+
     private static string CreateLegacyExecuteMacroJson()
     {
         return $$"""
