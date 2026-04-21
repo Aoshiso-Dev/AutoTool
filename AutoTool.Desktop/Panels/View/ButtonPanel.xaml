@@ -97,17 +97,9 @@
 
         <!-- コマンド追加 -->
         <StackPanel Grid.Column="2" Orientation="Horizontal">
-            <TextBlock Text="コマンド:" VerticalAlignment="Center" Margin="0,0,8,0"
-                       Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
-            <ComboBox ItemsSource="{Binding ItemTypes}" 
-                      SelectedItem="{Binding SelectedItemType}" 
-                      DisplayMemberPath="DisplayName"
-                      IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}" 
-                      MinWidth="180"
-                      Margin="0,0,8,0"/>
-            <ui:Button Content="追加" 
+            <ui:Button Content="コマンド追加"
                        Icon="{ui:SymbolIcon Add24}"
-                       Command="{Binding AddCommand}" 
+                       Click="AddCommandButton_Click"
                        IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}"
                        Appearance="Primary"/>
         </StackPanel>

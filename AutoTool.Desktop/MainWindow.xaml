@@ -44,6 +44,25 @@
         <ui:TitleBar Grid.Row="0" Title="{Binding AutoToolTitle}" ShowMinimize="True" ShowMaximize="True" ShowClose="True">
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" Margin="8,0">
+                    <ui:Button Icon="{ui:SymbolIcon Play24}"
+                               ToolTip="実行 / 停止"
+                               Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.RunCommand}"
+                               Foreground="White"
+                               Background="#10B981"
+                               BorderBrush="#10B981"
+                               Appearance="Primary"
+                               Padding="8,2"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
+                    <ui:Button Icon="{ui:SymbolIcon Add24}"
+                               ToolTip="コマンド追加"
+                               Click="AddCommandButton_Click"
+                               Foreground="White"
+                               Background="#F59E0B"
+                               BorderBrush="#F59E0B"
+                               Appearance="Primary"
+                               Padding="8,2"
+                               IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
                     <ui:Button Icon="{ui:SymbolIcon FolderOpen24}" 
                                ToolTip="開く (Ctrl+O)" 
                                Command="{Binding OpenFileCommand}"
@@ -53,7 +72,7 @@
                                ToolTip="保存 (Ctrl+S)" 
                                Command="{Binding SaveFileCommand}"
                                Appearance="Transparent"/>
-                    <ui:Button Content="📝"
+                    <ui:Button Icon="{ui:SymbolIcon Save24}"
                                ToolTip="名前を付けて保存 (Ctrl+Shift+S)"
                                Command="{Binding SaveFileAsCommand}"
                                Appearance="Transparent"/>
@@ -67,10 +86,28 @@
                                Command="{Binding RedoCommand}"
                                Appearance="Transparent"/>
                     <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
+                    <ui:Button Icon="{ui:SymbolIcon Copy24}"
+                               ToolTip="コピー (Ctrl+C)"
+                               Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.CopyCommand}"
+                               Appearance="Transparent"
+                               IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                    <ui:Button Icon="{ui:SymbolIcon ClipboardPaste24}"
+                               ToolTip="貼り付け (Ctrl+V)"
+                               Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.PasteCommand}"
+                               Appearance="Transparent"
+                               IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
+                    <ui:Button Icon="{ui:SymbolIcon DismissCircle24}"
+                               ToolTip="すべてクリア"
+                               Command="{Binding MacroPanelViewModel.ButtonPanelViewModel.ClearCommand}"
+                               Appearance="Transparent"
+                               IsEnabled="{Binding IsRunning, Converter={StaticResource InvertBooleanConverter}}"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
                     <ui:Button Icon="{ui:SymbolIcon Settings24}"
                                ToolTip="設定"
                                Appearance="Transparent"
                                Click="SettingsButton_Click"/>
+                    <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
                     <ui:Button Icon="{ui:SymbolIcon Info24}"
                                ToolTip="バージョン情報"
                                Command="{Binding VersionInfoCommand}"

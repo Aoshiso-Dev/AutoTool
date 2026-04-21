@@ -297,7 +297,7 @@ public class CommandRunningBadgeTextConverter : IMultiValueConverter
 
         return item switch
         {
-            ILoopItem loopItem => $"LOOP {ResolveLoopProgress(loopItem)}/{Math.Max(loopItem.LoopCount, 1)}",
+            ILoopItem => "LOOP 実行中",
             IIfItem => "IF 実行中",
             IRetryItem => "RETRY 実行中",
             _ => string.Empty
@@ -307,13 +307,6 @@ public class CommandRunningBadgeTextConverter : IMultiValueConverter
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
         return [];
-    }
-
-    private static int ResolveLoopProgress(ILoopItem loopItem)
-    {
-        var total = Math.Max(loopItem.LoopCount, 1);
-        var current = (int)Math.Ceiling((loopItem.Progress / 100d) * total);
-        return Math.Clamp(current <= 0 ? 1 : current, 1, total);
     }
 }
 

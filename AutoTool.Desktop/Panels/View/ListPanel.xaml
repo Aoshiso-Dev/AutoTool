@@ -290,7 +290,7 @@
                                             <MultiBinding Converter="{StaticResource CommandIndentMarginConverter}">
                                                 <Binding/>
                                                 <Binding Path="DataContext.CommandList.Items" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
-                                                <Binding Path="DataContext.CollapsedStateVersion" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                <Binding Path="DataContext.IndentLayoutVersion" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
                                             </MultiBinding>
                                         </Border.Margin>
                                     <Grid>

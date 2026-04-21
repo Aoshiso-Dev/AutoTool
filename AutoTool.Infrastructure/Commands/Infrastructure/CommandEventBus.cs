@@ -84,7 +84,8 @@ public sealed class CommandEventBus : ICommandEventBus
             {
                 SingleReader = true,
                 SingleWriter = false,
-                FullMode = BoundedChannelFullMode.DropWrite
+                // 古いイベントを優先的に破棄し、最新の進捗・状態を UI に反映しやすくする
+                FullMode = BoundedChannelFullMode.DropOldest
             });
 
         var subscriberId = AddSubscriber(subscriberChannel);

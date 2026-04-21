@@ -49,6 +49,9 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     [ObservableProperty]
     private int _enableVisualStateVersion;
 
+    [ObservableProperty]
+    private int _indentLayoutVersion;
+
     public ICommandListItem? SelectedItem
     {
         get => _selectedItems.FirstOrDefault();
@@ -711,6 +714,15 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
     private void CommandItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (e.Action is NotifyCollectionChangedAction.Add
+            or NotifyCollectionChangedAction.Remove
+            or NotifyCollectionChangedAction.Move
+            or NotifyCollectionChangedAction.Reset
+            or NotifyCollectionChangedAction.Replace)
+        {
+            IndentLayoutVersion++;
+        }
+
         if (e.OldItems is not null)
         {
             foreach (var oldItem in e.OldItems.OfType<ICommandListItem>())

@@ -51,7 +51,8 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
             {
                 TypeName = typeName,
                 DisplayName = _commandRegistry.GetDisplayName(typeName),
-                Category = _commandRegistry.GetCategoryName(typeName)
+                Category = _commandRegistry.GetCategoryName(typeName),
+                Description = CommandDescriptionCatalog.GetDescription(typeName)
             })
             .ToList();
         

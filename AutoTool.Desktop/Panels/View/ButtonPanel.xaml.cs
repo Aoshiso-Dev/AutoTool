@@ -1,17 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using AutoTool.Desktop.Panels.ViewModel;
 
 namespace AutoTool.Desktop.Panels.View;
 
@@ -24,5 +13,25 @@ public partial class ButtonPanel : UserControl
     {
         InitializeComponent();
     }
-}
 
+    private void AddCommandButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ButtonPanelViewModel viewModel)
+        {
+            return;
+        }
+
+        var commandSelectionWindow = new CommandSelectionWindow(viewModel.ItemTypes, viewModel.SelectedItemType)
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        if (commandSelectionWindow.ShowDialog() != true || commandSelectionWindow.SelectedCommand is null)
+        {
+            return;
+        }
+
+        viewModel.SelectedItemType = commandSelectionWindow.SelectedCommand;
+        viewModel.Add();
+    }
+}

@@ -2,6 +2,7 @@
 using AutoTool.Application.History;
 using AutoTool.Application.History.Commands;
 using AutoTool.Automation.Contracts.Lists;
+using AutoTool.Automation.Runtime.Definitions;
 using AutoTool.Automation.Runtime.Lists;
 
 namespace AutoTool.Desktop.ViewModel;
@@ -44,29 +45,51 @@ public partial class MacroPanelViewModel
     private void HandleAdd(string itemType)
     {
         ClosePreflightPanelForListInteraction();
+        var itemsToAdd = CreateItemsForAdd(itemType);
+        if (itemsToAdd.Count == 0)
+        {
+            PublishStatusMessage("コマンド追加に失敗しました。");
+            return;
+        }
+
+        var targetIndex = _listPanel.SelectedLineNumber >= 0
+            ? _listPanel.SelectedLineNumber + 1
+            : _listPanel.GetCount();
+
         if (_commandHistory is not null)
         {
-            var newItem = _commandRegistry.CreateCommandItem(itemType);
-            if (newItem is not null)
+            if (itemsToAdd.Count == 1)
             {
-                var targetIndex = _listPanel.SelectedLineNumber + 1;
                 var addCommand = new AddItemCommand(
-                    newItem,
+                    itemsToAdd[0],
                     targetIndex,
                     (item, index) => _listPanel.InsertAt(index, item),
-                    index => _listPanel.RemoveAt(index)
-                );
+                    index => _listPanel.RemoveAt(index));
+                _commandHistory.ExecuteCommand(addCommand);
+            }
+            else
+            {
+                var addCommand = new AddItemsCommand(
+                    itemsToAdd,
+                    targetIndex,
+                    (item, index) => _listPanel.InsertAt(index, item),
+                    index => _listPanel.RemoveAt(index));
                 _commandHistory.ExecuteCommand(addCommand);
             }
         }
         else
         {
-            _listPanel.Add(itemType);
+            for (var i = 0; i < itemsToAdd.Count; i++)
+            {
+                _listPanel.InsertAt(targetIndex + i, itemsToAdd[i]);
+            }
         }
 
         _editPanel.SetListCount(_listPanel.GetCount());
         var addedCommandName = CommandListItem.GetDisplayNameForType(itemType);
-        PublishStatusMessage($"{addedCommandName} を追加しました。");
+        PublishStatusMessage(itemsToAdd.Count > 1
+            ? $"{addedCommandName}（開始/終了）を追加しました。"
+            : $"{addedCommandName} を追加しました。");
     }
 
     private void HandleUp()
@@ -175,45 +198,26 @@ public partial class MacroPanelViewModel
             selectedItems.Add(selectedItem);
         }
 
-        if (selectedItems.Count == 1)
+        var entries = ExpandDeleteEntriesWithPairs(selectedItems);
+        if (entries.Count == 0)
         {
-            var target = selectedItems[0];
-            var selectedIndex = _listPanel.CommandList.Items.IndexOf(target);
-            if (selectedIndex < 0)
-            {
-                PublishStatusMessage("削除対象のコマンドが見つかりませんでした。");
-                return;
-            }
+            PublishStatusMessage("削除対象のコマンドが見つかりませんでした。");
+            return;
+        }
 
-            if (_commandHistory is not null)
+        if (_commandHistory is not null)
+        {
+            if (entries.Count == 1)
             {
+                var entry = entries[0];
                 var removeCommand = new RemoveItemCommand(
-                    target.Clone(),
-                    selectedIndex,
+                    entry.Item.Clone(),
+                    entry.Index,
                     (item, index) => _listPanel.InsertAt(index, item),
-                    index => _listPanel.RemoveAt(index)
-                );
+                    index => _listPanel.RemoveAt(index));
                 _commandHistory.ExecuteCommand(removeCommand);
             }
             else
-            {
-                _listPanel.Delete();
-            }
-        }
-        else
-        {
-            var entries = selectedItems
-                .Select(item => (Item: item.Clone(), Index: _listPanel.CommandList.Items.IndexOf(item)))
-                .Where(x => x.Index >= 0)
-                .OrderBy(x => x.Index)
-                .ToList();
-
-            if (entries.Count == 0)
-            {
-                return;
-            }
-
-            if (_commandHistory is not null)
             {
                 var removeCommand = new RemoveItemsCommand(
                     entries,
@@ -221,12 +225,12 @@ public partial class MacroPanelViewModel
                     index => _listPanel.RemoveAt(index));
                 _commandHistory.ExecuteCommand(removeCommand);
             }
-            else
+        }
+        else
+        {
+            foreach (var (_, index) in entries.OrderByDescending(x => x.Index))
             {
-                foreach (var (_, index) in entries.OrderByDescending(x => x.Index))
-                {
-                    _listPanel.RemoveAt(index);
-                }
+                _listPanel.RemoveAt(index);
             }
         }
 
@@ -237,7 +241,7 @@ public partial class MacroPanelViewModel
             RequestNewFileState();
         }
 
-        PublishStatusMessage($"{selectedItems.Count}件のコマンドを削除しました。");
+        PublishStatusMessage($"{entries.Count}件のコマンドを削除しました。");
     }
 
     private void HandleCopy()
@@ -453,6 +457,105 @@ public partial class MacroPanelViewModel
         {
             loopEndItem.Pair = null;
         }
+
+        if (item is IRetryItem retryItem)
+        {
+            retryItem.Pair = null;
+        }
+
+        if (item is IRetryEndItem retryEndItem)
+        {
+            retryEndItem.Pair = null;
+        }
+    }
+
+    private List<ICommandListItem> CreateItemsForAdd(string itemType)
+    {
+        var startItem = _commandRegistry.CreateCommandItem(itemType);
+        if (startItem is null)
+        {
+            return [];
+        }
+
+        startItem.ItemType = itemType;
+        var result = new List<ICommandListItem> { startItem };
+
+        var endType = GetAutoPairedEndType(itemType);
+        if (string.IsNullOrWhiteSpace(endType))
+        {
+            return result;
+        }
+
+        var endItem = _commandRegistry.CreateCommandItem(endType);
+        if (endItem is null)
+        {
+            return result;
+        }
+
+        endItem.ItemType = endType;
+        result.Add(endItem);
+        return result;
+    }
+
+    private static string? GetAutoPairedEndType(string itemType)
+    {
+        return itemType switch
+        {
+            CommandTypeNames.Loop => CommandTypeNames.LoopEnd,
+            CommandTypeNames.Retry => CommandTypeNames.RetryEnd,
+            CommandTypeNames.IfImageExist
+                or CommandTypeNames.IfImageNotExist
+                or CommandTypeNames.IfTextExist
+                or CommandTypeNames.IfTextNotExist
+                or CommandTypeNames.IfImageExistAI
+                or CommandTypeNames.IfImageNotExistAI
+                or CommandTypeNames.IfVariable => CommandTypeNames.IfEnd,
+            _ => null
+        };
+    }
+
+    private static ICommandListItem? GetPairedItem(ICommandListItem item)
+    {
+        return item switch
+        {
+            IIfItem ifItem => ifItem.Pair,
+            IIfEndItem ifEndItem => ifEndItem.Pair,
+            ILoopItem loopItem => loopItem.Pair,
+            ILoopEndItem loopEndItem => loopEndItem.Pair,
+            IRetryItem retryItem => retryItem.Pair,
+            IRetryEndItem retryEndItem => retryEndItem.Pair,
+            _ => null
+        };
+    }
+
+    private List<(ICommandListItem Item, int Index)> ExpandDeleteEntriesWithPairs(IReadOnlyCollection<ICommandListItem> selectedItems)
+    {
+        var indexSet = new HashSet<int>();
+        foreach (var item in selectedItems)
+        {
+            var index = _listPanel.CommandList.Items.IndexOf(item);
+            if (index >= 0)
+            {
+                indexSet.Add(index);
+            }
+
+            var pair = GetPairedItem(item);
+            if (pair is null)
+            {
+                continue;
+            }
+
+            var pairIndex = _listPanel.CommandList.Items.IndexOf(pair);
+            if (pairIndex >= 0)
+            {
+                indexSet.Add(pairIndex);
+            }
+        }
+
+        return indexSet
+            .OrderBy(x => x)
+            .Select(index => (Item: _listPanel.CommandList.Items[index].Clone(), Index: index))
+            .ToList();
     }
 
     private bool TryReadInAppClipboardItems(out IReadOnlyList<ICommandListItem> items)
