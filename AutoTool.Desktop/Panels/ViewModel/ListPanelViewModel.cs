@@ -22,6 +22,8 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public event Action<ICommandListItem?>? SelectedItemChanged;
     public event Action<ICommandListItem?>? ItemDoubleClicked;
     public event Action? InteractionRequested;
+    public event Action<int, int>? MoveItemRequested;
+    public event Action? DeleteRequested;
 
     #region Properties
     [ObservableProperty]
@@ -270,6 +272,24 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         }
     }
 
+    public void RequestMoveItem(int fromIndex, int toIndex)
+    {
+        if (fromIndex < 0 || fromIndex >= CommandList.Items.Count ||
+            toIndex < 0 || toIndex >= CommandList.Items.Count ||
+            fromIndex == toIndex)
+        {
+            return;
+        }
+
+        if (MoveItemRequested is not null)
+        {
+            MoveItemRequested.Invoke(fromIndex, toIndex);
+            return;
+        }
+
+        MoveItem(fromIndex, toIndex);
+    }
+
     /// <summary>
     /// アイテムを追加（Undo/Redo用）
     /// </summary>
@@ -387,6 +407,17 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         // CollectionViewを更新して日本語表示名を適用
         CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
         UpdateCollapsedState();
+    }
+
+    public void RequestDelete()
+    {
+        if (DeleteRequested is not null)
+        {
+            DeleteRequested.Invoke();
+            return;
+        }
+
+        Delete();
     }
 
     /// <summary>

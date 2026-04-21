@@ -365,8 +365,8 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- 行移動 -->
-                <DataGridTemplateColumn x:Name="MoveColumn" Header="" Width="52">
+                <!-- 操作ボタン -->
+                <DataGridTemplateColumn x:Name="ActionColumn" Header="" Width="158">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                             <Setter Property="Padding" Value="0"/>
@@ -392,12 +392,25 @@
                             <StackPanel Orientation="Horizontal"
                                         VerticalAlignment="Center"
                                         HorizontalAlignment="Center">
+                                <ui:Button Icon="{ui:SymbolIcon Settings24}" 
+                                           Appearance="Secondary"
+                                           Click="EditSettingsButton_Click"
+                                           ToolTip="設定を編集"
+                                           Padding="0"
+                                           Margin="0"
+                                           Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                           Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                           MinWidth="0"
+                                           MinHeight="0"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                                 <ui:Button Icon="{ui:SymbolIcon ArrowUp24}"
                                            Appearance="Secondary"
                                            Click="MoveUpCommandButton_Click"
                                            ToolTip="1行上へ移動"
                                            Padding="0"
-                                           Margin="0"
+                                           Margin="2,0,0,0"
                                            Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
                                            Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
                                            MinWidth="0"
@@ -418,89 +431,20 @@
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
+                                <ui:Button Icon="{ui:SymbolIcon Delete24}"
+                                           Appearance="Secondary"
+                                           Click="DeleteCommandButton_Click"
+                                           ToolTip="このコマンドを削除"
+                                           Padding="0"
+                                           Margin="2,0,0,0"
+                                           Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                           Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                           MinWidth="0"
+                                           MinHeight="0"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                             </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <!-- 行削除 -->
-                <DataGridTemplateColumn x:Name="DeleteColumn" Header="" Width="36">
-                    <DataGridTemplateColumn.CellStyle>
-                        <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                </Trigger>
-                                <MultiTrigger>
-                                    <MultiTrigger.Conditions>
-                                        <Condition Property="IsSelected" Value="True"/>
-                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
-                                    </MultiTrigger.Conditions>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                </MultiTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGridTemplateColumn.CellStyle>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ui:Button Icon="{ui:SymbolIcon Delete24}"
-                                       Appearance="Secondary"
-                                       Click="DeleteCommandButton_Click"
-                                       ToolTip="このコマンドを削除"
-                                       Padding="0"
-                                       Margin="0"
-                                       Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                       Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                       MinWidth="0"
-                                       MinHeight="0"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <!-- 設定編集ボタン -->
-                <DataGridTemplateColumn x:Name="EditColumn" Header="" Width="40">
-                    <DataGridTemplateColumn.CellStyle>
-                        <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                </Trigger>
-                                <MultiTrigger>
-                                    <MultiTrigger.Conditions>
-                                        <Condition Property="IsSelected" Value="True"/>
-                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
-                                    </MultiTrigger.Conditions>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                </MultiTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGridTemplateColumn.CellStyle>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ui:Button Icon="{ui:SymbolIcon Settings24}" 
-                                       Appearance="Secondary"
-                                       Click="EditSettingsButton_Click"
-                                       ToolTip="設定を編集"
-                                       Padding="0"
-                                       Margin="0"
-                                       Width="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                       Height="{Binding RowHeight, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                       MinWidth="0"
-                                       MinHeight="0"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

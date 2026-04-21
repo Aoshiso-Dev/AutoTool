@@ -125,6 +125,29 @@ public partial class MacroPanelViewModel
         PublishStatusMessage("コマンドを下へ移動しました。");
     }
 
+    private void HandleMoveItemRequested(int fromIndex, int toIndex)
+    {
+        ClosePreflightPanelForListInteraction();
+        if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex)
+        {
+            return;
+        }
+
+        if (_commandHistory is not null)
+        {
+            var moveCommand = new MoveItemCommand(
+                fromIndex,
+                toIndex,
+                (from, to) => _listPanel.MoveItem(from, to)
+            );
+            _commandHistory.ExecuteCommand(moveCommand);
+        }
+        else
+        {
+            _listPanel.MoveItem(fromIndex, toIndex);
+        }
+    }
+
     private void HandleDelete()
     {
         ClosePreflightPanelForListInteraction();

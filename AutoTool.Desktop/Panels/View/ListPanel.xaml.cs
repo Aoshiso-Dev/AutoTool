@@ -152,10 +152,8 @@ public partial class ListPanel : UserControl
 
     private void ApplyActionColumnWidths(double rowHeight)
     {
-        SetColumnWidth(DeleteColumn, rowHeight);
-        SetColumnWidth(EditColumn, rowHeight);
-        // 上下ボタンは2個を横並びにするため、1つ分の隙間(2px)を加える
-        SetColumnWidth(MoveColumn, rowHeight * 2 + 2);
+        // 操作ボタン列（設定/上移動/下移動/削除）を1セルで表示
+        SetColumnWidth(ActionColumn, rowHeight * 4 + 6);
     }
 
     private static void SetColumnWidth(DataGridColumn column, double width)
@@ -353,7 +351,7 @@ public partial class ListPanel : UserControl
             return;
         }
 
-        viewModel.MoveItem(fromIndex, toIndex);
+        viewModel.RequestMoveItem(fromIndex, toIndex);
         viewModel.SetSelectedItems([sourceItem]);
         viewModel.NotifyInteraction();
         e.Handled = true;
@@ -394,7 +392,7 @@ public partial class ListPanel : UserControl
         }
 
         viewModel.SelectedLineNumber = item.LineNumber - 1;
-        viewModel.Delete();
+        viewModel.RequestDelete();
     }
 
     /// <summary>
@@ -412,8 +410,9 @@ public partial class ListPanel : UserControl
             return;
         }
 
-        viewModel.SelectedLineNumber = item.LineNumber - 1;
-        viewModel.Up();
+        var fromIndex = item.LineNumber - 1;
+        viewModel.SelectedLineNumber = fromIndex;
+        viewModel.RequestMoveItem(fromIndex, fromIndex - 1);
     }
 
     /// <summary>
@@ -431,8 +430,9 @@ public partial class ListPanel : UserControl
             return;
         }
 
-        viewModel.SelectedLineNumber = item.LineNumber - 1;
-        viewModel.Down();
+        var fromIndex = item.LineNumber - 1;
+        viewModel.SelectedLineNumber = fromIndex;
+        viewModel.RequestMoveItem(fromIndex, fromIndex + 1);
     }
 
     private void ToggleBlockCollapseButton_Click(object sender, RoutedEventArgs e)
