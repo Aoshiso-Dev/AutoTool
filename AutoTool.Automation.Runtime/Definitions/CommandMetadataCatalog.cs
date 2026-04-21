@@ -27,6 +27,16 @@ public sealed class CommandMetadata
 /// </summary>
 public static class CommandMetadataCatalog
 {
+    private static readonly IReadOnlyDictionary<string, string> LegacyTypeAliases =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["EndLoop"] = CommandTypeNames.LoopEnd,
+            ["LoopEnd"] = CommandTypeNames.LoopEnd,
+            ["EndIf"] = CommandTypeNames.IfEnd,
+            ["IfEnd"] = CommandTypeNames.IfEnd,
+            ["RetryEnd"] = CommandTypeNames.RetryEnd
+        };
+
     private static readonly Lazy<IReadOnlyDictionary<string, CommandMetadata>> ByTypeName =
         new(CreateByTypeName);
 
@@ -40,13 +50,27 @@ public static class CommandMetadataCatalog
 
     public static bool TryGetByTypeName(string typeName, out CommandMetadata metadata)
     {
-        if (string.IsNullOrWhiteSpace(typeName))
+        var normalized = NormalizeTypeName(typeName);
+        if (string.IsNullOrWhiteSpace(normalized))
         {
             metadata = null!;
             return false;
         }
 
-        return ByTypeName.Value.TryGetValue(typeName, out metadata!);
+        return ByTypeName.Value.TryGetValue(normalized, out metadata!);
+    }
+
+    public static string NormalizeTypeName(string typeName)
+    {
+        if (string.IsNullOrWhiteSpace(typeName))
+        {
+            return typeName;
+        }
+
+        var trimmed = typeName.Trim();
+        return LegacyTypeAliases.TryGetValue(trimmed, out var mapped)
+            ? mapped
+            : trimmed;
     }
 
     public static bool TryGetByItemType(Type itemType, out CommandMetadata metadata)

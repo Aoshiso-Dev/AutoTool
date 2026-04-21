@@ -13,6 +13,27 @@ using AutoTool.Desktop.Panels.ViewModel;
 
 namespace AutoTool.Desktop.Panels.View.Converter;
 
+internal static class BlockCommandToggleRule
+{
+    public static bool IsToggleTarget(ICommandListItem item)
+    {
+        return IsBlockStart(item) || IsBlockEnd(item);
+    }
+
+    public static bool IsBlockStart(ICommandListItem item)
+    {
+        return item is ILoopItem or IIfItem
+            || (CommandMetadataCatalog.TryGetByTypeName(item.ItemType, out var metadata)
+                && (metadata.IsIfCommand || metadata.IsLoopCommand));
+    }
+
+    public static bool IsBlockEnd(ICommandListItem item)
+    {
+        return item is ILoopEndItem or IIfEndItem or IRetryEndItem
+            || (CommandMetadataCatalog.TryGetByTypeName(item.ItemType, out var metadata) && metadata.IsEndCommand);
+    }
+}
+
 /// <summary>
 /// 値を画面表示やバインディング向けの形式へ変換します。
 /// </summary>
@@ -178,7 +199,7 @@ public class NestLevelToMarginConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        return value is int nestLevel ? new Thickness(nestLevel * 20, 0, 0, 0) : new Thickness(0);
+        return value is int nestLevel ? new Thickness(Math.Max(nestLevel, 0) * 16, 0, 0, 0) : new Thickness(0);
     }
 
     /// <summary>
@@ -187,6 +208,126 @@ public class NestLevelToMarginConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
         return Binding.DoNothing;
+    }
+}
+
+/// <summary>
+/// コマンド行の種類も考慮してインデントを算出します。
+/// </summary>
+public class CommandIndentMarginConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 1 || values[0] is not ICommandListItem item)
+        {
+            return new Thickness(0);
+        }
+
+        var commandItems = values.Length > 1 && values[1] is IEnumerable<ICommandListItem> items
+            ? items
+            : values.Length > 2 && values[2] is IEnumerable<ICommandListItem> moreItems
+                ? moreItems
+                : null;
+
+        var nestLevel = commandItems is null ? item.NestLevel : CalculateDisplayNestLevel(item, commandItems);
+
+        var indent = Math.Max(nestLevel, 0) * 20;
+
+        return new Thickness(indent, 0, 0, 0);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return [];
+    }
+
+    private static int CalculateDisplayNestLevel(ICommandListItem target, IEnumerable<ICommandListItem> items)
+    {
+        var depth = 0;
+
+        foreach (var command in items)
+        {
+            var isEnd = IsBlockEndCommandType(command.ItemType);
+            if (isEnd)
+            {
+                depth = Math.Max(0, depth - 1);
+
+                if (ReferenceEquals(command, target) || command.LineNumber == target.LineNumber)
+                {
+                    return depth;
+                }
+
+                continue;
+            }
+
+            if (ReferenceEquals(command, target) || command.LineNumber == target.LineNumber)
+            {
+                return depth;
+            }
+
+            if (IsBlockStartCommandType(command.ItemType))
+            {
+                depth++;
+            }
+        }
+
+        var fallback = items.FirstOrDefault(x => x is not null && x.LineNumber == target.LineNumber);
+        if (fallback is not null)
+        {
+            return Math.Max(fallback.NestLevel, 0);
+        }
+
+        return Math.Max(target.NestLevel, 0);
+    }
+
+    private static bool IsBlockStartCommandType(string itemType)
+    {
+        return itemType is
+            CommandTypeNames.Loop or
+            CommandTypeNames.IfImageExist or
+            CommandTypeNames.IfImageNotExist or
+            CommandTypeNames.IfTextExist or
+            CommandTypeNames.IfTextNotExist or
+            CommandTypeNames.IfImageExistAI or
+            CommandTypeNames.IfImageNotExistAI or
+            CommandTypeNames.IfVariable or
+            CommandTypeNames.Retry;
+    }
+
+    private static bool IsBlockEndCommandType(string itemType)
+    {
+        return itemType is
+            CommandTypeNames.LoopEnd or
+            CommandTypeNames.IfEnd or
+            CommandTypeNames.RetryEnd;
+    }
+
+}
+
+/// <summary>
+/// 開始行のトグルボタン分の左マージンを返します。
+/// </summary>
+public class CommandToggleLeadingMarginConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        var item = values.Length > 0 ? values[0] as ICommandListItem : null;
+        if (item is null)
+        {
+            return new Thickness(0);
+        }
+
+        if (BlockCommandToggleRule.IsToggleTarget(item))
+        {
+            return new Thickness(24, 0, 0, 0);
+        }
+
+        return new Thickness(0);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return [];
     }
 }
 
@@ -307,7 +448,7 @@ public class CommandTypeToFluentIconConverter : IValueConverter
             CommandTypeNames.Screenshot => SymbolRegular.Screenshot24,
             CommandTypeNames.Loop => SymbolRegular.ArrowRepeatAll24,
             CommandTypeNames.LoopEnd => SymbolRegular.ArrowRepeatAll24,
-            CommandTypeNames.LoopBreak => SymbolRegular.ArrowRepeatAll24,
+            CommandTypeNames.LoopBreak => SymbolRegular.Dismiss24,
             CommandTypeNames.Retry => SymbolRegular.ArrowUp24,
             CommandTypeNames.RetryEnd => SymbolRegular.ArrowDown24,
             CommandTypeNames.IfImageExist => SymbolRegular.Merge24,
@@ -889,7 +1030,7 @@ public class CommandRowCollapsedConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (values.Length < 2 || values[0] is not ICommandListItem item || values[1] is not IListPanelViewModel viewModel)
+        if (values.Length < 3 || values[0] is not ICommandListItem item || values[1] is not IListPanelViewModel viewModel)
         {
             return false;
         }
@@ -904,77 +1045,58 @@ public class CommandRowCollapsedConverter : IMultiValueConverter
 }
 
 /// <summary>
-/// 開始系コマンド行のトグルボタン可視性を判定します。
+/// 開始/終了コマンド行のトグルボタン可視性を判定します。
 /// </summary>
 public class CommandBlockToggleVisibilityConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
         var item = values.Length > 0 ? values[0] as ICommandListItem : null;
-        if (item is null || values.Length < 2 || values[1] is not IListPanelViewModel viewModel)
+        if (item is null || values.Length < 3 || values[1] is not IListPanelViewModel viewModel)
         {
-            return item is not null && IsBlockStartCommandType(item.ItemType);
+            return item is null ? Visibility.Collapsed : BlockCommandToggleRule.IsToggleTarget(item) ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        return viewModel.IsBlockStartCommand(item);
+        return viewModel is not null && (BlockCommandToggleRule.IsBlockStart(item) || BlockCommandToggleRule.IsBlockEnd(item))
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
         return [];
     }
-
-    private static bool IsBlockStartCommandType(string itemType)
-    {
-        return itemType is
-            CommandTypeNames.Loop or
-            CommandTypeNames.IfImageExist or
-            CommandTypeNames.IfImageNotExist or
-            CommandTypeNames.IfTextExist or
-            CommandTypeNames.IfTextNotExist or
-            CommandTypeNames.IfImageExistAI or
-            CommandTypeNames.IfImageNotExistAI or
-            CommandTypeNames.IfVariable;
-    }
 }
 
 /// <summary>
-/// 開始系コマンド行の折りたたみ状態をアイコン文字列に変換します。
+/// 開始/終了コマンド行の折りたたみ状態をアイコン文字列に変換します。
 /// </summary>
 public class CommandBlockToggleGlyphConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
         var item = values.Length > 0 ? values[0] as ICommandListItem : null;
-        if (item is null || values.Length < 2 || values[1] is not IListPanelViewModel viewModel)
+        if (item is null || values.Length < 3 || values[1] is not IListPanelViewModel viewModel)
         {
-            return item is not null && IsBlockStartCommandType(item.ItemType) ? "▾" : string.Empty;
+            if (item is null)
+            {
+                return string.Empty;
+            }
+
+            return BlockCommandToggleRule.IsBlockEnd(item) ? "▴" : "▾";
         }
 
-        if (!viewModel.IsBlockStartCommand(item))
+        if (BlockCommandToggleRule.IsBlockStart(item) || BlockCommandToggleRule.IsBlockEnd(item))
         {
-            return string.Empty;
+            return BlockCommandToggleRule.IsBlockEnd(item) ? "▴" : viewModel.IsBlockCollapsed(item) ? "▸" : "▾";
         }
 
-        return viewModel.IsBlockCollapsed(item) ? "▸" : "▾";
+        return string.Empty;
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
     {
         return [];
-    }
-
-    private static bool IsBlockStartCommandType(string itemType)
-    {
-        return itemType is
-            CommandTypeNames.Loop or
-            CommandTypeNames.IfImageExist or
-            CommandTypeNames.IfImageNotExist or
-            CommandTypeNames.IfTextExist or
-            CommandTypeNames.IfTextNotExist or
-            CommandTypeNames.IfImageExistAI or
-            CommandTypeNames.IfImageNotExistAI or
-            CommandTypeNames.IfVariable;
     }
 }
 

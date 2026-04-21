@@ -394,7 +394,12 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     /// </summary>
     public bool IsBlockStartCommand(ICommandListItem item)
     {
-        return item is not null && (_commandRegistry.IsIfCommand(item.ItemType) || _commandRegistry.IsLoopCommand(item.ItemType));
+        if (item is null)
+        {
+            return false;
+        }
+
+        return _commandRegistry.IsIfCommand(item.ItemType) || _commandRegistry.IsLoopCommand(item.ItemType);
     }
 
     /// <summary>
@@ -428,8 +433,8 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
                 continue;
             }
 
-            if (item.LineNumber > startLine && item.LineNumber < endLine &&
-                item.NestLevel > start.NestLevel)
+            if (item.LineNumber > startLine && item.LineNumber <= endLine &&
+                (item.NestLevel > start.NestLevel || item.LineNumber == endLine))
             {
                 return true;
             }
@@ -443,21 +448,43 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     /// </summary>
     public void ToggleBlockCollapse(ICommandListItem item)
     {
-        if (!IsBlockStartCommand(item))
+        var blockStart = ResolveBlockStartForToggle(item);
+        if (blockStart is null)
         {
             return;
         }
 
-        if (_collapsedBlockStarts.Contains(item))
+        if (_collapsedBlockStarts.Contains(blockStart))
         {
-            _collapsedBlockStarts.Remove(item);
+            _collapsedBlockStarts.Remove(blockStart);
         }
         else
         {
-            _collapsedBlockStarts.Add(item);
+            _collapsedBlockStarts.Add(blockStart);
         }
 
         UpdateCollapsedState();
+    }
+
+    private ICommandListItem? ResolveBlockStartForToggle(ICommandListItem item)
+    {
+        if (item is null)
+        {
+            return null;
+        }
+
+        if (IsBlockStartCommand(item))
+        {
+            return item;
+        }
+
+        return item switch
+        {
+            ILoopEndItem { Pair: ICommandListItem pair } when IsBlockStartCommand(pair) => pair,
+            IIfEndItem { Pair: ICommandListItem pair } when IsBlockStartCommand(pair) => pair,
+            IRetryEndItem { Pair: ICommandListItem pair } when IsBlockStartCommand(pair) => pair,
+            _ => null
+        };
     }
 
     private void UpdateCollapsedState()
