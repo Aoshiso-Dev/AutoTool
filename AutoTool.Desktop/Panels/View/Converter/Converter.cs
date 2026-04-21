@@ -72,6 +72,25 @@ public class BoolToVisibilityConverter : IValueConverter
 /// <summary>
 /// 値を画面表示やバインディング向けの形式へ変換します。
 /// </summary>
+public class InverseBoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is bool boolValue && boolValue ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>
+    /// 一方向バインディング用のため未実装
+    /// </summary>
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}
+
+/// <summary>
+/// 値を画面表示やバインディング向けの形式へ変換します。
+/// </summary>
 public class BoolToVisibilityMultiConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)

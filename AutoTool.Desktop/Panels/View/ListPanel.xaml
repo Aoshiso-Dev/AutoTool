@@ -11,6 +11,7 @@
     <UserControl.Resources>
         <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         <converter:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converter:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
         <converter:NumberToBooleanConverter x:Key="NumberToBooleanConverter"/>
         <converter:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
         <converter:ValidationErrorContainsItemConverter x:Key="ValidationErrorContainsItemConverter"/>
@@ -218,7 +219,7 @@
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"
                                                FontSize="12"
-                                               Visibility="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}">
+                                               Visibility="{Binding IsRunning, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                                         <TextBlock.Opacity>
                                             <MultiBinding Converter="{StaticResource CommandEffectiveEnabledOpacityConverter}">
                                                 <Binding/>
