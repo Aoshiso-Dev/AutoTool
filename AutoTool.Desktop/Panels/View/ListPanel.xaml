@@ -16,6 +16,9 @@
         <converter:ValidationErrorContainsItemConverter x:Key="ValidationErrorContainsItemConverter"/>
         <converter:NestLevelToMarginConverter x:Key="NestLevelToMarginConverter"/>
         <converter:CommandTypeToCategoryColorConverter x:Key="CommandTypeToCategoryColorConverter"/>
+        <converter:CommandTypeToCompactNameConverter x:Key="CommandTypeToCompactNameConverter"/>
+        <converter:CommandTypeToFluentIconConverter x:Key="CommandTypeToFluentIconConverter"/>
+        <converter:CommandDescriptionToMultilineConverter x:Key="CommandDescriptionToMultilineConverter"/>
         <converter:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
     </UserControl.Resources>
 
@@ -150,86 +153,52 @@
                 <DataGridTemplateColumn x:Name="LineNumberColumn" Header="#" Width="35">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding LineNumber}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       FontSize="12" Opacity="0.5">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Style.Triggers>
-                                            <DataTrigger Value="True">
-                                                <DataTrigger.Binding>
-                                                    <MultiBinding Converter="{StaticResource ValidationErrorContainsItemConverter}">
-                                                        <Binding/>
-                                                        <Binding Path="DataContext.ValidationErrorItems" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
-                                                    </MultiBinding>
-                                                </DataTrigger.Binding>
-                                                <Setter Property="Opacity" Value="0.95"/>
-                                                <Setter Property="Foreground" Value="#C81E1E"/>
-                                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <!-- 進捗 -->
-                <DataGridTemplateColumn x:Name="ProgressColumn" Header="" Width="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Grid Margin="2,0"
-                                  Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <!-- 実行中：プログレス表示 -->
-                                <Border CornerRadius="6" Padding="3,2"
-                                        Background="#1510B981">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        
-                                        <!-- プログレスバー -->
-                                        <Grid Grid.Row="0" Height="8" Margin="0,0,0,2">
-                                            <Border Background="#30808080" CornerRadius="4"/>
-                                            <Border CornerRadius="4" HorizontalAlignment="Left"
-                                                    Width="{Binding Progress, Converter={StaticResource ProgressToWidthConverter}, ConverterParameter=60}">
-                                                <Border.Background>
-                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                        <GradientStop Color="#10B981" Offset="0"/>
-                                                        <GradientStop Color="#34D399" Offset="1"/>
-                                                    </LinearGradientBrush>
-                                                </Border.Background>
-                                            </Border>
-                                        </Grid>
-                                        
-                                        <!-- パーセント表示 -->
-                                        <TextBlock Grid.Row="1" 
-                                                   Text="{Binding Progress, StringFormat={}{0}%}"
-                                                   HorizontalAlignment="Center" 
-                                                   FontSize="11" FontWeight="SemiBold"
-                                                   Foreground="#10B981"/>
+                            <Grid>
+                                <Grid>
+                                    <Grid Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <ui:ProgressRing Width="24"
+                                                        Height="24"
+                                                        Progress="{Binding Progress}"
+                                                        IsIndeterminate="False"/>
+                                        <TextBlock Text="{Binding Progress, StringFormat={}{0}%}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="8"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="White"/>
                                     </Grid>
-                                </Border>
-                                
-                                <!-- 実行中インジケーター（左端のライン） -->
-                                <Border Width="3" HorizontalAlignment="Left" CornerRadius="2" Margin="-4,0,0,0">
-                                    <Border.Background>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Color="#10B981" Offset="0"/>
-                                            <GradientStop Color="#34D399" Offset="0.5"/>
-                                            <GradientStop Color="#10B981" Offset="1"/>
-                                        </LinearGradientBrush>
-                                    </Border.Background>
-                                </Border>
+                                    <TextBlock Text="{Binding LineNumber}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               FontSize="12"
+                                               Opacity="0.5"
+                                               Visibility="{Binding IsRunning, Converter={StaticResource InverseBooleanConverter}}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource ValidationErrorContainsItemConverter}">
+                                                                <Binding/>
+                                                                <Binding Path="DataContext.ValidationErrorItems" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Opacity" Value="0.95"/>
+                                                        <Setter Property="Foreground" Value="#C81E1E"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
                 <!-- コマンド -->
-                <DataGridTemplateColumn x:Name="CommandColumn" Header="コマンド" Width="170">
+                <DataGridTemplateColumn x:Name="CommandColumn" Header="コマンド" Width="210">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                             <Setter Property="Padding" Value="0"/>
@@ -253,18 +222,42 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid Margin="0" VerticalAlignment="Stretch">
-                                <Border Background="{Binding ItemType, Converter={StaticResource CommandTypeToCategoryColorConverter}}" 
+                                <Border
                                         CornerRadius="4"
                                         Padding="8,0"
                                         Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}"
                                         VerticalAlignment="Stretch">
-                                    <TextBlock Text="{Binding DisplayName}" 
-                                               FontWeight="Medium"
-                                               FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                               LineHeight="16"
-                                               LineStackingStrategy="BlockLineHeight"
-                                               VerticalAlignment="Center"
-                                               Foreground="#1a1a1a"/>
+                                    <DockPanel LastChildFill="True" VerticalAlignment="Center">
+                                        <Border Width="22"
+                                                Height="22"
+                                                CornerRadius="4"
+                                                Background="{Binding ItemType, Converter={StaticResource CommandTypeToCategoryColorConverter}}"
+                                                Padding="3,0"
+                                                Margin="0,0,8,0"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Left">
+                                            <ui:SymbolIcon Symbol="{Binding ItemType, Converter={StaticResource CommandTypeToFluentIconConverter}}" 
+                                                           Foreground="#FFFFFF"
+                                                           FontSize="16">
+                                                <ui:SymbolIcon.Effect>
+                                                    <DropShadowEffect BlurRadius="2"
+                                                                      Direction="315"
+                                                                      ShadowDepth="1"
+                                                                      Opacity="0.75"
+                                                                      Color="#99000000"/>
+                                                </ui:SymbolIcon.Effect>
+                                            </ui:SymbolIcon>
+                                        </Border>
+                                        <TextBlock Text="{Binding ItemType, Converter={StaticResource CommandTypeToCompactNameConverter}}" 
+                                                   FontWeight="Medium"
+                                                   FontSize="11"
+                                                   TextTrimming="None"
+                                                   LineHeight="14"
+                                                   LineStackingStrategy="BlockLineHeight"
+                                                   FontFamily="Segoe UI"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="#FFFFFF"/>
+                                    </DockPanel>
                                 </Border>
                             </Grid>
                         </DataTemplate>
@@ -275,19 +268,40 @@
                 <DataGridTemplateColumn x:Name="DescriptionColumn" Header="説明" Width="*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel>
-                                <TextBlock Text="{Binding Description}" 
+                            <StackPanel VerticalAlignment="Center"
+                                        HorizontalAlignment="Stretch">
+                                <TextBlock Text="{Binding Comment}"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                           VerticalAlignment="Center"
                                            FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
                                            LineHeight="16"
                                            LineStackingStrategy="BlockLineHeight"
-                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{Binding Comment}" 
-                                           FontSize="11" FontStyle="Italic"
-                                           LineHeight="14"
-                                           LineStackingStrategy="BlockLineHeight"
-                                           Opacity="0.6"
-                                           Visibility="{Binding HasComment, Converter={StaticResource BoolToVisibilityConverter}}"
-                                           Margin="0,1,0,0"/>
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           FontWeight="SemiBold"
+                                           ToolTip="{Binding Description, Converter={StaticResource CommandDescriptionToMultilineConverter}}"
+                                           ToolTipService.ShowDuration="120000"
+                                           ToolTipService.InitialShowDelay="120"
+                                           ToolTipService.BetweenShowDelay="120"
+                                           ToolTipService.ShowOnDisabled="True"
+                                           Visibility="{Binding HasComment, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Value="True">
+                                                    <DataTrigger.Binding>
+                                                        <MultiBinding Converter="{StaticResource ValidationErrorContainsItemConverter}">
+                                                            <Binding/>
+                                                            <Binding Path="DataContext.ValidationErrorItems" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                        </MultiBinding>
+                                                    </DataTrigger.Binding>
+                                                    <Setter Property="Foreground" Value="#C81E1E"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
