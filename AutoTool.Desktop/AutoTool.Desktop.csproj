@@ -19,6 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="..\AutoTool.Bootstrap\Resource\AutoTool.ico">
+      <Link>Resource\AutoTool.ico</Link>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Settings\appsettings.json</TargetPath>

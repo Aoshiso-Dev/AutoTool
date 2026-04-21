@@ -134,7 +134,7 @@
                     <Border Width="1" Background="{ui:ThemeResource ControlStrokeColorDefaultBrush}" Margin="8,8"/>
                     <ui:Button Icon="{ui:SymbolIcon Info24}"
                                ToolTip="バージョン情報"
-                               Command="{Binding VersionInfoCommand}"
+                               Click="AboutButton_Click"
                                Appearance="Transparent"/>
                 </StackPanel>
             </ui:TitleBar.Header>

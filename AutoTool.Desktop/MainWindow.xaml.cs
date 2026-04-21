@@ -8,6 +8,7 @@ using AutoTool.Commands.Infrastructure;
 using AutoTool.Desktop.Model;
 using AutoTool.Desktop.Panels.View;
 using AutoTool.Desktop.Panels.ViewModel;
+using AutoTool.Desktop.Ui;
 using AutoTool.Desktop.View;
 using Wpf.Ui.Controls;
 
@@ -168,6 +169,16 @@ public partial class MainWindow : FluentWindow
 
         buttonPanelViewModel.SelectedItemType = commandSelectionWindow.SelectedCommand;
         buttonPanelViewModel.Add();
+    }
+
+    private void AboutButton_Click(object sender, RoutedEventArgs e)
+    {
+        var aboutWindow = new AboutWindow
+        {
+            Owner = this
+        };
+
+        _ = aboutWindow.ShowDialog();
     }
 
     private void MainWindow_Closed(object? sender, EventArgs e)

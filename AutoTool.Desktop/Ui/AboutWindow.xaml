@@ -1,0 +1,199 @@
+﻿<Window x:Class="AutoTool.Desktop.Ui.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AutoTool について"
+        Icon="/AutoTool.Desktop;component/Resource/AutoTool.ico"
+        Width="700"
+        Height="560"
+        MinWidth="620"
+        MinHeight="500"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner"
+        Background="#2E3238"
+        Foreground="#EDF0F2"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <Border Margin="14"
+            Padding="16"
+            BorderThickness="1"
+            BorderBrush="#565C65"
+            CornerRadius="10"
+            Background="#2E3238">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Padding="16"
+                    CornerRadius="8"
+                    Background="#3B434E"
+                    BorderBrush="#66707D"
+                    BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Width="52"
+                                    Height="52"
+                                    Margin="0,0,12,0"
+                                    Padding="4"
+                                    CornerRadius="10"
+                                    BorderThickness="1"
+                                    BorderBrush="#66707D"
+                                    Background="#FFFFFF">
+                                <Image Width="40"
+                                       Height="40"
+                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                       SnapsToDevicePixels="True"
+                                       Source="{Binding AboutIconSource}"
+                                       Stretch="Uniform"/>
+                            </Border>
+                            <TextBlock Text="{Binding AppName}"
+                                       VerticalAlignment="Center"
+                                       FontSize="28"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F6F8FA"/>
+                        </StackPanel>
+                        <TextBlock Margin="0,8,0,0"
+                                   Text="{Binding VersionLabel}"
+                                   FontSize="13"
+                                   Foreground="#BFC6CF"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Center">
+                        <Button Content="更新を確認"
+                                MinWidth="130"
+                                Height="34"
+                                Margin="8,0,0,8"
+                                Padding="12,0"
+                                Click="CheckUpdateButton_Click"/>
+                        <Button Content="リリースを見る"
+                                MinWidth="130"
+                                Height="34"
+                                Margin="8,0,0,0"
+                                Padding="12,0"
+                                Click="OpenReleaseButton_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1"
+                          Margin="0,12,0,12"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <Border Margin="0,0,0,10"
+                            Padding="12"
+                            CornerRadius="8"
+                            BorderThickness="1"
+                            BorderBrush="#596372"
+                            Background="#383F49">
+                        <StackPanel>
+                            <TextBlock Text="基本情報"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F6F8FA"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       Text="{Binding VersionLabel}"
+                                       Foreground="#E4E7EB"/>
+                            <TextBlock Margin="0,4,0,0"
+                                       Text="{Binding RuntimeLabel}"
+                                       Foreground="#D5DAE0"/>
+                            <TextBlock Margin="0,4,0,0"
+                                       Text="{Binding BuildInfoLabel}"
+                                       Foreground="#BFC6CF"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Margin="0,0,0,10"
+                            Padding="12"
+                            CornerRadius="8"
+                            BorderThickness="1"
+                            BorderBrush="#596372"
+                            Background="#383F49">
+                        <StackPanel>
+                            <TextBlock Text="サポート"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F6F8FA"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       Text="不具合報告・要望は GitHub Issues から受け付けています。"
+                                       TextWrapping="Wrap"
+                                       Foreground="#D5DAE0"/>
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,10,0,0">
+                                <Button Content="不具合を報告"
+                                        Height="32"
+                                        MinWidth="130"
+                                        Margin="0,0,8,0"
+                                        Click="ReportIssueButton_Click"/>
+                                <Button Content="GitHub を開く"
+                                        Height="32"
+                                        MinWidth="120"
+                                        Click="OpenRepositoryButton_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="12"
+                            CornerRadius="8"
+                            BorderThickness="1"
+                            BorderBrush="#596372"
+                            Background="#383F49">
+                        <StackPanel>
+                            <TextBlock Text="ライセンス"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F6F8FA"/>
+                            <TextBlock Margin="0,8,0,0"
+                                       Text="{Binding LicenseLabel}"
+                                       TextWrapping="Wrap"
+                                       Foreground="#D5DAE0"/>
+                            <Button Content="ライセンス詳細を開く"
+                                    Height="32"
+                                    MinWidth="160"
+                                    Margin="0,10,0,0"
+                                    HorizontalAlignment="Left"
+                                    Click="OpenLicenseButton_Click"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           VerticalAlignment="Center"
+                           Foreground="#BFC6CF"
+                           FontSize="12"
+                           Text="{Binding CommitLabel}"/>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal">
+                    <Button Content="バージョンをコピー"
+                            Height="34"
+                            MinWidth="140"
+                            Margin="0,0,8,0"
+                            Click="CopyVersionButton_Click"/>
+                    <Button Content="閉じる"
+                            Height="34"
+                            MinWidth="100"
+                            IsDefault="True"
+                            IsCancel="True"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
