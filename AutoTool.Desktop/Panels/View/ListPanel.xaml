@@ -19,6 +19,9 @@
         <converter:CommandTypeToCompactNameConverter x:Key="CommandTypeToCompactNameConverter"/>
         <converter:CommandTypeToFluentIconConverter x:Key="CommandTypeToFluentIconConverter"/>
         <converter:CommandDescriptionToMultilineConverter x:Key="CommandDescriptionToMultilineConverter"/>
+        <converter:CommandRowCollapsedConverter x:Key="CommandRowCollapsedConverter"/>
+        <converter:CommandBlockToggleVisibilityConverter x:Key="CommandBlockToggleVisibilityConverter"/>
+        <converter:CommandBlockToggleGlyphConverter x:Key="CommandBlockToggleGlyphConverter"/>
         <converter:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
     </UserControl.Resources>
 
@@ -106,6 +109,15 @@
                             <Setter Property="Background" Value="#20DC2626"/>
                             <Setter Property="BorderBrush" Value="#C81E1E"/>
                             <Setter Property="BorderThickness" Value="2,0,0,0"/>
+                        </DataTrigger>
+                        <DataTrigger Value="True">
+                            <DataTrigger.Binding>
+                                <MultiBinding Converter="{StaticResource CommandRowCollapsedConverter}">
+                                    <Binding/>
+                                    <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                </MultiBinding>
+                            </DataTrigger.Binding>
+                            <Setter Property="Visibility" Value="Collapsed"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -228,6 +240,45 @@
                                         Margin="{Binding NestLevel, Converter={StaticResource NestLevelToMarginConverter}}"
                                         VerticalAlignment="Stretch">
                                     <DockPanel LastChildFill="True" VerticalAlignment="Center">
+                                        <ui:Button Width="18"
+                                                   Height="18"
+                                                   MinWidth="18"
+                                                   MinHeight="18"
+                                                   Padding="0"
+                                                   Margin="0,0,6,0"
+                                                   HorizontalAlignment="Left"
+                                                   VerticalAlignment="Center"
+                                                   BorderThickness="0"
+                                                   Appearance="Secondary"
+                                                   Background="Transparent"
+                                                   Foreground="#FFFFFF"
+                                                   FontSize="10"
+                                                   FontFamily="Segoe UI"
+                                                   Click="ToggleBlockCollapseButton_Click"
+                                                   IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource InverseBooleanConverter}}"
+                                                   Visibility="Collapsed">
+                                            <ui:Button.Style>
+                                                <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Value="True">
+                                                            <DataTrigger.Binding>
+                                                                <MultiBinding Converter="{StaticResource CommandBlockToggleVisibilityConverter}">
+                                                                    <Binding/>
+                                                                    <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                                </MultiBinding>
+                                                            </DataTrigger.Binding>
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ui:Button.Style>
+                                            <ui:Button.Content>
+                                                <MultiBinding Converter="{StaticResource CommandBlockToggleGlyphConverter}">
+                                                    <Binding/>
+                                                    <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType={x:Type UserControl}}"/>
+                                                </MultiBinding>
+                                            </ui:Button.Content>
+                                        </ui:Button>
                                         <Border Width="22"
                                                 Height="22"
                                                 CornerRadius="4"

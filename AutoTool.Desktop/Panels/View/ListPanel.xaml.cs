@@ -120,8 +120,7 @@ public partial class ListPanel : UserControl
                 CommandDataGrid.ColumnHeaderHeight = 28;
                 CommandDataGrid.FontSize = 11;
                 SetColumnWidth(EnableColumn, 50);
-                SetColumnWidth(LineNumberColumn, 30);
-                SetColumnWidth(ProgressColumn, 58);
+                SetColumnWidth(LineNumberColumn, 44);
                 SetColumnWidth(CommandColumn, 130);
                 ApplyActionColumnWidths(CommandDataGrid.RowHeight);
                 DescriptionColumn.Visibility = Visibility.Collapsed;
@@ -131,8 +130,7 @@ public partial class ListPanel : UserControl
                 CommandDataGrid.ColumnHeaderHeight = 34;
                 CommandDataGrid.FontSize = 12;
                 SetColumnWidth(EnableColumn, 56);
-                SetColumnWidth(LineNumberColumn, 34);
-                SetColumnWidth(ProgressColumn, 72);
+                SetColumnWidth(LineNumberColumn, 48);
                 SetColumnWidth(CommandColumn, 170);
                 ApplyActionColumnWidths(CommandDataGrid.RowHeight);
                 DescriptionColumn.Visibility = Visibility.Visible;
@@ -143,8 +141,7 @@ public partial class ListPanel : UserControl
                 CommandDataGrid.ColumnHeaderHeight = 40;
                 CommandDataGrid.FontSize = 14;
                 SetColumnWidth(EnableColumn, 68);
-                SetColumnWidth(LineNumberColumn, 40);
-                SetColumnWidth(ProgressColumn, 96);
+                SetColumnWidth(LineNumberColumn, 56);
                 SetColumnWidth(CommandColumn, 260);
                 ApplyActionColumnWidths(CommandDataGrid.RowHeight);
                 DescriptionColumn.Visibility = Visibility.Visible;
@@ -436,6 +433,22 @@ public partial class ListPanel : UserControl
 
         viewModel.SelectedLineNumber = item.LineNumber - 1;
         viewModel.Down();
+    }
+
+    private void ToggleBlockCollapseButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: AutoTool.Automation.Contracts.Lists.ICommandListItem item })
+        {
+            return;
+        }
+
+        if (DataContext is not ListPanelViewModel viewModel)
+        {
+            return;
+        }
+
+        viewModel.ToggleBlockCollapse(item);
+        e.Handled = true;
     }
 
     /// <summary>

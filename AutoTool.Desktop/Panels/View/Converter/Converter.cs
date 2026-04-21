@@ -8,6 +8,8 @@ using System.Windows.Media;
 using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Automation.Runtime.Definitions;
 using AutoTool.Commands.Model.Input;
+using Wpf.Ui.Controls;
+using AutoTool.Desktop.Panels.ViewModel;
 
 namespace AutoTool.Desktop.Panels.View.Converter;
 
@@ -207,6 +209,133 @@ public class CommandTypeToDisplayNameConverter : IValueConverter
     /// <summary>
     /// 一方向バインディング用のため未実装
     /// </summary>
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}
+
+/// <summary>
+/// 設定内容の説明文を改行表示向けに変換します。
+/// </summary>
+public class CommandDescriptionToMultilineConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not string text || string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        return text.Replace(" / ", Environment.NewLine);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}
+
+/// <summary>
+/// コマンドタイプを短縮表示名に変換します。
+/// </summary>
+public class CommandTypeToCompactNameConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not string commandType || string.IsNullOrWhiteSpace(commandType))
+        {
+            return string.Empty;
+        }
+
+        return commandType switch
+        {
+            CommandTypeNames.Click => "クリック",
+            CommandTypeNames.ClickImage => "画像クリック",
+            CommandTypeNames.FindImage => "画像検索",
+            CommandTypeNames.FindText => "文字検索",
+            CommandTypeNames.ClickImageAI => "画像クリックAI",
+            CommandTypeNames.Hotkey => "ホットキー",
+            CommandTypeNames.Wait => "待機",
+            CommandTypeNames.WaitImage => "画像待機",
+            CommandTypeNames.WaitImageDisappear => "画像消失待機",
+            CommandTypeNames.Execute => "実行",
+            CommandTypeNames.Screenshot => "スクショ",
+            CommandTypeNames.Loop => "ループ開始",
+            CommandTypeNames.LoopEnd => "ループ終了",
+            CommandTypeNames.LoopBreak => "ループ中断",
+            CommandTypeNames.Retry => "リトライ",
+            CommandTypeNames.RetryEnd => "リトライ終了",
+            CommandTypeNames.IfImageExist => "画像ありなら実行",
+            CommandTypeNames.IfImageNotExist => "画像なしなら実行",
+            CommandTypeNames.IfTextExist => "文字ありなら実行",
+            CommandTypeNames.IfTextNotExist => "文字なしなら実行",
+            CommandTypeNames.IfImageExistAI => "AI画像ありなら実行",
+            CommandTypeNames.IfImageNotExistAI => "AI画像なしなら実行",
+            CommandTypeNames.IfVariable => "変数条件",
+            CommandTypeNames.IfEnd => "条件終了",
+            CommandTypeNames.SetVariable => "変数設定",
+            CommandTypeNames.SetVariableAI => "変数AI",
+            CommandTypeNames.SetVariableOCR => "変数OCR",
+            _ => CommandMetadataCatalog.TryGetByTypeName(commandType, out var metadata)
+                ? metadata.DisplayNameJa
+                : commandType
+        };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}
+
+/// <summary>
+/// コマンドタイプを Fluent System Icons に対応するアイコンに変換します。
+/// </summary>
+public class CommandTypeToFluentIconConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not string commandType || string.IsNullOrWhiteSpace(commandType))
+        {
+            return SymbolRegular.DocumentAdd24;
+        }
+
+        return commandType switch
+        {
+            CommandTypeNames.Hotkey => SymbolRegular.Keyboard24,
+            CommandTypeNames.Screenshot => SymbolRegular.Screenshot24,
+            CommandTypeNames.Loop => SymbolRegular.ArrowRepeatAll24,
+            CommandTypeNames.LoopEnd => SymbolRegular.ArrowRepeatAll24,
+            CommandTypeNames.LoopBreak => SymbolRegular.ArrowRepeatAll24,
+            CommandTypeNames.Retry => SymbolRegular.ArrowUp24,
+            CommandTypeNames.RetryEnd => SymbolRegular.ArrowDown24,
+            CommandTypeNames.IfImageExist => SymbolRegular.Merge24,
+            CommandTypeNames.IfImageNotExist => SymbolRegular.Merge24,
+            CommandTypeNames.IfTextExist => SymbolRegular.Merge24,
+            CommandTypeNames.IfTextNotExist => SymbolRegular.Merge24,
+            CommandTypeNames.IfImageExistAI => SymbolRegular.Merge24,
+            CommandTypeNames.IfImageNotExistAI => SymbolRegular.Merge24,
+            CommandTypeNames.IfVariable => SymbolRegular.Merge24,
+            CommandTypeNames.IfEnd => SymbolRegular.Merge24,
+            CommandTypeNames.SetVariable => SymbolRegular.DocumentAdd24,
+            CommandTypeNames.SetVariableAI => SymbolRegular.DocumentAdd24,
+            CommandTypeNames.SetVariableOCR => SymbolRegular.DocumentAdd24,
+            _ => CommandMetadataCatalog.TryGetByTypeName(commandType, out var metadata)
+                ? metadata.DisplayPriority switch
+                {
+                    1 => SymbolRegular.CursorClick24,
+                    2 => SymbolRegular.CursorClick24,
+                    3 => SymbolRegular.ArrowUp24,
+                    4 => SymbolRegular.ArrowDown24,
+                    5 => SymbolRegular.DocumentAdd24,
+                    6 => SymbolRegular.Settings24,
+                    _ => SymbolRegular.CursorClick24
+                }
+                : SymbolRegular.CursorClick24
+        };
+    }
+
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
         return Binding.DoNothing;
@@ -745,6 +874,74 @@ public class IfGuideGlyphMultiConverter : IMultiValueConverter
             : item.LineNumber == span.endLine
                 ? "└"
                 : "│";
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return [];
+    }
+}
+
+/// <summary>
+/// コマンドが折りたたみ中に非表示対象かどうかを判定します。
+/// </summary>
+public class CommandRowCollapsedConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2 || values[0] is not ICommandListItem item || values[1] is not ListPanelViewModel viewModel)
+        {
+            return false;
+        }
+
+        return viewModel.ShouldHideCommandInCollapsedScope(item);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return [];
+    }
+}
+
+/// <summary>
+/// 開始系コマンド行のトグルボタン可視性を判定します。
+/// </summary>
+public class CommandBlockToggleVisibilityConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2 || values[0] is not ICommandListItem item || values[1] is not ListPanelViewModel viewModel)
+        {
+            return false;
+        }
+
+        return viewModel.IsBlockStartCommand(item);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+    {
+        return [];
+    }
+}
+
+/// <summary>
+/// 開始系コマンド行の折りたたみ状態をアイコン文字列に変換します。
+/// </summary>
+public class CommandBlockToggleGlyphConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length < 2 || values[0] is not ICommandListItem item || values[1] is not ListPanelViewModel viewModel)
+        {
+            return string.Empty;
+        }
+
+        if (!viewModel.IsBlockStartCommand(item))
+        {
+            return string.Empty;
+        }
+
+        return viewModel.IsBlockCollapsed(item) ? "▸" : "▾";
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

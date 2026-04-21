@@ -16,6 +16,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     private readonly ICommandRegistry _commandRegistry;
     private readonly CommandListFileUseCase _commandListFileUseCase;
     private readonly List<ICommandListItem> _selectedItems = [];
+    private readonly HashSet<ICommandListItem> _collapsedBlockStarts = [];
 
     // イベント
     public event Action<ICommandListItem?>? SelectedItemChanged;
@@ -37,6 +38,9 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
     [ObservableProperty]
     private int _selectedLineNumber;
+
+    [ObservableProperty]
+    private int _collapsedStateVersion;
 
     public ICommandListItem? SelectedItem
     {
@@ -185,6 +189,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
         // 追加後にCollectionViewを更新
         CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+        UpdateCollapsedState();
 
         System.Diagnostics.Debug.WriteLine($"コマンドを追加しました: {item.ItemType} -> {_commandRegistry.GetDisplayName(item.ItemType)}");
     }
@@ -199,6 +204,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
         CommandList.Insert(index, item);
         SelectedLineNumber = index;
+        UpdateCollapsedState();
         // Refresh()を削除
     }
 
@@ -211,6 +217,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         {
             var previousLineNumber = SelectedLineNumber;
             CommandList.RemoveAt(index);
+            UpdateCollapsedState();
             
             if (CommandList.Items.Count == 0)
             {
@@ -242,6 +249,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         {
             CommandList.Override(index, item);
             SelectedLineNumber = index;
+            UpdateCollapsedState();
             // Refresh()を削除
         }
     }
@@ -257,6 +265,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         {
             CommandList.Move(fromIndex, toIndex);
             SelectedLineNumber = toIndex;
+            UpdateCollapsedState();
             // Refresh()を削除
         }
     }
@@ -267,6 +276,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public void AddItem(ICommandListItem item)
     {
         CommandList.Add(item);
+        UpdateCollapsedState();
         // Refresh()を削除
     }
 
@@ -277,6 +287,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         var selectedBak = SelectedLineNumber;
         CommandList.Move(SelectedLineNumber, SelectedLineNumber - 1);
         SelectedLineNumber = selectedBak - 1;
+        UpdateCollapsedState();
     }
 
     public void Down()
@@ -286,6 +297,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         var selectedBak = SelectedLineNumber;
         CommandList.Move(SelectedLineNumber, SelectedLineNumber + 1);
         SelectedLineNumber = selectedBak + 1;
+        UpdateCollapsedState();
     }
 
     public void Delete()
@@ -300,6 +312,7 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         var previousLineNumber = SelectedLineNumber;
         var index = CommandList.Items.IndexOf(targetItem);
         CommandList.Remove(targetItem);
+        UpdateCollapsedState();
 
         if (CommandList.Items.Count == 0)
         {
@@ -324,6 +337,8 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
     public void Clear()
     {
         CommandList.Clear();
+        _collapsedBlockStarts.Clear();
+        UpdateCollapsedState();
         if (SelectedLineNumber != -1)
         {
             SelectedLineNumber = -1;
@@ -367,9 +382,128 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
 
         // 読み込み後にレジストリを初期化して表示名が正しく表示されるようにする
         _commandRegistry.Initialize();
+        _collapsedBlockStarts.Clear();
 
         // CollectionViewを更新して日本語表示名を適用
         CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
+        UpdateCollapsedState();
+    }
+
+    /// <summary>
+    /// 指定コマンドがブロック開始（IF / LOOP）かを判定する
+    /// </summary>
+    public bool IsBlockStartCommand(ICommandListItem item)
+    {
+        return item is not null && (_commandRegistry.IsIfCommand(item.ItemType) || _commandRegistry.IsLoopCommand(item.ItemType));
+    }
+
+    /// <summary>
+    /// 指定コマンドの折りたたみ状態を判定する
+    /// </summary>
+    public bool IsBlockCollapsed(ICommandListItem item)
+    {
+        return item is not null && _collapsedBlockStarts.Contains(item);
+    }
+
+    /// <summary>
+    /// 折りたたみ中のブロックに含まれるため非表示とするべき行かどうかを判定する
+    /// </summary>
+    public bool ShouldHideCommandInCollapsedScope(ICommandListItem item)
+    {
+        if (item is null)
+        {
+            return false;
+        }
+
+        if (item.IsRunning)
+        {
+            return false;
+        }
+
+        foreach (var start in _collapsedBlockStarts)
+        {
+            var hasPairedRange = GetCollapsedBlockRange(start, out var startLine, out var endLine);
+            if (!hasPairedRange)
+            {
+                continue;
+            }
+
+            if (item.LineNumber > startLine && item.LineNumber < endLine &&
+                item.NestLevel > start.NestLevel)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 折りたたみ状態を切り替える
+    /// </summary>
+    public void ToggleBlockCollapse(ICommandListItem item)
+    {
+        if (!IsBlockStartCommand(item))
+        {
+            return;
+        }
+
+        if (_collapsedBlockStarts.Contains(item))
+        {
+            _collapsedBlockStarts.Remove(item);
+        }
+        else
+        {
+            _collapsedBlockStarts.Add(item);
+        }
+
+        UpdateCollapsedState();
+    }
+
+    private void UpdateCollapsedState()
+    {
+        if (_collapsedBlockStarts.Count == 0)
+        {
+            if (CollapsedStateVersion != 0)
+            {
+                CollapsedStateVersion = 0;
+            }
+
+            return;
+        }
+
+        // 削除済みまたはペア未設定のブロック開始コマンドを除去
+        var aliveStarts = _collapsedBlockStarts
+            .Where(x => x is not null
+                        && IsBlockStartCommand(x)
+                        && GetCollapsedBlockRange(x, out _, out _))
+            .ToList();
+        _collapsedBlockStarts.Clear();
+        foreach (var alive in aliveStarts)
+        {
+            _collapsedBlockStarts.Add(alive);
+        }
+
+        CollapsedStateVersion++;
+    }
+
+    private static bool GetCollapsedBlockRange(ICommandListItem item, out int startLine, out int endLine)
+    {
+        switch (item)
+        {
+            case ILoopItem { Pair.LineNumber: > 0 } loop when loop.Pair!.LineNumber > loop.LineNumber:
+                startLine = loop.LineNumber;
+                endLine = loop.Pair.LineNumber;
+                return true;
+            case IIfItem { Pair.LineNumber: > 0 } @if when @if.Pair!.LineNumber > @if.LineNumber:
+                startLine = @if.LineNumber;
+                endLine = @if.Pair.LineNumber;
+                return true;
+            default:
+                startLine = 0;
+                endLine = 0;
+                return false;
+        }
     }
     #endregion
 
