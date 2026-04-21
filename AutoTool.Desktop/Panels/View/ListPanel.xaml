@@ -24,6 +24,7 @@
         <ui:DataGrid x:Name="CommandDataGrid"
                      ItemsSource="{Binding CommandList.Items}" 
                      SelectedIndex="{Binding SelectedLineNumber, Mode=TwoWay}"
+                     AllowDrop="True"
                      SelectionMode="Extended" 
                      HeadersVisibility="Column" 
                      CanUserAddRows="False" 
@@ -37,6 +38,11 @@
                      BorderThickness="0"
                      VirtualizingPanel.IsVirtualizing="False"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     PreviewMouseLeftButtonDown="CommandDataGrid_PreviewMouseLeftButtonDown"
+                     MouseMove="CommandDataGrid_MouseMove"
+                     DragOver="CommandDataGrid_DragOver"
+                     DragLeave="CommandDataGrid_DragLeave"
+                     Drop="CommandDataGrid_Drop"
                      VerticalContentAlignment="Center"
                      VerticalAlignment="Stretch"
                      HorizontalAlignment="Stretch">
@@ -428,5 +434,17 @@
                 </DataGridTemplateColumn>
             </ui:DataGrid.Columns>
         </ui:DataGrid>
+
+        <Border x:Name="DropInsertIndicator"
+                Visibility="Collapsed"
+                Height="2"
+                Background="#FF2F89FF"
+                BorderBrush="#FFFFFFFF"
+                BorderThickness="0,1,0,1"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top"
+                Margin="0,0,0,0"
+                IsHitTestVisible="False"
+                Panel.ZIndex="10"/>
     </Grid>
 </UserControl>
