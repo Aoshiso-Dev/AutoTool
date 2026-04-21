@@ -88,6 +88,7 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 補足:
 
 - 検出成功時は対象範囲を赤枠で点滅表示
+- AI検出テスト/画像検索テストで一致候補が複数ある場合、各候補をそれぞれ赤枠で点滅表示
 - `自動調整` の採用値は編集表示だけでなくコマンド設定に即時反映（保存対象）
 
 ## 7. 設定・保存先
@@ -117,6 +118,7 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
   - ONNXモデル欄の `推奨取得` で `yolo11n.onnx` を取得
   - ONNXモデル欄の `公式ページ` でモデル情報を確認
   - `ラベル名` はコンボボックスで選択可能（モデルmetadata優先）
+  - `ラベル名` を選択した場合、クラスID入力よりラベル選択が優先して一致判定に使用されます
   - metadata にラベルがない場合は `ラベルファイル`（`.txt` / `.names` / `.yaml`）を指定
 - 保存できない
   - 書き込み先フォルダの権限を確認
