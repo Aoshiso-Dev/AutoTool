@@ -113,6 +113,8 @@ namespace AutoTool.Automation.Runtime.Lists;
         
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("Y座標", EditorType.NumberBox, Group = "座標", Order = 2,
+                         Description = "クリックするY座標")]
         private int _y = 0;
         
         [ObservableProperty]

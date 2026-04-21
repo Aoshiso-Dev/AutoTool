@@ -951,6 +951,11 @@ public class OcrRegionNumberEditorVisibilityMultiConverter : IMultiValueConverte
         "IF_TextNotExist"
     };
 
+    private static readonly HashSet<string> PointPickerYHiddenItemTypes = new(StringComparer.Ordinal)
+    {
+        CommandTypeNames.Click
+    };
+
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
         var itemType = values.Length > 0 ? values[0]?.ToString() : string.Empty;
@@ -961,6 +966,13 @@ public class OcrRegionNumberEditorVisibilityMultiConverter : IMultiValueConverte
             (string.Equals(propertyName, "Y", StringComparison.Ordinal) ||
              string.Equals(propertyName, "Width", StringComparison.Ordinal) ||
              string.Equals(propertyName, "Height", StringComparison.Ordinal)))
+        {
+            return Visibility.Collapsed;
+        }
+
+        if (itemType is not null &&
+            PointPickerYHiddenItemTypes.Contains(itemType) &&
+            string.Equals(propertyName, "Y", StringComparison.Ordinal))
         {
             return Visibility.Collapsed;
         }
