@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using AutoTool.Application.Ports;
 using AutoTool.Desktop.CommandLine;
 
@@ -45,7 +45,7 @@ public sealed class CommandLineControlService(
         _logWriter.Write(
             "INFO",
             "CommandLineControl",
-            $"Invocation=MacroPath:{invocation.MacroPath ?? "(null)"} Start:{invocation.Start} Stop:{invocation.Stop} Exit:{invocation.Exit} ExitOnComplete:{invocation.ExitOnComplete} Hide:{invocation.Hide} Show:{invocation.Show} SilentErrors:{invocation.SilentErrors}");
+            $"起動要求=MacroPath:{invocation.MacroPath ?? "(null)"} Start:{invocation.Start} Stop:{invocation.Stop} Exit:{invocation.Exit} ExitOnComplete:{invocation.ExitOnComplete} Hide:{invocation.Hide} Show:{invocation.Show} SilentErrors:{invocation.SilentErrors}");
 
         var keepSuppressionUntilExecutionCompleted = invocation.SilentErrors && invocation.Start;
         if (invocation.SilentErrors)
@@ -93,7 +93,7 @@ public sealed class CommandLineControlService(
 
         if (invocation.Exit)
         {
-            _logWriter.Write("INFO", "CommandLineControl", "Exit requested.");
+            _logWriter.Write("INFO", "CommandLineControl", "終了要求を受け付けました。");
             if (fromIpc)
             {
                 // IPC 応答送信後に終了できるよう、Dispatcher キューへ後段実行を積む。
@@ -155,7 +155,7 @@ public sealed class CommandLineControlService(
 
     private CommandLineIpcResponse Fail(int exitCode, string message)
     {
-        _logWriter.Write("WARN", $"CommandLine={message}");
+        _logWriter.Write("WARN", $"コマンドライン処理失敗={message}");
         return new CommandLineIpcResponse(exitCode, message);
     }
 

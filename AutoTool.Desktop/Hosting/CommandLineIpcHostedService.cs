@@ -1,4 +1,4 @@
-using System.IO.Pipes;
+﻿using System.IO.Pipes;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -72,7 +72,7 @@ public sealed class CommandLineIpcHostedService(
                 await using var writer = new StreamWriter(server, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
 
                 var requestJson = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-                _logWriter.Write("INFO", "CommandLineIpc", $"Received={requestJson}");
+                _logWriter.Write("INFO", "CommandLineIpc", $"受信={requestJson}");
                 CommandLineIpcResponse response;
                 try
                 {
@@ -87,7 +87,7 @@ public sealed class CommandLineIpcHostedService(
                 }
 
                 var responseJson = JsonSerializer.Serialize(response);
-                _logWriter.Write("INFO", "CommandLineIpc", $"Response={responseJson}");
+                _logWriter.Write("INFO", "CommandLineIpc", $"応答={responseJson}");
                 await writer.WriteLineAsync(responseJson.AsMemory(), cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
