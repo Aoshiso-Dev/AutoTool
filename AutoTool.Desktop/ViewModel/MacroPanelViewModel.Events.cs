@@ -65,33 +65,15 @@ public partial class MacroPanelViewModel
         _logPanel.StatusMessageRequested -= HandleLogPanelStatusMessageRequested;
     }
 
-    private async Task HandleRunRequestedAsync()
+    private Task HandleRunRequestedAsync()
     {
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-        {
-            PrepareAllPanels();
-        });
-
-        if (!ValidateBeforeRun())
-        {
-            PublishStatusMessage("実行前チェックで要修正項目が見つかりました。");
-            return;
-        }
-
-        System.Windows.Application.Current.Dispatcher.Invoke(() => SetRunningState(true));
-        PublishStatusMessage("マクロを実行開始しました。");
-
-        await Run();
+        _ = TryStartExecution(out _);
+        return Task.CompletedTask;
     }
 
     private void HandleStopRequested()
     {
-        _cts?.Cancel();
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-        {
-            SetRunningState(false);
-        });
-        PublishStatusMessage("実行を停止しました。");
+        _ = TryStopExecution(out _);
     }
 
     private void HandleSaveRequested()
@@ -203,4 +185,7 @@ public partial class MacroPanelViewModel
     }
 
 }
+
+
+
 

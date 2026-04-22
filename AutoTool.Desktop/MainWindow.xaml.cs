@@ -29,6 +29,7 @@ public partial class MainWindow : FluentWindow
     private readonly IAppDialogService _appDialogService;
     private bool _restorePreviousSession;
     private bool _isCommandListSelectAllPending;
+    private bool _suppressUnsavedConfirmation;
     private bool _isEmergencyStopTriggered;
     private bool _isEscapeKeyDownByHook;
     private long? _emergencyStopPressedAtTimestamp;
@@ -97,6 +98,11 @@ public partial class MainWindow : FluentWindow
 
     private bool ConfirmCloseWhenUnsaved()
     {
+        if (_suppressUnsavedConfirmation)
+        {
+            return true;
+        }
+
         if (!_viewModel.HasUnsavedChanges)
         {
             return true;
@@ -285,6 +291,8 @@ public partial class MainWindow : FluentWindow
     }
 
     private void MainWindow_Deactivated(object? sender, EventArgs e) => ResetEmergencyStopState();
+
+    public void RequestForceClose() => _suppressUnsavedConfirmation = true;
 
     private bool CanHandleMacroKeyboardShortcut()
     {

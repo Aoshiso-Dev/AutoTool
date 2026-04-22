@@ -2,8 +2,11 @@
     [string]$Source = ".deploy\AutoTool_publish",
     [string]$Destination = "C:\AutoTool",
     [string]$Project = ".\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj",
+    [string]$Solution = ".\AutoTool.sln",
+    [string]$MsBuildPath = "C:\Program Files\Microsoft Visual Studio\18\Professional\MSBuild\Current\Bin\MSBuild.exe",
     [string]$Configuration = "Release",
-    [switch]$SkipPublish
+    [switch]$SkipPublish,
+    [switch]$SkipSolutionBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,6 +48,35 @@ function Invoke-Publish {
     dotnet @arguments
     if ($LASTEXITCODE -ne 0) {
         throw "publish が失敗しました。終了コード: $LASTEXITCODE"
+    }
+}
+
+function Invoke-SolutionBuild {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SolutionPath,
+        [Parameter(Mandatory = $true)]
+        [string]$MsBuildExecutablePath,
+        [Parameter(Mandatory = $true)]
+        [string]$Configuration
+    )
+
+    if (-not (Test-Path -LiteralPath $MsBuildExecutablePath)) {
+        throw "MSBuild が見つかりません: $MsBuildExecutablePath"
+    }
+
+    Write-Host "MSBuild でソリューションをビルドします（新規環境）: $SolutionPath"
+    $arguments = @(
+        "`"$SolutionPath`"",
+        "/t:Build",
+        "/p:Configuration=$Configuration",
+        "/m:1",
+        "/v:m"
+    )
+
+    $process = Start-Process -FilePath $MsBuildExecutablePath -ArgumentList $arguments -UseNewEnvironment -Wait -PassThru -NoNewWindow
+    if ($process.ExitCode -ne 0) {
+        throw "MSBuild によるソリューションビルドが失敗しました。終了コード: $($process.ExitCode)"
     }
 }
 
@@ -105,8 +137,17 @@ function Ensure-FileHashMatched {
 $root = (Get-Location).Path
 $sourcePath = Resolve-AbsolutePath -Path $Source -BaseDirectory $root
 $projectPath = Resolve-AbsolutePath -Path $Project -BaseDirectory $root
+$solutionPath = Resolve-AbsolutePath -Path $Solution -BaseDirectory $root
 
 if (-not $SkipPublish) {
+    if (-not $SkipSolutionBuild) {
+        if (-not (Test-Path -LiteralPath $solutionPath)) {
+            throw "ビルド対象ソリューションが見つかりません: $solutionPath"
+        }
+
+        Invoke-SolutionBuild -SolutionPath $solutionPath -MsBuildExecutablePath $MsBuildPath -Configuration $Configuration
+    }
+
     if (-not (Test-Path -LiteralPath $projectPath)) {
         throw "publish 対象プロジェクトが見つかりません: $projectPath"
     }

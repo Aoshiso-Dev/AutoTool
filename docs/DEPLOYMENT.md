@@ -16,6 +16,7 @@
 
 `deploy-to-c-autotool.ps1` は既定で以下を順番に実行します。
 
+- Visual Studio 2026 の `MSBuild.exe` を新規環境（`Start-Process -UseNewEnvironment`）で起動して `AutoTool.sln` を `Release` ビルド
 - Git タグ（`vMAJOR.MINOR.PATCH`）の最新値をバージョンとして採用
 - `AutoTool.Bootstrap` を `Release` で publish（`.deploy\AutoTool_publish`）
 - `C:\AutoTool` へ同期コピー（`Macro` / `Settings` は保護）
@@ -35,6 +36,12 @@
 
 ```powershell
 .\deploy-to-c-autotool.ps1 -SkipPublish -Source .\.deploy\AutoTool_publish -Destination C:\AutoTool
+```
+
+ソリューションビルドを明示的にスキップしたい場合:
+
+```powershell
+.\deploy-to-c-autotool.ps1 -SkipSolutionBuild
 ```
 
 ## 4. 手動で publish する場合

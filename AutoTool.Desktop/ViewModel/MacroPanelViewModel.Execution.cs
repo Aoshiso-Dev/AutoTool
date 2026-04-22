@@ -136,7 +136,10 @@ public partial class MacroPanelViewModel
             {
                 AppendRuntimeErrorLog(ex);
                 var message = BuildUserFriendlyErrorMessage(ex);
-                OnUiThread(() => _notifier.ShowError(message, "エラー"));
+                if (ShouldNotifyErrorToUser())
+                {
+                    OnUiThread(() => _notifier.ShowError(message, "エラー"));
+                }
             }
         }
         finally
@@ -156,6 +159,12 @@ public partial class MacroPanelViewModel
                 _cts?.Dispose();
                 _cts = null;
                 SetRunningState(false);
+                ExecutionCompleted?.Invoke();
+                if (_clearSuppressionOnExecutionCompleted)
+                {
+                    _suppressErrorNotificationsForCommandLine = false;
+                    _clearSuppressionOnExecutionCompleted = false;
+                }
             });
         }
     }
@@ -174,9 +183,12 @@ public partial class MacroPanelViewModel
         {
             IsPreflightPanelOpen = true;
             _logPanel.WriteLog(string.Empty, "システム", $"実行前チェックで {report.BlockingCount} 件の要修正項目が見つかったため、実行を中止しました。");
-            _notifier.ShowWarning(
-                $"実行前チェックで {report.BlockingCount} 件の要修正項目が見つかりました。\n一覧を確認して修正後に再実行してください。",
-                "実行前チェック");
+            if (ShouldNotifyErrorToUser())
+            {
+                _notifier.ShowWarning(
+                    $"実行前チェックで {report.BlockingCount} 件の要修正項目が見つかりました。\n一覧を確認して修正後に再実行してください。",
+                    "実行前チェック");
+            }
         });
 
         return false;
@@ -667,3 +679,6 @@ public partial class MacroPanelViewModel
         return endLine > 0;
     }
 }
+
+
+

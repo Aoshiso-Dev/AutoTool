@@ -1,8 +1,9 @@
-﻿using System.IO;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Threading;
 using AutoTool.Application.Ports;
+using AutoTool.Desktop.CommandLine;
 using AutoTool.Automation.Runtime.Diagnostics;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Services;
@@ -21,12 +22,64 @@ namespace AutoTool.Bootstrap;
 public partial class App : System.Windows.Application
 {
     private static readonly Lock CrashLogSync = new();
+    private const string SingleInstanceMutexName = @"Local\AutoTool.SingleInstance.v1";
     private IHost? _host;
     private INotifier? _notifier;
     private ILogWriter? _logWriter;
+    private Mutex? _singleInstanceMutex;
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        var parseResult = CommandLineInvocationParser.Parse(e.Args);
+        if (!parseResult.IsSuccess || parseResult.Invocation is null)
+        {
+            var message = parseResult.ErrorMessage ?? "引数の解析に失敗しました。";
+            MessageBox.Show(message, "引数エラー", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Environment.ExitCode = CommandLineExitCodes.InvalidArguments;
+            Shutdown();
+            return;
+        }
+
+        var invocation = parseResult.Invocation;
+        if (!TryAcquireSingleInstanceMutex(out _singleInstanceMutex))
+        {
+            var forwardingInvocation = invocation.HasAnyOperation
+                ? invocation
+                : invocation with { Show = true };
+
+            CommandLineIpcResponse? response = null;
+            try
+            {
+                response = CommandLineIpcClient
+                    .SendAsync(forwardingInvocation, TimeSpan.FromSeconds(3))
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception)
+            {
+                // 既存インスタンスへの接続に失敗した場合は例外を吸収して
+                // 当インスタンスを主実行体として起動し、起動引数をローカルで処理します。
+            }
+
+            if (response is null)
+            {
+                // 既存インスタンスが起動中でない/到達不可なら、ローカル起動して実行します。
+                Environment.ExitCode = CommandLineExitCodes.TargetNotFound;
+            }
+            else
+            {
+                Environment.ExitCode = response.ExitCode;
+                if (response.ExitCode != CommandLineExitCodes.Success && !invocation.SilentErrors)
+                {
+                    MessageBox.Show(response.Message, "AutoTool", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+
+            Shutdown();
+            return;
+        }
+
         // 例外通知で使う依存は明示的に組み立てて共有し、Service Locator を回避します。
         var asyncFileLog = new AsyncFileLog();
         var logWriter = new DelegatingLogWriter(asyncFileLog);
@@ -37,7 +90,7 @@ public partial class App : System.Windows.Application
 
         // ホストを構築して初期化
         _host = AppHostBuilder
-            .CreateHostBuilder(e.Args)
+            .CreateHostBuilder(invocation, e.Args)
             .ConfigureServices((_, services) =>
             {
                 services.AddSingleton(asyncFileLog);
@@ -83,6 +136,9 @@ public partial class App : System.Windows.Application
                 _host.Dispose();
             }
         }
+
+        _singleInstanceMutex?.Dispose();
+        _singleInstanceMutex = null;
 
         base.OnExit(e);
     }
@@ -211,4 +267,30 @@ public partial class App : System.Windows.Application
             or CannotUnloadAppDomainException
             or InvalidProgramException
             or StackOverflowException;
+
+    private static bool TryAcquireSingleInstanceMutex(out Mutex? mutex)
+    {
+        mutex = null;
+        try
+        {
+            mutex = new Mutex(initiallyOwned: true, name: SingleInstanceMutexName, createdNew: out var createdNew);
+            if (!createdNew)
+            {
+                mutex.Dispose();
+                mutex = null;
+                return false;
+            }
+
+            return true;
+        }
+        catch
+        {
+            mutex?.Dispose();
+            mutex = null;
+            return false;
+        }
+    }
 }
+
+
+

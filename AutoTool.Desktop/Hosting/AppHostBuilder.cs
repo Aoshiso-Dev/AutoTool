@@ -1,4 +1,5 @@
 ﻿using AutoTool.Application.Ports;
+using AutoTool.Desktop.CommandLine;
 using AutoTool.Desktop.Panels.Hosting;
 using AutoTool.Desktop.Services;
 using AutoTool.Desktop.Ui;
@@ -15,8 +16,10 @@ namespace AutoTool.Desktop.Hosting;
 /// </summary>
 public static class AppHostBuilder
 {
-    public static IHostBuilder CreateHostBuilder(string[]? args = null)
+    public static IHostBuilder CreateHostBuilder(CommandLineInvocation? startupInvocation = null, string[]? args = null)
     {
+        var invocation = startupInvocation ?? CommandLineInvocation.Empty;
+
         return Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((_, configuration) =>
             {
@@ -25,6 +28,7 @@ public static class AppHostBuilder
             })
             .ConfigureServices((context, services) =>
             {
+                services.AddSingleton(invocation);
                 services.AddPanelsCoreServices(context.Configuration);
                 services.AddAutoToolServices();
                 services.AddPanelsViewModels();
@@ -54,11 +58,16 @@ public static class AutoToolServiceExtensions
         services.AddSingleton<AutoTool.Infrastructure.AsyncFileLog>();
         services.AddSingleton<ILogWriter, DelegatingLogWriter>();
 
-        services.AddTransient<MacroPanelViewModel>();
-        services.AddTransient<MainWindowViewModel>();
-        services.AddTransient<MainWindow>();
+        services.AddSingleton<MacroPanelViewModel>();
+        services.AddSingleton<MainWindowViewModel>();
+        services.AddSingleton<MainWindow>();
+        services.AddSingleton<CommandLineControlService>();
         services.AddHostedService<MainWindowHostedService>();
+        services.AddHostedService<CommandLineIpcHostedService>();
 
         return services;
     }
 }
+
+
+

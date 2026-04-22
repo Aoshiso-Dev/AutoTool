@@ -38,6 +38,20 @@ dotnet build .\AutoTool.sln -c Debug
 dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 ```
 
+## 起動引数（CLI）
+
+- `AutoTool.exe "<macroPath>"` または `AutoTool.exe -macro "<macroPath>"`: マクロ読込
+- `-start`: 読込済みマクロを開始（ファイル同時指定時は読込後に開始）
+- `-stop`: 実行中マクロの停止要求
+- `-exit`: アプリ終了要求（即時）
+- `-exit-on-complete`: マクロ完了後の自動終了（`-start` 必須）
+- `-hide`: メインウィンドウを非表示
+- `-show`: メインウィンドウを表示して前面化
+- `-silent-errors`: CLI実行時の警告/エラーダイアログを抑止（ログは出力）
+- `-start` と `-stop` は同時指定不可
+- `-exit` と `-exit-on-complete` は同時指定不可
+- `-hide` と `-show` は同時指定不可
+
 ## テスト実行
 
 ```powershell
@@ -72,3 +86,6 @@ dotnet run -c Release --project .\AutoTool.Benchmarks.Automation\AutoTool.Benchm
 - .NET 10 SDK（C# 14）
 
 詳細は [利用者向けガイド](docs/USER_GUIDE.md) を参照してください。
+
+
+

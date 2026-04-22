@@ -35,10 +35,13 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private CommandHistoryManager? _commandHistory;
     private long _lastObservedDroppedCommandEvents;
+    private bool _suppressErrorNotificationsForCommandLine;
+    private bool _clearSuppressionOnExecutionCompleted;
     private bool _disposed;
     private bool _isEditDialogOpen;
     public event Action<string>? StatusMessageRequested;
     public event Action? NewFileStateRequested;
+    public event Action? ExecutionCompleted;
 
     [ObservableProperty]
     private bool _isRunning;
@@ -182,6 +185,53 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _logPanel.SetRunningState(isRunning);
     }
 
+    public bool TryStartExecution(out string message)
+    {
+        if (IsRunning)
+        {
+            message = "マクロはすでに実行中です。";
+            return false;
+        }
+
+        System.Windows.Application.Current.Dispatcher.Invoke(PrepareAllPanels);
+
+        if (!ValidateBeforeRun())
+        {
+            message = "実行前チェックで要修正項目が見つかりました。";
+            PublishStatusMessage(message);
+            return false;
+        }
+
+        System.Windows.Application.Current.Dispatcher.Invoke(() => SetRunningState(true));
+        message = "マクロを実行開始しました。";
+        PublishStatusMessage(message);
+        _ = Run();
+        return true;
+    }
+
+    public bool TryStopExecution(out string message)
+    {
+        if (!IsRunning)
+        {
+            message = "実行中のマクロはありません。";
+            return false;
+        }
+
+        _cts?.Cancel();
+        System.Windows.Application.Current.Dispatcher.Invoke(() => SetRunningState(false));
+        message = "実行を停止しました。";
+        PublishStatusMessage(message);
+        return true;
+    }
+
+    public void SetCommandLineErrorNotificationSuppressed(bool suppress, bool clearOnExecutionCompleted)
+    {
+        _suppressErrorNotificationsForCommandLine = suppress;
+        _clearSuppressionOnExecutionCompleted = suppress && clearOnExecutionCompleted;
+    }
+
+    private bool ShouldNotifyErrorToUser() => !_suppressErrorNotificationsForCommandLine;
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -239,3 +289,6 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         ClosePreflightPanelOnly();
     }
 }
+
+
+

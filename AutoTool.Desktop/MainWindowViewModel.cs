@@ -8,6 +8,7 @@ using static AutoTool.Application.Files.FileManager;
 using AutoTool.Application.Ports;
 using INotifier = AutoTool.Commands.Services.INotifier;
 using System.ComponentModel;
+using System.IO;
 
 namespace AutoTool.Desktop;
 
@@ -449,6 +450,57 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         return _fileManagers.TryGetValue(TabIndexes.Macro, out fileManager!);
     }
 
+    public bool TryLoadMacroFromCommandLine(string filePath, out string message)
+    {
+        ArgumentNullException.ThrowIfNull(filePath);
+
+        if (IsRunning)
+        {
+            message = "マクロ実行中のため読み込めません。";
+            return false;
+        }
+
+        if (!TryGetMacroFileManager(out var macroFileManager))
+        {
+            message = "マクロファイル管理を初期化できませんでした。";
+            return false;
+        }
+
+        var normalizedPath = Path.GetFullPath(filePath);
+        if (!File.Exists(normalizedPath))
+        {
+            message = $"マクロファイルが見つかりません: {normalizedPath}";
+            return false;
+        }
+
+        if (!macroFileManager.OpenFile(normalizedPath))
+        {
+            message = $"マクロファイルを開けませんでした: {normalizedPath}";
+            RefreshFileUiState();
+            return false;
+        }
+
+        ClearDirtyState();
+        RefreshFileUiState();
+        message = $"マクロを読み込みました: {macroFileManager.CurrentFileName}";
+        StatusMessage = message;
+        return true;
+    }
+
+    public bool TryStartMacroFromCommandLine(out string message)
+    {
+        var started = MacroPanelViewModel.TryStartExecution(out message);
+        StatusMessage = message;
+        return started;
+    }
+
+    public bool TryStopMacroFromCommandLine(out string message)
+    {
+        var stopped = MacroPanelViewModel.TryStopExecution(out message);
+        StatusMessage = message;
+        return stopped;
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -473,3 +525,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 }
+
+
+
