@@ -52,11 +52,11 @@ public partial class EditPanelViewModel
                         or nameof(PropertyMetadata.KeyValue))
                     {
                         ValidateCurrentItemSettings();
-                        if (string.Equals(prop.PropertyInfo.Name, "LabelName", StringComparison.Ordinal))
+                        if (string.Equals(prop.PropertyName, "LabelName", StringComparison.Ordinal))
                         {
                             SyncClassIdFromLabelSelection(prop);
                         }
-                        if (IsAiLabelRelatedProperty(prop.PropertyInfo.Name))
+                        if (IsAiLabelRelatedProperty(prop.PropertyName))
                         {
                             RefreshAiLabelOptions();
                         }
@@ -108,14 +108,14 @@ public partial class EditPanelViewModel
                 prop.PickPointCommand = new RelayCommand(() => PickPointForProperty(prop));
                 var yProp = PropertyGroups
                     .SelectMany(g => g.Properties)
-                    .FirstOrDefault(p => p.PropertyInfo.Name == "Y" && p.Target == prop.Target);
+                    .FirstOrDefault(p => p.PropertyName == "Y" && p.Target == prop.Target);
                 prop.RelatedProperty = yProp;
                 var widthProp = PropertyGroups
                     .SelectMany(g => g.Properties)
-                    .FirstOrDefault(p => p.PropertyInfo.Name == "Width" && p.Target == prop.Target);
+                    .FirstOrDefault(p => p.PropertyName == "Width" && p.Target == prop.Target);
                 var heightProp = PropertyGroups
                     .SelectMany(g => g.Properties)
-                    .FirstOrDefault(p => p.PropertyInfo.Name == "Height" && p.Target == prop.Target);
+                    .FirstOrDefault(p => p.PropertyName == "Height" && p.Target == prop.Target);
                 prop.RelatedProperty2 = widthProp;
                 prop.RelatedProperty3 = heightProp;
             },
@@ -168,7 +168,7 @@ public partial class EditPanelViewModel
 
             var classNameProp = PropertyGroups
                 .SelectMany(g => g.Properties)
-                .FirstOrDefault(p => p.PropertyInfo.Name == "WindowClassName" && p.Target == prop.Target);
+                .FirstOrDefault(p => p.PropertyName == "WindowClassName" && p.Target == prop.Target);
 
             if (classNameProp is not null)
             {
@@ -181,7 +181,7 @@ public partial class EditPanelViewModel
 
     private void BrowseFileForProperty(PropertyMetadata prop)
     {
-        var path = string.Equals(prop.PropertyInfo.Name, "LabelsPath", StringComparison.Ordinal)
+        var path = string.Equals(prop.PropertyName, "LabelsPath", StringComparison.Ordinal)
             ? _panelDialogService.SelectLabelFile()
             : _panelDialogService.SelectModelFile();
         if (!string.IsNullOrEmpty(path))
@@ -203,7 +203,7 @@ public partial class EditPanelViewModel
 
     private void ConfigureDirectoryPickerMetadata(PropertyMetadata prop)
     {
-        if (!string.Equals(prop.PropertyInfo.Name, "TessdataPath", StringComparison.Ordinal))
+        if (!string.Equals(prop.PropertyName, "TessdataPath", StringComparison.Ordinal))
         {
             return;
         }
@@ -215,7 +215,7 @@ public partial class EditPanelViewModel
 
     private void ConfigureFilePickerMetadata(PropertyMetadata prop)
     {
-        if (string.Equals(prop.PropertyInfo.Name, "ModelPath", StringComparison.Ordinal))
+        if (string.Equals(prop.PropertyName, "ModelPath", StringComparison.Ordinal))
         {
             prop.HelperText = "必要なら公式ページや推奨取得でONNXモデルを用意できます。";
             prop.OpenReferenceCommand = new RelayCommand(OpenAiModelReferencePage);
@@ -223,7 +223,7 @@ public partial class EditPanelViewModel
             return;
         }
 
-        if (string.Equals(prop.PropertyInfo.Name, "LabelsPath", StringComparison.Ordinal))
+        if (string.Equals(prop.PropertyName, "LabelsPath", StringComparison.Ordinal))
         {
             prop.HelperText = "未指定時はモデルmetadata、次に同階層の labels/coco.names/data.yaml を利用します。";
         }
@@ -231,7 +231,7 @@ public partial class EditPanelViewModel
 
     private static void ConfigureComboBoxMetadata(PropertyMetadata prop)
     {
-        if (string.Equals(prop.PropertyInfo.Name, "LabelName", StringComparison.Ordinal))
+        if (string.Equals(prop.PropertyName, "LabelName", StringComparison.Ordinal))
         {
             prop.HelperText = "未選択ならクラスIDを使用します。モデル変更時に候補を再読み込みします。";
         }
@@ -409,7 +409,7 @@ public partial class EditPanelViewModel
 
         var classIdProp = PropertyGroups
             .SelectMany(group => group.Properties)
-            .FirstOrDefault(prop => string.Equals(prop.PropertyInfo.Name, "ClassID", StringComparison.Ordinal) && ReferenceEquals(prop.Target, labelNameProp.Target));
+            .FirstOrDefault(prop => string.Equals(prop.PropertyName, "ClassID", StringComparison.Ordinal) && ReferenceEquals(prop.Target, labelNameProp.Target));
         if (classIdProp is null || classIdProp.IntValue == classId)
         {
             return;
@@ -427,9 +427,9 @@ public partial class EditPanelViewModel
         }
 
         var allProps = PropertyGroups.SelectMany(g => g.Properties).ToList();
-        var modelPathProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "ModelPath");
-        var labelsPathProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "LabelsPath");
-        var labelNameProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "LabelName");
+        var modelPathProp = allProps.FirstOrDefault(p => p.PropertyName == "ModelPath");
+        var labelsPathProp = allProps.FirstOrDefault(p => p.PropertyName == "LabelsPath");
+        var labelNameProp = allProps.FirstOrDefault(p => p.PropertyName == "LabelName");
         if (modelPathProp is null || labelNameProp is null)
         {
             return;
@@ -577,7 +577,7 @@ public partial class EditPanelViewModel
         {
             var prop = PropertyGroups
                 .SelectMany(group => group.Properties)
-                .FirstOrDefault(x => string.Equals(x.PropertyInfo.Name, issue.PropertyName, StringComparison.Ordinal));
+                .FirstOrDefault(x => string.Equals(x.PropertyName, issue.PropertyName, StringComparison.Ordinal));
 
             if (prop is null)
             {
@@ -596,9 +596,9 @@ public partial class EditPanelViewModel
         {
             prop.Value = keyPickerWindow.SelectedKey;
             var allProps = PropertyGroups.SelectMany(g => g.Properties).Where(p => p.Target == prop.Target).ToList();
-            var ctrlProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Ctrl");
-            var altProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Alt");
-            var shiftProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Shift");
+            var ctrlProp = allProps.FirstOrDefault(p => p.PropertyName == "Ctrl");
+            var altProp = allProps.FirstOrDefault(p => p.PropertyName == "Alt");
+            var shiftProp = allProps.FirstOrDefault(p => p.PropertyName == "Shift");
 
             if (ctrlProp is not null) ctrlProp.Value = keyPickerWindow.SelectedCtrl;
             if (altProp is not null) altProp.Value = keyPickerWindow.SelectedAlt;
@@ -614,10 +614,10 @@ public partial class EditPanelViewModel
             .Where(p => p.Target == prop.Target)
             .ToList();
 
-        var yProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Y");
-        var widthProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Width");
-        var heightProp = allProps.FirstOrDefault(p => p.PropertyInfo.Name == "Height");
-        var isRegionPicker = prop.PropertyInfo.Name == "X" && widthProp is not null && heightProp is not null;
+        var yProp = allProps.FirstOrDefault(p => p.PropertyName == "Y");
+        var widthProp = allProps.FirstOrDefault(p => p.PropertyName == "Width");
+        var heightProp = allProps.FirstOrDefault(p => p.PropertyName == "Height");
+        var isRegionPicker = prop.PropertyName == "X" && widthProp is not null && heightProp is not null;
 
         var cw = new CaptureWindow { Mode = isRegionPicker ? 0 : 1 };
         if (cw.ShowDialog() != true) return;
@@ -629,10 +629,10 @@ public partial class EditPanelViewModel
 
         var windowTitleProp = PropertyGroups
             .SelectMany(g => g.Properties)
-            .FirstOrDefault(p => p.PropertyInfo.Name == "WindowTitle" && p.Target == prop.Target);
+            .FirstOrDefault(p => p.PropertyName == "WindowTitle" && p.Target == prop.Target);
         var windowClassNameProp = PropertyGroups
             .SelectMany(g => g.Properties)
-            .FirstOrDefault(p => p.PropertyInfo.Name == "WindowClassName" && p.Target == prop.Target);
+            .FirstOrDefault(p => p.PropertyName == "WindowClassName" && p.Target == prop.Target);
 
         var windowTitle = windowTitleProp?.Value?.ToString() ?? string.Empty;
         var windowClassName = windowClassNameProp?.Value?.ToString() ?? string.Empty;
@@ -640,7 +640,7 @@ public partial class EditPanelViewModel
         var (relativeX, relativeY, success, errorMessage) = _windowService.ConvertToRelativeCoordinates(
             absoluteX, absoluteY, windowTitle, windowClassName);
 
-        if (prop.PropertyInfo.Name == "X")
+        if (prop.PropertyName == "X")
         {
             prop.Value = relativeX;
             if (yProp is not null)
@@ -654,12 +654,12 @@ public partial class EditPanelViewModel
             }
             prop.NotifyRelatedValueChanged();
         }
-        else if (prop.PropertyInfo.Name == "Y")
+        else if (prop.PropertyName == "Y")
         {
             prop.Value = relativeY;
             var xProp = PropertyGroups
                 .SelectMany(g => g.Properties)
-                .FirstOrDefault(p => p.PropertyInfo.Name == "X" && p.Target == prop.Target);
+                .FirstOrDefault(p => p.PropertyName == "X" && p.Target == prop.Target);
             if (xProp is not null)
             {
                 xProp.Value = relativeX;
@@ -701,3 +701,5 @@ public partial class EditPanelViewModel
         SetAndRefresh(() => { }, additionalPropertyNames);
     }
 }
+
+

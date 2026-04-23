@@ -55,10 +55,12 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
         NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
     };
 
+    private readonly ICommandRegistry? _commandRegistry;
     private readonly JsonSerializerOptions _options;
 
-    public MacroFileSerializer()
+    public MacroFileSerializer(ICommandRegistry? commandRegistry = null)
     {
+        _commandRegistry = commandRegistry;
         _options = AutoToolJsonOptionsFactory.CreateMacroSerializerOptions();
     }
 
@@ -84,6 +86,8 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
         {
             return default;
         }
+
+        _commandRegistry?.Initialize();
 
         var json = File.ReadAllText(path);
 

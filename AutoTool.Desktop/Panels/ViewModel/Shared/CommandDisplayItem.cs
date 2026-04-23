@@ -11,6 +11,8 @@ public class CommandDisplayItem
     public string DisplayName { get; init; } = string.Empty;   // UI表示用の日本語名
     public string Category { get; init; } = string.Empty;      // カテゴリ名
     public string Description { get; init; } = string.Empty;   // コマンドの説明文
+    public string PluginId { get; init; } = string.Empty;      // プラグイン識別子
+    public bool IsPluginCommand => !string.IsNullOrWhiteSpace(PluginId);
 
     /// <summary>
     /// デバッグ用の文字列表現（DisplayNameではなくTypeNameを返す）

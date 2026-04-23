@@ -628,7 +628,7 @@ public partial class EditPanelViewModel
     {
         return PropertyGroups
             .SelectMany(group => group.Properties)
-            .FirstOrDefault(prop => prop.PropertyInfo.Name == propertyName);
+            .FirstOrDefault(prop => prop.PropertyName == propertyName);
     }
 
     private bool TryBuildImageSearchOptions(out FindImageOptions options)
@@ -1227,3 +1227,5 @@ public partial class EditPanelViewModel
         int TargetCount,
         float BestScore);
 }
+
+

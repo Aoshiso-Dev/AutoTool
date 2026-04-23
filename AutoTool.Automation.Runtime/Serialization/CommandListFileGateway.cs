@@ -30,6 +30,11 @@ public class CommandListFileGateway(
     /// </summary>
     public IReadOnlyList<ICommandListItem> Load(string filePath)
     {
+        if (_commandDefinitionProvider is ICommandRegistry commandRegistry)
+        {
+            commandRegistry.Initialize();
+        }
+
         var deserializedItems = _macroFileSerializer.DeserializeFromFile<ObservableCollection<ICommandListItem>>(filePath);
         if (deserializedItems is null)
         {

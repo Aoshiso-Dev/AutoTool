@@ -932,7 +932,7 @@ public class OcrRegionNumberEditorVisibilityConverter : IValueConverter
             return Visibility.Visible;
         }
 
-        return metadata.PropertyInfo.Name is "Y" or "Width" or "Height"
+        return metadata.PropertyName is "Y" or "Width" or "Height"
             ? Visibility.Collapsed
             : Visibility.Visible;
     }
@@ -1522,6 +1522,8 @@ file static class CommandGuideSpanResolver
         return true;
     }
 }
+
+
 
 
 

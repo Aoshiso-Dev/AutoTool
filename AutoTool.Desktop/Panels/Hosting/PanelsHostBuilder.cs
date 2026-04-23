@@ -3,6 +3,7 @@ using AutoTool.Commands.Infrastructure;
 using AutoTool.Application.Ports;
 using AutoTool.Infrastructure.DependencyInjection;
 using AutoTool.Infrastructure.Implementations;
+using AutoTool.Infrastructure.Panels;
 using AutoTool.Desktop.Panels.Services;
 using AutoTool.Desktop.Panels.ViewModel;
 using AutoTool.Desktop.Services;
@@ -39,6 +40,7 @@ public static class PanelsHostBuilder
         services.AddMacroRuntimeCoreServices();
         services.AddHostedService<CommandRegistryInitializationHostedService>();
 
+        services.AddSingleton<PropertyMetadataProvider>();
         services.AddSingleton<IPanelDialogService, WpfPanelDialogService>();
         services.AddSingleton<ICapturePathProvider, CapturePathProvider>();
         services.AddSingleton<IDetectionHighlightService, DetectionHighlightService>();
@@ -58,3 +60,4 @@ public static class PanelsHostBuilder
         return services;
     }
 }
+

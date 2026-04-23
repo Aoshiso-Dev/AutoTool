@@ -23,7 +23,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AutoTool.Desktop\AutoTool.Desktop.csproj" />
     <ProjectReference Include="..\AutoTool.Infrastructure\AutoTool.Infrastructure.csproj" />
+    <ProjectReference Include="..\AutoTool.Plugin.Abstractions\AutoTool.Plugin.Abstractions.csproj" />
+    <ProjectReference Include="..\AutoTool.Plugin.Host\AutoTool.Plugin.Host.csproj" />
+    <ProjectReference Include="..\AutoTool.Tests.Plugin.Sample\AutoTool.Tests.Plugin.Sample.csproj" />
   </ItemGroup>
 
 </Project>
+
+
+
+
+

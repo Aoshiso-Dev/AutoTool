@@ -1,0 +1,34 @@
+﻿{
+  "pluginId": "Template.Plugin",
+  "displayName": "Template Plugin",
+  "version": "1.0.0",
+  "entryAssembly": "AutoTool.Plugin.Template.dll",
+  "entryType": "AutoTool.Plugin.Template.TemplatePlugin",
+  "permissions": [],
+  "commands": [
+    {
+      "commandType": "Template.Plugin.WriteVariable",
+      "displayName": "Write Variable",
+      "category": "System",
+      "order": 1,
+      "description": "指定した変数へ値を設定します。実装差し替えの起点に使うテンプレートです。",
+      "properties": [
+        {
+          "name": "targetVariable",
+          "displayName": "対象変数",
+          "editorType": "TextBox",
+          "group": "設定",
+          "order": 1,
+          "isRequired": true
+        },
+        {
+          "name": "value",
+          "displayName": "設定値",
+          "editorType": "TextBox",
+          "group": "設定",
+          "order": 2
+        }
+      ]
+    }
+  ]
+}

@@ -22,6 +22,13 @@
 - `AutoTool.Automation.Contracts`
   - 実行契約（`ICommand`、`ICommandExecutionContext` など）
   - 実行時サービス抽象（`IImageMatcher`、`IOcrEngine` など）
+- `AutoTool.Plugin.Abstractions`
+  - プラグイン契約
+  - プラグイン基本モデル
+- `AutoTool.Plugin.Host`
+  - `plugin.json` の読込と検証
+  - プラグイン探索
+  - `entryAssembly` / `entryType` による DLL 読込
 - `AutoTool.Automation.Runtime`
   - コマンド定義レジストリ
   - `MacroFactory` によるコマンド木生成
@@ -34,7 +41,10 @@
 
 - `Bootstrap -> Desktop`
 - `Desktop -> Application / Automation.Runtime / Infrastructure`
+- `Desktop -> Plugin.Abstractions`（将来のプラグインホスト実装時）
+- `Desktop -> Plugin.Host`
 - `Automation.Runtime -> Application / Automation.Contracts`
+- `Plugin.Host -> Plugin.Abstractions`（導入時）
 - `Application -> Domain / Automation.Contracts`
 - `Infrastructure -> Application / Automation.Runtime / Automation.Contracts`
 - `Domain -> (外部プロジェクト参照なし)`
@@ -65,3 +75,5 @@
 ## 7. 補足: 旧プロジェクト
 
 リポジトリには `AutoTool.Commands` / `AutoTool.Core.Tests` / `AutoTool.Core.Benchmarks` も存在しますが、`AutoTool.sln` の現行構成には含めていません。現行の改修・検証は `AutoTool.sln` 採用プロジェクトを正として進めます。
+
+

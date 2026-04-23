@@ -25,7 +25,8 @@ public partial class EditPanelViewModel
         IDetectionHighlightService detectionHighlightService,
         INotifier notifier,
         IPanelDialogService panelDialogService,
-        ICapturePathProvider capturePathProvider)
+        ICapturePathProvider capturePathProvider,
+        PropertyMetadataProvider metadataProvider)
     {
         ArgumentNullException.ThrowIfNull(commandRegistry);
         ArgumentNullException.ThrowIfNull(windowService);
@@ -37,6 +38,7 @@ public partial class EditPanelViewModel
         ArgumentNullException.ThrowIfNull(notifier);
         ArgumentNullException.ThrowIfNull(panelDialogService);
         ArgumentNullException.ThrowIfNull(capturePathProvider);
+        ArgumentNullException.ThrowIfNull(metadataProvider);
         _commandRegistry = commandRegistry;
         _windowService = windowService;
         _pathResolver = pathResolver;
@@ -47,6 +49,7 @@ public partial class EditPanelViewModel
         _notifier = notifier;
         _panelDialogService = panelDialogService;
         _capturePathProvider = capturePathProvider;
+        _metadataProvider = metadataProvider;
 
         _commandRegistry.Initialize();
 
@@ -136,3 +139,4 @@ public partial class EditPanelViewModel
         }
     }
 }
+

@@ -18,19 +18,36 @@ public partial class PropertyMetadata : ObservableObject
     public CommandPropertyAttribute Attribute { get; init; } = null!;
     public object Target { get; init; } = null!;
 
-    public string DisplayName => Attribute.DisplayName;
-    public string? Description => Attribute.Description;
-    public string Group => Attribute.Group;
-    public int Order => Attribute.Order;
-    public EditorType EditorType => Attribute.EditorType;
-    public double Min => Attribute.Min;
-    public double Max => Attribute.Max;
-    public double Step => Attribute.Step;
-    public string? Unit => Attribute.Unit;
-    public string[]? Options => DynamicOptions ?? Attribute.Options?.Split(',').Select(s => s.Trim()).ToArray();
+    public string? PropertyNameOverride { get; init; }
+    public string? DisplayNameOverride { get; init; }
+    public string? DescriptionOverride { get; init; }
+    public string? GroupOverride { get; init; }
+    public int? OrderOverride { get; init; }
+    public EditorType? EditorTypeOverride { get; init; }
+    public double? MinOverride { get; init; }
+    public double? MaxOverride { get; init; }
+    public double? StepOverride { get; init; }
+    public string? UnitOverride { get; init; }
+    public string[]? OptionsOverride { get; init; }
+    public string? FileFilterOverride { get; init; }
+    public Type? PropertyTypeOverride { get; init; }
+    public Func<object?>? GetValueFunc { get; init; }
+    public Action<object?>? SetValueAction { get; init; }
+
+    public string PropertyName => PropertyNameOverride ?? PropertyInfo.Name;
+    public string DisplayName => DisplayNameOverride ?? Attribute.DisplayName;
+    public string? Description => DescriptionOverride ?? Attribute.Description;
+    public string Group => GroupOverride ?? Attribute.Group;
+    public int Order => OrderOverride ?? Attribute.Order;
+    public EditorType EditorType => EditorTypeOverride ?? Attribute.EditorType;
+    public double Min => MinOverride ?? Attribute.Min;
+    public double Max => MaxOverride ?? Attribute.Max;
+    public double Step => StepOverride ?? Attribute.Step;
+    public string? Unit => UnitOverride ?? Attribute.Unit;
+    public string[]? Options => DynamicOptions ?? OptionsOverride ?? Attribute.Options?.Split(',').Select(s => s.Trim()).ToArray();
     public bool HasOptions => Options is { Length: > 0 };
-    public string? FileFilter => Attribute.FileFilter;
-    public Type PropertyType => PropertyInfo.PropertyType;
+    public string? FileFilter => FileFilterOverride ?? Attribute.FileFilter;
+    public Type PropertyType => PropertyTypeOverride ?? PropertyInfo.PropertyType;
 
     [ObservableProperty]
     private ICommand? _browseCommand;
@@ -73,13 +90,20 @@ public partial class PropertyMetadata : ObservableObject
 
     public object? Value
     {
-        get => PropertyInfo.GetValue(Target);
+        get => GetValueFunc?.Invoke() ?? PropertyInfo.GetValue(Target);
         set
         {
-            var currentValue = PropertyInfo.GetValue(Target);
+            var currentValue = Value;
             if (!Equals(currentValue, value))
             {
-                PropertyInfo.SetValue(Target, value);
+                if (SetValueAction is not null)
+                {
+                    SetValueAction(value);
+                }
+                else
+                {
+                    PropertyInfo.SetValue(Target, value);
+                }
                 NotifyAllValueProperties();
             }
         }
@@ -243,3 +267,4 @@ public class PropertyGroup
     public string GroupName { get; init; } = string.Empty;
     public List<PropertyMetadata> Properties { get; init; } = [];
 }
+

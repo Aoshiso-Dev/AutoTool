@@ -63,7 +63,7 @@
             <Border.Visibility>
                 <MultiBinding Converter="{StaticResource OcrRegionNumberEditorVisibilityMultiConverter}">
                     <Binding Path="Target.ItemType"/>
-                    <Binding Path="PropertyInfo.Name"/>
+                    <Binding Path="PropertyName"/>
                 </MultiBinding>
             </Border.Visibility>
             <Grid>
@@ -444,6 +444,8 @@
                                     DefaultTemplate="{StaticResource DefaultEditorTemplate}"/>
 
 </ResourceDictionary>
+
+
 
 
 

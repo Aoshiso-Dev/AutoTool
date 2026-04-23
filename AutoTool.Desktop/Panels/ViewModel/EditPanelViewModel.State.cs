@@ -132,7 +132,7 @@ public partial class EditPanelViewModel
         {
             var imageProp = PropertyGroups
                 .SelectMany(g => g.Properties)
-                .FirstOrDefault(p => p.PropertyInfo.Name == "ImagePath");
+                .FirstOrDefault(p => p.PropertyName == "ImagePath");
             var path = imageProp?.Value?.ToString();
             if (string.IsNullOrEmpty(path)) return null;
             return _pathResolver.ToAbsolutePath(path);
@@ -395,3 +395,5 @@ public partial class EditPanelViewModel
         }
     }
 }
+
+

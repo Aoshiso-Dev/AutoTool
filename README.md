@@ -18,6 +18,7 @@ AutoTool は、Windows 上で定型操作をマクロとして作成・保存・
 - 開発者向け
   - [開発者向けガイド](docs/DEVELOPER_GUIDE.md)
   - [アーキテクチャ概要](docs/ARCHITECTURE.md)
+  - [プラグインアーキテクチャ仕様](docs/PLUGIN_ARCHITECTURE.md)
   - [クラス図（主要関係）](docs/CLASS_DIAGRAM.md)
   - [配布ガイド](docs/DEPLOYMENT.md)
   - [コマンド開発ガイド](docs/COMMAND_DEVELOPMENT_GUIDE.md)
@@ -52,6 +53,15 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 - `-exit` と `-exit-on-complete` は同時指定不可
 - `-hide` と `-show` は同時指定不可
 
+## サンプルプラグイン
+
+- PluginSamples\\Sample.Plugin\\plugin.json に配置例を含めています。
+- Publish-SamplePlugin.ps1 を実行すると、サンプル DLL と plugin.json を Plugins\\Sample.Plugin へステージングできます。
+- 実運用向けのひな形として AutoTool.Plugin.Template と PluginTemplates\\Template.Plugin を含めています。
+- 既定の配置先は .\\.deploy\\AutoTool_publish\\Plugins\\Sample.Plugin です。必要に応じて -Destination で AutoTool.Desktop\\bin\\Release\\net10.0-windows\\Plugins\\Sample.Plugin などを指定できます。
+- Publish-TemplatePlugin.ps1 を実行すると、テンプレート DLL・plugin.json・README.md を .\\.tmp\\Template.Plugin へ配置できます。
+- deploy-to-c-autotool.ps1 は配置先の既存 Plugins を削除せず、publish 側に含まれる Plugins のみを追加・更新します。
+
 ## テスト実行
 
 ```powershell
@@ -74,6 +84,10 @@ dotnet run -c Release --project .\AutoTool.Benchmarks.Automation\AutoTool.Benchm
 - `AutoTool.Application`: ユースケース層（履歴管理、ファイル操作、Ports）
 - `AutoTool.Domain`: ドメインモデル
 - `AutoTool.Automation.Contracts`: コマンド実行契約・入力/サービス抽象
+- `AutoTool.Plugin.Abstractions`: プラグイン契約・基本モデル
+- `AutoTool.Plugin.Template`: 改名して育てる前提のプラグインひな形
+- `AutoTool.Plugin.Host`: プラグイン探索・`plugin.json` 読込・検証・DLL 読込・起動時診断・サービス登録反映・実行委譲・動的プロパティ連携
+- `AutoTool.Desktop`: 起動時診断結果のステータス表示とログ表示
 - `AutoTool.Automation.Runtime`: コマンド定義・マクロ生成・シリアライズ
 - `AutoTool.Infrastructure`: Win32 / OpenCV / OCR / 永続化など技術実装
 - `AutoTool.Tests.Application`: Application/Runtime の回帰テスト
@@ -86,6 +100,15 @@ dotnet run -c Release --project .\AutoTool.Benchmarks.Automation\AutoTool.Benchm
 - .NET 10 SDK（C# 14）
 
 詳細は [利用者向けガイド](docs/USER_GUIDE.md) を参照してください。
+
+
+
+
+
+
+
+
+
 
 
 

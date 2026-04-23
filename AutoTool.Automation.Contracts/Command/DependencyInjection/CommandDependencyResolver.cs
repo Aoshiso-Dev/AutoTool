@@ -11,6 +11,13 @@ public interface ICommandDependencyResolver
 }
 
 /// <summary>
+/// コマンド依存解決へ追加の依存を提供する拡張ポイントです。
+/// </summary>
+public interface IAdditionalCommandDependencyResolver : ICommandDependencyResolver
+{
+}
+
+/// <summary>
 /// コマンド実行に必要な依存を用途別 Resolver で構成して解決する実装
 /// </summary>
 public sealed class CommandDependencyResolver(
@@ -24,30 +31,69 @@ public sealed class CommandDependencyResolver(
     IProcessLauncher processLauncher,
     IWindowService windowService,
     IOcrEngine ocrEngine,
+    IEnumerable<IAdditionalCommandDependencyResolver>? additionalResolvers = null,
     ICommandEventBus? commandEventBus = null,
     TimeProvider? timeProvider = null) : ICommandDependencyResolver
 {
-    private readonly CompositeCommandDependencyResolver _composite = new(
-    [
-        new CoreCommandDependencyResolver(
-            variableStore,
-            objectDetector,
-            pathResolver,
-            imageMatcher,
-            mouseInput,
-            keyboardInput,
-            screenCapturer,
-            processLauncher,
-            windowService,
-            ocrEngine),
-        new AmbientCommandDependencyResolver(
-            commandEventBus,
-            timeProvider ?? TimeProvider.System)
-    ]);
+    private readonly CompositeCommandDependencyResolver _composite = BuildComposite(
+        variableStore,
+        objectDetector,
+        pathResolver,
+        imageMatcher,
+        mouseInput,
+        keyboardInput,
+        screenCapturer,
+        processLauncher,
+        windowService,
+        ocrEngine,
+        additionalResolvers,
+        commandEventBus,
+        timeProvider ?? TimeProvider.System);
 
     public bool TryResolve(Type serviceType, out object? service)
     {
         return _composite.TryResolve(serviceType, out service);
+    }
+
+    private static CompositeCommandDependencyResolver BuildComposite(
+        IVariableStore variableStore,
+        IObjectDetector objectDetector,
+        IPathResolver pathResolver,
+        IImageMatcher imageMatcher,
+        IMouseInput mouseInput,
+        IKeyboardInput keyboardInput,
+        IScreenCapturer screenCapturer,
+        IProcessLauncher processLauncher,
+        IWindowService windowService,
+        IOcrEngine ocrEngine,
+        IEnumerable<IAdditionalCommandDependencyResolver>? additionalResolvers,
+        ICommandEventBus? commandEventBus,
+        TimeProvider timeProvider)
+    {
+        var resolvers = new List<ICommandDependencyResolver>
+        {
+            new CoreCommandDependencyResolver(
+                variableStore,
+                objectDetector,
+                pathResolver,
+                imageMatcher,
+                mouseInput,
+                keyboardInput,
+                screenCapturer,
+                processLauncher,
+                windowService,
+                ocrEngine),
+            new AmbientCommandDependencyResolver(
+                commandEventBus,
+                timeProvider)
+        };
+
+        if (additionalResolvers is not null)
+        {
+            resolvers.AddRange(additionalResolvers);
+        }
+
+        return new CompositeCommandDependencyResolver(resolvers);
     }
 }
 

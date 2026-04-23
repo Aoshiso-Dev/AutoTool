@@ -47,17 +47,44 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
         _commandRegistry.Initialize();
         
         var displayItems = _commandRegistry.GetOrderedTypeNames()
-            .Select(typeName => new CommandDisplayItem
-            {
-                TypeName = typeName,
-                DisplayName = _commandRegistry.GetDisplayName(typeName),
-                Category = _commandRegistry.GetCategoryName(typeName),
-                Description = CommandDescriptionCatalog.GetDescription(typeName)
-            })
+            .Select(CreateDisplayItem)
             .ToList();
         
         ItemTypes = new ObservableCollection<CommandDisplayItem>(displayItems);
         SelectedItemType = ItemTypes.FirstOrDefault();
+    }
+
+    private CommandDisplayItem CreateDisplayItem(string typeName)
+    {
+        var displayName = _commandRegistry.GetDisplayName(typeName);
+        var category = _commandRegistry.GetCategoryName(typeName);
+        var description = CommandDescriptionCatalog.GetDescription(typeName);
+
+        if (!CommandMetadataCatalog.TryGetByTypeName(typeName, out var metadata) ||
+            string.IsNullOrWhiteSpace(metadata.PluginId))
+        {
+            return new CommandDisplayItem
+            {
+                TypeName = typeName,
+                DisplayName = displayName,
+                Category = category,
+                Description = description
+            };
+        }
+
+        var pluginId = metadata.PluginId;
+        var resolvedDescription = string.IsNullOrWhiteSpace(description)
+            ? $"提供元: {pluginId}"
+            : $"提供元: {pluginId}{Environment.NewLine}{description}";
+
+        return new CommandDisplayItem
+        {
+            TypeName = typeName,
+            DisplayName = $"{displayName} ({pluginId})",
+            Category = $"プラグイン / {category}",
+            Description = resolvedDescription,
+            PluginId = pluginId
+        };
     }
 
     [RelayCommand(AllowConcurrentExecutions = true)]

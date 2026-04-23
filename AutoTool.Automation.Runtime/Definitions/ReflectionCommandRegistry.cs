@@ -11,7 +11,9 @@ namespace AutoTool.Automation.Runtime.Definitions;
 /// <summary>
 /// 実行対象の定義を登録・検索する仕組みを提供します。
 /// </summary>
-public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = null) : ICommandRegistry, ICommandDefinitionProvider
+public sealed class ReflectionCommandRegistry(
+    ICommandFactory? commandFactory = null,
+    IEnumerable<IExternalCommandMetadataProvider>? externalMetadataProviders = null) : ICommandRegistry, ICommandDefinitionProvider
 {
     /// <summary>
     /// 一覧の 1 件分として扱うデータを保持し、保存・表示で共通利用できるようにします。
@@ -27,6 +29,8 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
     }
 
     private readonly ICommandFactory? _commandFactory = commandFactory;
+    private readonly IReadOnlyList<IExternalCommandMetadataProvider> _externalMetadataProviders =
+        externalMetadataProviders?.ToList() ?? [];
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
     private bool _initialized;
     private readonly object _initializeLock = new();
@@ -39,8 +43,19 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
         {
             if (_initialized) return;
 
+            _entries.Clear();
+            var externalMetadata = _externalMetadataProviders
+                .SelectMany(static x => x.GetCommandMetadata())
+                .ToArray();
+            CommandMetadataCatalog.SetExternalMetadata(externalMetadata);
+
             foreach (var metadata in CommandMetadataCatalog.GetAll())
             {
+                if (_entries.ContainsKey(metadata.TypeName))
+                {
+                    throw new InvalidOperationException($"重複したコマンド種別が見つかりました: {metadata.TypeName}");
+                }
+
                 var hasExecuteAsyncOverride = HasExecuteAsyncOverride(metadata.ItemType);
                 _entries[metadata.TypeName] = new Entry
                 {
@@ -83,6 +98,10 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
 
         var item = entry.ItemFactory();
         item.ItemType = entry.Metadata.TypeName;
+        if (item is PluginCommandListItem pluginItem && !string.IsNullOrWhiteSpace(entry.Metadata.PluginId))
+        {
+            pluginItem.PluginId = entry.Metadata.PluginId;
+        }
         return item;
     }
 
@@ -113,6 +132,13 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
             return CommandCreationResult.Fail(
                 CommandCreationFailureReason.MissingCommandBinding,
                 $"item type {entry.Metadata.ItemType.Name} は複合コマンドとして処理されます。");
+        }
+
+        if (!entry.Metadata.CanCreateCommand)
+        {
+            return CommandCreationResult.Fail(
+                CommandCreationFailureReason.MissingCommandBinding,
+                $"コマンド '{entry.Metadata.TypeName}' はまだ実行バインディングが構成されていません。");
         }
 
         if (_commandFactory is null)
@@ -183,6 +209,16 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
         if (!TryGetEntry(typeName, out var entry))
         {
             return typeName;
+        }
+
+        if (language == "en" && !string.IsNullOrWhiteSpace(entry.Metadata.CustomCategoryNameEn))
+        {
+            return entry.Metadata.CustomCategoryNameEn;
+        }
+
+        if (language != "en" && !string.IsNullOrWhiteSpace(entry.Metadata.CustomCategoryNameJa))
+        {
+            return entry.Metadata.CustomCategoryNameJa;
         }
 
         return language == "en"
@@ -278,3 +314,5 @@ public sealed class ReflectionCommandRegistry(ICommandFactory? commandFactory = 
         };
     }
 }
+
+

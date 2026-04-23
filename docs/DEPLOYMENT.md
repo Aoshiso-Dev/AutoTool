@@ -20,6 +20,7 @@
 - Git タグ（`vMAJOR.MINOR.PATCH`）の最新値をバージョンとして採用
 - `AutoTool.Bootstrap` を `Release` で publish（`.deploy\AutoTool_publish`）
 - `C:\AutoTool` へ同期コピー（`Macro` / `Settings` は保護）
+- `Plugins` は既存配置を保護し、publish 側に含まれるものだけを別同期
 - 主要バイナリ（`AutoTool.exe` / `AutoTool.dll` / `AutoTool.Desktop.dll`）のハッシュ一致確認
 
 ```powershell
@@ -63,7 +64,8 @@ dotnet publish .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj -c Release -o .\.d
 
 ## 5. スクリプトの主な処理
 
-- `robocopy /MIR` で成果物を同期（`Macro` と `Settings` は除外）
+- `robocopy /MIR` で成果物を同期（`Macro` / `Settings` / `Plugins` は除外）
+- `Plugins` は publish 側に存在する場合だけ別 `robocopy` で追加・更新し、配置先の既存プラグインは削除しない
 - 初回のみ `Settings\appsettings.json` を投入
 - `*.pdb` / `*.lib` を削除
 - `x86` ディレクトリを削除

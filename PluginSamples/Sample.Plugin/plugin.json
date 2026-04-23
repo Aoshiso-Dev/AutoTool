@@ -1,0 +1,34 @@
+﻿{
+  "pluginId": "Sample.Plugin",
+  "displayName": "Sample Plugin",
+  "version": "1.0.0",
+  "entryAssembly": "AutoTool.Tests.Plugin.Sample.dll",
+  "entryType": "AutoTool.Tests.Plugin.Sample.SamplePlugin",
+  "permissions": [],
+  "commands": [
+    {
+      "commandType": "Sample.Plugin.ProviderCommand",
+      "displayName": "Provider Command",
+      "category": "System",
+      "order": 1,
+      "description": "指定した変数へ文字列を設定します。",
+      "properties": [
+        {
+          "name": "targetVariable",
+          "displayName": "対象変数",
+          "editorType": "TextBox",
+          "group": "設定",
+          "order": 1,
+          "isRequired": true
+        },
+        {
+          "name": "value",
+          "displayName": "設定値",
+          "editorType": "TextBox",
+          "group": "設定",
+          "order": 2
+        }
+      ]
+    }
+  ]
+}

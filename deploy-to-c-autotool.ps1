@@ -181,6 +181,8 @@ if ($null -eq $sourceMainExe) {
 }
 
 $macroDir = Join-Path $destinationPath "Macro"
+$sourcePluginsDir = Join-Path $sourcePath "Plugins"
+$destinationPluginsDir = Join-Path $destinationPath "Plugins"
 $userDataCountBefore = if (Test-Path -LiteralPath $macroDir) {
     (Get-ChildItem -LiteralPath $macroDir -Recurse -File | Measure-Object).Count
 }
@@ -188,11 +190,21 @@ else {
     0
 }
 
-# Mirror deploy artifacts but preserve user data/config folders.
-robocopy $sourcePath $destinationPath /MIR /XD Macro Settings x86 tessdata /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
+# Mirror deploy artifacts but preserve user data/config/plugin folders.
+robocopy $sourcePath $destinationPath /MIR /XD Macro Settings Plugins x86 tessdata /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
 $code = $LASTEXITCODE
 if ($code -gt 7) {
     throw "robocopy が失敗しました。終了コード: $code"
+}
+
+# Plugins は既存配置を保護しつつ、publish 側に同梱されたものだけを追加・更新する。
+if (Test-Path -LiteralPath $sourcePluginsDir) {
+    New-Item -ItemType Directory -Force -Path $destinationPluginsDir | Out-Null
+    robocopy $sourcePluginsDir $destinationPluginsDir /E /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
+    $code = $LASTEXITCODE
+    if ($code -gt 7) {
+        throw "Plugins の robocopy が失敗しました。終了コード: $code"
+    }
 }
 
 $destinationSettingsDir = Join-Path $destinationPath "Settings"

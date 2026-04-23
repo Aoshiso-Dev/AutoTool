@@ -99,6 +99,7 @@ public interface ICommandRegistry
 /// </summary>
 public interface ICommandDefinitionProvider
 {
+    IEnumerable<string> GetAllTypeNames();
     string GetDisplayName(string typeName, string language = "ja");
     string GetCategoryName(string typeName, string language = "ja");
     int GetDisplayPriority(string typeName);
@@ -108,5 +109,6 @@ public interface ICommandDefinitionProvider
     bool IsEndCommand(string typeName);
     bool IsStartCommand(string typeName);
 }
+
 
 

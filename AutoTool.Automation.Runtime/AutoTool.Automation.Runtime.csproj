@@ -12,5 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AutoTool.Application\AutoTool.Application.csproj" />
     <ProjectReference Include="..\AutoTool.Automation.Contracts\AutoTool.Automation.Contracts.csproj" />
+    <ProjectReference Include="..\AutoTool.Plugin.Abstractions\AutoTool.Plugin.Abstractions.csproj" />
   </ItemGroup>
 </Project>
+

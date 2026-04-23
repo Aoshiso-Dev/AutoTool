@@ -5,6 +5,7 @@ namespace AutoTool.Serialization;
 
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(CommandListItem))]
+[JsonSerializable(typeof(PluginCommandListItem))]
 [JsonSerializable(typeof(WaitImageItem))]
 [JsonSerializable(typeof(FindImageItem))]
 [JsonSerializable(typeof(ClickImageItem))]
@@ -35,3 +36,4 @@ namespace AutoTool.Serialization;
 internal partial class AutoToolJsonSerializerContext : JsonSerializerContext
 {
 }
+

@@ -6,6 +6,7 @@ using AutoTool.Application.Files;
 using AutoTool.Application.History;
 using static AutoTool.Application.Files.FileManager;
 using AutoTool.Application.Ports;
+using AutoTool.Desktop.Services;
 using INotifier = AutoTool.Commands.Services.INotifier;
 using System.ComponentModel;
 using System.IO;
@@ -31,6 +32,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IFilePicker _filePicker;
     private readonly IRecentFileStore _recentFileStore;
     private readonly IFileSystemPathService _fileSystemPathService;
+    private readonly PluginStartupDiagnosticsPresenter _pluginStartupDiagnosticsPresenter;
     private EventHandler? _commandHistoryChangedHandler;
     private bool _lastKnownIsRunning;
     private bool _isDirtyTrackingSuspended;
@@ -89,6 +91,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IFilePicker filePicker,
         IRecentFileStore recentFileStore,
         IFileSystemPathService fileSystemPathService,
+        PluginStartupDiagnosticsPresenter pluginStartupDiagnosticsPresenter,
         MacroPanelViewModel macroPanelViewModel)
     {
         ArgumentNullException.ThrowIfNull(notifier);
@@ -96,6 +99,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(filePicker);
         ArgumentNullException.ThrowIfNull(recentFileStore);
         ArgumentNullException.ThrowIfNull(fileSystemPathService);
+        ArgumentNullException.ThrowIfNull(pluginStartupDiagnosticsPresenter);
         ArgumentNullException.ThrowIfNull(macroPanelViewModel);
 
         _notifier = notifier;
@@ -103,6 +107,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _filePicker = filePicker;
         _recentFileStore = recentFileStore;
         _fileSystemPathService = fileSystemPathService;
+        _pluginStartupDiagnosticsPresenter = pluginStartupDiagnosticsPresenter;
         MacroPanelViewModel = macroPanelViewModel;
 
         InitializeFileManager();
@@ -111,6 +116,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         MacroPanelViewModel.PropertyChanged += OnMacroPanelPropertyChanged;
         MacroPanelViewModel.StatusMessageRequested += OnMacroStatusMessageRequested;
         MacroPanelViewModel.NewFileStateRequested += OnMacroNewFileStateRequested;
+        ReportPluginStartupDiagnostics();
     }
 
     private void OnMacroPanelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -424,18 +430,32 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (!TryGetMacroFileManager(out var macroFileManager) || !macroFileManager.OpenFile(lastOpenedMacroFilePath))
+        try
         {
-            StatusMessage = "前回のマクロファイルを復元できませんでした。";
-            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
-            RefreshFileUiState();
-            return;
-        }
+            if (!TryGetMacroFileManager(out var macroFileManager) || !macroFileManager.OpenFile(lastOpenedMacroFilePath))
+            {
+                StatusMessage = "前回のマクロファイルを復元できませんでした。";
+                _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
+                RefreshFileUiState();
+                return;
+            }
 
-        ClearDirtyState();
-        RefreshFileUiState();
-        StatusMessage = $"前回の状態を復元しました: {macroFileManager.CurrentFileName}";
-        _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
+            ClearDirtyState();
+            RefreshFileUiState();
+            StatusMessage = $"前回の状態を復元しました: {macroFileManager.CurrentFileName}";
+            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
+        }
+        catch (Exception)
+        {
+            if (TryGetMacroFileManager(out var macroFileManager))
+            {
+                macroFileManager.ResetToNewFile();
+            }
+
+            StatusMessage = "前回のマクロファイル復元中にエラーが発生したため、新規状態で起動しました。";
+            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(5), () => StatusMessage = "準備完了");
+            RefreshFileUiState();
+        }
     }
 
     public string? GetLastOpenedMacroFilePath()
@@ -448,6 +468,26 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private bool TryGetMacroFileManager(out FileManager fileManager)
     {
         return _fileManagers.TryGetValue(TabIndexes.Macro, out fileManager!);
+    }
+
+    private void ReportPluginStartupDiagnostics()
+    {
+        var presentation = _pluginStartupDiagnosticsPresenter.BuildPresentation();
+        foreach (var entry in presentation.Entries)
+        {
+            MacroPanelViewModel.LogPanelViewModel.WriteLog(string.Empty, entry.CommandName, entry.Message);
+        }
+
+        if (presentation.ShouldOpenLogPanel)
+        {
+            MacroPanelViewModel.IsLogPanelOpen = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(presentation.StatusMessage))
+        {
+            StatusMessage = presentation.StatusMessage;
+            _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(5), () => StatusMessage = "準備完了");
+        }
     }
 
     public bool TryLoadMacroFromCommandLine(string filePath, out string message)
@@ -525,6 +565,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 }
+
 
 
 

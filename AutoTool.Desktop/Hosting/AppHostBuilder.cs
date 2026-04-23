@@ -5,9 +5,11 @@ using AutoTool.Desktop.Services;
 using AutoTool.Desktop.Ui;
 using AutoTool.Desktop.ViewModel;
 using AutoTool.Infrastructure.Implementations;
+using AutoTool.Plugin.Host.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.IO;
 
 namespace AutoTool.Desktop.Hosting;
 
@@ -30,6 +32,10 @@ public static class AppHostBuilder
             {
                 services.AddSingleton(invocation);
                 services.AddPanelsCoreServices(context.Configuration);
+                services.AddPluginHostServices(options =>
+                {
+                    options.RootDirectoryPath = Path.Combine(AppContext.BaseDirectory, "Plugins");
+                });
                 services.AddAutoToolServices();
                 services.AddPanelsViewModels();
             });
@@ -57,6 +63,7 @@ public static class AutoToolServiceExtensions
 
         services.AddSingleton<AutoTool.Infrastructure.AsyncFileLog>();
         services.AddSingleton<ILogWriter, DelegatingLogWriter>();
+        services.AddSingleton<PluginStartupDiagnosticsPresenter>();
 
         services.AddSingleton<MacroPanelViewModel>();
         services.AddSingleton<MainWindowViewModel>();
@@ -68,6 +75,8 @@ public static class AutoToolServiceExtensions
         return services;
     }
 }
+
+
 
 
 

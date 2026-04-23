@@ -20,6 +20,10 @@ public sealed class CommandMetadata
     public required int DisplaySubPriority { get; init; }
     public required string DisplayNameJa { get; init; }
     public required string DisplayNameEn { get; init; }
+    public string? CustomCategoryNameJa { get; init; }
+    public string? CustomCategoryNameEn { get; init; }
+    public bool CanCreateCommand { get; init; } = true;
+    public string? PluginId { get; init; }
 }
 
 /// <summary>
@@ -27,6 +31,7 @@ public sealed class CommandMetadata
 /// </summary>
 public static class CommandMetadataCatalog
 {
+    private static readonly object ExternalMetadataLock = new();
     private static readonly IReadOnlyDictionary<string, string> LegacyTypeAliases =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -39,13 +44,20 @@ public static class CommandMetadataCatalog
 
     private static readonly Lazy<IReadOnlyDictionary<string, CommandMetadata>> ByTypeName =
         new(CreateByTypeName);
+    private static IReadOnlyDictionary<string, CommandMetadata> _externalByTypeName =
+        new ReadOnlyDictionary<string, CommandMetadata>(new Dictionary<string, CommandMetadata>(StringComparer.Ordinal));
 
     private static readonly Lazy<IReadOnlyDictionary<Type, CommandMetadata>> ByItemType =
         new(() => ByTypeName.Value.Values.ToDictionary(x => x.ItemType, x => x));
 
     public static IReadOnlyCollection<CommandMetadata> GetAll()
     {
-        return ByTypeName.Value.Values.ToArray();
+        lock (ExternalMetadataLock)
+        {
+            return ByTypeName.Value.Values
+                .Concat(_externalByTypeName.Values)
+                .ToArray();
+        }
     }
 
     public static bool TryGetByTypeName(string typeName, out CommandMetadata metadata)
@@ -57,7 +69,15 @@ public static class CommandMetadataCatalog
             return false;
         }
 
-        return ByTypeName.Value.TryGetValue(normalized, out metadata!);
+        lock (ExternalMetadataLock)
+        {
+            if (_externalByTypeName.TryGetValue(normalized, out metadata!))
+            {
+                return true;
+            }
+
+            return ByTypeName.Value.TryGetValue(normalized, out metadata!);
+        }
     }
 
     public static string NormalizeTypeName(string typeName)
@@ -81,7 +101,27 @@ public static class CommandMetadataCatalog
             return false;
         }
 
+        lock (ExternalMetadataLock)
+        {
+            if (_externalByTypeName.Values.FirstOrDefault(x => x.ItemType == itemType) is { } external)
+            {
+                metadata = external;
+                return true;
+            }
+        }
+
         return ByItemType.Value.TryGetValue(itemType, out metadata!);
+    }
+
+    public static void SetExternalMetadata(IEnumerable<CommandMetadata> metadata)
+    {
+        ArgumentNullException.ThrowIfNull(metadata);
+
+        var map = metadata.ToDictionary(x => x.TypeName, x => x, StringComparer.Ordinal);
+        lock (ExternalMetadataLock)
+        {
+            _externalByTypeName = new ReadOnlyDictionary<string, CommandMetadata>(map);
+        }
     }
 
     private static IReadOnlyDictionary<string, CommandMetadata> CreateByTypeName()
@@ -110,3 +150,4 @@ public static class CommandMetadataCatalog
         return new ReadOnlyDictionary<string, CommandMetadata>(items);
     }
 }
+

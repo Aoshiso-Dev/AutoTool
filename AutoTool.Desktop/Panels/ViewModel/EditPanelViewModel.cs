@@ -26,7 +26,7 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     private readonly INotifier _notifier;
     private readonly IPanelDialogService _panelDialogService;
     private readonly ICapturePathProvider _capturePathProvider;
-    private readonly PropertyMetadataProvider _metadataProvider = new();
+    private readonly PropertyMetadataProvider _metadataProvider;
 
     public event Action<ICommandListItem?>? ItemEdited;
 
@@ -105,3 +105,4 @@ public partial class EditPanelViewModel : ObservableObject, IEditPanelViewModel
     public void SetRunningState(bool isRunning) => IsRunning = isRunning;
     public void Prepare() { }
 }
+

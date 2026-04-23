@@ -26,6 +26,11 @@ namespace AutoTool.Automation.Runtime.Lists;
                 return itemType;
             }
 
+            if (!string.IsNullOrWhiteSpace(metadata.CustomCategoryNameJa))
+            {
+                return metadata.CustomCategoryNameJa;
+            }
+
             return metadata.Category switch
             {
                 CommandDef.CommandCategory.Action => "クリック操作",
@@ -125,7 +130,7 @@ namespace AutoTool.Automation.Runtime.Lists;
             }
         }
 
-        public ICommandListItem Clone()
+        public virtual ICommandListItem Clone()
         {
             return new CommandListItem(this);
         }
@@ -152,5 +157,7 @@ namespace AutoTool.Automation.Runtime.Lists;
             }
         }
     }
+
+
 
 

@@ -33,7 +33,9 @@ public class DependencyInjectionPolicyTests
         "AutoTool.Bootstrap",
         "AutoTool.Desktop",
         "AutoTool.Domain",
-        "AutoTool.Infrastructure"
+        "AutoTool.Infrastructure",
+        "AutoTool.Plugin.Abstractions",
+        "AutoTool.Plugin.Host"
     ];
 
     [Fact]
@@ -137,3 +139,5 @@ public class DependencyInjectionPolicyTests
         throw new InvalidOperationException("AutoTool.sln が見つからないためリポジトリルートを特定できません。");
     }
 }
+
+
