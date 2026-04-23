@@ -89,7 +89,7 @@
                             <TextBlock Grid.Column="3"
                                        Text="{Binding Message}"
                                        Margin="8,0,0,0"
-                                       TextTrimming="CharacterEllipsis"
+                                       TextWrapping="Wrap"
                                        Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"/>
                         </Grid>
                         <Border.Style>

@@ -97,8 +97,7 @@ public partial class MacroPanelViewModel
             $"Command={commandName}",
             $"Detail={normalizedDetail}");
 
-        var briefDetail = ToUiSummary(normalizedDetail);
-        OnUiThread(() => _logPanel.WriteLog(uiLineLabel, uiCommandLabel, briefDetail));
+        OnUiThread(() => _logPanel.WriteLog(uiLineLabel, uiCommandLabel, normalizedDetail));
     }
 
     private void HandleUpdateProgress(ICommand command, int progress)
@@ -519,20 +518,6 @@ public partial class MacroPanelViewModel
             .Replace('\n', ' ')
             .Replace('\r', ' ')
             .Trim();
-    }
-
-    private static string ToUiSummary(string detail)
-    {
-        var normalized = NormalizeLine(detail);
-        if (string.IsNullOrWhiteSpace(normalized))
-        {
-            return "実行中";
-        }
-
-        const int maxLength = 48;
-        return normalized.Length > maxLength
-            ? $"{normalized[..maxLength]}..."
-            : normalized;
     }
 
     private static string FormatUiLineLabel(int lineNumber) => $"#{lineNumber:00}";
