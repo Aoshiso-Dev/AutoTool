@@ -7,6 +7,7 @@ using AutoTool.Application.History;
 using static AutoTool.Application.Files.FileManager;
 using AutoTool.Application.Ports;
 using AutoTool.Desktop.Services;
+using AutoTool.Plugin.Host.Abstractions;
 using INotifier = AutoTool.Commands.Services.INotifier;
 using System.ComponentModel;
 using System.IO;
@@ -79,6 +80,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private MacroPanelViewModel _macroPanelViewModel;
 
+    public ObservableCollection<PluginQuickActionViewModel> PluginQuickActions { get; } = [];
+
     [ObservableProperty]
     private string _statusMessage = "準備完了";
 
@@ -92,6 +95,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IRecentFileStore recentFileStore,
         IFileSystemPathService fileSystemPathService,
         PluginStartupDiagnosticsPresenter pluginStartupDiagnosticsPresenter,
+        IPluginQuickActionCatalog pluginQuickActionCatalog,
+        PluginQuickActionExecutor pluginQuickActionExecutor,
+        ILogWriter logWriter,
         MacroPanelViewModel macroPanelViewModel)
     {
         ArgumentNullException.ThrowIfNull(notifier);
@@ -100,6 +106,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(recentFileStore);
         ArgumentNullException.ThrowIfNull(fileSystemPathService);
         ArgumentNullException.ThrowIfNull(pluginStartupDiagnosticsPresenter);
+        ArgumentNullException.ThrowIfNull(pluginQuickActionCatalog);
+        ArgumentNullException.ThrowIfNull(pluginQuickActionExecutor);
+        ArgumentNullException.ThrowIfNull(logWriter);
         ArgumentNullException.ThrowIfNull(macroPanelViewModel);
 
         _notifier = notifier;
@@ -109,6 +118,10 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _fileSystemPathService = fileSystemPathService;
         _pluginStartupDiagnosticsPresenter = pluginStartupDiagnosticsPresenter;
         MacroPanelViewModel = macroPanelViewModel;
+        foreach (var quickAction in pluginQuickActionCatalog.GetQuickActions())
+        {
+            PluginQuickActions.Add(PluginQuickActionViewModel.Create(quickAction, pluginQuickActionExecutor, logWriter));
+        }
 
         InitializeFileManager();
         InitializeCommandHistory();
@@ -175,6 +188,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         SaveFileAsCommand.NotifyCanExecuteChanged();
         UndoCommand.NotifyCanExecuteChanged();
         RedoCommand.NotifyCanExecuteChanged();
+
+        foreach (var quickAction in PluginQuickActions)
+        {
+            quickAction.IsHostRunning = IsRunning;
+        }
     }
 
     private void InitializeFileManager()

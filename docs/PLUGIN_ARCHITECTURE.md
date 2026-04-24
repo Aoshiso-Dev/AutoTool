@@ -136,6 +136,18 @@ Plugins\
       "order": 10
     }
   ],
+  "quickActions": [
+    {
+      "actionId": "open-console",
+      "displayName": "コンソール",
+      "commandType": "Example.Plugin.Command",
+      "toolTip": "コンソールを開きます",
+      "icon": "PanelRight24",
+      "order": 10,
+      "location": "ExtensionToolbar",
+      "parameterJson": {}
+    }
+  ],
   "signatureThumbprint": "0123456789ABCDEF"
 }
 ```
@@ -170,6 +182,11 @@ Plugins\
   - 要求権限一覧
 - `commands`
   - プラグインが公開するコマンド定義一覧
+- `quickActions`
+  - 拡張ツールバーへ常設表示する固定引数ショートカット定義一覧
+  - `actionId` / `displayName` / `commandType` は必須
+  - `location` は Phase 1 では `ExtensionToolbar` のみ
+  - `icon` は `Wpf.Ui.Controls.SymbolRegular` の enum 名を指定し、不正な値は既定アイコンへフォールバックする
 - `signatureThumbprint`
   - 許可済み証明書の指紋
 
@@ -278,6 +295,10 @@ public interface IPluginExecutionContext
 さらに、`IPluginServiceRegistrar` が返したサービス登録はホスト起動時にアプリケーション DI へ反映されます。
 加えて、`IPluginHealthCheck` 実装がある場合は起動時に実行され、権限定義の整合確認と合わせて `IPluginStartupDiagnosticsCatalog` から参照できます。
 
+`quickActions` は、既存のプラグインコマンド実行経路を再利用する固定引数ショートカットです。
+ホストは対象プラグインの `commandType` と照合し、拡張ツールバーのボタン押下時に `PluginCommandListItem` を組み立てて `PluginCommandDispatcher` へ渡します。
+専用の別実行基盤は持たず、`parameterJson` が未指定の場合は `{}` として実行します。
+
 ## 10. マクロ保存互換
 
 `.macro` にはプラグイン由来コマンドであることを保持します。
@@ -370,6 +391,14 @@ public interface IPluginExecutionContext
 - プラグインからの UI 要求はホスト側の専用領域で処理する
 - 表示処理そのものはホストが責任を持つ
 - 起動時診断の結果はステータスメッセージとログパネルへ表示できるようにする
+
+### 13.3 拡張ツールバー
+
+- `quickActions.location` が `ExtensionToolbar` の項目を専用の拡張ツールバーへ表示する
+- 標準操作群とは分離し、title bar には追加しない
+- AutoTool 実行中は quick action ボタンを無効化する
+- コマンド未提供など利用不可の場合は、無効理由を tooltip で確認できるようにする
+- ボタン押下時は `QuickAction 実行: <DisplayName>` をログへ記録する
 
 ## 14. セキュリティと配布
 

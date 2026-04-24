@@ -19,6 +19,7 @@
         <converters:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
         <converters:RunningStatusConverter x:Key="RunningStatusConverter"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
     </ui:FluentWindow.Resources>
 
     <!-- キーボードショートカットの設定 -->
@@ -35,6 +36,7 @@
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -140,13 +142,58 @@
             </ui:TitleBar.Header>
         </ui:TitleBar>
 
+        <!-- 拡張ツールバー -->
+        <Border Grid.Row="1"
+                Background="{ui:ThemeResource ControlFillColorDefaultBrush}"
+                BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="12,6"
+                Visibility="{Binding PluginQuickActions.Count, Converter={StaticResource CountToVisibilityConverter}}">
+            <DockPanel LastChildFill="True">
+                <TextBlock DockPanel.Dock="Left"
+                           Text="プラグイン拡張"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0"
+                           FontSize="12"
+                           Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
+                <ItemsControl ItemsSource="{Binding PluginQuickActions}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:Button Command="{Binding ExecuteCommand}"
+                                       IsEnabled="{Binding IsEnabled}"
+                                       ToolTip="{Binding EffectiveToolTip}"
+                                       ToolTipService.ShowOnDisabled="True"
+                                       Appearance="Secondary"
+                                       Height="30"
+                                       MinWidth="40"
+                                       Padding="8,2"
+                                       Margin="0,0,6,0">
+                                <ui:Button.Icon>
+                                    <ui:SymbolIcon Symbol="{Binding IconSymbol}"/>
+                                </ui:Button.Icon>
+                                <TextBlock Text="{Binding DisplayName}"
+                                           Margin="4,0,0,0"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxWidth="180"/>
+                            </ui:Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
         <!-- メインコンテンツ -->
-        <Grid Grid.Row="1" Margin="0">
+        <Grid Grid.Row="2" Margin="0">
             <panel:MacroPanel DataContext="{Binding MacroPanelViewModel}"/>
         </Grid>
 
         <!-- ステータスバー -->
-        <Border Grid.Row="2" 
+        <Border Grid.Row="3"
                 Background="{ui:ThemeResource ControlFillColorDefaultBrush}" 
                 BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="0,1,0,0"

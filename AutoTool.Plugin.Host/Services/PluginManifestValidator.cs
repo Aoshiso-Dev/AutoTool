@@ -52,6 +52,29 @@ public sealed class PluginManifestValidator : IPluginManifestValidator
             ValidateRequired(command.Category, "commands.category", errors);
         }
 
+        foreach (var quickAction in manifest.QuickActions)
+        {
+            ValidateRequired(quickAction.ActionId, "quickActions.actionId", errors);
+            ValidateRequired(quickAction.DisplayName, "quickActions.displayName", errors);
+            ValidateRequired(quickAction.CommandType, "quickActions.commandType", errors);
+
+            if (string.IsNullOrWhiteSpace(quickAction.Location) is false &&
+                !string.Equals(quickAction.Location, PluginQuickActionLocations.ExtensionToolbar, StringComparison.Ordinal))
+            {
+                errors.Add($"quickActions.location は {PluginQuickActionLocations.ExtensionToolbar} のみ指定できます。");
+            }
+        }
+
+        var duplicateActionIds = manifest.QuickActions
+            .Where(static x => !string.IsNullOrWhiteSpace(x.ActionId))
+            .GroupBy(static x => x.ActionId, StringComparer.Ordinal)
+            .Where(static x => x.Count() > 1)
+            .Select(static x => x.Key);
+        foreach (var actionId in duplicateActionIds)
+        {
+            errors.Add($"quickActions.actionId に重複があります: {actionId}");
+        }
+
         return errors;
     }
 

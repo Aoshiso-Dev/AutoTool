@@ -64,6 +64,7 @@ public static class AutoToolServiceExtensions
         services.AddSingleton<AutoTool.Infrastructure.AsyncFileLog>();
         services.AddSingleton<ILogWriter, DelegatingLogWriter>();
         services.AddSingleton<PluginStartupDiagnosticsPresenter>();
+        services.AddSingleton<PluginQuickActionExecutor>();
 
         services.AddSingleton<MacroPanelViewModel>();
         services.AddSingleton<MainWindowViewModel>();

@@ -146,12 +146,13 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
             var rawItemType = entry["ItemType"]?.GetValue<string>() ?? string.Empty;
             var itemType = MapLegacyItemType(rawItemType);
 
-            if (string.IsNullOrWhiteSpace(itemType) || !CommandMetadataCatalog.TryGetByTypeName(itemType, out var metadata))
+            var concreteItemType = ResolveCommandItemType(itemType);
+            if (string.IsNullOrWhiteSpace(itemType) || concreteItemType is null)
             {
                 throw new InvalidDataException($"不明な ItemType: {rawItemType}");
             }
 
-            var deserialized = JsonSerializer.Deserialize(entry.ToJsonString(), metadata.ItemType, _options);
+            var deserialized = JsonSerializer.Deserialize(entry.ToJsonString(), concreteItemType, _options);
             if (deserialized is not ICommandListItem commandItem)
             {
                 throw new InvalidDataException($"アイテム復元失敗: {itemType}");
@@ -293,7 +294,7 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
                || propertyName.EndsWith("Directory", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool TryDeserializeLegacy<T>(string json, out T? result)
+    private bool TryDeserializeLegacy<T>(string json, out T? result)
     {
         result = default;
 
@@ -321,17 +322,18 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
             var rawItemType = entry["ItemType"]?.GetValue<string>() ?? string.Empty;
             var itemType = MapLegacyItemType(rawItemType);
 
-            if (string.IsNullOrWhiteSpace(itemType) || !CommandMetadataCatalog.TryGetByTypeName(itemType, out var metadata))
+            var concreteItemType = ResolveCommandItemType(itemType);
+            if (string.IsNullOrWhiteSpace(itemType) || concreteItemType is null)
             {
                 throw new InvalidDataException($"不明な ItemType: {rawItemType}");
             }
 
-            if (Activator.CreateInstance(metadata.ItemType) is not ICommandListItem instance)
+            if (Activator.CreateInstance(concreteItemType) is not ICommandListItem instance)
             {
                 throw new InvalidDataException($"アイテム作成失敗: {itemType}");
             }
 
-            HydrateProperties(instance, metadata.ItemType, entry, itemType);
+            HydrateProperties(instance, concreteItemType, entry, itemType);
             items.Add(instance);
         }
 
@@ -390,6 +392,24 @@ public sealed class MacroFileSerializer : IMacroFileSerializer
         }
 
         return LegacyItemTypeMap.TryGetValue(itemType, out var mapped) ? mapped : itemType;
+    }
+
+    private Type? ResolveCommandItemType(string itemType)
+    {
+        if (string.IsNullOrWhiteSpace(itemType))
+        {
+            return null;
+        }
+
+        var registryItemType = (_commandRegistry as ICommandDefinitionProvider)?.GetItemType(itemType);
+        if (registryItemType is not null)
+        {
+            return registryItemType;
+        }
+
+        return CommandMetadataCatalog.TryGetByTypeName(itemType, out var metadata)
+            ? metadata.ItemType
+            : null;
     }
 
     private static void PrepareForSerialization<T>(T obj)

@@ -51,6 +51,116 @@ public sealed class PluginManifestLoaderTests : IDisposable
     }
 
     [Fact]
+    public void Load_ManifestWithQuickActions_ReturnsDefinitions()
+    {
+        var pluginDirectoryPath = CreatePluginDirectory("Quick.Plugin");
+        File.WriteAllText(Path.Combine(pluginDirectoryPath, "Quick.Plugin.dll"), string.Empty);
+        File.WriteAllText(
+            Path.Combine(pluginDirectoryPath, "plugin.json"),
+            """
+            {
+              "pluginId": "Quick.Plugin",
+              "displayName": "Quick Plugin",
+              "version": "1.0.0",
+              "entryAssembly": "Quick.Plugin.dll",
+              "entryType": "Quick.Plugin.PluginEntry",
+              "quickActions": [
+                {
+                  "actionId": "stage-console",
+                  "displayName": "ステージ",
+                  "commandType": "Quick.Plugin.StageConsole",
+                  "toolTip": "ステージコンソールを開きます",
+                  "icon": "PanelRight24",
+                  "order": 20,
+                  "location": "ExtensionToolbar",
+                  "parameterJson": { "mode": "console" }
+                }
+              ]
+            }
+            """);
+
+        IPluginManifestLoader loader = new PluginManifestLoader(new PluginManifestValidator());
+        var result = loader.Load(Path.Combine(pluginDirectoryPath, "plugin.json"));
+
+        Assert.True(result.IsValid);
+        var quickAction = Assert.Single(result.Manifest!.QuickActions);
+        Assert.Equal("stage-console", quickAction.ActionId);
+        Assert.Equal("ステージ", quickAction.DisplayName);
+        Assert.Equal("Quick.Plugin.StageConsole", quickAction.CommandType);
+        Assert.Equal("PanelRight24", quickAction.Icon);
+        Assert.Contains("\"mode\"", quickAction.ParameterJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Load_QuickActionMissingRequiredFields_ReturnsValidationErrors()
+    {
+        var pluginDirectoryPath = CreatePluginDirectory("Quick.Broken");
+        File.WriteAllText(Path.Combine(pluginDirectoryPath, "Quick.Broken.dll"), string.Empty);
+        File.WriteAllText(
+            Path.Combine(pluginDirectoryPath, "plugin.json"),
+            """
+            {
+              "pluginId": "Quick.Broken",
+              "displayName": "Quick Broken",
+              "version": "1.0.0",
+              "entryAssembly": "Quick.Broken.dll",
+              "entryType": "Quick.Broken.PluginEntry",
+              "quickActions": [
+                {
+                  "actionId": "",
+                  "displayName": "",
+                  "commandType": ""
+                }
+              ]
+            }
+            """);
+
+        IPluginManifestLoader loader = new PluginManifestLoader(new PluginManifestValidator());
+        var result = loader.Load(Path.Combine(pluginDirectoryPath, "plugin.json"));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, static x => x.Contains("quickActions.actionId は必須です。", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, static x => x.Contains("quickActions.displayName は必須です。", StringComparison.Ordinal));
+        Assert.Contains(result.Errors, static x => x.Contains("quickActions.commandType は必須です。", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Load_DuplicateQuickActionIds_ReturnsValidationError()
+    {
+        var pluginDirectoryPath = CreatePluginDirectory("Quick.Duplicate");
+        File.WriteAllText(Path.Combine(pluginDirectoryPath, "Quick.Duplicate.dll"), string.Empty);
+        File.WriteAllText(
+            Path.Combine(pluginDirectoryPath, "plugin.json"),
+            """
+            {
+              "pluginId": "Quick.Duplicate",
+              "displayName": "Quick Duplicate",
+              "version": "1.0.0",
+              "entryAssembly": "Quick.Duplicate.dll",
+              "entryType": "Quick.Duplicate.PluginEntry",
+              "quickActions": [
+                {
+                  "actionId": "open",
+                  "displayName": "Open 1",
+                  "commandType": "Quick.Duplicate.Open"
+                },
+                {
+                  "actionId": "open",
+                  "displayName": "Open 2",
+                  "commandType": "Quick.Duplicate.Open"
+                }
+              ]
+            }
+            """);
+
+        IPluginManifestLoader loader = new PluginManifestLoader(new PluginManifestValidator());
+        var result = loader.Load(Path.Combine(pluginDirectoryPath, "plugin.json"));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, static x => x.Contains("quickActions.actionId に重複があります: open", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Load_MissingEntryAssembly_ReturnsValidationError()
     {
         var pluginDirectoryPath = CreatePluginDirectory("Broken.Plugin");

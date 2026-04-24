@@ -26,6 +26,7 @@ public static class PluginHostServiceCollectionExtensions
         var pluginLoader = new PluginLoader(catalogLoader);
         var loadedPluginCatalog = new LoadedPluginCatalog(pluginLoader);
         var pluginCommandCatalog = new PluginCommandCatalog(loadedPluginCatalog);
+        var pluginQuickActionCatalog = new PluginQuickActionCatalog(loadedPluginCatalog, pluginCommandCatalog);
         var startupDiagnosticsCatalog = new PluginStartupDiagnosticsCatalog(loadedPluginCatalog, pluginCommandCatalog);
 
         ApplyPluginServiceRegistrations(services, loadedPluginCatalog.GetLoadedPlugins());
@@ -38,6 +39,7 @@ public static class PluginHostServiceCollectionExtensions
         services.AddSingleton<IPluginLoader>(pluginLoader);
         services.AddSingleton<ILoadedPluginCatalog>(loadedPluginCatalog);
         services.AddSingleton<IPluginCommandCatalog>(pluginCommandCatalog);
+        services.AddSingleton<IPluginQuickActionCatalog>(pluginQuickActionCatalog);
         services.AddSingleton<IPluginStartupDiagnosticsCatalog>(startupDiagnosticsCatalog);
         services.AddSingleton<IPluginCommandDispatcher, PluginCommandDispatcher>();
         services.AddSingleton<IAdditionalCommandDependencyResolver, PluginCommandDependencyResolver>();

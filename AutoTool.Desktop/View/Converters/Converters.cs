@@ -91,6 +91,26 @@ public class BoolToVisibilityConverter : IValueConverter
 }
 
 /// <summary>
+/// コレクション件数が 1 件以上ある場合だけ表示します。
+/// </summary>
+public class CountToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value switch
+        {
+            int count when count > 0 => Visibility.Visible,
+            _ => Visibility.Collapsed,
+        };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}
+
+/// <summary>
 /// お気に入りパネルの開閉状態と幅から `GridLength` を計算するコンバーターです。
 /// </summary>
 public class FavoritePanelWidthMultiConverter : IMultiValueConverter
