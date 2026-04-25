@@ -8,7 +8,7 @@ using CommandDef = AutoTool.Automation.Runtime.Definitions;
 
 namespace AutoTool.Automation.Runtime.Lists;
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageExist, typeof(IfImageExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true, displayPriority: 4, displaySubPriority: 1, displayNameJa: "条件 - 画像存在判定", displayNameEn: "If Image Exists")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageExist, typeof(IfImageExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Condition, isIfCommand: true, displayPriority: 4, displaySubPriority: 1, displayNameJa: "画像存在判定", displayNameEn: "If Image Exists")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -78,7 +78,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageNotExist, typeof(IfImageNotExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true, displayPriority: 4, displaySubPriority: 2, displayNameJa: "条件 - 画像非存在判定", displayNameEn: "If Image Not Exists")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageNotExist, typeof(IfImageNotExistCommand), typeof(IIfImageCommandSettings), CommandDef.CommandCategory.Condition, isIfCommand: true, displayPriority: 4, displaySubPriority: 2, displayNameJa: "画像非存在判定", displayNameEn: "If Image Not Exists")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -147,7 +147,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfTextExist, typeof(IfTextExistCommand), typeof(IIfTextCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true, displayPriority: 4, displaySubPriority: 3, displayNameJa: "条件 - 文字存在判定", displayNameEn: "If Text Exists")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfTextExist, typeof(IfTextExistCommand), typeof(IIfTextCommandSettings), CommandDef.CommandCategory.Condition, isIfCommand: true, displayPriority: 4, displaySubPriority: 3, displayNameJa: "文字存在判定", displayNameEn: "If Text Exists")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -273,7 +273,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfTextNotExist, typeof(IfTextNotExistCommand), typeof(IIfTextCommandSettings), CommandDef.CommandCategory.Control, isIfCommand: true, displayPriority: 4, displaySubPriority: 4, displayNameJa: "条件 - 文字非存在判定", displayNameEn: "If Text Not Exists")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfTextNotExist, typeof(IfTextNotExistCommand), typeof(IIfTextCommandSettings), CommandDef.CommandCategory.Condition, isIfCommand: true, displayPriority: 4, displaySubPriority: 4, displayNameJa: "文字非存在判定", displayNameEn: "If Text Not Exists")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -401,7 +401,7 @@ namespace AutoTool.Automation.Runtime.Lists;
 
 
     [CommandDef.SimpleCommandBinding(typeof(IfEndCommand), typeof(ICommandSettings))]
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfEnd, typeof(IfEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, isEndCommand: true, displayPriority: 4, displaySubPriority: 8, displayNameJa: "条件 - 終了", displayNameEn: "If End")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfEnd, typeof(IfEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Condition, isEndCommand: true, displayPriority: 4, displaySubPriority: 8, displayNameJa: "条件終了", displayNameEn: "If End")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -429,7 +429,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Loop, typeof(LoopCommand), typeof(ILoopCommandSettings), CommandDef.CommandCategory.Control, isLoopCommand: true, displayPriority: 3, displaySubPriority: 1, displayNameJa: "ループ - 開始", displayNameEn: "Loop Start")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Loop, typeof(LoopCommand), typeof(ILoopCommandSettings), CommandDef.CommandCategory.Control, isLoopCommand: true, displayPriority: 5, displaySubPriority: 1, displayNameJa: "ループ開始", displayNameEn: "Loop Start")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -471,7 +471,7 @@ namespace AutoTool.Automation.Runtime.Lists;
     }
 
     [CommandDef.SimpleCommandBinding(typeof(LoopEndCommand), typeof(ICommandSettings))]
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.LoopEnd, typeof(LoopEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, isEndCommand: true, displayPriority: 3, displaySubPriority: 3, displayNameJa: "ループ - 終了", displayNameEn: "Loop End")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.LoopEnd, typeof(LoopEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, isEndCommand: true, displayPriority: 5, displaySubPriority: 3, displayNameJa: "ループ終了", displayNameEn: "Loop End")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -506,7 +506,7 @@ namespace AutoTool.Automation.Runtime.Lists;
     }
 
     [CommandDef.SimpleCommandBinding(typeof(LoopBreakCommand), typeof(ICommandSettings))]
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.LoopBreak, typeof(LoopBreakCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, displayPriority: 3, displaySubPriority: 2, displayNameJa: "ループ - 中断", displayNameEn: "Loop Break")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.LoopBreak, typeof(LoopBreakCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, displayPriority: 5, displaySubPriority: 2, displayNameJa: "ループ中断", displayNameEn: "Loop Break")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -522,7 +522,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Retry, typeof(RetryCommand), typeof(IRetryCommandSettings), CommandDef.CommandCategory.Control, isLoopCommand: true, displayPriority: 3, displaySubPriority: 4, displayNameJa: "制御 - リトライ開始", displayNameEn: "Retry Start")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Retry, typeof(RetryCommand), typeof(IRetryCommandSettings), CommandDef.CommandCategory.Control, isLoopCommand: true, displayPriority: 5, displaySubPriority: 4, displayNameJa: "リトライ開始", displayNameEn: "Retry Start")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -573,7 +573,7 @@ namespace AutoTool.Automation.Runtime.Lists;
     }
 
     [CommandDef.SimpleCommandBinding(typeof(RetryEndCommand), typeof(ICommandSettings))]
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.RetryEnd, typeof(RetryEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, isEndCommand: true, displayPriority: 3, displaySubPriority: 5, displayNameJa: "制御 - リトライ終了", displayNameEn: "Retry End")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.RetryEnd, typeof(RetryEndCommand), typeof(ICommandSettings), CommandDef.CommandCategory.Control, isEndCommand: true, displayPriority: 5, displaySubPriority: 5, displayNameJa: "リトライ終了", displayNameEn: "Retry End")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -607,7 +607,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageExistAI, typeof(IfImageExistAICommand), typeof(IIfImageExistAISettings), CommandDef.CommandCategory.AI, isIfCommand: true, displayPriority: 4, displaySubPriority: 5, displayNameJa: "条件 - 画像存在判定(AI検出)", displayNameEn: "If AI Image Exists")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageExistAI, typeof(IfImageExistAICommand), typeof(IIfImageExistAISettings), CommandDef.CommandCategory.Condition, isIfCommand: true, displayPriority: 4, displaySubPriority: 6, displayNameJa: "AI画像存在判定", displayNameEn: "If AI Image Exists")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -698,7 +698,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageNotExistAI, typeof(IfImageNotExistAICommand), typeof(IIfImageNotExistAISettings), CommandDef.CommandCategory.AI, isIfCommand: true, displayPriority: 4, displaySubPriority: 6, displayNameJa: "条件 - 画像非存在判定(AI検出)", displayNameEn: "If AI Image Not Exists")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.IfImageNotExistAI, typeof(IfImageNotExistAICommand), typeof(IIfImageNotExistAISettings), CommandDef.CommandCategory.Condition, isIfCommand: true, displayPriority: 4, displaySubPriority: 7, displayNameJa: "AI画像非存在判定", displayNameEn: "If AI Image Not Exists")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>

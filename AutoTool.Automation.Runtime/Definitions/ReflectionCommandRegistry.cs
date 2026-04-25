@@ -293,8 +293,13 @@ public sealed class ReflectionCommandRegistry(
         return category switch
         {
             CommandCategory.Action => "クリック操作",
-            CommandCategory.Control => "条件分岐",
-            CommandCategory.AI => "AI",
+            CommandCategory.Click => "クリック操作",
+            CommandCategory.Input => "キー入力",
+            CommandCategory.Wait => "待機",
+            CommandCategory.Image => "画像操作",
+            CommandCategory.Condition => "条件分岐",
+            CommandCategory.Control => "繰り返し・リトライ",
+            CommandCategory.AI => "その他",
             CommandCategory.System => "システム操作",
             CommandCategory.Variable => "変数操作",
             _ => "その他"
@@ -306,8 +311,13 @@ public sealed class ReflectionCommandRegistry(
         return category switch
         {
             CommandCategory.Action => "Click Operations",
-            CommandCategory.Control => "Conditional",
-            CommandCategory.AI => "AI",
+            CommandCategory.Click => "Click Operations",
+            CommandCategory.Input => "Keyboard Input",
+            CommandCategory.Wait => "Wait",
+            CommandCategory.Image => "Image Operations",
+            CommandCategory.Condition => "Conditions",
+            CommandCategory.Control => "Repeat and Retry",
+            CommandCategory.AI => "Other",
             CommandCategory.System => "System Operations",
             CommandCategory.Variable => "Variable Operations",
             _ => "Others"

@@ -5,7 +5,9 @@
                  xmlns:converter="clr-namespace:AutoTool.Desktop.Panels.View.Converter"
                  Title="コマンドを選択"
                  Width="920"
-                 Height="620"
+                 Height="760"
+                 MinWidth="860"
+                 MinHeight="680"
                  WindowStartupLocation="CenterOwner"
                  ExtendsContentIntoTitleBar="True"
                  WindowBackdropType="Mica"
@@ -69,14 +71,14 @@
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
-                            <Setter Property="Margin" Value="0,0,0,8"/>
+                            <Setter Property="Margin" Value="0,0,0,6"/>
                             <Setter Property="Padding" Value="0"/>
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
                                         <Border x:Name="CardBorder"
-                                                Padding="14"
+                                                Padding="12"
                                                 CornerRadius="10"
                                                 Background="{ui:ThemeResource ControlFillColorSecondaryBrush}"
                                                 BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}"

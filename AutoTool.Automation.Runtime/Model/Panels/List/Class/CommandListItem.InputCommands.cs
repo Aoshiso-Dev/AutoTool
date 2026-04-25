@@ -8,7 +8,7 @@ using CommandDef = AutoTool.Automation.Runtime.Definitions;
 
 namespace AutoTool.Automation.Runtime.Lists;
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Hotkey, typeof(SimpleCommand), typeof(IHotkeyCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 2, displaySubPriority: 1, displayNameJa: "ホットキー", displayNameEn: "Hotkey")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Hotkey, typeof(SimpleCommand), typeof(IHotkeyCommandSettings), CommandDef.CommandCategory.Input, displayPriority: 2, displaySubPriority: 1, displayNameJa: "ホットキー", displayNameEn: "Hotkey")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -99,7 +99,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Click, typeof(SimpleCommand), typeof(IClickCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 1, displaySubPriority: 1, displayNameJa: "クリック", displayNameEn: "Click")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Click, typeof(SimpleCommand), typeof(IClickCommandSettings), CommandDef.CommandCategory.Click, displayPriority: 1, displaySubPriority: 1, displayNameJa: "クリック", displayNameEn: "Click")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>
@@ -191,7 +191,7 @@ namespace AutoTool.Automation.Runtime.Lists;
         }
     }
 
-    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Wait, typeof(SimpleCommand), typeof(IWaitCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 2, displaySubPriority: 2, displayNameJa: "待機", displayNameEn: "Wait")]
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.Wait, typeof(SimpleCommand), typeof(IWaitCommandSettings), CommandDef.CommandCategory.Wait, displayPriority: 3, displaySubPriority: 1, displayNameJa: "待機", displayNameEn: "Wait")]
     /// <summary>
     /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
     /// </summary>

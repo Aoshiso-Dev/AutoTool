@@ -44,6 +44,10 @@ public sealed class PluginRuntimeCommandMetadataProvider(IPluginCommandCatalog c
     {
         return category switch
         {
+            "Click" => CommandCategory.Click,
+            "Input" => CommandCategory.Input,
+            "Wait" => CommandCategory.Wait,
+            "Condition" => CommandCategory.Condition,
             "Control" => CommandCategory.Control,
             "AI" => CommandCategory.AI,
             "System" => CommandCategory.System,

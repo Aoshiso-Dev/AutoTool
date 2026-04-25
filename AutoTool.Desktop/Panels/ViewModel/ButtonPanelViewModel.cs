@@ -68,7 +68,9 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
                 TypeName = typeName,
                 DisplayName = displayName,
                 Category = category,
-                Description = description
+                Description = description,
+                DisplayPriority = metadata?.DisplayPriority ?? 9,
+                DisplaySubPriority = metadata?.DisplaySubPriority ?? 0
             };
         }
 
@@ -83,7 +85,9 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
             DisplayName = $"{displayName} ({pluginId})",
             Category = $"プラグイン / {category}",
             Description = resolvedDescription,
-            PluginId = pluginId
+            PluginId = pluginId,
+            DisplayPriority = metadata.DisplayPriority,
+            DisplaySubPriority = metadata.DisplaySubPriority
         };
     }
 

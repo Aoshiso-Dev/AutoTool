@@ -34,8 +34,13 @@ namespace AutoTool.Automation.Runtime.Lists;
             return metadata.Category switch
             {
                 CommandDef.CommandCategory.Action => "クリック操作",
-                CommandDef.CommandCategory.Control => "条件分岐",
-                CommandDef.CommandCategory.AI => "AI",
+                CommandDef.CommandCategory.Click => "クリック操作",
+                CommandDef.CommandCategory.Input => "キー入力",
+                CommandDef.CommandCategory.Wait => "待機",
+                CommandDef.CommandCategory.Image => "画像操作",
+                CommandDef.CommandCategory.Condition => "条件分岐",
+                CommandDef.CommandCategory.Control => "繰り返し・リトライ",
+                CommandDef.CommandCategory.AI => "その他",
                 CommandDef.CommandCategory.System => "システム操作",
                 CommandDef.CommandCategory.Variable => "変数操作",
                 _ => "その他"

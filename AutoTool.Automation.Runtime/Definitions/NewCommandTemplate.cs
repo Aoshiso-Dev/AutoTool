@@ -30,7 +30,7 @@ namespace AutoTool.Automation.Runtime.Lists;
 /// 新規コマンドのアイテム
 /// </summary>
 [SimpleCommandBinding(typeof(MyNewCommand), typeof(IMyNewCommandSettings))]
-[CommandDefinition("MyNewCommand", typeof(MyNewCommand), typeof(IMyNewCommandSettings), CommandCategory.Action)]
+[CommandDefinition("MyNewCommand", typeof(MyNewCommand), typeof(IMyNewCommandSettings), CommandCategory.Click)]
 public partial class MyNewCommandItem : CommandListItem, IMyNewCommandItem, IMyNewCommandSettings
 {
     [ObservableProperty]

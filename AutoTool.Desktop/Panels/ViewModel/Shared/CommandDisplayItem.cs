@@ -12,6 +12,8 @@ public class CommandDisplayItem
     public string Category { get; init; } = string.Empty;      // カテゴリ名
     public string Description { get; init; } = string.Empty;   // コマンドの説明文
     public string PluginId { get; init; } = string.Empty;      // プラグイン識別子
+    public int DisplayPriority { get; init; } = 9;             // カテゴリの表示順
+    public int DisplaySubPriority { get; init; } = 0;          // カテゴリ内の表示順
     public bool IsPluginCommand => !string.IsNullOrWhiteSpace(PluginId);
 
     /// <summary>

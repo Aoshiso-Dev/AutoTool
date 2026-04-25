@@ -39,7 +39,7 @@ internal static class ImageCommandExecutionHelper
     }
 }
 
-[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.FindImage, typeof(SimpleCommand), typeof(IFindImageCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 5, displaySubPriority: 4, displayNameJa: "変数設定 - 画像検索", displayNameEn: "Set Variable - Image Search")]
+[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.FindImage, typeof(SimpleCommand), typeof(IFindImageCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 6, displaySubPriority: 3, displayNameJa: "画像検索", displayNameEn: "Image Search")]
 /// <summary>
 /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
 /// </summary>
@@ -188,7 +188,7 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
     }
 }
 
-[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.WaitImage, typeof(SimpleCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 2, displaySubPriority: 4, displayNameJa: "画像待機", displayNameEn: "Wait for Image")]
+[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.WaitImage, typeof(SimpleCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Wait, displayPriority: 3, displaySubPriority: 2, displayNameJa: "画像待機", displayNameEn: "Wait for Image")]
 /// <summary>
 /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
 /// </summary>
@@ -285,7 +285,7 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
     }
 }
 
-[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.WaitImageDisappear, typeof(SimpleCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 2, displaySubPriority: 5, displayNameJa: "画像消失待機", displayNameEn: "Wait for Image Disappear")]
+[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.WaitImageDisappear, typeof(SimpleCommand), typeof(IWaitImageCommandSettings), CommandDef.CommandCategory.Wait, displayPriority: 3, displaySubPriority: 3, displayNameJa: "画像消失待機", displayNameEn: "Wait for Image Disappear")]
 /// <summary>
 /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
 /// </summary>
@@ -401,7 +401,7 @@ public partial class WaitImageDisappearItem : CommandListItem, IWaitImageItem, I
     }
 }
 
-[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.ClickImage, typeof(SimpleCommand), typeof(IClickImageCommandSettings), CommandDef.CommandCategory.Action, displayPriority: 1, displaySubPriority: 2, displayNameJa: "画像クリック", displayNameEn: "Image Click")]
+[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.ClickImage, typeof(SimpleCommand), typeof(IClickImageCommandSettings), CommandDef.CommandCategory.Click, displayPriority: 1, displaySubPriority: 2, displayNameJa: "画像クリック", displayNameEn: "Image Click")]
 /// <summary>
 /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
 /// </summary>

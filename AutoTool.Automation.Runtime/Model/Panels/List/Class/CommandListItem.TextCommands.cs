@@ -8,7 +8,7 @@ using CommandDef = AutoTool.Automation.Runtime.Definitions;
 
 namespace AutoTool.Automation.Runtime.Lists;
 
-[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.FindText, typeof(SimpleCommand), typeof(IFindTextCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 5, displaySubPriority: 5, displayNameJa: "変数設定 - 文字検索", displayNameEn: "Set Variable - Text Search")]
+[CommandDef.CommandDefinition(CommandDef.CommandTypeNames.FindText, typeof(SimpleCommand), typeof(IFindTextCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 6, displaySubPriority: 4, displayNameJa: "文字検索", displayNameEn: "Text Search")]
 /// <summary>
 /// コマンド一覧の 1 行として必要な表示情報と設定値を保持し、編集・実行の両方で利用できるようにします。
 /// </summary>

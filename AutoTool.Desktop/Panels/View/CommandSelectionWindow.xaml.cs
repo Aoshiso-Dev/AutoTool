@@ -70,7 +70,8 @@ public partial class CommandSelectionWindow : FluentWindow, INotifyPropertyChang
 
         _allCommands = commands
             .Where(IsSelectableCommand)
-            .OrderBy(x => x.Category, StringComparer.Ordinal)
+            .OrderBy(x => x.DisplayPriority)
+            .ThenBy(x => x.DisplaySubPriority)
             .ThenBy(x => x.DisplayName, StringComparer.Ordinal)
             .ToArray();
         CommandItemsView = CollectionViewSource.GetDefaultView(_allCommands);

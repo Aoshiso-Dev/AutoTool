@@ -95,10 +95,15 @@ public class CommandDefinitionAttribute : Attribute
 /// </summary>
 public enum CommandCategory
 {
-    Action,   // 基本アクション
-    Control,  // 制御構文
-    AI,       // AI 関連
-    System,   // システム操作
-    Variable  // 変数操作
+    Action,    // 旧カテゴリ。未分類の基本操作として扱う
+    Click,     // クリック操作
+    Input,     // キー入力
+    Wait,      // 待機
+    Image,     // 旧カテゴリ。画像操作として扱う
+    Condition, // 条件分岐
+    Control,   // 繰り返し・リトライ
+    AI,        // 旧カテゴリ。プラグイン互換用
+    System,    // システム操作
+    Variable   // 変数操作
 }
 

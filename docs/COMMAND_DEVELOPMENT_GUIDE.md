@@ -64,7 +64,7 @@ namespace AutoTool.Automation.Runtime.Lists;
     CommandDef.CommandTypeNames.ClickImage,
     typeof(SimpleCommand),
     typeof(IClickImageCommandSettings),
-    CommandDef.CommandCategory.Action,
+    CommandDef.CommandCategory.Click,
     displayPriority: 1,
     displaySubPriority: 99,
     displayNameJa: "サンプル",
@@ -264,12 +264,17 @@ Task<OcrExtractionResult> ExtractTextAsync(OcrRequest request, CancellationToken
 ## コマンドカテゴリ
 
 ```csharp
-CommandDef.CommandCategory.Action
-CommandDef.CommandCategory.Control
-CommandDef.CommandCategory.AI
-CommandDef.CommandCategory.System
-CommandDef.CommandCategory.Variable
+CommandDef.CommandCategory.Click      // クリック操作
+CommandDef.CommandCategory.Input      // キー入力
+CommandDef.CommandCategory.Wait       // 待機
+CommandDef.CommandCategory.Condition  // 条件分岐
+CommandDef.CommandCategory.Control    // 繰り返し・リトライ
+CommandDef.CommandCategory.Variable   // 変数操作
+CommandDef.CommandCategory.System     // システム操作
 ```
+
+カテゴリは「AI」「OCR」「画像検索」などの内部技術ではなく、利用者から見た実際の操作で選びます。
+例: `画像クリック(AI検出)` は `Click`、`AI画像存在判定` は `Condition`、`AI変数設定` は `Variable` に分類します。
 
 ## チェックリスト
 

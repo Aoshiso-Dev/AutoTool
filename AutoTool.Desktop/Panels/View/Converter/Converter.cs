@@ -865,11 +865,12 @@ public class CommandTypeToCategoryColorConverter : IValueConverter
             return priority switch
             {
                 1 => SkyBlue,      // クリック操作
-                2 => LightGreen,   // 基本操作
-                3 => PeachPuff,    // ループ制御
+                2 => LightGreen,   // キー入力
+                3 => PeachPuff,    // 待機
                 4 => Plum,         // 条件分岐
-                5 => Bisque,       // 変数操作
-                6 => Silver,       // システム操作
+                5 => Bisque,       // 繰り返し・リトライ
+                6 => LightGreen,   // 変数操作
+                7 => Silver,       // システム操作
                 _ => White         // その他
             };
         }
