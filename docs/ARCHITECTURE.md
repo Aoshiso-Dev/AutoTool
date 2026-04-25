@@ -49,6 +49,13 @@
 - `Infrastructure -> Application / Automation.Runtime / Automation.Contracts`
 - `Domain -> (外部プロジェクト参照なし)`
 
+テストプロジェクトは層ごとに分けます。
+
+- `AutoTool.Tests.Domain`: Domain モデルテスト
+- `AutoTool.Tests.Application`: Application 層の回帰テスト
+- `AutoTool.Tests.Infrastructure`: Infrastructure/Runtime の統合・回帰テスト
+- `AutoTool.Tests.Desktop`: Desktop/WPF 境界の回帰テスト
+
 ## 4. 起動シーケンス
 
 1. `AutoTool.Bootstrap` がアプリ起動
@@ -70,6 +77,7 @@
 - `Application` / `Domain` から `System.Windows` / `Microsoft.Win32` / `AutoTool.Desktop` を参照しない
 - `DllImport` / `LibraryImport` は `Infrastructure` のみに置く
 - WPF 固有アダプタ（ダイアログ、Dispatcher、ファイルピッカー）は `Desktop` に置く
+- `Application` / `Domain` テストも UI や Infrastructure へ直接依存させず、必要な検証は専用テストプロジェクトへ分ける
 - Service Locator（`IServiceProvider` 直参照、`GetService(...)`）を使わず、コンストラクタ DI を使う
 
 ## 7. 補足: 旧プロジェクト

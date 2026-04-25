@@ -67,6 +67,8 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 ```powershell
 dotnet test .\AutoTool.Tests.Application\AutoTool.Tests.Application.csproj -c Debug
 dotnet test .\AutoTool.Tests.Domain\AutoTool.Tests.Domain.csproj -c Debug
+dotnet test .\AutoTool.Tests.Infrastructure\AutoTool.Tests.Infrastructure.csproj -c Debug
+dotnet test .\AutoTool.Tests.Desktop\AutoTool.Tests.Desktop.csproj -c Debug
 ```
 
 ## パフォーマンス計測（コマンド生成）
@@ -90,8 +92,10 @@ dotnet run -c Release --project .\AutoTool.Benchmarks.Automation\AutoTool.Benchm
 - `AutoTool.Desktop`: 起動時診断結果のステータス表示とログ表示
 - `AutoTool.Automation.Runtime`: コマンド定義・マクロ生成・シリアライズ
 - `AutoTool.Infrastructure`: Win32 / OpenCV / OCR / 永続化など技術実装
-- `AutoTool.Tests.Application`: Application/Runtime の回帰テスト
+- `AutoTool.Tests.Application`: Application 層の回帰テスト
 - `AutoTool.Tests.Domain`: Domain モデルテスト
+- `AutoTool.Tests.Infrastructure`: Infrastructure/Runtime の統合・回帰テスト
+- `AutoTool.Tests.Desktop`: Desktop/WPF 境界の回帰テスト
 - `AutoTool.Benchmarks.Automation`: ベンチマーク
 
 ## 対応環境

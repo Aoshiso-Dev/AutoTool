@@ -38,6 +38,8 @@ dotnet build .\AutoTool.sln -c Release
 ```powershell
 dotnet test .\AutoTool.Tests.Application\AutoTool.Tests.Application.csproj -c Release --no-build
 dotnet test .\AutoTool.Tests.Domain\AutoTool.Tests.Domain.csproj -c Release --no-build
+dotnet test .\AutoTool.Tests.Infrastructure\AutoTool.Tests.Infrastructure.csproj -c Release --no-build
+dotnet test .\AutoTool.Tests.Desktop\AutoTool.Tests.Desktop.csproj -c Release --no-build
 ```
 
 アプリ実行:
@@ -69,9 +71,13 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 - `AutoTool.Infrastructure`
   - Win32/OpenCV/OCR/AI、ファイル永続化、ログなど技術実装
 - `AutoTool.Tests.Application`
-  - Application/Runtime 回帰テスト
+  - Application 層の回帰テスト
 - `AutoTool.Tests.Domain`
   - Domain モデルテスト
+- `AutoTool.Tests.Infrastructure`
+  - Infrastructure/Runtime の統合・回帰テスト
+- `AutoTool.Tests.Desktop`
+  - Desktop/WPF 境界の回帰テスト
 - `AutoTool.Benchmarks.Automation`
   - ベンチマーク
 

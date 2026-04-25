@@ -48,10 +48,9 @@ public static class ApplicationPathResolver
             
             return relativePath;
         }
-        catch (Exception ex)
+        catch
         {
             // 変換に失敗したら入力値を返す。
-            System.Diagnostics.Debug.WriteLine($"相対パス変換に失敗: {ex.Message}");
             return absolutePath;
         }
     }
@@ -79,10 +78,9 @@ public static class ApplicationPathResolver
             // パスを正規化する。
             return Path.GetFullPath(absolutePath);
         }
-        catch (Exception ex)
+        catch
         {
             // 変換に失敗したら入力値を返す。
-            System.Diagnostics.Debug.WriteLine($"絶対パス変換に失敗: {ex.Message}");
             return relativePath;
         }
     }

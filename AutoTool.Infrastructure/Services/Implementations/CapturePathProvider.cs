@@ -10,9 +10,11 @@ namespace AutoTool.Infrastructure.Implementations;
 public sealed class CapturePathProvider : ICapturePathProvider
 {
     private readonly TimeProvider _timeProvider;
+    private readonly ILogWriter? _logWriter;
 
-    public CapturePathProvider(TimeProvider? timeProvider = null)
+    public CapturePathProvider(ILogWriter? logWriter = null, TimeProvider? timeProvider = null)
     {
+        _logWriter = logWriter;
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
@@ -24,12 +26,24 @@ public sealed class CapturePathProvider : ICapturePathProvider
         if (!Directory.Exists(captureDirectory))
         {
             Directory.CreateDirectory(captureDirectory);
-            System.Diagnostics.Debug.WriteLine($"キャプチャディレクトリを作成: {captureDirectory}");
+            _logWriter?.WriteStructured(
+                "Capture",
+                "CreateCaptureDirectory",
+                new Dictionary<string, object?>
+                {
+                    ["Directory"] = captureDirectory
+                });
         }
 
         var fileName = $"{_timeProvider.GetLocalNow():yyyyMMddHHmmss}.png";
         var fullPath = Path.Combine(captureDirectory, fileName);
-        System.Diagnostics.Debug.WriteLine($"キャプチャファイルパス生成: {fullPath}");
+        _logWriter?.WriteStructured(
+            "Capture",
+            "CreateCaptureFilePath",
+            new Dictionary<string, object?>
+            {
+                ["Path"] = fullPath
+            });
         return fullPath;
     }
 }

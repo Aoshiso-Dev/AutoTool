@@ -4,9 +4,9 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoTool.Domain\AutoTool.Domain.csproj" />
+    <ProjectReference Include="..\AutoTool.Desktop\AutoTool.Desktop.csproj" />
+    <ProjectReference Include="..\AutoTool.Plugin.Abstractions\AutoTool.Plugin.Abstractions.csproj" />
+    <ProjectReference Include="..\AutoTool.Plugin.Host\AutoTool.Plugin.Host.csproj" />
   </ItemGroup>
 
 </Project>

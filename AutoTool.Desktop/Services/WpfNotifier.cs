@@ -1,23 +1,15 @@
 ﻿using AutoTool.Application.Ports;
-using AutoTool.Commands.Services;
+using INotifier = AutoTool.Commands.Services.INotifier;
 
-namespace AutoTool.Infrastructure.Implementations;
+namespace AutoTool.Desktop.Services;
 
 /// <summary>
-/// ダイアログサービス経由で通知を表示する実装
+/// AutoTool 共通ダイアログでユーザー通知を表示します。
 /// </summary>
-public class WpfNotifier : INotifier
+public class WpfNotifier(IAppDialogService appDialogService, ILogWriter logWriter) : INotifier
 {
-    private readonly IAppDialogService _appDialogService;
-    private readonly ILogWriter _logWriter;
-
-    public WpfNotifier(IAppDialogService appDialogService, ILogWriter logWriter)
-    {
-        ArgumentNullException.ThrowIfNull(appDialogService);
-        ArgumentNullException.ThrowIfNull(logWriter);
-        _appDialogService = appDialogService;
-        _logWriter = logWriter;
-    }
+    private readonly IAppDialogService _appDialogService = appDialogService ?? throw new ArgumentNullException(nameof(appDialogService));
+    private readonly ILogWriter _logWriter = logWriter ?? throw new ArgumentNullException(nameof(logWriter));
 
     public void ShowInfo(string message, string title)
     {

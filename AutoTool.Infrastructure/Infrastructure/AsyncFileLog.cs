@@ -228,8 +228,9 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
 
     private static void WriteFallbackError(string stage, string eventName, Exception exception)
     {
-        System.Diagnostics.Debug.WriteLine(
-            $"STRUCT Category=AsyncFileLog Event={eventName} Stage={stage} ExceptionType={exception.GetType().Name} Message={FormatStructuredValue(exception.Message)}");
+        _ = stage;
+        _ = eventName;
+        _ = exception;
     }
 }
 

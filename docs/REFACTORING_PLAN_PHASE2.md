@@ -215,8 +215,10 @@
 - `required` の段階導入は主要モデルで完了（`FavoriteMacroEntry` / `RecentFileEntry` / `FileTypeInfo`）
 - 現在の回帰状況:
   - `AutoTool.Tests.Domain`: 22 pass
-  - `AutoTool.Tests.Application`: 40 pass
-  - `dotnet build AutoTool.sln -c Debug`: 成功
+  - `AutoTool.Tests.Application`: 35 pass
+  - `AutoTool.Tests.Infrastructure`: 31 pass
+  - `AutoTool.Tests.Desktop`: 4 pass
+  - `dotnet build AutoTool.sln -c Release`: 成功
 
 ## 次フェーズ（PR6+ 継続）
 
@@ -229,4 +231,6 @@
 2. `dotnet build .\AutoTool.sln -c Debug`
 3. `dotnet test .\AutoTool.Tests.Application\AutoTool.Tests.Application.csproj -c Debug`
 4. `dotnet test .\AutoTool.Tests.Domain\AutoTool.Tests.Domain.csproj -c Debug`
-5. アプリ起動確認（`AutoTool.Bootstrap`）
+5. `dotnet test .\AutoTool.Tests.Infrastructure\AutoTool.Tests.Infrastructure.csproj -c Debug`
+6. `dotnet test .\AutoTool.Tests.Desktop\AutoTool.Tests.Desktop.csproj -c Debug`
+7. アプリ起動確認（`AutoTool.Bootstrap`）

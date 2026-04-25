@@ -8,6 +8,7 @@ using AutoTool.Automation.Runtime.Diagnostics;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Services;
 using AutoTool.Desktop.Hosting;
+using AutoTool.Desktop.Services;
 using AutoTool.Desktop.Ui;
 using AutoTool.Infrastructure;
 using AutoTool.Infrastructure.Implementations;

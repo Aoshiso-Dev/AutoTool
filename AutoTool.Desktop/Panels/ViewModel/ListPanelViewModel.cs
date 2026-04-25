@@ -208,7 +208,6 @@ public partial class ListPanelViewModel : ObservableObject, IListPanelViewModel
         CollectionViewSource.GetDefaultView(CommandList.Items).Refresh();
         UpdateCollapsedState();
 
-        System.Diagnostics.Debug.WriteLine($"コマンドを追加しました: {item.ItemType} -> {_commandRegistry.GetDisplayName(item.ItemType)}");
     }
 
     /// <summary>

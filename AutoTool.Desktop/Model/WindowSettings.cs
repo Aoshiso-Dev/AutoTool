@@ -68,11 +68,9 @@ public class WindowSettings
 
             var json = JsonSerializer.Serialize(this, SerializerOptions);
             File.WriteAllText(SettingsFilePath, json);
-            System.Diagnostics.Debug.WriteLine($"[{_timeProvider.GetLocalNow():O}] ウィンドウ設定を保存しました: {SettingsFilePath}");
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"[{_timeProvider.GetLocalNow():O}] ウィンドウ設定の保存に失敗しました: {ex.Message}");
         }
     }
 
@@ -116,12 +114,10 @@ public class WindowSettings
             loaded._timeProvider = resolvedTimeProvider;
             ValidatePosition(loaded);
             settings = loaded;
-            System.Diagnostics.Debug.WriteLine($"[{resolvedTimeProvider.GetLocalNow():O}] ウィンドウ設定を読み込みました: {filePath}");
             return true;
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"[{resolvedTimeProvider.GetLocalNow():O}] ウィンドウ設定の読み込みに失敗しました: {ex.Message}");
             return false;
         }
     }

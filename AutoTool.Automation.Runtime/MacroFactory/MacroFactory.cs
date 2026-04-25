@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using AutoTool.Application.Ports;
 using AutoTool.Commands.Commands;
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Interface;
@@ -14,11 +15,13 @@ namespace AutoTool.Automation.Runtime.MacroFactory;
 public class MacroFactory(
     ICommandRegistry commandRegistry,
     ICommandFactory commandFactory,
-    IEnumerable<ICompositeCommandBuilder> compositeBuilders) : IMacroFactory
+    IEnumerable<ICompositeCommandBuilder> compositeBuilders,
+    ILogWriter? logWriter = null) : IMacroFactory
 {
     private readonly ICommandRegistry _commandRegistry = EnsureNotNull(commandRegistry);
     private readonly ICommandFactory _commandFactory = EnsureNotNull(commandFactory);
     private readonly IReadOnlyList<ICompositeCommandBuilder> _compositeBuilders = EnsureNotNull(compositeBuilders).ToList();
+    private readonly ILogWriter? _logWriter = logWriter;
     private readonly object _builderMapLock = new();
     private Dictionary<string, ICompositeCommandBuilder>? _builderByType;
 
@@ -84,7 +87,14 @@ public class MacroFactory(
                 RegisterDisabledBlockEndLine(item, disabledBlockEndLines);
                 continue;
             }
-            Debug.WriteLine($"コマンド生成: 行={item.LineNumber}, 種別={item.ItemType}");
+            _logWriter?.WriteStructured(
+                "MacroFactory",
+                "CommandCreate",
+                new Dictionary<string, object?>
+                {
+                    ["LineNumber"] = item.LineNumber,
+                    ["ItemType"] = item.ItemType
+                });
 
             try
             {
@@ -103,7 +113,15 @@ public class MacroFactory(
             catch (Exception ex)
             {
                 metrics.RecordFailure(CommandCreationFailureReason.FactoryException);
-                Debug.WriteLine($"コマンド生成エラー: 種別={item.ItemType}, 行={item.LineNumber}, 詳細={ex.Message}");
+                _logWriter?.WriteStructured(
+                    "MacroFactory",
+                    "CommandCreateError",
+                    new Dictionary<string, object?>
+                    {
+                        ["LineNumber"] = item.LineNumber,
+                        ["ItemType"] = item.ItemType,
+                        ["ExceptionMessage"] = ex.Message
+                    });
                 var commandName = GetCommandDisplayName(item.ItemType);
                 throw new InvalidOperationException(
                     $"コマンド '{commandName}' (行 {item.LineNumber}) の生成に失敗しました。原因: {ex.Message}",
@@ -131,7 +149,14 @@ public class MacroFactory(
         }
 
         metrics.RecordSimpleFallback(simpleResult.FailureReason);
-        Debug.WriteLine($"シンプルコマンド生成をスキップ: 理由={simpleResult.FailureReason}, 詳細={simpleResult.Message}");
+        _logWriter?.WriteStructured(
+            "MacroFactory",
+            "SimpleCommandFallback",
+            new Dictionary<string, object?>
+            {
+                ["Reason"] = simpleResult.FailureReason,
+                ["Message"] = simpleResult.Message
+            });
 
         if (!TryGetCompositeBuilder(item.ItemType, out var builder))
         {
@@ -226,9 +251,9 @@ public class MacroFactory(
         return false;
     }
 
-    private static void LogMetrics(MacroBuildMetrics metrics, long elapsedMilliseconds, int totalItems)
+    private void LogMetrics(MacroBuildMetrics metrics, long elapsedMilliseconds, int totalItems)
     {
-        if (totalItems <= 0)
+        if (totalItems <= 0 || _logWriter is null)
         {
             return;
         }
@@ -240,8 +265,19 @@ public class MacroFactory(
                     .OrderBy(static x => x.Key)
                     .Select(static x => $"{x.Key}={x.Value}"));
 
-        Debug.WriteLine(
-            $"マクロ生成メトリクス: Items={totalItems}, ElapsedMs={elapsedMilliseconds}, SimpleSuccess={metrics.SimpleSuccess}, CompositeBuild={metrics.CompositeBuild}, SimpleFallback={metrics.SimpleFallbackTotal}, Failures={metrics.Failures}, Reasons=[{fallbackSummary}]");
+        _logWriter.WriteStructured(
+            "MacroFactory",
+            "MacroBuildMetrics",
+            new Dictionary<string, object?>
+            {
+                ["Items"] = totalItems,
+                ["ElapsedMs"] = elapsedMilliseconds,
+                ["SimpleSuccess"] = metrics.SimpleSuccess,
+                ["CompositeBuild"] = metrics.CompositeBuild,
+                ["SimpleFallback"] = metrics.SimpleFallbackTotal,
+                ["Failures"] = metrics.Failures,
+                ["Reasons"] = fallbackSummary
+            });
     }
 
     private static bool TryGetSkipUntilLine(ICommandListItem item, out int lineNumber)

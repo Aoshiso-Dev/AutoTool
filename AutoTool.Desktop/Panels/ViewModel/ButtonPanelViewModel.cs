@@ -109,7 +109,7 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"RunRequested ハンドラーで例外が発生しました: {ex}");
+                _ = ex;
             }
         }
     }

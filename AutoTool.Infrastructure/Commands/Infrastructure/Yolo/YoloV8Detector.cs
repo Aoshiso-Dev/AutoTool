@@ -116,11 +116,6 @@ public sealed class YoloV8Detector : IDisposable
             CopyMatToArray(blob, inputData);
         }
 
-        // 値域ログ
-        float min = inputData.Min();
-        float max = inputData.Max();
-        System.Diagnostics.Debug.WriteLine($"[YOLO] blob 形状={string.Join("x", shape)} / 要素数={inputData.Length} / 値域=({min:F3},{max:F3})");
-
         // 6) Tensor 構築（NCHW）
         var tensor = new DenseTensor<float>([shape[0], shape[1], shape[2], shape[3]]);
         inputData.CopyTo(tensor.Buffer.Span);
@@ -129,14 +124,11 @@ public sealed class YoloV8Detector : IDisposable
         using var results = _session.Run(inputs);
 
         var output = results.First(r => r.Name == _outputName).AsTensor<float>();
-        var outDims = output.Dimensions.ToArray();
-        System.Diagnostics.Debug.WriteLine($"[YOLO] 出力次元={string.Join("x", outDims)} / 要素数={output.Length}");
 
         // 7) 後処理
         int origW = frameBgr.Cols, origH = frameBgr.Rows;
         var dets = ParseDetections(output, confTh, lb, origW, origH);
         dets = BoundingBoxMath.Nms(dets, iouTh);
-        System.Diagnostics.Debug.WriteLine($"[YOLO] 検出件数={dets.Count}");
 
         return dets;
     }
@@ -305,7 +297,6 @@ public sealed class YoloV8Detector : IDisposable
             }
         }
 
-        System.Diagnostics.Debug.WriteLine($"[YOLO] NMS前の検出件数={dets.Count}");
         return dets;
     }
 

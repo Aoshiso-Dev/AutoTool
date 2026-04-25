@@ -4,13 +4,13 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
@@ -21,7 +21,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoTool.Domain\AutoTool.Domain.csproj" />
+    <ProjectReference Include="..\AutoTool.Infrastructure\AutoTool.Infrastructure.csproj" />
+    <ProjectReference Include="..\AutoTool.Plugin.Abstractions\AutoTool.Plugin.Abstractions.csproj" />
+    <ProjectReference Include="..\AutoTool.Plugin.Host\AutoTool.Plugin.Host.csproj" />
+    <ProjectReference Include="..\AutoTool.Tests.Plugin.Sample\AutoTool.Tests.Plugin.Sample.csproj" />
   </ItemGroup>
 
 </Project>
