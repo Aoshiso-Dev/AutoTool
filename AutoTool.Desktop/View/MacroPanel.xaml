@@ -193,7 +193,7 @@
                         <Style TargetType="GridSplitter">
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsLogPanelOpen}" Value="True">
+                                <DataTrigger Binding="{Binding IsBottomPanelOpen}" Value="True">
                                     <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
                             </Style.Triggers>
@@ -208,7 +208,7 @@
                         <Style TargetType="Border">
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsLogPanelOpen}" Value="True">
+                                <DataTrigger Binding="{Binding IsBottomPanelOpen}" Value="True">
                                     <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
                             </Style.Triggers>
@@ -226,12 +226,46 @@
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0"
-                                           Text="ログ"
                                            FontSize="14"
                                            FontWeight="SemiBold"
-                                           Margin="0,0,0,6"/>
+                                           Margin="0,0,0,6">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="ログ"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsVariablePanelOpen}" Value="True">
+                                                    <Setter Property="Text" Value="変数"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
 
-                                <panels:LogPanel Grid.Row="1" DataContext="{Binding LogPanelViewModel}"/>
+                                <panels:LogPanel Grid.Row="1" DataContext="{Binding LogPanelViewModel}">
+                                    <panels:LogPanel.Style>
+                                        <Style TargetType="panels:LogPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsLogPanelOpen}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </panels:LogPanel.Style>
+                                </panels:LogPanel>
+
+                                <panels:VariablePanel Grid.Row="1" DataContext="{Binding VariablePanelViewModel}">
+                                    <panels:VariablePanel.Style>
+                                        <Style TargetType="panels:VariablePanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsVariablePanelOpen}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </panels:VariablePanel.Style>
+                                </panels:VariablePanel>
                             </Grid>
                         </Grid>
                     </Border>

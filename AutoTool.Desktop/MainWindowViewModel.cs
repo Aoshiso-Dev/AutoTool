@@ -429,6 +429,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         int selectedTabIndex,
         bool isFavoritePanelOpen,
         bool isLogPanelOpen,
+        bool isVariablePanelOpen,
         int selectedMacroListTabIndex,
         double favoritePanelWidth,
         string? lastOpenedMacroFilePath)
@@ -440,6 +441,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         MacroPanelViewModel.FavoritePanelWidth = Math.Clamp(favoritePanelWidth, 240, 700);
         MacroPanelViewModel.IsFavoritePanelOpen = isFavoritePanelOpen;
         MacroPanelViewModel.IsLogPanelOpen = isLogPanelOpen;
+        MacroPanelViewModel.IsVariablePanelOpen = isVariablePanelOpen && !isLogPanelOpen;
         MacroPanelViewModel.SelectedListTabIndex = Math.Max(0, selectedMacroListTabIndex);
 
         if (string.IsNullOrWhiteSpace(lastOpenedMacroFilePath))

@@ -29,6 +29,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private readonly IEditPanelViewModel _editPanel;
     private readonly IButtonPanelViewModel _buttonPanel;
     private readonly ILogPanelViewModel _logPanel;
+    private readonly IVariablePanelViewModel _variablePanel;
     private readonly IFavoritePanelViewModel _favoritePanel;
     private CancellationTokenSource? _commandEventSubscriptionCts;
     private Task? _commandEventSubscriptionTask;
@@ -56,6 +57,9 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private bool _isLogPanelOpen;
 
     [ObservableProperty]
+    private bool _isVariablePanelOpen;
+
+    [ObservableProperty]
     private bool _isPreflightPanelOpen;
 
     [ObservableProperty]
@@ -71,7 +75,10 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     public IEditPanelViewModel EditPanelViewModel => _editPanel;
     public IButtonPanelViewModel ButtonPanelViewModel => _buttonPanel;
     public ILogPanelViewModel LogPanelViewModel => _logPanel;
+    public IVariablePanelViewModel VariablePanelViewModel => _variablePanel;
     public IFavoritePanelViewModel FavoritePanelViewModel => _favoritePanel;
+
+    public bool IsBottomPanelOpen => IsLogPanelOpen || IsVariablePanelOpen;
 
     public MacroPanelViewModel(
         INotifier notifier,
@@ -86,6 +93,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         IEditPanelViewModel editPanelViewModel,
         IButtonPanelViewModel buttonPanelViewModel,
         ILogPanelViewModel logPanelViewModel,
+        IVariablePanelViewModel variablePanelViewModel,
         IFavoritePanelViewModel favoritePanelViewModel)
     {
         ArgumentNullException.ThrowIfNull(notifier);
@@ -100,6 +108,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(editPanelViewModel);
         ArgumentNullException.ThrowIfNull(buttonPanelViewModel);
         ArgumentNullException.ThrowIfNull(logPanelViewModel);
+        ArgumentNullException.ThrowIfNull(variablePanelViewModel);
         ArgumentNullException.ThrowIfNull(favoritePanelViewModel);
 
         _notifier = notifier;
@@ -114,6 +123,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _editPanel = editPanelViewModel;
         _buttonPanel = buttonPanelViewModel;
         _logPanel = logPanelViewModel;
+        _variablePanel = variablePanelViewModel;
         _favoritePanel = favoritePanelViewModel;
 
         SubscribeToChildViewModelEvents();
@@ -131,7 +141,25 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private void ToggleLogPanel()
     {
         IsLogPanelOpen = !IsLogPanelOpen;
+        if (IsLogPanelOpen)
+        {
+            IsVariablePanelOpen = false;
+        }
+
         PublishStatusMessage(IsLogPanelOpen ? "ログパネルを表示しました。" : "ログパネルを閉じました。");
+    }
+
+    [RelayCommand]
+    private void ToggleVariablePanel()
+    {
+        IsVariablePanelOpen = !IsVariablePanelOpen;
+        if (IsVariablePanelOpen)
+        {
+            IsLogPanelOpen = false;
+            _variablePanel.Refresh();
+        }
+
+        PublishStatusMessage(IsVariablePanelOpen ? "変数パネルを表示しました。" : "変数パネルを閉じました。");
     }
 
     [RelayCommand]
@@ -183,6 +211,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _favoritePanel.SetRunningState(isRunning);
         _listPanel.SetRunningState(isRunning);
         _logPanel.SetRunningState(isRunning);
+        _variablePanel.SetRunningState(isRunning);
     }
 
     public bool TryStartExecution(out string message)
@@ -254,6 +283,10 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         }
         _cts?.Cancel();
         _cts?.Dispose();
+        if (_variablePanel is IDisposable disposableVariablePanel)
+        {
+            disposableVariablePanel.Dispose();
+        }
         _disposed = true;
 
         GC.SuppressFinalize(this);
@@ -287,6 +320,16 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private void ClosePreflightPanelForListInteraction()
     {
         ClosePreflightPanelOnly();
+    }
+
+    partial void OnIsLogPanelOpenChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsBottomPanelOpen));
+    }
+
+    partial void OnIsVariablePanelOpenChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsBottomPanelOpen));
     }
 }
 

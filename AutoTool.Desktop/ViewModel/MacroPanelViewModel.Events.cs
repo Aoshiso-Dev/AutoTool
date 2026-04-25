@@ -36,6 +36,7 @@ public partial class MacroPanelViewModel
         _favoritePanel.LoadRequested += HandleFavoriteLoadRequested;
         _favoritePanel.InsertRequested += HandleFavoriteInsertRequested;
         _logPanel.StatusMessageRequested += HandleLogPanelStatusMessageRequested;
+        _variablePanel.StatusMessageRequested += HandleVariablePanelStatusMessageRequested;
     }
 
     private void UnsubscribeFromChildViewModelEvents()
@@ -63,6 +64,7 @@ public partial class MacroPanelViewModel
         _favoritePanel.LoadRequested -= HandleFavoriteLoadRequested;
         _favoritePanel.InsertRequested -= HandleFavoriteInsertRequested;
         _logPanel.StatusMessageRequested -= HandleLogPanelStatusMessageRequested;
+        _variablePanel.StatusMessageRequested -= HandleVariablePanelStatusMessageRequested;
     }
 
     private Task HandleRunRequestedAsync()
@@ -102,6 +104,11 @@ public partial class MacroPanelViewModel
     }
 
     private void HandleLogPanelStatusMessageRequested(string message)
+    {
+        PublishStatusMessage(message);
+    }
+
+    private void HandleVariablePanelStatusMessageRequested(string message)
     {
         PublishStatusMessage(message);
     }
@@ -180,6 +187,7 @@ public partial class MacroPanelViewModel
         _listPanel.Prepare();
         _editPanel.Prepare();
         _logPanel.Prepare();
+        _variablePanel.Prepare();
         _favoritePanel.Prepare();
         _buttonPanel.Prepare();
     }

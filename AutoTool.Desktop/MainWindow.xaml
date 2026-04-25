@@ -258,6 +258,25 @@
                         </ui:Button.Style>
                     </ui:Button>
 
+                    <ui:Button Command="{Binding MacroPanelViewModel.ToggleVariablePanelCommand}"
+                               Content="変数"
+                               ToolTip="変数パネルの表示切替"
+                               MinWidth="48"
+                               Height="28"
+                               Padding="10,2"
+                               Margin="0,0,6,0">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Appearance" Value="Secondary"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MacroPanelViewModel.IsVariablePanelOpen}" Value="True">
+                                        <Setter Property="Appearance" Value="Primary"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+
                     <ui:Button Command="{Binding MacroPanelViewModel.TogglePreflightPanelCommand}"
                                Content="診断"
                                ToolTip="実行前チェックパネルの表示切替"

@@ -114,6 +114,19 @@ public interface ILogPanelViewModel
 }
 
 /// <summary>
+/// 変数表示パネルの状態と操作を管理する ViewModel 契約です。
+/// </summary>
+public interface IVariablePanelViewModel
+{
+    bool IsRunning { get; set; }
+    event Action<string>? StatusMessageRequested;
+
+    void Prepare();
+    void SetRunningState(bool isRunning);
+    void Refresh();
+}
+
+/// <summary>
 /// お気に入りマクロの登録・読込・削除を管理する ViewModel 契約です。
 /// </summary>
 public interface IFavoritePanelViewModel

@@ -55,6 +55,7 @@ public static class PanelsHostBuilder
         services.AddTransient<IEditPanelViewModel, EditPanelViewModel>();
         services.AddTransient<IButtonPanelViewModel, ButtonPanelViewModel>();
         services.AddTransient<ILogPanelViewModel, LogPanelViewModel>();
+        services.AddTransient<IVariablePanelViewModel, VariablePanelViewModel>();
         services.AddTransient<IFavoritePanelViewModel, FavoritePanelViewModel>();
 
         return services;
