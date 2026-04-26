@@ -202,7 +202,7 @@
                 </GridSplitter>
 
                 <Border Grid.Row="2"
-                        Height="220"
+                        Height="280"
                         Margin="0,8,0,0">
                     <Border.Style>
                         <Style TargetType="Border">

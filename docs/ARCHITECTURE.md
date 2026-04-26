@@ -14,8 +14,8 @@
   - `AppHostBuilder` で DI 設定
   - WPF 固有 UI アダプタ（ダイアログ、ファイルピッカー、ステータスメッセージ更新）
 - `AutoTool.Application`
-  - ユースケース（ファイル操作、履歴管理）
-  - Port（`IFilePicker` / `ILogWriter` など）定義
+  - ユースケース（ファイル操作、履歴管理、AI相談）
+  - Port（`IFilePicker` / `ILogWriter` / `IAssistantClient` など）定義
 - `AutoTool.Domain`
   - ドメインモデル
   - ビジネスルールと不変条件
@@ -34,7 +34,7 @@
   - `MacroFactory` によるコマンド木生成
   - `.macro` シリアライズ
 - `AutoTool.Infrastructure`
-  - Win32 / OpenCV / OCR / AI 実装
+  - Win32 / OpenCV / OCR / AI 検出 / llama.cpp 連携実装
   - XML/JSON 永続化、ログ、実行パス解決
 
 ## 3. 依存関係（プロジェクト参照ベース）
@@ -67,6 +67,7 @@
 
 - マクロ: `.macro`
 - 設定: `Settings\appsettings.json`
+- AI相談設定: `Settings\assistant_settings.json`
 - UI 状態: `Settings\window_settings.json`
 - 最近使ったファイル: `Settings\RecentFiles_*.xml`
 - お気に入り: `Settings\favorites.xml`

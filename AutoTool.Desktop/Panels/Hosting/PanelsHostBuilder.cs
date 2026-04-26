@@ -1,6 +1,8 @@
 ﻿using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Infrastructure;
+using AutoTool.Application.Assistant;
 using AutoTool.Application.Ports;
+using AutoTool.Infrastructure.Assistant;
 using AutoTool.Infrastructure.DependencyInjection;
 using AutoTool.Infrastructure.Implementations;
 using AutoTool.Infrastructure.Panels;
@@ -45,6 +47,8 @@ public static class PanelsHostBuilder
         services.AddSingleton<ICapturePathProvider, CapturePathProvider>();
         services.AddSingleton<IDetectionHighlightService, DetectionHighlightService>();
         services.AddSingleton<IFavoriteMacroStore, JsonFavoriteMacroStore>();
+        services.AddSingleton<IAssistantSettingsStore, JsonAssistantSettingsStore>();
+        services.AddSingleton<IAssistantClient, LlamaCppAssistantClient>();
 
         return services;
     }
@@ -56,6 +60,7 @@ public static class PanelsHostBuilder
         services.AddTransient<IButtonPanelViewModel, ButtonPanelViewModel>();
         services.AddTransient<ILogPanelViewModel, LogPanelViewModel>();
         services.AddTransient<IVariablePanelViewModel, VariablePanelViewModel>();
+        services.AddTransient<IAssistantPanelViewModel, AssistantPanelViewModel>();
         services.AddTransient<IFavoritePanelViewModel, FavoritePanelViewModel>();
 
         return services;

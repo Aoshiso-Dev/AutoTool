@@ -32,6 +32,7 @@ public class WindowSettings
     public bool IsFavoritePanelOpen { get; set; }
     public bool IsLogPanelOpen { get; set; }
     public bool IsVariablePanelOpen { get; set; }
+    public bool IsAssistantPanelOpen { get; set; }
     public double FavoritePanelWidth { get; set; } = 340;
     public string? LastOpenedMacroFilePath { get; set; }
 
@@ -223,6 +224,7 @@ public class WindowSettings
         IsFavoritePanelOpen = viewModel.MacroPanelViewModel.IsFavoritePanelOpen;
         IsLogPanelOpen = viewModel.MacroPanelViewModel.IsLogPanelOpen;
         IsVariablePanelOpen = viewModel.MacroPanelViewModel.IsVariablePanelOpen;
+        IsAssistantPanelOpen = viewModel.MacroPanelViewModel.IsAssistantPanelOpen;
         FavoritePanelWidth = viewModel.MacroPanelViewModel.FavoritePanelWidth;
         EditPanelSplitterPosition = FavoritePanelWidth;
         LastOpenedMacroFilePath = viewModel.GetLastOpenedMacroFilePath();
@@ -289,6 +291,7 @@ public class WindowSettings
             IsFavoritePanelOpen,
             IsLogPanelOpen,
             IsVariablePanelOpen,
+            IsAssistantPanelOpen,
             SelectedMacroListTabIndex,
             FavoritePanelWidth,
             LastOpenedMacroFilePath);
@@ -301,6 +304,7 @@ public class WindowSettings
         IsFavoritePanelOpen = false;
         IsLogPanelOpen = false;
         IsVariablePanelOpen = false;
+        IsAssistantPanelOpen = false;
         LastOpenedMacroFilePath = null;
     }
 }

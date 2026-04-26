@@ -43,6 +43,7 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 - マクロ編集エリア: コマンド一覧の編集
 - ログパネル: 実行ログ確認
 - 変数パネル: 実行中に更新された変数名・値・更新時刻の確認
+- AI相談ウィンドウ: ローカルAI（llama.cpp）への質問、マクロ説明、接続テスト
 - 実行前チェックパネル: 実行前の設定不備確認
 - お気に入りパネル: テンプレート再利用
 - ステータスバー: 実行状態・メッセージ表示
@@ -80,6 +81,8 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 - 要修正がある場合は実行を開始せず、エラーコード付きで表示
 - 右下の `診断` ボタンでチェックパネルを開閉可能
 - 右下の `変数` ボタンで、実行中に設定された変数の現在値を確認可能
+- 右下の `AI相談` ボタンで別ウィンドウを開き、現在のマクロや選択中コマンドをローカルAIへ渡して相談可能
+- AIが回答を作成している間は `生成中...` とスピナーを表示し、`送信` ボタンは `停止` に切り替わります
 
 編集パネルの単発テスト:
 
@@ -97,6 +100,7 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
 
 - マクロファイル: `.macro`
 - 設定ファイル: `Settings\appsettings.json`
+- AI相談設定: `Settings\assistant_settings.json`
 - 画面状態: `Settings\window_settings.json`
 - 最近使ったファイル: `Settings\RecentFiles_*.xml`
 - お気に入り: `Settings\favorites.xml`
@@ -122,6 +126,13 @@ dotnet run --project .\AutoTool.Bootstrap\AutoTool.Bootstrap.csproj
   - `ラベル名` はコンボボックスで選択可能（モデルmetadata優先）
   - `ラベル名` を選択した場合、クラスID入力よりラベル選択が優先して一致判定に使用されます
   - metadata にラベルがない場合は `ラベルファイル`（`.txt` / `.names` / `.yaml`）を指定
+- AI相談が動かない / 応答しない
+  - 設定画面の `AI相談（llama.cpp）` で `AI相談を有効にする` をONにしてください
+  - `llama-server.exe` 欄の `取得` で Windows x64 用の llama.cpp を取得できます
+  - `.ggufモデル` 欄の `推奨取得` で Qwen3-4B の軽量GGUFモデルを取得できます
+  - 既に llama.cpp サーバーを起動している場合は、ポート番号が一致しているか確認してください
+  - AutoToolから起動する場合は、`llama-server.exe` と `.gguf` モデルファイルを指定してください
+  - タイムアウトする場合は、軽量なGGUFモデルを使うか、最大応答トークン数を小さくしてください
 - 保存できない
   - 書き込み先フォルダの権限を確認
 

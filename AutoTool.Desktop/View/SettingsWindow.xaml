@@ -6,10 +6,10 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         Title="設定"
-        Width="520"
-        Height="340"
+        Width="680"
+        Height="620"
         MinWidth="460"
-        MinHeight="320"
+        MinHeight="520"
         WindowStartupLocation="CenterOwner"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="Mica"
@@ -21,26 +21,153 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ui:Card Grid.Row="0" Padding="16">
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <TextBlock Text="起動設定" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                <CheckBox x:Name="RestorePreviousSessionCheckBox"
-                          Content="前回終了時の状態を次回起動時に復元する"
-                          ToolTip="タブ状態、パネル開閉状態、最後に開いたマクロを復元します。"/>
-                <TextBlock Text="メインウィンドウサイズ"
-                           Margin="0,14,0,4"
-                           FontWeight="SemiBold"/>
-                <ComboBox x:Name="WindowSizePresetComboBox"
-                          SelectedIndex="1">
-                    <ComboBoxItem Content="S（コンパクト: 作業領域の30%）"/>
-                    <ComboBoxItem Content="M（標準: 作業領域の50%）"/>
-                    <ComboBoxItem Content="L（広め: 作業領域の70%）"/>
-                </ComboBox>
-                <TextBlock Text="変更内容は保存時に即時適用され、次回起動時にも引き継がれます。"
-                           Margin="0,10,0,0"
-                           Opacity="0.8"/>
+                <ui:Card Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="起動設定" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox x:Name="RestorePreviousSessionCheckBox"
+                                  Content="前回終了時の状態を次回起動時に復元する"
+                                  ToolTip="タブ状態、パネル開閉状態、最後に開いたマクロを復元します。"/>
+                        <TextBlock Text="メインウィンドウサイズ"
+                                   Margin="0,14,0,4"
+                                   FontWeight="SemiBold"/>
+                        <ComboBox x:Name="WindowSizePresetComboBox"
+                                  SelectedIndex="1">
+                            <ComboBoxItem Content="S（コンパクト: 作業領域の30%）"/>
+                            <ComboBoxItem Content="M（標準: 作業領域の50%）"/>
+                            <ComboBoxItem Content="L（広め: 作業領域の70%）"/>
+                        </ComboBox>
+                        <TextBlock Text="変更内容は保存時に即時適用され、次回起動時にも引き継がれます。"
+                                   Margin="0,10,0,0"
+                                   Opacity="0.8"/>
+                    </StackPanel>
+                </ui:Card>
+
+                <ui:Card Padding="16" Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="AI相談（llama.cpp）" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox x:Name="AssistantEnabledCheckBox"
+                                  Content="AI相談を有効にする"
+                                  ToolTip="ローカルの llama.cpp サーバーを使ってAI相談を行います。"/>
+                        <CheckBox x:Name="AssistantStartServerCheckBox"
+                                  Content="必要に応じて llama.cpp サーバーを自動起動する"
+                                  Margin="0,8,0,0"
+                                  ToolTip="llama-server.exe とGGUFモデルを指定した場合にAutoToolから起動します。"/>
+
+                        <TextBlock Text="llama-server.exe"
+                                   Margin="0,12,0,4"
+                                   FontWeight="SemiBold"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="LlamaServerPathTextBox"
+                                     Grid.Column="0"
+                                     Height="30"
+                                     VerticalContentAlignment="Center"/>
+                            <ui:Button Grid.Column="1"
+                                       Content="選択"
+                                       Width="72"
+                                       Height="30"
+                                       Margin="8,0,0,0"
+                                       Appearance="Secondary"
+                                       Click="SelectLlamaServerButton_Click"/>
+                            <ui:Button Grid.Column="2"
+                                       Content="取得"
+                                       Width="72"
+                                       Height="30"
+                                       Margin="8,0,0,0"
+                                       Appearance="Secondary"
+                                       Click="DownloadLlamaCppButton_Click"/>
+                            <ui:Button Grid.Column="3"
+                                       Content="公式"
+                                       Width="72"
+                                       Height="30"
+                                       Margin="8,0,0,0"
+                                       Appearance="Transparent"
+                                       Click="OpenLlamaCppReferenceButton_Click"/>
+                        </Grid>
+
+                        <TextBlock Text="GGUFモデル"
+                                   Margin="0,12,0,4"
+                                   FontWeight="SemiBold"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="ModelPathTextBox"
+                                     Grid.Column="0"
+                                     Height="30"
+                                     VerticalContentAlignment="Center"/>
+                            <ui:Button Grid.Column="1"
+                                       Content="選択"
+                                       Width="72"
+                                       Height="30"
+                                       Margin="8,0,0,0"
+                                       Appearance="Secondary"
+                                       Click="SelectModelButton_Click"/>
+                            <ui:Button Grid.Column="2"
+                                       Content="推奨取得"
+                                       Width="88"
+                                       Height="30"
+                                       Margin="8,0,0,0"
+                                       Appearance="Secondary"
+                                       Click="DownloadRecommendedModelButton_Click"/>
+                            <ui:Button Grid.Column="3"
+                                       Content="公式"
+                                       Width="72"
+                                       Height="30"
+                                       Margin="8,0,0,0"
+                                       Appearance="Transparent"
+                                       Click="OpenRecommendedModelReferenceButton_Click"/>
+                        </Grid>
+
+                        <UniformGrid Columns="2" Margin="0,12,0,0">
+                            <StackPanel Margin="0,0,8,0">
+                                <TextBlock Text="モデル名" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox x:Name="ModelNameTextBox" Height="30" VerticalContentAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Margin="8,0,0,0">
+                                <TextBlock Text="ポート" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox x:Name="PortTextBox" Height="30" VerticalContentAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,10,8,0">
+                                <TextBlock Text="コンテキスト長" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox x:Name="ContextLengthTextBox" Height="30" VerticalContentAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Margin="8,10,0,0">
+                                <TextBlock Text="最大応答トークン" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MaxOutputTokensTextBox" Height="30" VerticalContentAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,10,8,0">
+                                <TextBlock Text="タイムアウト秒" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TimeoutSecondsTextBox" Height="30" VerticalContentAlignment="Center"/>
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <TextBlock Text="送信する情報"
+                                   Margin="0,14,0,4"
+                                   FontWeight="SemiBold"/>
+                        <WrapPanel>
+                            <CheckBox x:Name="IncludeMacroContextCheckBox" Content="マクロ" Margin="0,0,14,0"/>
+                            <CheckBox x:Name="IncludeSelectedCommandContextCheckBox" Content="選択中コマンド" Margin="0,0,14,0"/>
+                            <CheckBox x:Name="IncludeLogContextCheckBox" Content="直近ログ"/>
+                        </WrapPanel>
+                        <TextBlock x:Name="AssistantDownloadStatusTextBlock"
+                                   Margin="0,12,0,0"
+                                   TextWrapping="Wrap"
+                                   Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </ui:Card>
             </StackPanel>
-        </ui:Card>
+        </ScrollViewer>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
             <ui:Button Content="キャンセル" Appearance="Secondary" Width="110" Margin="0,0,8,0" Click="CancelButton_Click"/>

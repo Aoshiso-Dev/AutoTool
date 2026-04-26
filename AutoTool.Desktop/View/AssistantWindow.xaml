@@ -1,0 +1,47 @@
+﻿<ui:FluentWindow x:Class="AutoTool.Desktop.View.AssistantWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:panels="clr-namespace:AutoTool.Desktop.Panels.View"
+                 mc:Ignorable="d"
+                 Title="AI相談"
+                 Width="760"
+                 Height="560"
+                 MinWidth="560"
+                 MinHeight="420"
+                 WindowStartupLocation="CenterOwner"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 d:DesignHeight="560"
+                 d:DesignWidth="760">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="AI相談"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+
+            <ui:Button Grid.Column="1"
+                       Content="閉じる"
+                       MinWidth="84"
+                       Height="30"
+                       Appearance="Secondary"
+                       Click="CloseButton_Click"/>
+        </Grid>
+
+        <panels:AssistantPanel Grid.Row="1"/>
+    </Grid>
+</ui:FluentWindow>

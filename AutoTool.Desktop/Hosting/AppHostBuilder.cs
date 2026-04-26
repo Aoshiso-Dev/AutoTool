@@ -60,7 +60,6 @@ public static class AutoToolServiceExtensions
         services.AddSingleton<IRecentFileStore, JsonRecentFileStore>();
         services.AddSingleton<IFavoriteMacroStore, JsonFavoriteMacroStore>();
         services.AddSingleton<IUiStatePreferenceStore, JsonUiStatePreferenceStore>();
-
         services.AddSingleton<AutoTool.Infrastructure.AsyncFileLog>();
         services.AddSingleton<ILogWriter, DelegatingLogWriter>();
         services.AddSingleton<PluginStartupDiagnosticsPresenter>();

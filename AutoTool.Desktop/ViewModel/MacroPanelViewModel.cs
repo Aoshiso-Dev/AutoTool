@@ -4,11 +4,17 @@ using AutoTool.Commands.Services;
 using AutoTool.Desktop.Panels.ViewModel;
 using AutoTool.Automation.Runtime.MacroFactory;
 using AutoTool.Automation.Runtime.Definitions;
+using AutoTool.Automation.Runtime.Lists;
+using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Application.Files;
 using AutoTool.Application.History;
 using AutoTool.Application.Ports;
+using AutoTool.Application.Assistant;
 using AutoTool.Automation.Runtime.Serialization;
 using System.Collections.ObjectModel;
+using System.Reflection;
+using System.Text;
+using AutoTool.Commands.Interface;
 
 namespace AutoTool.Desktop.ViewModel;
 
@@ -30,6 +36,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private readonly IButtonPanelViewModel _buttonPanel;
     private readonly ILogPanelViewModel _logPanel;
     private readonly IVariablePanelViewModel _variablePanel;
+    private readonly IAssistantPanelViewModel _assistantPanel;
     private readonly IFavoritePanelViewModel _favoritePanel;
     private CancellationTokenSource? _commandEventSubscriptionCts;
     private Task? _commandEventSubscriptionTask;
@@ -60,6 +67,9 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private bool _isVariablePanelOpen;
 
     [ObservableProperty]
+    private bool _isAssistantPanelOpen;
+
+    [ObservableProperty]
     private bool _isPreflightPanelOpen;
 
     [ObservableProperty]
@@ -76,6 +86,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     public IButtonPanelViewModel ButtonPanelViewModel => _buttonPanel;
     public ILogPanelViewModel LogPanelViewModel => _logPanel;
     public IVariablePanelViewModel VariablePanelViewModel => _variablePanel;
+    public IAssistantPanelViewModel AssistantPanelViewModel => _assistantPanel;
     public IFavoritePanelViewModel FavoritePanelViewModel => _favoritePanel;
 
     public bool IsBottomPanelOpen => IsLogPanelOpen || IsVariablePanelOpen;
@@ -94,6 +105,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         IButtonPanelViewModel buttonPanelViewModel,
         ILogPanelViewModel logPanelViewModel,
         IVariablePanelViewModel variablePanelViewModel,
+        IAssistantPanelViewModel assistantPanelViewModel,
         IFavoritePanelViewModel favoritePanelViewModel)
     {
         ArgumentNullException.ThrowIfNull(notifier);
@@ -109,6 +121,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(buttonPanelViewModel);
         ArgumentNullException.ThrowIfNull(logPanelViewModel);
         ArgumentNullException.ThrowIfNull(variablePanelViewModel);
+        ArgumentNullException.ThrowIfNull(assistantPanelViewModel);
         ArgumentNullException.ThrowIfNull(favoritePanelViewModel);
 
         _notifier = notifier;
@@ -124,7 +137,9 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _buttonPanel = buttonPanelViewModel;
         _logPanel = logPanelViewModel;
         _variablePanel = variablePanelViewModel;
+        _assistantPanel = assistantPanelViewModel;
         _favoritePanel = favoritePanelViewModel;
+        _assistantPanel.SetContextProvider(BuildAssistantContext);
 
         SubscribeToChildViewModelEvents();
         RegisterCommandEventHandlers();
@@ -144,6 +159,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         if (IsLogPanelOpen)
         {
             IsVariablePanelOpen = false;
+            IsAssistantPanelOpen = false;
         }
 
         PublishStatusMessage(IsLogPanelOpen ? "ログパネルを表示しました。" : "ログパネルを閉じました。");
@@ -156,10 +172,24 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         if (IsVariablePanelOpen)
         {
             IsLogPanelOpen = false;
+            IsAssistantPanelOpen = false;
             _variablePanel.Refresh();
         }
 
         PublishStatusMessage(IsVariablePanelOpen ? "変数パネルを表示しました。" : "変数パネルを閉じました。");
+    }
+
+    [RelayCommand]
+    private void ToggleAssistantPanel()
+    {
+        IsAssistantPanelOpen = true;
+        PublishStatusMessage("AI相談を表示しました。");
+    }
+
+    public void SetAssistantWindowOpen(bool isOpen)
+    {
+        IsAssistantPanelOpen = isOpen;
+        PublishStatusMessage(isOpen ? "AI相談を表示しました。" : "AI相談を閉じました。");
     }
 
     [RelayCommand]
@@ -212,6 +242,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _listPanel.SetRunningState(isRunning);
         _logPanel.SetRunningState(isRunning);
         _variablePanel.SetRunningState(isRunning);
+        _assistantPanel.SetRunningState(isRunning);
     }
 
     public bool TryStartExecution(out string message)
@@ -287,6 +318,10 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         {
             disposableVariablePanel.Dispose();
         }
+        if (_assistantPanel is IDisposable disposableAssistantPanel)
+        {
+            disposableAssistantPanel.Dispose();
+        }
         _disposed = true;
 
         GC.SuppressFinalize(this);
@@ -330,6 +365,108 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     partial void OnIsVariablePanelOpenChanged(bool value)
     {
         OnPropertyChanged(nameof(IsBottomPanelOpen));
+    }
+
+    partial void OnIsAssistantPanelOpenChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsBottomPanelOpen));
+    }
+
+    private AssistantContext BuildAssistantContext()
+    {
+        return new AssistantContext(
+            BuildMacroSummary(),
+            BuildSelectedCommandSummary(),
+            string.Empty);
+    }
+
+    private string BuildMacroSummary()
+    {
+        var items = _listPanel.CommandList.Items;
+        if (items.Count == 0)
+        {
+            return "コマンドはまだありません。";
+        }
+
+        const int maxItems = 80;
+        var builder = new StringBuilder();
+        builder.AppendLine($"コマンド数: {items.Count}");
+        foreach (var item in items.Take(maxItems))
+        {
+            builder.AppendLine(FormatCommandItem(item));
+        }
+
+        if (items.Count > maxItems)
+        {
+            builder.AppendLine($"... 残り {items.Count - maxItems} 件は省略");
+        }
+
+        return builder.ToString();
+    }
+
+    private string BuildSelectedCommandSummary()
+    {
+        return _listPanel.SelectedItem is null
+            ? "選択中のコマンドはありません。"
+            : FormatCommandItem(_listPanel.SelectedItem, includeSettings: true);
+    }
+
+    private static string FormatCommandItem(ICommandListItem item, bool includeSettings = false)
+    {
+        var indent = new string(' ', Math.Max(0, item.NestLevel) * 2);
+        var enabledText = item.IsEnable ? "有効" : "無効";
+        var builder = new StringBuilder();
+        builder.Append(indent)
+            .Append(item.LineNumber)
+            .Append(". ")
+            .Append(CommandListItem.GetDisplayNameForType(item.ItemType))
+            .Append(" [")
+            .Append(enabledText)
+            .Append(']');
+
+        if (!string.IsNullOrWhiteSpace(item.Comment))
+        {
+            builder.Append(" コメント=").Append(SanitizeValue(item.Comment));
+        }
+
+        if (includeSettings && item is ICommandSettings settings)
+        {
+            var settingsText = FormatSettings(settings);
+            if (!string.IsNullOrWhiteSpace(settingsText))
+            {
+                builder.Append(" 設定={").Append(settingsText).Append('}');
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private static string FormatSettings(ICommandSettings settings)
+    {
+        var properties = settings.GetType()
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(static x => x.CanRead && x.GetIndexParameters().Length == 0)
+            .Select(x => $"{x.Name}={SanitizeValue(x.GetValue(settings))}")
+            .Where(static x => !string.IsNullOrWhiteSpace(x))
+            .Take(24);
+
+        return string.Join(", ", properties);
+    }
+
+    private static string SanitizeValue(object? value)
+    {
+        return value switch
+        {
+            null => string.Empty,
+            string text when string.IsNullOrWhiteSpace(text) => string.Empty,
+            string text => TrimText(text.ReplaceLineEndings(" "), 120),
+            _ => TrimText(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty, 120)
+        };
+    }
+
+    private static string TrimText(string text, int maxLength)
+    {
+        return text.Length <= maxLength ? text : text[..maxLength] + "...";
     }
 }
 

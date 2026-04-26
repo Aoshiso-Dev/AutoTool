@@ -11,6 +11,8 @@ AutoTool は、Windows 上で定型操作をマクロとして作成・保存・
 
 - コマンド追加画面をカテゴリ別に整理し、目的に近いコマンドを探しやすく改善
 - 右下の `変数` ボタンから、実行中に更新された変数名・値・更新時刻を確認できる変数パネルを追加
+- 右下の `AI相談` ボタンから、llama.cpp のローカルAIへマクロ内容や質問を送って相談できる別ウィンドウを追加
+- AI相談設定に `取得` / `推奨取得` ボタンを追加し、llama.cpp と推奨GGUFモデルを設定画面から用意できるように変更
 - README にメイン画面のスクリーンショットを追加し、配布前に画面イメージを確認しやすく変更
 - AGENTS.md の運用ルールに合わせ、GitHub Release 更新時の README 更新方針を明確化
 
@@ -88,7 +90,7 @@ dotnet run -c Release --project .\AutoTool.Benchmarks.Automation\AutoTool.Benchm
 
 - `AutoTool.Bootstrap`: アプリ起動エントリ（WPF WinExe）
 - `AutoTool.Desktop`: UI / ViewModel / Host 構成
-- `AutoTool.Application`: ユースケース層（履歴管理、ファイル操作、Ports）
+- `AutoTool.Application`: ユースケース層（履歴管理、ファイル操作、AI相談Ports）
 - `AutoTool.Domain`: ドメインモデル
 - `AutoTool.Automation.Contracts`: コマンド実行契約・入力/サービス抽象
 - `AutoTool.Plugin.Abstractions`: プラグイン契約・基本モデル
@@ -96,7 +98,7 @@ dotnet run -c Release --project .\AutoTool.Benchmarks.Automation\AutoTool.Benchm
 - `AutoTool.Plugin.Host`: プラグイン探索・`plugin.json` 読込・検証・DLL 読込・起動時診断・サービス登録反映・実行委譲・動的プロパティ連携
 - `AutoTool.Desktop`: 起動時診断結果のステータス表示とログ表示
 - `AutoTool.Automation.Runtime`: コマンド定義・マクロ生成・シリアライズ
-- `AutoTool.Infrastructure`: Win32 / OpenCV / OCR / 永続化など技術実装
+- `AutoTool.Infrastructure`: Win32 / OpenCV / OCR / llama.cpp 連携 / 永続化など技術実装
 - `AutoTool.Tests.Application`: Application 層の回帰テスト
 - `AutoTool.Tests.Domain`: Domain モデルテスト
 - `AutoTool.Tests.Infrastructure`: Infrastructure/Runtime の統合・回帰テスト

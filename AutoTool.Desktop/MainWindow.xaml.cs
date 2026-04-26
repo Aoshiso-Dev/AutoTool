@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using AutoTool.Application.Ports;
+using AutoTool.Application.Assistant;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Desktop.Model;
 using AutoTool.Desktop.Panels.View;
@@ -27,6 +28,9 @@ public partial class MainWindow : FluentWindow
     private readonly MainWindowViewModel _viewModel;
     private readonly IUiStatePreferenceStore _uiStatePreferenceStore;
     private readonly IAppDialogService _appDialogService;
+    private readonly IAssistantSettingsStore _assistantSettingsStore;
+    private readonly IFilePicker _filePicker;
+    private AssistantWindow? _assistantWindow;
     private bool _restorePreviousSession;
     private bool _isCommandListSelectAllPending;
     private bool _suppressUnsavedConfirmation;
@@ -40,17 +44,23 @@ public partial class MainWindow : FluentWindow
         MainWindowViewModel viewModel,
         TimeProvider timeProvider,
         IUiStatePreferenceStore uiStatePreferenceStore,
-        IAppDialogService appDialogService)
+        IAppDialogService appDialogService,
+        IAssistantSettingsStore assistantSettingsStore,
+        IFilePicker filePicker)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(uiStatePreferenceStore);
         ArgumentNullException.ThrowIfNull(appDialogService);
+        ArgumentNullException.ThrowIfNull(assistantSettingsStore);
+        ArgumentNullException.ThrowIfNull(filePicker);
 
         InitializeComponent();
         _viewModel = viewModel;
         _uiStatePreferenceStore = uiStatePreferenceStore;
         _appDialogService = appDialogService;
+        _assistantSettingsStore = assistantSettingsStore;
+        _filePicker = filePicker;
         DataContext = _viewModel;
         _restorePreviousSession = _uiStatePreferenceStore.LoadRestorePreviousSession();
 
@@ -137,7 +147,11 @@ public partial class MainWindow : FluentWindow
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        var settingsWindow = new SettingsWindow(_restorePreviousSession, _windowSettings.WindowSizePreset)
+        var settingsWindow = new SettingsWindow(
+            _restorePreviousSession,
+            _windowSettings.WindowSizePreset,
+            _assistantSettingsStore.Load(),
+            _filePicker)
         {
             Owner = this
         };
@@ -150,6 +164,7 @@ public partial class MainWindow : FluentWindow
         _restorePreviousSession = settingsWindow.RestorePreviousSession;
         _uiStatePreferenceStore.SaveRestorePreviousSession(_restorePreviousSession);
         _windowSettings.UpdateWindowSizePreset(settingsWindow.SelectedWindowSizePreset);
+        _assistantSettingsStore.Save(settingsWindow.AssistantSettings);
         _windowSettings.Save();
         _windowSettings.ApplyToWindow(this);
     }
@@ -185,6 +200,43 @@ public partial class MainWindow : FluentWindow
         };
 
         _ = aboutWindow.ShowDialog();
+    }
+
+    private void AssistantButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_assistantWindow is not null)
+        {
+            if (_assistantWindow.WindowState == WindowState.Minimized)
+            {
+                _assistantWindow.WindowState = WindowState.Normal;
+            }
+
+            _assistantWindow.Activate();
+            return;
+        }
+
+        var assistantWindow = new AssistantWindow
+        {
+            Owner = this,
+            DataContext = _viewModel.MacroPanelViewModel.AssistantPanelViewModel
+        };
+
+        _assistantWindow = assistantWindow;
+        _viewModel.MacroPanelViewModel.SetAssistantWindowOpen(true);
+        assistantWindow.Closed += AssistantWindow_Closed;
+        assistantWindow.Show();
+        assistantWindow.Activate();
+    }
+
+    private void AssistantWindow_Closed(object? sender, EventArgs e)
+    {
+        if (_assistantWindow is not null)
+        {
+            _assistantWindow.Closed -= AssistantWindow_Closed;
+        }
+
+        _assistantWindow = null;
+        _viewModel.MacroPanelViewModel.SetAssistantWindowOpen(false);
     }
 
     private void MainWindow_Closed(object? sender, EventArgs e)

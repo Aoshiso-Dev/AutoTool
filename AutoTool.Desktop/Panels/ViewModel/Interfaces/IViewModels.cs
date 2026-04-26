@@ -127,6 +127,20 @@ public interface IVariablePanelViewModel
 }
 
 /// <summary>
+/// AI相談パネルの会話と接続確認を管理する ViewModel 契約です。
+/// </summary>
+public interface IAssistantPanelViewModel
+{
+    bool IsRunning { get; set; }
+    event Action<string>? StatusMessageRequested;
+
+    void Prepare();
+    void SetRunningState(bool isRunning);
+    void SetContextProvider(Func<AutoTool.Application.Assistant.AssistantContext> contextProvider);
+    void RequestCancel();
+}
+
+/// <summary>
 /// お気に入りマクロの登録・読込・削除を管理する ViewModel 契約です。
 /// </summary>
 public interface IFavoritePanelViewModel
