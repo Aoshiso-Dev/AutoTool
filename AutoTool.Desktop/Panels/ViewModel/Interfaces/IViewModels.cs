@@ -133,11 +133,13 @@ public interface IAssistantPanelViewModel
 {
     bool IsRunning { get; set; }
     event Action<string>? StatusMessageRequested;
+    event Action<AutoTool.Application.Assistant.AssistantMacroGenerationResult>? MacroGenerated;
 
     void Prepare();
     void SetRunningState(bool isRunning);
     void SetContextProvider(Func<AutoTool.Application.Assistant.AssistantContext> contextProvider);
     void RequestCancel();
+    void RequestGenerateMacro(string requestText);
 }
 
 /// <summary>

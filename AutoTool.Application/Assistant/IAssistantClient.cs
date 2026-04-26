@@ -6,5 +6,6 @@
 public interface IAssistantClient
 {
     Task<AssistantResponse> AskAsync(AssistantRequest request, CancellationToken cancellationToken);
+    Task<AssistantMacroGenerationResponse> GenerateMacroAsync(AssistantRequest request, CancellationToken cancellationToken);
     Task<AssistantResponse> TestConnectionAsync(AssistantSettings settings, CancellationToken cancellationToken);
 }

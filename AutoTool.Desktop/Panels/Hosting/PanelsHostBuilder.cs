@@ -48,6 +48,7 @@ public static class PanelsHostBuilder
         services.AddSingleton<IDetectionHighlightService, DetectionHighlightService>();
         services.AddSingleton<IFavoriteMacroStore, JsonFavoriteMacroStore>();
         services.AddSingleton<IAssistantSettingsStore, JsonAssistantSettingsStore>();
+        services.AddSingleton<IAssistantMacroGenerationHistoryStore, JsonAssistantMacroGenerationHistoryStore>();
         services.AddSingleton<IAssistantClient, LlamaCppAssistantClient>();
 
         return services;

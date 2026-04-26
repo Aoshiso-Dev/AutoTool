@@ -23,6 +23,9 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.Column="0"
@@ -61,6 +64,30 @@
             </StackPanel>
 
             <ui:Button Grid.Column="3"
+                       Content="マクロ生成"
+                       Command="{Binding GenerateMacroCommand}"
+                       Height="30"
+                       MinWidth="92"
+                       Margin="8,0,0,0"
+                       Appearance="Primary"/>
+
+            <ui:Button Grid.Column="4"
+                       Content="履歴追加"
+                       Command="{Binding ReplayLatestMacroCommand}"
+                       Height="30"
+                       MinWidth="84"
+                       Margin="8,0,0,0"
+                       Appearance="Secondary"/>
+
+            <ui:Button Grid.Column="5"
+                       Content="履歴"
+                       Command="{Binding ShowMacroHistoryCommand}"
+                       Height="30"
+                       MinWidth="64"
+                       Margin="8,0,0,0"
+                       Appearance="Secondary"/>
+
+            <ui:Button Grid.Column="6"
                        Content="マクロ説明"
                        Command="{Binding ExplainMacroCommand}"
                        Height="30"
@@ -68,7 +95,7 @@
                        Margin="8,0,0,0"
                        Appearance="Secondary"/>
 
-            <ui:Button Grid.Column="4"
+            <ui:Button Grid.Column="7"
                        Content="接続テスト"
                        Command="{Binding TestConnectionCommand}"
                        Height="30"
@@ -76,7 +103,7 @@
                        Margin="8,0,0,0"
                        Appearance="Secondary"/>
 
-            <ui:Button Grid.Column="5"
+            <ui:Button Grid.Column="8"
                        Icon="{ui:SymbolIcon Dismiss24}"
                        Command="{Binding CancelRequestCommand}"
                        ToolTip="AI相談をキャンセル"

@@ -12,6 +12,7 @@ using AutoTool.Application.Ports;
 using AutoTool.Application.Assistant;
 using AutoTool.Automation.Runtime.Serialization;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using AutoTool.Commands.Interface;
@@ -30,6 +31,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
     private readonly IMacroFileSerializer _macroFileSerializer;
     private readonly ICommandRegistry _commandRegistry;
     private readonly IPathResolver _pathResolver;
+    private readonly IAppDialogService _appDialogService;
     private readonly TimeProvider _timeProvider;
     private readonly IListPanelViewModel _listPanel;
     private readonly IEditPanelViewModel _editPanel;
@@ -99,6 +101,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         IMacroFileSerializer macroFileSerializer,
         ICommandRegistry commandRegistry,
         IPathResolver pathResolver,
+        IAppDialogService appDialogService,
         TimeProvider timeProvider,
         IListPanelViewModel listPanelViewModel,
         IEditPanelViewModel editPanelViewModel,
@@ -115,6 +118,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(macroFileSerializer);
         ArgumentNullException.ThrowIfNull(commandRegistry);
         ArgumentNullException.ThrowIfNull(pathResolver);
+        ArgumentNullException.ThrowIfNull(appDialogService);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(listPanelViewModel);
         ArgumentNullException.ThrowIfNull(editPanelViewModel);
@@ -131,6 +135,7 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _macroFileSerializer = macroFileSerializer;
         _commandRegistry = commandRegistry;
         _pathResolver = pathResolver;
+        _appDialogService = appDialogService;
         _timeProvider = timeProvider;
         _listPanel = listPanelViewModel;
         _editPanel = editPanelViewModel;
@@ -377,7 +382,8 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         return new AssistantContext(
             BuildMacroSummary(),
             BuildSelectedCommandSummary(),
-            string.Empty);
+            string.Empty,
+            BuildAvailableCommandSummary());
     }
 
     private string BuildMacroSummary()
@@ -409,6 +415,24 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         return _listPanel.SelectedItem is null
             ? "選択中のコマンドはありません。"
             : FormatCommandItem(_listPanel.SelectedItem, includeSettings: true);
+    }
+
+    private string BuildAvailableCommandSummary()
+    {
+        _commandRegistry.Initialize();
+        var builder = new StringBuilder();
+        foreach (var typeName in _commandRegistry.GetOrderedTypeNames()
+                     .Where(typeName => !_commandRegistry.IsEndCommand(typeName))
+                     .Take(120))
+        {
+            builder.Append(typeName)
+                .Append(" = ")
+                .Append(_commandRegistry.GetDisplayName(typeName))
+                .Append(" / ")
+                .AppendLine(_commandRegistry.GetCategoryName(typeName));
+        }
+
+        return builder.ToString();
     }
 
     private static string FormatCommandItem(ICommandListItem item, bool includeSettings = false)

@@ -6,7 +6,8 @@
 public sealed record AssistantContext(
     string MacroSummary,
     string SelectedCommandSummary,
-    string RecentLogSummary)
+    string RecentLogSummary,
+    string AvailableCommandSummary)
 {
-    public static AssistantContext Empty { get; } = new(string.Empty, string.Empty, string.Empty);
+    public static AssistantContext Empty { get; } = new(string.Empty, string.Empty, string.Empty, string.Empty);
 }
