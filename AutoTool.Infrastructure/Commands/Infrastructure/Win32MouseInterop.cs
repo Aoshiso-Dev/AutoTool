@@ -20,6 +20,7 @@ public static partial class Win32MouseInterop
     private const int SwRestore = 9;
     private const int SimulatedMoveSteps = 8;
     private const int SimulatedMoveStepDelayMs = 8;
+    private const int ClickReleaseSettleDelayMs = 80;
     private const uint GwHwndPrev = 3;
     private const uint GwHwndNext = 2;
     private const uint SwpNoSize = 0x0001;
@@ -300,6 +301,7 @@ public static partial class Win32MouseInterop
             }
 
             SendMouseClickEvent(upEvent, normalizedMode);
+            await Task.Delay(ClickReleaseSettleDelayMs).ConfigureAwait(false);
         }
         finally
         {
