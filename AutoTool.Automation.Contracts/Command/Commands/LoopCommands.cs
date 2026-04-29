@@ -26,18 +26,25 @@ public class LoopCommand : BaseCommand, ILoopCommand
         {
             ResetChildrenProgress();
 
-            foreach (var command in Children)
+            try
             {
-                if (cancellationToken.IsCancellationRequested)
+                foreach (var command in Children)
                 {
-                    return false;
-                }
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return false;
+                    }
 
-                if (!await command.Execute(cancellationToken).ConfigureAwait(false))
-                {
-                    // LoopBreak は正常なループ離脱として扱い、その他の false は失敗として伝播
-                    return command is ILoopBreakCommand;
+                    if (!await command.Execute(cancellationToken).ConfigureAwait(false))
+                    {
+                        return false;
+                    }
                 }
+            }
+            catch (LoopBreakRequestedException)
+            {
+                RaiseDoingCommand("ループ中断コマンドにより現在のループを終了します。");
+                break;
             }
 
             ReportProgress(i + 1, Settings.LoopCount);
@@ -71,7 +78,17 @@ public class LoopBreakCommand : BaseCommand, ILoopBreakCommand
 {
     public LoopBreakCommand(ICommand? parent, ICommandSettings settings) : base(parent, settings) { }
 
-    protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken) => ValueTask.FromResult(false);
+    protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
+    {
+        throw new LoopBreakRequestedException();
+    }
+}
+
+/// <summary>
+/// ループ中断要求を一番近いループコマンドまで伝播させるための内部シグナルです。
+/// </summary>
+internal sealed class LoopBreakRequestedException : Exception
+{
 }
 
 /// <summary>

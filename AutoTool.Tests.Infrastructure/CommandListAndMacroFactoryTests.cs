@@ -287,6 +287,85 @@ public class MacroFactoryTests
 }
 
 /// <summary>
+/// ループ制御コマンドの実行時挙動を検証するテストです。
+/// </summary>
+public class LoopCommandTests
+{
+    [Fact]
+    public async Task Execute_WhenLoopBreakIsInsideNestedCondition_EndsNearestLoopOnly()
+    {
+        var afterInnerLoop = new CountingCommand();
+        var loopBreak = new LoopBreakCommand(null, new CommandSettings());
+        var loopBreakFinished = false;
+        loopBreak.OnFinishCommand += (_, _) => loopBreakFinished = true;
+
+        var innerLoop = new LoopCommand(
+            null,
+            new LoopCommandSettings
+            {
+                LoopCount = 5
+            });
+        innerLoop.Children =
+        [
+            new ConditionalCommand
+            {
+                Children =
+                [
+                    loopBreak
+                ]
+            }
+        ];
+
+        var outerLoop = new LoopCommand(
+            null,
+            new LoopCommandSettings
+            {
+                LoopCount = 2
+            });
+        outerLoop.Children =
+        [
+            innerLoop,
+            afterInnerLoop
+        ];
+
+        var result = await outerLoop.Execute(CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(2, afterInnerLoop.ExecuteCount);
+        Assert.True(loopBreakFinished);
+    }
+
+    private sealed class ConditionalCommand : BaseCommand
+    {
+        public ConditionalCommand()
+            : base(null, new CommandSettings())
+        {
+        }
+
+        protected override async ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            return await ExecuteChildrenAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private sealed class CountingCommand : BaseCommand
+    {
+        public int ExecuteCount { get; private set; }
+
+        public CountingCommand()
+            : base(null, new CommandSettings())
+        {
+        }
+
+        protected override ValueTask<bool> DoExecuteAsync(CancellationToken cancellationToken)
+        {
+            ExecuteCount++;
+            return ValueTask.FromResult(true);
+        }
+    }
+}
+
+/// <summary>
 /// リトライコマンドの実行制御テストです。
 /// </summary>
 public class RetryCommandTests

@@ -57,9 +57,14 @@ public abstract class BaseCommand : ICommand
         {
             CommandSettingsValidator.Validate(Settings);
             OnStartCommand?.Invoke(this, EventArgs.Empty);
-            var result = await DoExecuteAsync(cancellationToken).ConfigureAwait(false);
-            OnFinishCommand?.Invoke(this, EventArgs.Empty);
-            return result;
+            try
+            {
+                return await DoExecuteAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                OnFinishCommand?.Invoke(this, EventArgs.Empty);
+            }
         }
         catch (CommandSettingsValidationException ex)
         {
