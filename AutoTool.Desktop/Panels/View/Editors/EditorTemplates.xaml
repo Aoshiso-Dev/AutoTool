@@ -91,6 +91,39 @@
         </Border>
     </DataTemplate>
 
+    <DataTemplate x:Key="DurationEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
+        <Border Style="{StaticResource EditorCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource EditorLabel}"/>
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource EditorDescription}"
+                               Visibility="{Binding Description, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding ValidationMessage}" Style="{StaticResource EditorDescription}"
+                               Foreground="#C42B1C"
+                               Visibility="{Binding ValidationMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ui:NumberBox Value="{Binding DurationHours, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  Minimum="0" Maximum="596" Width="72"
+                                  SpinButtonPlacementMode="Compact"/>
+                    <TextBlock Text="時間" Style="{StaticResource EditorDescription}" VerticalAlignment="Center" Margin="6,0,10,0"/>
+                    <ui:NumberBox Value="{Binding DurationMinutes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  Minimum="0" Maximum="59" Width="64"
+                                  SpinButtonPlacementMode="Compact"/>
+                    <TextBlock Text="分" Style="{StaticResource EditorDescription}" VerticalAlignment="Center" Margin="6,0,10,0"/>
+                    <ui:NumberBox Value="{Binding DurationSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  Minimum="0" Maximum="59.999" Width="76"
+                                  SpinButtonPlacementMode="Compact"/>
+                    <TextBlock Text="秒" Style="{StaticResource EditorDescription}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
     <DataTemplate x:Key="SliderEditorTemplate" DataType="{x:Type attrs:PropertyMetadata}">
         <Border Style="{StaticResource EditorCard}">
             <Grid>
@@ -429,6 +462,7 @@
     <editors:EditorTemplateSelector x:Key="EditorTemplateSelector"
                                     TextBoxTemplate="{StaticResource TextBoxEditorTemplate}"
                                     NumberBoxTemplate="{StaticResource NumberBoxEditorTemplate}"
+                                    DurationTemplate="{StaticResource DurationEditorTemplate}"
                                     SliderTemplate="{StaticResource SliderEditorTemplate}"
                                     CheckBoxTemplate="{StaticResource CheckBoxEditorTemplate}"
                                     ComboBoxTemplate="{StaticResource ComboBoxEditorTemplate}"

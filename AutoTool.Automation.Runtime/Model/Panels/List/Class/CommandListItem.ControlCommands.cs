@@ -542,15 +542,15 @@ namespace AutoTool.Automation.Runtime.Lists;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("リトライ間隔", EditorType.NumberBox, Group = "基本設定", Order = 2,
-                         Description = "再実行までの待機時間", Unit = "ミリ秒", Min = 0)]
+        [property: CommandProperty("リトライ間隔", EditorType.Duration, Group = "基本設定", Order = 2,
+                         Description = "再実行までの待機時間", Min = 0)]
         private int _retryInterval = 500;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
         private ICommandListItem? _pair = null;
 
-        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / リトライ回数:{RetryCount} / 間隔:{RetryInterval}ms";
+        new public string Description => $"{LineNumber}->{Pair?.LineNumber} / リトライ回数:{RetryCount} / 間隔:{DurationText.Format(RetryInterval)}";
 
         public RetryItem() { }
 

@@ -13,6 +13,9 @@ namespace AutoTool.Automation.Runtime.Attributes;
 public partial class PropertyMetadata : ObservableObject
 {
     private static readonly ConcurrentDictionary<Type, ModifierPropertyCache> ModifierPropertyCacheByType = new();
+    private const int MillisecondsPerSecond = 1000;
+    private const int MillisecondsPerMinute = 60 * MillisecondsPerSecond;
+    private const int MillisecondsPerHour = 60 * MillisecondsPerMinute;
 
     public PropertyInfo PropertyInfo { get; init; } = null!;
     public CommandPropertyAttribute Attribute { get; init; } = null!;
@@ -114,6 +117,9 @@ public partial class PropertyMetadata : ObservableObject
         OnPropertyChanged(nameof(Value));
         OnPropertyChanged(nameof(StringValue));
         OnPropertyChanged(nameof(IntValue));
+        OnPropertyChanged(nameof(DurationHours));
+        OnPropertyChanged(nameof(DurationMinutes));
+        OnPropertyChanged(nameof(DurationSeconds));
         OnPropertyChanged(nameof(DoubleValue));
         OnPropertyChanged(nameof(BoolValue));
         OnPropertyChanged(nameof(MouseButtonValue));
@@ -139,6 +145,24 @@ public partial class PropertyMetadata : ObservableObject
     {
         get => Value is int i ? i : 0;
         set => Value = value;
+    }
+
+    public int DurationHours
+    {
+        get => Math.Max(0, IntValue) / MillisecondsPerHour;
+        set => SetDuration(value, DurationMinutes, DurationSeconds);
+    }
+
+    public int DurationMinutes
+    {
+        get => (Math.Max(0, IntValue) / MillisecondsPerMinute) % 60;
+        set => SetDuration(DurationHours, value, DurationSeconds);
+    }
+
+    public double DurationSeconds
+    {
+        get => Math.Round((Math.Max(0, IntValue) % MillisecondsPerMinute) / (double)MillisecondsPerSecond, 3);
+        set => SetDuration(DurationHours, DurationMinutes, value);
     }
 
     public double DoubleValue
@@ -244,6 +268,17 @@ public partial class PropertyMetadata : ObservableObject
         RelatedProperty?.NotifyAllValueProperties();
         RelatedProperty2?.NotifyAllValueProperties();
         RelatedProperty3?.NotifyAllValueProperties();
+    }
+
+    private void SetDuration(int hours, int minutes, double seconds)
+    {
+        var safeHours = Math.Max(0, hours);
+        var safeMinutes = Math.Clamp(minutes, 0, 59);
+        var safeSeconds = Math.Clamp(seconds, 0, 59.999);
+        var totalMilliseconds = (safeHours * MillisecondsPerHour)
+            + (safeMinutes * MillisecondsPerMinute)
+            + (int)Math.Round(safeSeconds * MillisecondsPerSecond);
+        IntValue = Math.Clamp(totalMilliseconds, (int)Math.Max(0, Min), (int)Math.Min(int.MaxValue, Max));
     }
 
     private static PropertyInfo? GetBooleanProperty(Type targetType, string propertyName)

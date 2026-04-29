@@ -65,14 +65,14 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("タイムアウト", EditorType.NumberBox, Group = "タイミング", Order = 1,
-                     Description = "検索を諦めるまでの時間", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("タイムアウト", EditorType.Duration, Group = "タイミング", Order = 1,
+                     Description = "検索を諦めるまでの時間", Min = 0)]
     private int _timeout = 5000;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("検索間隔", EditorType.NumberBox, Group = "タイミング", Order = 2,
-                     Description = "画像検索の間隔", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("検索間隔", EditorType.Duration, Group = "タイミング", Order = 2,
+                     Description = "画像検索の間隔", Min = 0)]
     private int _interval = 500;
 
     [ObservableProperty]
@@ -111,7 +111,7 @@ public partial class FindImageItem : CommandListItem, IFindImageItem, IFindImage
                      Description = "ウィンドウのクラス名")]
     private string _windowClassName = string.Empty;
 
-    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / 厳密失敗:{Strict}";
+    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{DurationText.Format(Timeout)} / 間隔:{DurationText.Format(Interval)} / 厳密失敗:{Strict}";
 
     public FindImageItem() { }
 
@@ -214,14 +214,14 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("タイムアウト", EditorType.NumberBox, Group = "タイミング", Order = 1,
-                     Description = "検索を諦めるまでの時間", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("タイムアウト", EditorType.Duration, Group = "タイミング", Order = 1,
+                     Description = "検索を諦めるまでの時間", Min = 0)]
     private int _timeout = 5000;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("検索間隔", EditorType.NumberBox, Group = "タイミング", Order = 2,
-                     Description = "画像検索の間隔", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("検索間隔", EditorType.Duration, Group = "タイミング", Order = 2,
+                     Description = "画像検索の間隔", Min = 0)]
     private int _interval = 500;
 
     [ObservableProperty]
@@ -236,7 +236,7 @@ public partial class WaitImageItem : CommandListItem, IWaitImageItem, IWaitImage
                      Description = "ウィンドウのクラス名")]
     private string _windowClassName = string.Empty;
 
-    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{DurationText.Format(Timeout)} / 間隔:{DurationText.Format(Interval)}";
 
     public WaitImageItem() { }
 
@@ -311,14 +311,14 @@ public partial class WaitImageDisappearItem : CommandListItem, IWaitImageItem, I
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("タイムアウト", EditorType.NumberBox, Group = "タイミング", Order = 1,
-                     Description = "消失待機を諦めるまでの時間", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("タイムアウト", EditorType.Duration, Group = "タイミング", Order = 1,
+                     Description = "消失待機を諦めるまでの時間", Min = 0)]
     private int _timeout = 5000;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("検索間隔", EditorType.NumberBox, Group = "タイミング", Order = 2,
-                     Description = "画像検索の間隔", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("検索間隔", EditorType.Duration, Group = "タイミング", Order = 2,
+                     Description = "画像検索の間隔", Min = 0)]
     private int _interval = 500;
 
     [ObservableProperty]
@@ -333,7 +333,7 @@ public partial class WaitImageDisappearItem : CommandListItem, IWaitImageItem, I
                      Description = "ウィンドウのクラス名")]
     private string _windowClassName = string.Empty;
 
-    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms";
+    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{DurationText.Format(Timeout)} / 間隔:{DurationText.Format(Interval)}";
 
     public WaitImageDisappearItem() { }
 
@@ -427,14 +427,14 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("タイムアウト", EditorType.NumberBox, Group = "タイミング", Order = 1,
-                     Description = "検索を諦めるまでの時間", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("タイムアウト", EditorType.Duration, Group = "タイミング", Order = 1,
+                     Description = "検索を諦めるまでの時間", Min = 0)]
     private int _timeout = 5000;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("検索間隔", EditorType.NumberBox, Group = "タイミング", Order = 2,
-                     Description = "画像検索の間隔", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("検索間隔", EditorType.Duration, Group = "タイミング", Order = 2,
+                     Description = "画像検索の間隔", Min = 0)]
     private int _interval = 500;
 
     [ObservableProperty]
@@ -485,7 +485,7 @@ public partial class ClickImageItem : CommandListItem, IClickImageItem, IClickIm
                      Description = "ウィンドウのクラス名")]
     private string _windowClassName = string.Empty;
 
-    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{Timeout}ms / 間隔:{Interval}ms / ボタン:{Button} / 押下維持:{HoldDurationMs}ms / 方式:{ClickInjectionMode} / 移動シミュレート:{(SimulateMouseMove ? "ON" : "OFF")} / 元位置へ戻す:{(RestoreCursorPositionAfterClick ? "ON" : "OFF")} / ウィンドウ順を戻す:{(RestoreWindowZOrderAfterClick ? "ON" : "OFF")}";
+    new public string Description => $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / パス:{System.IO.Path.GetFileName(ImagePath)} / 閾値:{Threshold} / タイムアウト:{DurationText.Format(Timeout)} / 間隔:{DurationText.Format(Interval)} / ボタン:{Button} / 押下維持:{HoldDurationMs}ms / 方式:{ClickInjectionMode} / 移動シミュレート:{(SimulateMouseMove ? "ON" : "OFF")} / 元位置へ戻す:{(RestoreCursorPositionAfterClick ? "ON" : "OFF")} / ウィンドウ順を戻す:{(RestoreWindowZOrderAfterClick ? "ON" : "OFF")}";
 
     public ClickImageItem() { }
 

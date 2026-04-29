@@ -11,6 +11,9 @@ public enum EditorType
     /// <summary>数値入力</summary>
     NumberBox,
 
+    /// <summary>時間入力</summary>
+    Duration,
+
     /// <summary>スライダー入力</summary>
     Slider,
 

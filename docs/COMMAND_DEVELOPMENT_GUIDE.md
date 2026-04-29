@@ -123,12 +123,12 @@ public partial class SampleItem : CommandListItem, IClickImageItem, IClickImageC
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("タイムアウト", EditorType.NumberBox, Group = "タイミング", Order = 1, Min = 0, Unit = "ミリ秒")]
+    [property: CommandProperty("タイムアウト", EditorType.Duration, Group = "タイミング", Order = 1, Min = 0)]
     private int _timeout = 5000;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("検索間隔", EditorType.NumberBox, Group = "タイミング", Order = 2, Min = 0, Unit = "ミリ秒")]
+    [property: CommandProperty("検索間隔", EditorType.Duration, Group = "タイミング", Order = 2, Min = 0)]
     private int _interval = 500;
 
     [ObservableProperty]

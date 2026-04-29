@@ -58,14 +58,14 @@ public partial class FindTextItem : CommandListItem, IFindTextItem, IFindTextCom
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("タイムアウト", EditorType.NumberBox, Group = "タイミング", Order = 1,
-                     Description = "検索を諦めるまでの時間", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("タイムアウト", EditorType.Duration, Group = "タイミング", Order = 1,
+                     Description = "検索を諦めるまでの時間", Min = 0)]
     private int _timeout = 3000;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
-    [property: CommandProperty("検索間隔", EditorType.NumberBox, Group = "タイミング", Order = 2,
-                     Description = "OCR再試行の間隔", Unit = "ミリ秒", Min = 0)]
+    [property: CommandProperty("検索間隔", EditorType.Duration, Group = "タイミング", Order = 2,
+                     Description = "OCR再試行の間隔", Min = 0)]
     private int _interval = 500;
 
     [ObservableProperty]
@@ -141,7 +141,7 @@ public partial class FindTextItem : CommandListItem, IFindTextItem, IFindTextCom
     private string _confidenceVariableName = string.Empty;
 
     new public string Description =>
-        $"文字:\"{TargetText}\" / マッチ:{MatchMode} / 領域:({X},{Y},{Width},{Height}) / タイムアウト:{Timeout}ms / Strict:{Strict}";
+        $"文字:\"{TargetText}\" / マッチ:{MatchMode} / 領域:({X},{Y},{Width},{Height}) / タイムアウト:{DurationText.Format(Timeout)} / Strict:{Strict}";
 
     public FindTextItem() { }
 

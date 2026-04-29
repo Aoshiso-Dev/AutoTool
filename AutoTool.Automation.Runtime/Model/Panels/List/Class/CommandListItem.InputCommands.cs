@@ -213,11 +213,11 @@ namespace AutoTool.Automation.Runtime.Lists;
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Description))]
-        [property: CommandProperty("待機時間", EditorType.NumberBox, Group = "基本設定", Order = 1,
-                         Description = "指定した時間待機します", Unit = "ミリ秒", Min = 0)]
+        [property: CommandProperty("待機時間", EditorType.Duration, Group = "基本設定", Order = 1,
+                         Description = "指定した時間待機します", Min = 0)]
         private int _wait = 5000;
 
-        new public string Description => $"待機時間:{Wait}ms";
+        new public string Description => $"待機時間:{DurationText.Format(Wait)}";
         public WaitItem() { }
 
         public WaitItem(WaitItem? item = null) : base(item)

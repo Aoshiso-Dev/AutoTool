@@ -12,6 +12,7 @@ public class EditorTemplateSelector : DataTemplateSelector
 {
     public DataTemplate? TextBoxTemplate { get; set; }
     public DataTemplate? NumberBoxTemplate { get; set; }
+    public DataTemplate? DurationTemplate { get; set; }
     public DataTemplate? SliderTemplate { get; set; }
     public DataTemplate? CheckBoxTemplate { get; set; }
     public DataTemplate? ComboBoxTemplate { get; set; }
@@ -35,6 +36,7 @@ public class EditorTemplateSelector : DataTemplateSelector
         {
             EditorType.TextBox => TextBoxTemplate ?? DefaultTemplate,
             EditorType.NumberBox => NumberBoxTemplate ?? DefaultTemplate,
+            EditorType.Duration => DurationTemplate ?? NumberBoxTemplate ?? DefaultTemplate,
             EditorType.Slider => SliderTemplate ?? DefaultTemplate,
             EditorType.CheckBox => CheckBoxTemplate ?? DefaultTemplate,
             EditorType.ComboBox => ComboBoxTemplate ?? DefaultTemplate,
