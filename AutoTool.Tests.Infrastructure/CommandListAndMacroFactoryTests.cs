@@ -98,6 +98,22 @@ public class CommandListTests
     }
 
     [Fact]
+    public void ClickItem_DefaultsToLeavingCursorAndWindowOrderAtClickedStateAndClonesRestoreOptions()
+    {
+        var item = new ClickItem { ItemType = CommandTypeNames.Click };
+
+        Assert.False(item.RestoreCursorPositionAfterClick);
+        Assert.False(item.RestoreWindowZOrderAfterClick);
+
+        item.RestoreCursorPositionAfterClick = true;
+        item.RestoreWindowZOrderAfterClick = true;
+        var clone = Assert.IsType<ClickItem>(item.Clone());
+
+        Assert.True(clone.RestoreCursorPositionAfterClick);
+        Assert.True(clone.RestoreWindowZOrderAfterClick);
+    }
+
+    [Fact]
     public void Load_UnknownItemType_ThrowsInvalidDataException()
     {
         var registry = new ReflectionCommandRegistry();
@@ -906,7 +922,7 @@ public class FindTextItemTests
         public string? GetVariable(string name) => _vars.TryGetValue(name, out var v) ? v : null;
         public void SetVariable(string name, string value) => _vars[name] = value;
         public string ToAbsolutePath(string relativePath) => relativePath;
-        public Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent", bool simulateMouseMove = false) => Task.CompletedTask;
+        public Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent", bool simulateMouseMove = false, bool restoreCursorPositionAfterClick = false, bool restoreWindowZOrderAfterClick = false) => Task.CompletedTask;
         public Task SendHotkeyAsync(CommandKey key, bool ctrl, bool alt, bool shift, string? windowTitle = null, string? windowClassName = null) => Task.CompletedTask;
         public Task ExecuteProgramAsync(string programPath, string? arguments, string? workingDirectory, bool waitForExit, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task TakeScreenshotAsync(string filePath, string? windowTitle, string? windowClassName, CancellationToken cancellationToken) => Task.CompletedTask;

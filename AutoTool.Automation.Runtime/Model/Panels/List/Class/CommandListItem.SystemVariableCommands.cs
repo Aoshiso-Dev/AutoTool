@@ -558,8 +558,20 @@ namespace AutoTool.Automation.Runtime.Lists;
                          Description = "クリック前にマウス移動を段階的にシミュレートする")]
         private bool _simulateMouseMove = false;
 
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("クリック後に元の位置へ戻す", EditorType.CheckBox, Group = "クリック設定", Order = 5,
+                         Description = "クリック完了後、実行前のカーソル位置へ戻します")]
+        private bool _restoreCursorPositionAfterClick = false;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("クリック後にウィンドウ順を戻す", EditorType.CheckBox, Group = "クリック設定", Order = 6,
+                         Description = "対象ウィンドウを前面化したあと、クリック完了時に元の重なり順へ戻します")]
+        private bool _restoreWindowZOrderAfterClick = false;
+
         new public string Description =>
-            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / モデル:{System.IO.Path.GetFileName(ModelPath)} / {(string.IsNullOrWhiteSpace(LabelName) ? $"クラスID:{ClassID}" : $"ラベル:{LabelName}")} / 閾値:{ConfThreshold} / ボタン:{Button} / 押下維持:{HoldDurationMs}ms / 方式:{ClickInjectionMode} / 移動シミュレート:{(SimulateMouseMove ? "ON" : "OFF")}";
+            $"対象：{(string.IsNullOrEmpty(WindowTitle) && string.IsNullOrEmpty(WindowClassName) ? "グローバル" : $"{WindowTitle}[{WindowClassName}]")} / モデル:{System.IO.Path.GetFileName(ModelPath)} / {(string.IsNullOrWhiteSpace(LabelName) ? $"クラスID:{ClassID}" : $"ラベル:{LabelName}")} / 閾値:{ConfThreshold} / ボタン:{Button} / 押下維持:{HoldDurationMs}ms / 方式:{ClickInjectionMode} / 移動シミュレート:{(SimulateMouseMove ? "ON" : "OFF")} / 元位置へ戻す:{(RestoreCursorPositionAfterClick ? "ON" : "OFF")} / ウィンドウ順を戻す:{(RestoreWindowZOrderAfterClick ? "ON" : "OFF")}";
 
         public ClickImageAIItem() { }
         public ClickImageAIItem(ClickImageAIItem? item = null) : base(item)
@@ -578,6 +590,8 @@ namespace AutoTool.Automation.Runtime.Lists;
                 HoldDurationMs = item.HoldDurationMs;
                 ClickInjectionMode = item.ClickInjectionMode;
                 SimulateMouseMove = item.SimulateMouseMove;
+                RestoreCursorPositionAfterClick = item.RestoreCursorPositionAfterClick;
+                RestoreWindowZOrderAfterClick = item.RestoreWindowZOrderAfterClick;
             }
         }
 
@@ -601,7 +615,7 @@ namespace AutoTool.Automation.Runtime.Lists;
                 int centerY = best.Rect.Y + best.Rect.Height / 2;
 
                 cancellationToken.ThrowIfCancellationRequested();
-                await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName, HoldDurationMs, ClickInjectionMode, SimulateMouseMove).ConfigureAwait(false);
+                await context.ClickAsync(centerX, centerY, Button, WindowTitle, WindowClassName, HoldDurationMs, ClickInjectionMode, SimulateMouseMove, RestoreCursorPositionAfterClick, RestoreWindowZOrderAfterClick).ConfigureAwait(false);
                 var labelSuffix = string.IsNullOrWhiteSpace(LabelName) ? string.Empty : $" / ラベル: {LabelName}";
                 context.Log($"AI画像をクリックしました。({centerX}, {centerY}) / クラスID: {best.ClassId}{labelSuffix} / スコア: {best.Score:F2}");
                 return true;

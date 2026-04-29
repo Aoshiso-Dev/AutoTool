@@ -41,7 +41,7 @@ public interface ICommandExecutionContext
     /// <summary>
     /// マウスクリックを実行します。
     /// </summary>
-    Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent", bool simulateMouseMove = false);
+    Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent", bool simulateMouseMove = false, bool restoreCursorPositionAfterClick = false, bool restoreWindowZOrderAfterClick = false);
     
     /// <summary>
     /// ホットキー入力を送信します。

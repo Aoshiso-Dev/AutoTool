@@ -102,6 +102,8 @@ public class ClickImageCommandSettings : ICommandSettings, IClickImageCommandSet
     public int HoldDurationMs { get; set; } = 20;
     public string ClickInjectionMode { get; set; } = "MouseEvent";
     public bool SimulateMouseMove { get; set; } = false;
+    public bool RestoreCursorPositionAfterClick { get; set; } = false;
+    public bool RestoreWindowZOrderAfterClick { get; set; } = false;
     public string WindowTitle { get; set; } = string.Empty;
     public string WindowClassName { get; set; } = string.Empty;
 }
@@ -128,6 +130,8 @@ public class ClickCommandSettings : ICommandSettings, IClickCommandSettings
     public int HoldDurationMs { get; set; } = 20;
     public string ClickInjectionMode { get; set; } = "MouseEvent";
     public bool SimulateMouseMove { get; set; } = false;
+    public bool RestoreCursorPositionAfterClick { get; set; } = false;
+    public bool RestoreWindowZOrderAfterClick { get; set; } = false;
     public int X { get; set; }
     public int Y { get; set; }
     public string WindowTitle { get; set; } = string.Empty;
@@ -364,6 +368,8 @@ public class ClickImageAICommandSettings : ICommandSettings, IClickImageAIComman
     public int HoldDurationMs { get; set; } = 20;
     public string ClickInjectionMode { get; set; } = "MouseEvent";
     public bool SimulateMouseMove { get; set; } = false;
+    public bool RestoreCursorPositionAfterClick { get; set; } = false;
+    public bool RestoreWindowZOrderAfterClick { get; set; } = false;
 
     public void Validate()
     {

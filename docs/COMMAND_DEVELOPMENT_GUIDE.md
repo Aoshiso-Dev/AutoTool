@@ -103,6 +103,16 @@ public partial class SampleItem : CommandListItem, IClickImageItem, IClickImageC
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("クリック後に元の位置へ戻す", EditorType.CheckBox, Group = "クリック設定", Order = 5)]
+    private bool _restoreCursorPositionAfterClick = false;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
+    [property: CommandProperty("クリック後にウィンドウ順を戻す", EditorType.CheckBox, Group = "クリック設定", Order = 6)]
+    private bool _restoreWindowZOrderAfterClick = false;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Description))]
     [property: CommandProperty("ウィンドウタイトル", EditorType.WindowInfo, Group = "対象ウィンドウ", Order = 1)]
     private string _windowTitle = string.Empty;
 

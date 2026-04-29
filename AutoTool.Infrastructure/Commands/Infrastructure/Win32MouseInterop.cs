@@ -215,9 +215,9 @@ public static partial class Win32MouseInterop
     private const uint MOUSEEVENTF_MIDDLEDOWN = 0x0020;
     private const uint MOUSEEVENTF_MIDDLEUP = 0x0040;
 
-    public static Task ClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", int holdDurationMs = 20, string clickInjectionMode = ClickInjectionModeMouseEvent, bool simulateMouseMove = false)
+    public static Task ClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", int holdDurationMs = 20, string clickInjectionMode = ClickInjectionModeMouseEvent, bool simulateMouseMove = false, bool restoreCursorPositionAfterClick = false, bool restoreWindowZOrderAfterClick = false)
     {
-        return PerformClickAsync(x, y, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName, holdDurationMs, clickInjectionMode, simulateMouseMove);
+        return PerformClickAsync(x, y, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, windowTitle, windowClassName, holdDurationMs, clickInjectionMode, simulateMouseMove, restoreCursorPositionAfterClick, restoreWindowZOrderAfterClick);
     }
 
     public static System.Drawing.Point GetCursorPosition()
@@ -226,14 +226,14 @@ public static partial class Win32MouseInterop
         return new System.Drawing.Point(point.X, point.Y);
     }
 
-    public static Task RightClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", int holdDurationMs = 20, string clickInjectionMode = ClickInjectionModeMouseEvent, bool simulateMouseMove = false)
+    public static Task RightClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", int holdDurationMs = 20, string clickInjectionMode = ClickInjectionModeMouseEvent, bool simulateMouseMove = false, bool restoreCursorPositionAfterClick = false, bool restoreWindowZOrderAfterClick = false)
     {
-        return PerformClickAsync(x, y, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName, holdDurationMs, clickInjectionMode, simulateMouseMove);
+        return PerformClickAsync(x, y, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, windowTitle, windowClassName, holdDurationMs, clickInjectionMode, simulateMouseMove, restoreCursorPositionAfterClick, restoreWindowZOrderAfterClick);
     }
 
-    public static Task MiddleClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", int holdDurationMs = 20, string clickInjectionMode = ClickInjectionModeMouseEvent, bool simulateMouseMove = false)
+    public static Task MiddleClickAsync(int x, int y, string windowTitle = "", string windowClassName = "", int holdDurationMs = 20, string clickInjectionMode = ClickInjectionModeMouseEvent, bool simulateMouseMove = false, bool restoreCursorPositionAfterClick = false, bool restoreWindowZOrderAfterClick = false)
     {
-        return PerformClickAsync(x, y, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName, holdDurationMs, clickInjectionMode, simulateMouseMove);
+        return PerformClickAsync(x, y, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, windowTitle, windowClassName, holdDurationMs, clickInjectionMode, simulateMouseMove, restoreCursorPositionAfterClick, restoreWindowZOrderAfterClick);
     }
 
     private static async Task PerformClickAsync(
@@ -245,7 +245,9 @@ public static partial class Win32MouseInterop
         string windowClassName,
         int holdDurationMs,
         string clickInjectionMode,
-        bool simulateMouseMove)
+        bool simulateMouseMove,
+        bool restoreCursorPositionAfterClick,
+        bool restoreWindowZOrderAfterClick)
     {
         EnsurePerMonitorDpiAwareness();
 
@@ -269,7 +271,10 @@ public static partial class Win32MouseInterop
 
             Win32NativeGuards.ThrowIfFalse(NativeGetWindowRect(hWnd, out var rect), nameof(NativeGetWindowRect));
             EnsurePrivilegeCompatible(hWnd, windowTitle, windowClassName);
-            zOrderState = SaveWindowZOrder(hWnd);
+            if (restoreWindowZOrderAfterClick)
+            {
+                zOrderState = SaveWindowZOrder(hWnd);
+            }
 
             targetX += rect.Left;
             targetY += rect.Top;
@@ -324,8 +329,11 @@ public static partial class Win32MouseInterop
                 }
             }
 
-            _ = NativeSetCursorPos(originalPos.X, originalPos.Y);
-            if (hWnd != IntPtr.Zero && zOrderState.HasValue)
+            if (restoreCursorPositionAfterClick)
+            {
+                _ = NativeSetCursorPos(originalPos.X, originalPos.Y);
+            }
+            if (restoreWindowZOrderAfterClick && hWnd != IntPtr.Zero && zOrderState.HasValue)
             {
                 RestoreWindowZOrder(hWnd, zOrderState.Value);
             }

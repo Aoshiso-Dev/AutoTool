@@ -103,6 +103,8 @@ public interface IClickImageItem : ICommandListItem
     public int HoldDurationMs { get; set; }
     public string ClickInjectionMode { get; set; }
     public bool SimulateMouseMove { get; set; }
+    public bool RestoreCursorPositionAfterClick { get; set; }
+    public bool RestoreWindowZOrderAfterClick { get; set; }
     public string WindowTitle { get; set; }
     public string WindowClassName { get; set; }
 }
@@ -129,6 +131,8 @@ public interface IClickItem : ICommandListItem
     public int HoldDurationMs { get; set; }
     public string ClickInjectionMode { get; set; }
     public bool SimulateMouseMove { get; set; }
+    public bool RestoreCursorPositionAfterClick { get; set; }
+    public bool RestoreWindowZOrderAfterClick { get; set; }
     public int X { get; set; }
     public int Y { get; set; }
     public string WindowTitle { get; set; }
@@ -315,6 +319,8 @@ public interface IClickImageAIItem : ICommandListItem
     int HoldDurationMs { get; set; }
     string ClickInjectionMode { get; set; }
     bool SimulateMouseMove { get; set; }
+    bool RestoreCursorPositionAfterClick { get; set; }
+    bool RestoreWindowZOrderAfterClick { get; set; }
 }
 
 /// <summary>

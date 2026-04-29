@@ -116,6 +116,8 @@ public interface IClickImageCommandSettings : ICommandSettings
     int HoldDurationMs { get; set; }
     string ClickInjectionMode { get; set; }
     bool SimulateMouseMove { get; set; }
+    bool RestoreCursorPositionAfterClick { get; set; }
+    bool RestoreWindowZOrderAfterClick { get; set; }
     string WindowTitle { get; set; }
     string WindowClassName { get; set; }
 }
@@ -142,6 +144,8 @@ public interface IClickCommandSettings : ICommandSettings
     int HoldDurationMs { get; set; }
     string ClickInjectionMode { get; set; }
     bool SimulateMouseMove { get; set; }
+    bool RestoreCursorPositionAfterClick { get; set; }
+    bool RestoreWindowZOrderAfterClick { get; set; }
     int X { get; set; }
     int Y { get; set; }
     string WindowTitle { get; set; }
@@ -317,6 +321,8 @@ public interface IClickImageAICommandSettings : ICommandSettings
     int HoldDurationMs { get; set; }
     string ClickInjectionMode { get; set; }
     bool SimulateMouseMove { get; set; }
+    bool RestoreCursorPositionAfterClick { get; set; }
+    bool RestoreWindowZOrderAfterClick { get; set; }
 }
 
 // スクリーンショットコマンド
