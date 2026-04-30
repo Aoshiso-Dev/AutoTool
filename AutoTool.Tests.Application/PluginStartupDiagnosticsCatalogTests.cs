@@ -89,6 +89,31 @@ public sealed class PluginStartupDiagnosticsCatalogTests : IDisposable
         Assert.Equal("権限定義不足", result.Summary);
     }
 
+    [Fact]
+    public void GetDiagnostics_WithRegisteredVideoSource_ReturnsVideoSourceCount()
+    {
+        var pluginDirectoryPath = CreatePluginDirectory("Sample.VideoProvider");
+        CopySamplePluginAssembly(pluginDirectoryPath);
+        File.WriteAllText(
+            Path.Combine(pluginDirectoryPath, "plugin.json"),
+            """
+            {
+              "pluginId": "Sample.VideoProvider",
+              "displayName": "Sample Video Provider",
+              "version": "1.0.0",
+              "entryAssembly": "AutoTool.Tests.Plugin.Sample.dll",
+              "entryType": "AutoTool.Tests.Plugin.Sample.VideoProviderPlugin"
+            }
+            """);
+
+        var diagnostics = CreateCatalog().GetDiagnostics();
+        var result = Assert.Single(diagnostics);
+
+        Assert.True(result.IsHealthy);
+        Assert.Equal(1, result.VideoStreamSourceCount);
+        Assert.Contains(result.Messages, static x => x.Contains("登録済み映像ソース数: 1", StringComparison.Ordinal));
+    }
+
     public void Dispose()
     {
         // 一時ディレクトリは GUID 単位で分離しているため、DLL ロックによるテスト不安定化を避けて削除しません。
@@ -99,10 +124,11 @@ public sealed class PluginStartupDiagnosticsCatalogTests : IDisposable
         IPluginCatalogLoader catalogLoader = new PluginCatalogLoader(
             new PluginHostOptions { RootDirectoryPath = _rootDirectoryPath },
             new PluginManifestLoader(new PluginManifestValidator()));
-        IPluginLoader loader = new PluginLoader(catalogLoader);
-        ILoadedPluginCatalog loadedPluginCatalog = new LoadedPluginCatalog(loader);
+        var videoStreamRegistry = new VideoStreamRegistry();
+        IPluginLoader loader = new PluginLoader(catalogLoader, videoStreamRegistry);
+        ILoadedPluginCatalog loadedPluginCatalog = new LoadedPluginCatalog(loader, videoStreamRegistry);
         IPluginCommandCatalog commandCatalog = new PluginCommandCatalog(loadedPluginCatalog);
-        return new PluginStartupDiagnosticsCatalog(loadedPluginCatalog, commandCatalog);
+        return new PluginStartupDiagnosticsCatalog(loadedPluginCatalog, commandCatalog, videoStreamRegistry);
     }
 
     private string CreatePluginDirectory(string pluginId)

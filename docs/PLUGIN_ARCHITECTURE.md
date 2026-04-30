@@ -244,7 +244,70 @@ public interface IAutoToolPlugin
 - 起動時にプラグインの利用可否を確認する
 - ホストの起動時診断へ状態を返す
 
-### 8.6 `IPluginExecutionContext`
+### 8.6 映像ストリーム契約
+
+`AutoTool.Plugin.Abstractions.Video` に、カメラプラグインなどが提供する映像ストリームを他プラグインから参照するための契約を定義します。
+
+提供側プラグインは `Mitaka.Camera` などの個別実装を他プラグインへ参照させず、初期化時に `IPluginInitializationContext.VideoStreams` から `IVideoStreamRegistry.RegisterAsync(...)` を呼び出します。
+利用側プラグインは `Mitaka.Camera` へ project reference / assembly reference を持たず、`IPluginServiceRegistrar` で登録したサービスのコンストラクタに `IVideoStreamRegistry` を受け取り、`GetSources()` で一覧を見てから `GetSourceAsync(sourceId, ...)` で `IVideoFrameSource` を取得します。
+
+提供側の最小例:
+
+```csharp
+public async ValueTask<PluginInitializationResult> InitializeAsync(
+    IPluginInitializationContext context,
+    CancellationToken cancellationToken)
+{
+    await context.VideoStreams.RegisterAsync(new VideoStreamRegistration
+    {
+        SourceId = "mitaka.camera.main",
+        DisplayName = "メインカメラ",
+        ProviderPluginId = "Mitaka.Camera",
+        Width = 1920,
+        Height = 1080,
+        PixelFormat = VideoPixelFormat.Bgr24,
+        Source = new CameraVideoFrameSource("mitaka.camera.main"),
+    }, cancellationToken);
+
+    return PluginInitializationResult.Success();
+}
+```
+
+利用側の最小例:
+
+```csharp
+public sealed class ImageProcessingService(IVideoStreamRegistry videoStreams)
+{
+    public async ValueTask RunAsync(string sourceId, CancellationToken cancellationToken)
+    {
+        var source = await videoStreams.GetSourceAsync(sourceId, cancellationToken);
+        if (source is null)
+        {
+            return;
+        }
+
+        await foreach (var frame in source.GetFramesAsync(null, cancellationToken))
+        {
+            using (frame)
+            {
+                // frame.ImageData は ReadOnlyMemory<byte> のため、不要な byte[] コピーを避けて処理できます。
+            }
+        }
+    }
+}
+```
+
+`VideoFrame` は画像本体を `ReadOnlyMemory<byte>` として保持します。カメラ SDK などが寿命管理を必要とするバッファを返す場合は、`VideoFrame` の `owner` に `IDisposable` を渡し、利用側が `VideoFrame.Dispose()` することで解放できます。
+
+同じ `SourceId` が複数登録された場合、registry は重複として登録を拒否します。重複や登録済み映像ソース数は起動時診断の `IPluginStartupDiagnosticsCatalog` から確認できます。
+
+既存の `Mitaka.Camera` 側に仮置きした `VideoFrame` / `IVideoFrameSource` / `IVideoStreamRegistry` 相当の型がある場合は、次の方針で差し替えます。
+
+- 仮置きモデルを `AutoTool.Plugin.Abstractions.Video` の正式型へ置換する
+- `Mitaka.Camera` は `IPluginInitializationContext.VideoStreams.RegisterAsync(...)` で `IVideoFrameSource` を登録する
+- 画像処理プラグインは `Mitaka.Camera` を参照せず、`IVideoStreamRegistry` から `SourceId` 指定で取得する
+
+### 8.7 `IPluginExecutionContext`
 
 役割:
 

@@ -2,6 +2,7 @@
 using System.Reflection;
 using AutoTool.Plugin.Host.Abstractions;
 using AutoTool.Plugin.Host.DependencyInjection;
+using AutoTool.Plugin.Abstractions.Video;
 using AutoTool.Tests.Plugin.Sample;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -49,6 +50,18 @@ public sealed class PluginHostServiceCollectionExtensionsTests : IDisposable
         var value = Assert.IsType<string>(
             registration.ServiceType.GetMethod(nameof(ISamplePluginService.GetValue))!.Invoke(first, null));
         Assert.Equal("sample", value);
+    }
+
+    [Fact]
+    public void AddPluginHostServices_RegistersVideoStreamRegistryIntoApplicationContainer()
+    {
+        var services = new ServiceCollection();
+        services.AddPluginHostServices(options => options.RootDirectoryPath = _rootDirectoryPath);
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var registry = serviceProvider.GetRequiredService<IVideoStreamRegistry>();
+
+        Assert.Empty(registry.GetSources());
     }
 
     public void Dispose()

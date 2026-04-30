@@ -6,10 +6,12 @@ namespace AutoTool.Plugin.Host.Services;
 
 public sealed class PluginStartupDiagnosticsCatalog(
     ILoadedPluginCatalog loadedPluginCatalog,
-    IPluginCommandCatalog pluginCommandCatalog) : IPluginStartupDiagnosticsCatalog
+    IPluginCommandCatalog pluginCommandCatalog,
+    IVideoStreamRegistryDiagnostics? videoStreamRegistryDiagnostics = null) : IPluginStartupDiagnosticsCatalog
 {
     private readonly ILoadedPluginCatalog _loadedPluginCatalog = loadedPluginCatalog ?? throw new ArgumentNullException(nameof(loadedPluginCatalog));
     private readonly IPluginCommandCatalog _pluginCommandCatalog = pluginCommandCatalog ?? throw new ArgumentNullException(nameof(pluginCommandCatalog));
+    private readonly IVideoStreamRegistryDiagnostics? _videoStreamRegistryDiagnostics = videoStreamRegistryDiagnostics;
     private readonly object _syncRoot = new();
     private IReadOnlyList<PluginStartupDiagnostics>? _cachedDiagnostics;
 
@@ -28,8 +30,10 @@ public sealed class PluginStartupDiagnosticsCatalog(
             }
 
             var commandDefinitions = _pluginCommandCatalog.GetCommandDefinitions();
-            _cachedDiagnostics = _loadedPluginCatalog.GetLoadedPlugins()
-                .Select(plugin => CreateDiagnostics(plugin, commandDefinitions))
+            var loadedPlugins = _loadedPluginCatalog.GetLoadedPlugins();
+            _cachedDiagnostics = loadedPlugins
+                .Select(plugin => CreateDiagnostics(plugin, commandDefinitions, _videoStreamRegistryDiagnostics))
+                .Concat(CreateVideoStreamIssueDiagnostics(loadedPlugins, _videoStreamRegistryDiagnostics))
                 .ToList();
 
             return _cachedDiagnostics;
@@ -38,7 +42,8 @@ public sealed class PluginStartupDiagnosticsCatalog(
 
     private static PluginStartupDiagnostics CreateDiagnostics(
         LoadedPlugin plugin,
-        IReadOnlyList<PluginCommandDefinition> commandDefinitions)
+        IReadOnlyList<PluginCommandDefinition> commandDefinitions,
+        IVideoStreamRegistryDiagnostics? videoStreamRegistryDiagnostics)
     {
         var requestedPermissions = plugin.Manifest.Permissions
             .Distinct(StringComparer.Ordinal)
@@ -67,7 +72,23 @@ public sealed class PluginStartupDiagnosticsCatalog(
             messages.Add($"commands が要求する権限が permissions に不足しています: {string.Join(", ", missingPermissions)}");
         }
 
-        var isHealthy = (healthCheckResult?.IsHealthy ?? true) && missingPermissions.Length == 0;
+        var videoStreamSourceCount = videoStreamRegistryDiagnostics?.GetRegisteredSourceCount(plugin.Manifest.PluginId) ?? 0;
+        if (videoStreamSourceCount > 0)
+        {
+            messages.Add($"登録済み映像ソース数: {videoStreamSourceCount}");
+        }
+
+        var videoStreamIssues = videoStreamRegistryDiagnostics?.GetIssues()
+            .Where(x => string.Equals(x.ProviderPluginId, plugin.Manifest.PluginId, StringComparison.Ordinal))
+            .ToArray() ?? [];
+        foreach (var issue in videoStreamIssues)
+        {
+            messages.Add(issue.Message);
+        }
+
+        var isHealthy = (healthCheckResult?.IsHealthy ?? true)
+            && missingPermissions.Length == 0
+            && videoStreamIssues.Length == 0;
         var summary = BuildSummary(healthCheckResult, missingPermissions, isHealthy);
 
         return new PluginStartupDiagnostics
@@ -80,6 +101,7 @@ public sealed class PluginStartupDiagnosticsCatalog(
             RequestedPermissions = requestedPermissions,
             CommandPermissions = commandPermissions,
             MissingPermissions = missingPermissions,
+            VideoStreamSourceCount = videoStreamSourceCount,
             Messages = messages,
             HealthCheckResult = healthCheckResult,
         };
@@ -108,6 +130,34 @@ public sealed class PluginStartupDiagnosticsCatalog(
                 Messages = [$"ヘルスチェック実行中に例外が発生しました: {ex.Message}"],
             };
         }
+    }
+
+    private static IReadOnlyList<PluginStartupDiagnostics> CreateVideoStreamIssueDiagnostics(
+        IReadOnlyList<LoadedPlugin> loadedPlugins,
+        IVideoStreamRegistryDiagnostics? videoStreamRegistryDiagnostics)
+    {
+        if (videoStreamRegistryDiagnostics is null)
+        {
+            return [];
+        }
+
+        var loadedPluginIds = loadedPlugins
+            .Select(static x => x.Manifest.PluginId)
+            .ToHashSet(StringComparer.Ordinal);
+
+        return videoStreamRegistryDiagnostics.GetIssues()
+            .Where(x => !loadedPluginIds.Contains(x.ProviderPluginId))
+            .GroupBy(static x => x.ProviderPluginId, StringComparer.Ordinal)
+            .Select(static group => new PluginStartupDiagnostics
+            {
+                PluginId = group.Key,
+                DisplayName = group.Key,
+                Version = string.Empty,
+                IsHealthy = false,
+                Summary = "映像ソース登録失敗",
+                Messages = group.Select(static x => x.Message).ToArray(),
+            })
+            .ToArray();
     }
 
     private static string BuildSummary(PluginHealthCheckResult? healthCheckResult, IReadOnlyList<string> missingPermissions, bool isHealthy)

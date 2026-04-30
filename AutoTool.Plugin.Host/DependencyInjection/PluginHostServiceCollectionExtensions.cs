@@ -2,6 +2,7 @@
 using AutoTool.Commands.DependencyInjection;
 using AutoTool.Commands.Services;
 using AutoTool.Plugin.Abstractions.PluginModel;
+using AutoTool.Plugin.Abstractions.Video;
 using AutoTool.Plugin.Host.Abstractions;
 using AutoTool.Plugin.Host.Models;
 using AutoTool.Plugin.Host.Services;
@@ -23,11 +24,12 @@ public static class PluginHostServiceCollectionExtensions
         var manifestValidator = new PluginManifestValidator();
         var manifestLoader = new PluginManifestLoader(manifestValidator);
         var catalogLoader = new PluginCatalogLoader(options, manifestLoader);
-        var pluginLoader = new PluginLoader(catalogLoader);
-        var loadedPluginCatalog = new LoadedPluginCatalog(pluginLoader);
+        var videoStreamRegistry = new VideoStreamRegistry();
+        var pluginLoader = new PluginLoader(catalogLoader, videoStreamRegistry);
+        var loadedPluginCatalog = new LoadedPluginCatalog(pluginLoader, videoStreamRegistry);
         var pluginCommandCatalog = new PluginCommandCatalog(loadedPluginCatalog);
         var pluginQuickActionCatalog = new PluginQuickActionCatalog(loadedPluginCatalog, pluginCommandCatalog);
-        var startupDiagnosticsCatalog = new PluginStartupDiagnosticsCatalog(loadedPluginCatalog, pluginCommandCatalog);
+        var startupDiagnosticsCatalog = new PluginStartupDiagnosticsCatalog(loadedPluginCatalog, pluginCommandCatalog, videoStreamRegistry);
 
         ApplyPluginServiceRegistrations(services, loadedPluginCatalog.GetLoadedPlugins());
         _ = startupDiagnosticsCatalog.GetDiagnostics();
@@ -37,10 +39,12 @@ public static class PluginHostServiceCollectionExtensions
         services.AddSingleton<IPluginManifestLoader>(manifestLoader);
         services.AddSingleton<IPluginCatalogLoader>(catalogLoader);
         services.AddSingleton<IPluginLoader>(pluginLoader);
-        services.AddSingleton<ILoadedPluginCatalog>(loadedPluginCatalog);
+        services.AddSingleton(_ => loadedPluginCatalog);
+        services.AddSingleton<ILoadedPluginCatalog>(serviceProvider => serviceProvider.GetRequiredService<LoadedPluginCatalog>());
         services.AddSingleton<IPluginCommandCatalog>(pluginCommandCatalog);
         services.AddSingleton<IPluginQuickActionCatalog>(pluginQuickActionCatalog);
         services.AddSingleton<IPluginStartupDiagnosticsCatalog>(startupDiagnosticsCatalog);
+        services.AddSingleton<IVideoStreamRegistry>(videoStreamRegistry);
         services.AddSingleton<IPluginCommandDispatcher, PluginCommandDispatcher>();
         services.AddSingleton<IAdditionalCommandDependencyResolver, PluginCommandDependencyResolver>();
         services.AddSingleton<ICommandDependencyResolver>(serviceProvider => new CommandDependencyResolver(

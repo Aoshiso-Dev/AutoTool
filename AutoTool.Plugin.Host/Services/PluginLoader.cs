@@ -1,13 +1,17 @@
 ﻿using System.Reflection;
 using AutoTool.Plugin.Abstractions.Interfaces;
+using AutoTool.Plugin.Abstractions.Video;
 using AutoTool.Plugin.Host.Abstractions;
 using AutoTool.Plugin.Host.Models;
 
 namespace AutoTool.Plugin.Host.Services;
 
-public sealed class PluginLoader(IPluginCatalogLoader catalogLoader) : IPluginLoader
+public sealed class PluginLoader(
+    IPluginCatalogLoader catalogLoader,
+    IVideoStreamRegistry? videoStreamRegistry = null) : IPluginLoader
 {
     private readonly IPluginCatalogLoader _catalogLoader = catalogLoader ?? throw new ArgumentNullException(nameof(catalogLoader));
+    private readonly IVideoStreamRegistry _videoStreamRegistry = videoStreamRegistry ?? new VideoStreamRegistry();
 
     public PluginLoadResult Load(PluginManifestLoadResult manifestLoadResult)
     {
@@ -71,7 +75,8 @@ public sealed class PluginLoader(IPluginCatalogLoader catalogLoader) : IPluginLo
             var instance = (IAutoToolPlugin)Activator.CreateInstance(entryType)!;
             var initializationContext = new PluginInitializationContext(
                 hostVersion: typeof(PluginLoader).Assembly.GetName().Version?.ToString() ?? "1.0.0",
-                pluginDirectoryPath: manifestLoadResult.PluginDirectoryPath);
+                pluginDirectoryPath: manifestLoadResult.PluginDirectoryPath,
+                videoStreams: _videoStreamRegistry);
             var initializationResult = instance.InitializeAsync(initializationContext, CancellationToken.None)
                 .AsTask()
                 .GetAwaiter()

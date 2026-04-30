@@ -20,6 +20,8 @@ public sealed record PluginStartupDiagnostics
 
     public IReadOnlyList<string> MissingPermissions { get; init; } = [];
 
+    public int VideoStreamSourceCount { get; init; }
+
     public IReadOnlyList<string> Messages { get; init; } = [];
 
     public PluginHealthCheckResult? HealthCheckResult { get; init; }
