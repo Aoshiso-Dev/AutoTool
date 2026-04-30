@@ -184,6 +184,7 @@ Plugins\
 - `commands`
   - プラグインが公開するコマンド定義一覧
   - `showInCommandList` はコマンド追加画面へ表示するかどうかを指定する。未指定時は `true`
+  - 同じ `commandType` をプラグイン本体の `IPluginCommandDefinitionProvider` でも返す場合、詳細定義は本体側を使用し、`showInCommandList` は `plugin.json` 側の指定を優先する
 - `quickActions`
   - 拡張ツールバーへ常設表示する固定引数ショートカット定義一覧
   - `actionId` / `displayName` / `commandType` は必須

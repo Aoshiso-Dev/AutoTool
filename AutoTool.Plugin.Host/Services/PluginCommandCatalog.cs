@@ -28,10 +28,12 @@ public sealed class PluginCommandCatalog(ILoadedPluginCatalog loadedPluginCatalo
             foreach (var plugin in _loadedPluginCatalog.GetLoadedPlugins())
             {
                 var manifest = plugin.Manifest;
+                Dictionary<string, PluginCommandDefinition> manifestCommands = new(StringComparer.Ordinal);
 
                 foreach (var command in manifest.Commands)
                 {
                     var normalized = NormalizeCommand(command, manifest);
+                    manifestCommands[normalized.CommandType] = normalized;
                     map[normalized.CommandType] = normalized;
                 }
 
@@ -43,6 +45,14 @@ public sealed class PluginCommandCatalog(ILoadedPluginCatalog loadedPluginCatalo
                 foreach (var command in plugin.CommandDefinitionProvider.GetCommandDefinitions())
                 {
                     var normalized = NormalizeCommand(command, manifest);
+                    if (manifestCommands.TryGetValue(normalized.CommandType, out var manifestCommand))
+                    {
+                        normalized = normalized with
+                        {
+                            ShowInCommandList = manifestCommand.ShowInCommandList,
+                        };
+                    }
+
                     map[normalized.CommandType] = normalized;
                 }
             }

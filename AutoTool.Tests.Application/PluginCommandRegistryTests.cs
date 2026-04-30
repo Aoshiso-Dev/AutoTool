@@ -38,6 +38,13 @@ public sealed class PluginCommandRegistryTests : IDisposable
                   "category": "System",
                   "order": 3,
                   "showInCommandList": false
+                },
+                {
+                  "commandType": "Sample.Plugin.ProviderCommand",
+                  "displayName": "Provider Command Override",
+                  "category": "System",
+                  "order": 4,
+                  "showInCommandList": false
                 }
               ]
             }
@@ -61,7 +68,7 @@ public sealed class PluginCommandRegistryTests : IDisposable
         Assert.True(CommandMetadataCatalog.TryGetByTypeName("Sample.Plugin.ManifestCommand", out var manifestMetadata));
         Assert.False(manifestMetadata.ShowInCommandList);
         Assert.True(CommandMetadataCatalog.TryGetByTypeName("Sample.Plugin.ProviderCommand", out var providerMetadata));
-        Assert.True(providerMetadata.ShowInCommandList);
+        Assert.False(providerMetadata.ShowInCommandList);
 
         var item = registry.CreateCommandItem("Sample.Plugin.ProviderCommand");
         Assert.NotNull(item);
