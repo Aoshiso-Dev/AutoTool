@@ -11,6 +11,7 @@
       "displayName": "Write Variable",
       "category": "System",
       "order": 1,
+      "showInCommandList": true,
       "description": "指定した変数へ値を設定します。実装差し替えの起点に使うテンプレートです。",
       "properties": [
         {

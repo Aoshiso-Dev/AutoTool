@@ -19,6 +19,7 @@
 4. `GetCommandDefinitions()` の `DisplayName`、`Description`、`Properties` を実装内容に合わせて変更します。
 5. `ExecuteCommandAsync()` を目的の処理へ置き換えます。
 6. 必要に応じて `permissions`、`IPluginServiceRegistrar`、追加コマンドを実装します。
+7. コマンド追加画面に出したくないコマンドは `plugin.json` の `commands[].showInCommandList` を `false` にします。
 
 ## 最初に置き換える場所
 

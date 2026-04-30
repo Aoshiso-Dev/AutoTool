@@ -23,6 +23,7 @@ public sealed class CommandMetadata
     public string? CustomCategoryNameJa { get; init; }
     public string? CustomCategoryNameEn { get; init; }
     public bool CanCreateCommand { get; init; } = true;
+    public bool ShowInCommandList { get; init; } = true;
     public string? PluginId { get; init; }
 }
 

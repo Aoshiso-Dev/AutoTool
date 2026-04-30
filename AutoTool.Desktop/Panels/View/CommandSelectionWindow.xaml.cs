@@ -169,7 +169,8 @@ public partial class CommandSelectionWindow : FluentWindow, INotifyPropertyChang
     private static bool IsSelectableCommand(CommandDisplayItem item)
     {
         ArgumentNullException.ThrowIfNull(item);
-        return item.TypeName is not (CommandTypeNames.IfEnd or CommandTypeNames.LoopEnd or CommandTypeNames.RetryEnd);
+        return item.ShowInCommandList
+            && item.TypeName is not (CommandTypeNames.IfEnd or CommandTypeNames.LoopEnd or CommandTypeNames.RetryEnd);
     }
 
     private static IEnumerable<CommandCategoryFilterItem> CreateCategoryItems(IReadOnlyCollection<CommandDisplayItem> commands)

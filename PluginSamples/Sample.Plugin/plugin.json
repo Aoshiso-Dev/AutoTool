@@ -11,6 +11,7 @@
       "displayName": "Provider Command",
       "category": "System",
       "order": 1,
+      "showInCommandList": true,
       "description": "指定した変数へ文字列を設定します。",
       "properties": [
         {

@@ -70,7 +70,8 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
                 Category = category,
                 Description = description,
                 DisplayPriority = metadata?.DisplayPriority ?? 9,
-                DisplaySubPriority = metadata?.DisplaySubPriority ?? 0
+                DisplaySubPriority = metadata?.DisplaySubPriority ?? 0,
+                ShowInCommandList = metadata?.ShowInCommandList ?? true
             };
         }
 
@@ -87,7 +88,8 @@ public partial class ButtonPanelViewModel : ObservableObject, IButtonPanelViewMo
             Description = resolvedDescription,
             PluginId = pluginId,
             DisplayPriority = metadata.DisplayPriority,
-            DisplaySubPriority = metadata.DisplaySubPriority
+            DisplaySubPriority = metadata.DisplaySubPriority,
+            ShowInCommandList = metadata.ShowInCommandList
         };
     }
 

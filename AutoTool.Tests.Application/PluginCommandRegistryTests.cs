@@ -36,7 +36,8 @@ public sealed class PluginCommandRegistryTests : IDisposable
                   "commandType": "Sample.Plugin.ManifestCommand",
                   "displayName": "Manifest Command",
                   "category": "System",
-                  "order": 3
+                  "order": 3,
+                  "showInCommandList": false
                 }
               ]
             }
@@ -57,6 +58,10 @@ public sealed class PluginCommandRegistryTests : IDisposable
         Assert.Contains("Sample.Plugin.ProviderCommand", registry.GetAllTypeNames());
         Assert.Equal("Manifest Command", registry.GetDisplayName("Sample.Plugin.ManifestCommand"));
         Assert.Equal("System", registry.GetCategoryName("Sample.Plugin.ManifestCommand"));
+        Assert.True(CommandMetadataCatalog.TryGetByTypeName("Sample.Plugin.ManifestCommand", out var manifestMetadata));
+        Assert.False(manifestMetadata.ShowInCommandList);
+        Assert.True(CommandMetadataCatalog.TryGetByTypeName("Sample.Plugin.ProviderCommand", out var providerMetadata));
+        Assert.True(providerMetadata.ShowInCommandList);
 
         var item = registry.CreateCommandItem("Sample.Plugin.ProviderCommand");
         Assert.NotNull(item);

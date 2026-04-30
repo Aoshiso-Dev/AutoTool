@@ -34,7 +34,8 @@ public sealed class PluginManifestLoaderTests : IDisposable
                   "commandType": "ExampleCommand",
                   "displayName": "Example Command",
                   "category": "System",
-                  "order": 10
+                  "order": 10,
+                  "showInCommandList": false
                 }
               ]
             }
@@ -46,7 +47,8 @@ public sealed class PluginManifestLoaderTests : IDisposable
         Assert.True(result.IsValid);
         Assert.NotNull(result.Manifest);
         Assert.Equal("Example.Plugin", result.Manifest.PluginId);
-        Assert.Single(result.Manifest.Commands);
+        var command = Assert.Single(result.Manifest.Commands);
+        Assert.False(command.ShowInCommandList);
         Assert.Empty(result.Errors);
     }
 

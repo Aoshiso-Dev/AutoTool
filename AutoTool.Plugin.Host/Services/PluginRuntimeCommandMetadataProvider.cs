@@ -36,6 +36,7 @@ public sealed class PluginRuntimeCommandMetadataProvider(IPluginCommandCatalog c
             CustomCategoryNameJa = definition.Category,
             CustomCategoryNameEn = definition.Category,
             CanCreateCommand = true,
+            ShowInCommandList = definition.ShowInCommandList,
             PluginId = definition.PluginId
         };
     }

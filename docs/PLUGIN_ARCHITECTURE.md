@@ -133,7 +133,8 @@ Plugins\
       "commandType": "Example.Plugin.Command",
       "displayName": "Example Command",
       "category": "System",
-      "order": 10
+      "order": 10,
+      "showInCommandList": true
     }
   ],
   "quickActions": [
@@ -182,6 +183,7 @@ Plugins\
   - 要求権限一覧
 - `commands`
   - プラグインが公開するコマンド定義一覧
+  - `showInCommandList` はコマンド追加画面へ表示するかどうかを指定する。未指定時は `true`
 - `quickActions`
   - 拡張ツールバーへ常設表示する固定引数ショートカット定義一覧
   - `actionId` / `displayName` / `commandType` は必須
@@ -339,7 +341,7 @@ public interface IPluginExecutionContext
 - プラグインコマンド
   - プラグインロード後に定義をレジストリへ追加
   - `pluginId` を持つ
-  - UI 上は通常コマンドと同様に表示する
+  - `showInCommandList` が `false` の場合を除き、UI 上は通常コマンドと同様に表示する
   - 実行時はホスト側の `PluginCommand` から対象プラグインへ委譲する
   - `properties` が定義されている場合は編集 UI を動的生成する
 
