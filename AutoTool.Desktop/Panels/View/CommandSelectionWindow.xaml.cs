@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -17,11 +18,13 @@ public partial class CommandSelectionWindow : FluentWindow, INotifyPropertyChang
 {
     private readonly IReadOnlyList<CommandDisplayItem> _allCommands;
     private string _searchText = string.Empty;
+    private CommandCategoryFilterItem? _selectedCategory;
     private CommandDisplayItem? _selectedCommand;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ICollectionView CommandItemsView { get; }
+    public ObservableCollection<CommandCategoryFilterItem> CategoryItems { get; }
 
     public string SearchText
     {
@@ -35,7 +38,23 @@ public partial class CommandSelectionWindow : FluentWindow, INotifyPropertyChang
 
             _searchText = value;
             OnPropertyChanged();
-            CommandItemsView.Refresh();
+            RefreshCommandItemsView();
+        }
+    }
+
+    public CommandCategoryFilterItem? SelectedCategory
+    {
+        get => _selectedCategory;
+        set
+        {
+            if (ReferenceEquals(_selectedCategory, value))
+            {
+                return;
+            }
+
+            _selectedCategory = value;
+            OnPropertyChanged();
+            RefreshCommandItemsView();
         }
     }
 
@@ -74,16 +93,24 @@ public partial class CommandSelectionWindow : FluentWindow, INotifyPropertyChang
             .ThenBy(x => x.DisplaySubPriority)
             .ThenBy(x => x.DisplayName, StringComparer.Ordinal)
             .ToArray();
+        CategoryItems = new ObservableCollection<CommandCategoryFilterItem>(CreateCategoryItems(_allCommands));
+        _selectedCategory = CategoryItems.FirstOrDefault();
         CommandItemsView = CollectionViewSource.GetDefaultView(_allCommands);
-        CommandItemsView.Filter = FilterBySearchText;
+        CommandItemsView.Filter = FilterCommandItem;
 
         DataContext = this;
         SelectedCommand = selectedCommand ?? _allCommands.FirstOrDefault();
     }
 
-    private bool FilterBySearchText(object obj)
+    private bool FilterCommandItem(object obj)
     {
         if (obj is not CommandDisplayItem item)
+        {
+            return false;
+        }
+
+        if (SelectedCategory is { IsAll: false }
+            && !string.Equals(item.Category, SelectedCategory.Name, StringComparison.Ordinal))
         {
             return false;
         }
@@ -97,6 +124,19 @@ public partial class CommandSelectionWindow : FluentWindow, INotifyPropertyChang
             || item.Category.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
             || item.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
             || item.TypeName.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RefreshCommandItemsView()
+    {
+        CommandItemsView.Refresh();
+        OnPropertyChanged(nameof(CommandItemsView));
+
+        if (SelectedCommand is null || FilterCommandItem(SelectedCommand))
+        {
+            return;
+        }
+
+        SelectedCommand = CommandItemsView.Cast<CommandDisplayItem>().FirstOrDefault();
     }
 
     private void ConfirmButton_OnClick(object sender, RoutedEventArgs e)
@@ -131,4 +171,19 @@ public partial class CommandSelectionWindow : FluentWindow, INotifyPropertyChang
         ArgumentNullException.ThrowIfNull(item);
         return item.TypeName is not (CommandTypeNames.IfEnd or CommandTypeNames.LoopEnd or CommandTypeNames.RetryEnd);
     }
+
+    private static IEnumerable<CommandCategoryFilterItem> CreateCategoryItems(IReadOnlyCollection<CommandDisplayItem> commands)
+    {
+        yield return new CommandCategoryFilterItem("すべて", commands.Count, true);
+
+        foreach (var group in commands
+            .GroupBy(x => x.Category)
+            .OrderBy(x => x.Min(item => item.DisplayPriority))
+            .ThenBy(x => x.Key, StringComparer.Ordinal))
+        {
+            yield return new CommandCategoryFilterItem(group.Key, group.Count(), false);
+        }
+    }
+
+    public sealed record CommandCategoryFilterItem(string Name, int Count, bool IsAll);
 }

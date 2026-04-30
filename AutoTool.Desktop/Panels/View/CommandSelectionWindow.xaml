@@ -53,11 +53,90 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="320"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0"
+                    Padding="8"
+                    CornerRadius="10"
+                    Background="{ui:ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ui:ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top"
+                               Margin="4,4,4,10"
+                               Text="種類"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
+                    <ListBox ItemsSource="{Binding CategoryItems}"
+                             SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Margin" Value="0,0,0,4"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="CategoryBorder"
+                                                    Padding="10,8"
+                                                    CornerRadius="8"
+                                                    Background="Transparent"
+                                                    BorderBrush="Transparent"
+                                                    BorderThickness="1">
+                                                <ContentPresenter/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="CategoryBorder" Property="Background" Value="{ui:ThemeResource ControlFillColorSecondaryBrush}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="CategoryBorder" Property="Background" Value="{ui:ThemeResource ControlFillColorDefaultBrush}"/>
+                                                    <Setter TargetName="CategoryBorder" Property="BorderBrush" Value="{ui:ThemeResource ControlStrokeColorSecondaryBrush}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               Text="{Binding Name}"/>
+                                    <Border Grid.Column="1"
+                                            MinWidth="28"
+                                            Margin="8,0,0,0"
+                                            Padding="6,1"
+                                            CornerRadius="6"
+                                            Background="{ui:ThemeResource ControlFillColorSecondaryBrush}">
+                                        <TextBlock HorizontalAlignment="Center"
+                                                   FontSize="12"
+                                                   Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                   Text="{Binding Count}"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="1"
+                    Margin="12,0,0,0"
                     Padding="8"
                     CornerRadius="10"
                     Background="{ui:ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -150,7 +229,7 @@
                 </ListBox>
             </Border>
 
-            <Border Grid.Column="1"
+            <Border Grid.Column="2"
                     Margin="12,0,0,0"
                     Padding="16"
                     CornerRadius="10"
