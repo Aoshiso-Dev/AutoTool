@@ -19,6 +19,7 @@ public partial class EditPanelViewModel
     private const string TessdataFastRepositoryUrl = "https://github.com/tesseract-ocr/tessdata_fast";
     private const string AiModelReferencePageUrl = "https://github.com/ultralytics/ultralytics";
     private const string RecommendedAiModelFileName = "yolo11n.onnx";
+    private const string JsonFileFilter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*";
     private static readonly string[] RecommendedAiModelDownloadUrls =
     [
         "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo11n.onnx",
@@ -181,14 +182,27 @@ public partial class EditPanelViewModel
 
     private void BrowseFileForProperty(PropertyMetadata prop)
     {
-        var path = string.Equals(prop.PropertyName, "LabelsPath", StringComparison.Ordinal)
-            ? _panelDialogService.SelectLabelFile()
-            : _panelDialogService.SelectModelFile();
+        var path = SelectFileForProperty(prop);
         if (!string.IsNullOrEmpty(path))
         {
             prop.Value = _pathResolver.ToRelativePath(path);
             RefreshEditorState();
         }
+    }
+
+    private string? SelectFileForProperty(PropertyMetadata prop)
+    {
+        if (!string.IsNullOrWhiteSpace(prop.FileFilter))
+        {
+            return _panelDialogService.SelectFile(prop.FileFilter);
+        }
+
+        return prop.PropertyName switch
+        {
+            "LabelsPath" => _panelDialogService.SelectLabelFile(),
+            "settingsFile" => _panelDialogService.SelectFile(JsonFileFilter),
+            _ => _panelDialogService.SelectModelFile()
+        };
     }
 
     private void BrowseDirectoryForProperty(PropertyMetadata prop)

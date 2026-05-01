@@ -32,4 +32,7 @@ public static class CommandTypeNames
     public const string SetVariable = "SetVariable";
     public const string SetVariableAI = "SetVariable_AI";
     public const string SetVariableOCR = "SetVariable_OCR";
+    public const string ExtractJsonValue = "ExtractJsonValue";
+    public const string CalculateVariable = "CalculateVariable";
+    public const string AppendCsv = "AppendCsv";
 }

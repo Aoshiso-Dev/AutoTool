@@ -8,6 +8,8 @@ namespace AutoTool.Desktop.Services;
 /// </summary>
 public sealed class WpfPanelDialogService : IPanelDialogService
 {
+    private const string AllFilesFilter = "All Files (*.*)|*.*";
+
     public string? SelectImageFile()
     {
         var dialog = new OpenFileDialog
@@ -37,6 +39,18 @@ public sealed class WpfPanelDialogService : IPanelDialogService
         var dialog = new OpenFileDialog
         {
             Filter = "Label Files (*.txt;*.names;*.yaml;*.yml)|*.txt;*.names;*.yaml;*.yml|All Files (*.*)|*.*",
+            FilterIndex = 1,
+            Multiselect = false,
+        };
+
+        return dialog.ShowDialog() == true ? dialog.FileName : null;
+    }
+
+    public string? SelectFile(string filter)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = string.IsNullOrWhiteSpace(filter) ? AllFilesFilter : filter,
             FilterIndex = 1,
             Multiselect = false,
         };

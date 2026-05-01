@@ -149,6 +149,7 @@ public class PropertyMetadataProvider(IPluginCommandCatalog? pluginCommandCatalo
                 OrderOverride = property.Order,
                 EditorTypeOverride = MapEditorType(property.EditorType),
                 OptionsOverride = property.Options.Count == 0 ? null : [.. property.Options],
+                FileFilterOverride = property.FileFilter,
                 PropertyTypeOverride = state.Value?.GetType() ?? typeof(string),
                 GetValueFunc = () => state.Value,
                 SetValueAction = value =>

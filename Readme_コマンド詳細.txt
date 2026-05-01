@@ -192,6 +192,47 @@
   - 変数名
   - 値
 
+[JSON値抽出]
+- 用途: JSON文字列を持つ変数から値を取り出し、別の変数に保存します。
+- 主な設定:
+  - JSON変数名
+  - 抽出パス
+  - 出力先変数名
+- 抽出パス例:
+  - `$.Result.Value`
+  - `[first].DetectionValues[Name=EdgeX].Value`
+  - `[last].DetectionValues[Name=EdgeY].Value`
+- 補足:
+  - 配列は `[0]` / `[first]` / `[last]` で選択できます。
+  - 配列要素は `[Name=EdgeX]` のようにプロパティ値で選択できます。
+  - Mitaka.ImageProcess.ProcessFrame の結果JSONから EdgeX / EdgeY / Edge1X / Edge1Y などを取り出す場合は、DetectionValues の Name 条件を使います。
+
+[変数計算]
+- 用途: 数値変数を使った計算結果を変数に保存します。
+- 主な設定:
+  - 計算式
+  - 出力先変数名
+- 計算式例:
+  - `edgeX - edgeX0`
+  - `(edgeX - edgeX0) * pixelSizeUm`
+- 補足:
+  - 四則演算（+ - * /）と括弧に対応しています。
+  - 変数名はそのまま計算式内で参照できます。
+
+[CSV追記]
+- 用途: 変数値をCSVファイルへ1行ずつ追記します。
+- 主な設定:
+  - 出力ファイルパス
+  - ヘッダー行
+  - 追記する値
+  - 初回のみヘッダーを書く（ON/OFF）
+- 追記する値の例:
+  - `step,machineX,edgeX,edgeDelta,deltaUm`
+- 補足:
+  - 値一覧に変数名を指定すると、その変数値を列として出力します。
+  - `{lotNo}` のような埋め込みも利用できます。
+  - ファイルが空の場合だけヘッダーを書けるため、ループ内で安全に追記できます。
+
 [画像検索]
 - 用途: 画像検索結果を変数に保存します。
 - 主な設定:

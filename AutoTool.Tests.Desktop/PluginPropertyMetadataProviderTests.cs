@@ -39,6 +39,15 @@ public sealed class PluginPropertyMetadataProviderTests
                         EditorType = "CheckBox",
                         Group = "設定",
                         Order = 2,
+                    },
+                    new PluginCommandPropertyDefinition
+                    {
+                        Name = "settingsFile",
+                        DisplayName = "設定ファイル",
+                        EditorType = "FilePicker",
+                        Group = "設定",
+                        Order = 3,
+                        FileFilter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
                     }
                 ]
             }
@@ -63,6 +72,10 @@ public sealed class PluginPropertyMetadataProviderTests
         var enabled = Assert.Single(metadata, static x => x.PropertyName == "enabled");
         Assert.Equal(EditorType.CheckBox, enabled.EditorType);
         Assert.True(enabled.BoolValue);
+
+        var settingsFile = Assert.Single(metadata, static x => x.PropertyName == "settingsFile");
+        Assert.Equal(EditorType.FilePicker, settingsFile.EditorType);
+        Assert.Equal("JSON Files (*.json)|*.json|All Files (*.*)|*.*", settingsFile.FileFilter);
 
         variable.StringValue = "updated";
         enabled.BoolValue = false;

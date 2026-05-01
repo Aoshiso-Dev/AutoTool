@@ -11,6 +11,8 @@ public interface IPanelDialogService
     string? SelectModelFile();
     /// <summary>AIラベルファイルを選択します。</summary>
     string? SelectLabelFile();
+    /// <summary>指定したフィルターでファイルを選択します。</summary>
+    string? SelectFile(string filter);
     /// <summary>実行ファイルを選択します。</summary>
     string? SelectExecutableFile();
     /// <summary>フォルダを選択します。</summary>

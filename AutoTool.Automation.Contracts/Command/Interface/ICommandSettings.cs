@@ -253,6 +253,36 @@ public interface ISetVariableCommandSettings : ICommandSettings
 }
 
 /// <summary>
+/// JSON 文字列から値を抽出して変数へ格納する設定を定義します。
+/// </summary>
+public interface IExtractJsonValueCommandSettings : ICommandSettings
+{
+    string JsonVariableName { get; set; }
+    string ExtractionPath { get; set; }
+    string OutputVariableName { get; set; }
+}
+
+/// <summary>
+/// 変数を参照した計算式の結果を変数へ格納する設定を定義します。
+/// </summary>
+public interface ICalculateVariableCommandSettings : ICommandSettings
+{
+    string Expression { get; set; }
+    string OutputVariableName { get; set; }
+}
+
+/// <summary>
+/// 変数値を CSV へ追記する設定を定義します。
+/// </summary>
+public interface IAppendCsvCommandSettings : ICommandSettings
+{
+    string OutputFilePath { get; set; }
+    string HeaderLine { get; set; }
+    string Values { get; set; }
+    bool WriteHeaderOnce { get; set; }
+}
+
+/// <summary>
 /// この設定インターフェースが提供する項目を定義し、各コマンド実装で同じ設定値を扱えるようにします。
 /// </summary>
 public interface IIfVariableCommandSettings : ICommandSettings

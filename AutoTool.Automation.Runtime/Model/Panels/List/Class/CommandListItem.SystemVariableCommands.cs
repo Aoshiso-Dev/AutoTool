@@ -5,6 +5,9 @@ using AutoTool.Commands.Commands;
 using AutoTool.Commands.Services;
 using AutoTool.Automation.Contracts.Lists;
 using AutoTool.Automation.Runtime.Attributes;
+using System.Globalization;
+using System.Text;
+using System.Text.Json;
 using CommandDef = AutoTool.Automation.Runtime.Definitions;
 
 namespace AutoTool.Automation.Runtime.Lists;
@@ -114,6 +117,667 @@ namespace AutoTool.Automation.Runtime.Lists;
             context.SetVariable(Name, Value);
             context.Log($"変数 {Name} = \"{Value}\" を設定しました");
             return ValueTask.FromResult(true);
+        }
+    }
+
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.ExtractJsonValue, typeof(SimpleCommand), typeof(IExtractJsonValueCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 6, displaySubPriority: 2, displayNameJa: "JSON値抽出", displayNameEn: "Extract JSON Value")]
+    /// <summary>
+    /// JSON 文字列を保持する変数から指定パスの値を抽出し、別の変数へ格納します。
+    /// </summary>
+    public partial class ExtractJsonValueItem : CommandListItem, IExtractJsonValueItem, IExtractJsonValueCommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("JSON変数名", EditorType.TextBox, Group = "JSON抽出", Order = 1,
+                         Description = "JSON文字列を保持している変数名")]
+        private string _jsonVariableName = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("抽出パス", EditorType.TextBox, Group = "JSON抽出", Order = 2,
+                         Description = "例: [last].DetectionValues[Name=EdgeX].Value")]
+        private string _extractionPath = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("出力先変数名", EditorType.TextBox, Group = "JSON抽出", Order = 3,
+                         Description = "抽出した値を格納する変数名")]
+        private string _outputVariableName = string.Empty;
+
+        new public string Description => $"JSON:{JsonVariableName} / パス:{ExtractionPath} -> {OutputVariableName}";
+
+        public ExtractJsonValueItem() { }
+
+        public ExtractJsonValueItem(ExtractJsonValueItem? item = null) : base(item)
+        {
+            if (item is not null)
+            {
+                JsonVariableName = item.JsonVariableName;
+                ExtractionPath = item.ExtractionPath;
+                OutputVariableName = item.OutputVariableName;
+            }
+        }
+
+        public new ICommandListItem Clone() => new ExtractJsonValueItem(this);
+
+        public override ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var json = context.GetVariable(JsonVariableName);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    context.Log($"JSON抽出エラー: 変数 {JsonVariableName} が空です。");
+                    return ValueTask.FromResult(false);
+                }
+
+                var value = JsonValueExtractor.Extract(json, ExtractionPath);
+                context.SetVariable(OutputVariableName, value);
+                context.Log($"JSON抽出結果: {OutputVariableName} = {value}");
+                return ValueTask.FromResult(true);
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+            {
+                context.Log($"JSON抽出エラー: {ex.Message}");
+                return ValueTask.FromResult(false);
+            }
+        }
+    }
+
+internal static class JsonValueExtractor
+{
+    public static string Extract(string json, string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        using var document = JsonDocument.Parse(json);
+        var current = document.RootElement;
+        foreach (var segment in JsonPathParser.Parse(path))
+        {
+            current = segment.Apply(current);
+        }
+
+        return current.ValueKind switch
+        {
+            JsonValueKind.String => current.GetString() ?? string.Empty,
+            JsonValueKind.Number => current.GetRawText(),
+            JsonValueKind.True => bool.TrueString,
+            JsonValueKind.False => bool.FalseString,
+            JsonValueKind.Null => string.Empty,
+            _ => current.GetRawText()
+        };
+    }
+}
+
+internal abstract record JsonPathSegment
+{
+    public abstract JsonElement Apply(JsonElement current);
+}
+
+internal sealed record JsonPropertySegment(string PropertyName) : JsonPathSegment
+{
+    public override JsonElement Apply(JsonElement current)
+    {
+        if (current.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException($"JSON要素はオブジェクトではありません: {PropertyName}");
+        }
+
+        if (current.TryGetProperty(PropertyName, out var value))
+        {
+            return value;
+        }
+
+        foreach (var property in current.EnumerateObject())
+        {
+            if (string.Equals(property.Name, PropertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                return property.Value;
+            }
+        }
+
+        throw new InvalidOperationException($"JSONプロパティが見つかりません: {PropertyName}");
+    }
+}
+
+internal sealed record JsonArrayIndexSegment(string IndexText) : JsonPathSegment
+{
+    public override JsonElement Apply(JsonElement current)
+    {
+        if (current.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException($"JSON要素は配列ではありません: [{IndexText}]");
+        }
+
+        var values = current.EnumerateArray().ToArray();
+        if (values.Length == 0)
+        {
+            throw new InvalidOperationException("JSON配列が空です。");
+        }
+
+        var index = IndexText.ToLowerInvariant() switch
+        {
+            "first" => 0,
+            "last" => values.Length - 1,
+            _ when int.TryParse(IndexText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) => parsed,
+            _ => throw new FormatException($"配列インデックスを解釈できません: {IndexText}")
+        };
+
+        if (index < 0 || index >= values.Length)
+        {
+            throw new InvalidOperationException($"配列インデックスが範囲外です: {index}");
+        }
+
+        return values[index];
+    }
+}
+
+internal sealed record JsonArrayPropertyMatchSegment(string PropertyName, string ExpectedValue) : JsonPathSegment
+{
+    public override JsonElement Apply(JsonElement current)
+    {
+        if (current.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException($"JSON要素は配列ではありません: [{PropertyName}={ExpectedValue}]");
+        }
+
+        foreach (var item in current.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            if (!TryGetProperty(item, PropertyName, out var property))
+            {
+                continue;
+            }
+
+            var value = property.ValueKind == JsonValueKind.String
+                ? property.GetString()
+                : property.GetRawText();
+            if (string.Equals(value, ExpectedValue, StringComparison.OrdinalIgnoreCase))
+            {
+                return item;
+            }
+        }
+
+        throw new InvalidOperationException($"条件に一致するJSON配列要素が見つかりません: {PropertyName}={ExpectedValue}");
+    }
+
+    private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement value)
+    {
+        if (element.TryGetProperty(propertyName, out value))
+        {
+            return true;
+        }
+
+        foreach (var property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+}
+
+internal static class JsonPathParser
+{
+    public static IReadOnlyList<JsonPathSegment> Parse(string path)
+    {
+        var text = path.Trim();
+        if (text.StartsWith('$'))
+        {
+            text = text[1..];
+        }
+
+        if (text.StartsWith('.'))
+        {
+            text = text[1..];
+        }
+
+        List<JsonPathSegment> segments = [];
+        var index = 0;
+        while (index < text.Length)
+        {
+            if (text[index] == '.')
+            {
+                index++;
+                continue;
+            }
+
+            if (text[index] == '[')
+            {
+                var closeIndex = text.IndexOf(']', index + 1);
+                if (closeIndex < 0)
+                {
+                    throw new FormatException("JSON抽出パスの ] が見つかりません。");
+                }
+
+                var selector = text[(index + 1)..closeIndex].Trim();
+                segments.Add(CreateArraySegment(selector));
+                index = closeIndex + 1;
+                continue;
+            }
+
+            var nextIndex = index;
+            while (nextIndex < text.Length && text[nextIndex] is not '.' and not '[')
+            {
+                nextIndex++;
+            }
+
+            var propertyName = text[index..nextIndex].Trim();
+            if (propertyName.Length > 0)
+            {
+                segments.Add(new JsonPropertySegment(propertyName));
+            }
+
+            index = nextIndex;
+        }
+
+        if (segments.Count == 0)
+        {
+            throw new FormatException("JSON抽出パスが空です。");
+        }
+
+        return segments;
+    }
+
+    private static JsonPathSegment CreateArraySegment(string selector)
+    {
+        var equalsIndex = selector.IndexOf('=');
+        if (equalsIndex > 0)
+        {
+            var propertyName = selector[..equalsIndex].Trim();
+            var expectedValue = selector[(equalsIndex + 1)..].Trim().Trim('"', '\'');
+            if (propertyName.Length == 0)
+            {
+                throw new FormatException("JSON配列条件のプロパティ名が空です。");
+            }
+
+            return new JsonArrayPropertyMatchSegment(propertyName, expectedValue);
+        }
+
+        return new JsonArrayIndexSegment(selector);
+    }
+}
+
+internal static class VariableExpressionEvaluator
+{
+    public static double Evaluate(string expression, Func<string, double> resolveVariable)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(expression);
+        ArgumentNullException.ThrowIfNull(resolveVariable);
+        var parser = new Parser(expression, resolveVariable);
+        return parser.Parse();
+    }
+
+    private sealed class Parser(string expression, Func<string, double> resolveVariable)
+    {
+        private readonly string _expression = expression;
+        private readonly Func<string, double> _resolveVariable = resolveVariable;
+        private int _index;
+
+        public double Parse()
+        {
+            var value = ParseExpression();
+            SkipWhiteSpace();
+            if (_index != _expression.Length)
+            {
+                throw new FormatException($"計算式を解釈できません: {_expression[_index..]}");
+            }
+
+            return value;
+        }
+
+        private double ParseExpression()
+        {
+            var value = ParseTerm();
+            while (true)
+            {
+                SkipWhiteSpace();
+                if (Match('+'))
+                {
+                    value += ParseTerm();
+                }
+                else if (Match('-'))
+                {
+                    value -= ParseTerm();
+                }
+                else
+                {
+                    return value;
+                }
+            }
+        }
+
+        private double ParseTerm()
+        {
+            var value = ParseFactor();
+            while (true)
+            {
+                SkipWhiteSpace();
+                if (Match('*'))
+                {
+                    value *= ParseFactor();
+                }
+                else if (Match('/'))
+                {
+                    value /= ParseFactor();
+                }
+                else
+                {
+                    return value;
+                }
+            }
+        }
+
+        private double ParseFactor()
+        {
+            SkipWhiteSpace();
+            if (Match('+'))
+            {
+                return ParseFactor();
+            }
+
+            if (Match('-'))
+            {
+                return -ParseFactor();
+            }
+
+            if (Match('('))
+            {
+                var value = ParseExpression();
+                SkipWhiteSpace();
+                if (!Match(')'))
+                {
+                    throw new FormatException("計算式の ) が見つかりません。");
+                }
+
+                return value;
+            }
+
+            return char.IsLetter(Current) || Current == '_'
+                ? ParseVariable()
+                : ParseNumber();
+        }
+
+        private double ParseVariable()
+        {
+            var start = _index;
+            while (_index < _expression.Length && (char.IsLetterOrDigit(_expression[_index]) || _expression[_index] == '_'))
+            {
+                _index++;
+            }
+
+            return _resolveVariable(_expression[start.._index]);
+        }
+
+        private double ParseNumber()
+        {
+            var start = _index;
+            while (_index < _expression.Length && (char.IsDigit(_expression[_index]) || _expression[_index] is '.' or 'e' or 'E' or '+' or '-'))
+            {
+                if (_index > start && (_expression[_index] is '+' or '-') && _expression[_index - 1] is not 'e' and not 'E')
+                {
+                    break;
+                }
+
+                _index++;
+            }
+
+            var text = _expression[start.._index];
+            if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+            {
+                throw new FormatException($"数値を解釈できません: {text}");
+            }
+
+            return value;
+        }
+
+        private char Current => _index < _expression.Length ? _expression[_index] : '\0';
+
+        private bool Match(char expected)
+        {
+            if (Current != expected)
+            {
+                return false;
+            }
+
+            _index++;
+            return true;
+        }
+
+        private void SkipWhiteSpace()
+        {
+            while (char.IsWhiteSpace(Current))
+            {
+                _index++;
+            }
+        }
+    }
+}
+
+internal static class CsvRowBuilder
+{
+    public static string Build(string values, ICommandExecutionContext context)
+    {
+        var columns = SplitColumns(values)
+            .Select(x => Escape(ResolveColumn(x.Trim(), context)));
+        return string.Join(",", columns);
+    }
+
+    private static string ResolveColumn(string column, ICommandExecutionContext context)
+    {
+        if (column.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        var variableValue = context.GetVariable(column);
+        return variableValue ?? VariableTextResolver.Resolve(column, context);
+    }
+
+    private static IEnumerable<string> SplitColumns(string values)
+    {
+        return values
+            .Replace("\r\n", ",", StringComparison.Ordinal)
+            .Replace('\n', ',')
+            .Split(',', StringSplitOptions.None);
+    }
+
+    private static string Escape(string value)
+    {
+        return value.Contains('"') || value.Contains(',') || value.Contains('\r') || value.Contains('\n')
+            ? $"\"{value.Replace("\"", "\"\"", StringComparison.Ordinal)}\""
+            : value;
+    }
+}
+
+internal static class VariableTextResolver
+{
+    public static string Resolve(string text, ICommandExecutionContext context)
+    {
+        var result = text;
+        var startIndex = result.IndexOf('{', StringComparison.Ordinal);
+        while (startIndex >= 0)
+        {
+            var endIndex = result.IndexOf('}', startIndex + 1);
+            if (endIndex < 0)
+            {
+                break;
+            }
+
+            var variableName = result[(startIndex + 1)..endIndex];
+            var value = context.GetVariable(variableName) ?? string.Empty;
+            result = string.Concat(result.AsSpan(0, startIndex), value, result.AsSpan(endIndex + 1));
+            startIndex = result.IndexOf("{", startIndex + value.Length, StringComparison.Ordinal);
+        }
+
+        return result;
+    }
+}
+
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.CalculateVariable, typeof(SimpleCommand), typeof(ICalculateVariableCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 6, displaySubPriority: 3, displayNameJa: "変数計算", displayNameEn: "Calculate Variable")]
+    /// <summary>
+    /// 変数を参照した四則演算を行い、結果を変数へ格納します。
+    /// </summary>
+    public partial class CalculateVariableItem : CommandListItem, ICalculateVariableItem, ICalculateVariableCommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("計算式", EditorType.TextBox, Group = "変数計算", Order = 1,
+                         Description = "例: (edgeX - edgeX0) * pixelSizeUm")]
+        private string _expression = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("出力先変数名", EditorType.TextBox, Group = "変数計算", Order = 2,
+                         Description = "計算結果を格納する変数名")]
+        private string _outputVariableName = string.Empty;
+
+        new public string Description => $"{OutputVariableName} = {Expression}";
+
+        public CalculateVariableItem() { }
+
+        public CalculateVariableItem(CalculateVariableItem? item = null) : base(item)
+        {
+            if (item is not null)
+            {
+                Expression = item.Expression;
+                OutputVariableName = item.OutputVariableName;
+            }
+        }
+
+        public new ICommandListItem Clone() => new CalculateVariableItem(this);
+
+        public override ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var value = VariableExpressionEvaluator.Evaluate(Expression, name =>
+                {
+                    var rawValue = context.GetVariable(name);
+                    if (rawValue is null)
+                    {
+                        throw new InvalidOperationException($"変数 {name} が見つかりません。");
+                    }
+
+                    if (double.TryParse(rawValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var invariantValue))
+                    {
+                        return invariantValue;
+                    }
+
+                    if (double.TryParse(rawValue, NumberStyles.Float, CultureInfo.CurrentCulture, out var currentValue))
+                    {
+                        return currentValue;
+                    }
+
+                    throw new FormatException($"変数 {name} の値を数値として解釈できません: {rawValue}");
+                });
+
+                var text = value.ToString("G17", CultureInfo.InvariantCulture);
+                context.SetVariable(OutputVariableName, text);
+                context.Log($"変数計算結果: {OutputVariableName} = {text}");
+                return ValueTask.FromResult(true);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or FormatException)
+            {
+                context.Log($"変数計算エラー: {ex.Message}");
+                return ValueTask.FromResult(false);
+            }
+        }
+    }
+
+    [CommandDef.CommandDefinition(CommandDef.CommandTypeNames.AppendCsv, typeof(SimpleCommand), typeof(IAppendCsvCommandSettings), CommandDef.CommandCategory.Variable, displayPriority: 6, displaySubPriority: 4, displayNameJa: "CSV追記", displayNameEn: "Append CSV")]
+    /// <summary>
+    /// 変数値を CSV ファイルへ 1 行追記します。
+    /// </summary>
+    public partial class AppendCsvItem : CommandListItem, IAppendCsvItem, IAppendCsvCommandSettings
+    {
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("出力ファイルパス", EditorType.FilePicker, Group = "CSV出力", Order = 1,
+                         Description = "追記先CSVファイル")]
+        private string _outputFilePath = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("ヘッダー行", EditorType.TextBox, Group = "CSV出力", Order = 2,
+                         Description = "例: step,machineX,edgeX,edgeDelta,deltaUm")]
+        private string _headerLine = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("追記する値", EditorType.TextBox, Group = "CSV出力", Order = 3,
+                         Description = "変数名をカンマ区切りで指定。{varName} 形式の埋め込みも可能")]
+        private string _values = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Description))]
+        [property: CommandProperty("初回のみヘッダーを書く", EditorType.CheckBox, Group = "CSV出力", Order = 4,
+                         Description = "ファイルが空のときだけヘッダーを書き込みます")]
+        private bool _writeHeaderOnce = true;
+
+        new public string Description => $"CSV:{OutputFilePath} / 値:{Values}";
+
+        public AppendCsvItem() { }
+
+        public AppendCsvItem(AppendCsvItem? item = null) : base(item)
+        {
+            if (item is not null)
+            {
+                OutputFilePath = item.OutputFilePath;
+                HeaderLine = item.HeaderLine;
+                Values = item.Values;
+                WriteHeaderOnce = item.WriteHeaderOnce;
+            }
+        }
+
+        public new ICommandListItem Clone() => new AppendCsvItem(this);
+
+        public override async ValueTask<bool> ExecuteAsync(ICommandExecutionContext context, CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var resolvedPath = VariableTextResolver.Resolve(OutputFilePath, context);
+                var absolutePath = context.ToAbsolutePath(resolvedPath);
+                var directoryPath = Path.GetDirectoryName(absolutePath);
+                if (!string.IsNullOrWhiteSpace(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
+
+                var shouldWriteHeader = WriteHeaderOnce
+                    && !string.IsNullOrWhiteSpace(HeaderLine)
+                    && (!File.Exists(absolutePath) || new FileInfo(absolutePath).Length == 0);
+
+                await using var stream = new FileStream(absolutePath, FileMode.Append, FileAccess.Write, FileShare.Read);
+                await using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: shouldWriteHeader));
+                if (shouldWriteHeader)
+                {
+                    await writer.WriteLineAsync(HeaderLine).ConfigureAwait(false);
+                }
+
+                var row = CsvRowBuilder.Build(Values, context);
+                await writer.WriteLineAsync(row).ConfigureAwait(false);
+                context.Log($"CSVへ追記しました: {absolutePath}");
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                context.Log($"CSV追記エラー: {ex.Message}");
+                return false;
+            }
         }
     }
 

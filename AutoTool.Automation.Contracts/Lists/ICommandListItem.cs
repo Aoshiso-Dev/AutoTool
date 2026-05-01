@@ -344,6 +344,36 @@ public interface ISetVariableItem : ICommandListItem
 }
 
 /// <summary>
+/// Extract Json Value 項目が保持する設定値と表示情報の契約を定義します。
+/// </summary>
+public interface IExtractJsonValueItem : ICommandListItem
+{
+    string JsonVariableName { get; set; }
+    string ExtractionPath { get; set; }
+    string OutputVariableName { get; set; }
+}
+
+/// <summary>
+/// Calculate Variable 項目が保持する設定値と表示情報の契約を定義します。
+/// </summary>
+public interface ICalculateVariableItem : ICommandListItem
+{
+    string Expression { get; set; }
+    string OutputVariableName { get; set; }
+}
+
+/// <summary>
+/// Append Csv 項目が保持する設定値と表示情報の契約を定義します。
+/// </summary>
+public interface IAppendCsvItem : ICommandListItem
+{
+    string OutputFilePath { get; set; }
+    string HeaderLine { get; set; }
+    string Values { get; set; }
+    bool WriteHeaderOnce { get; set; }
+}
+
+/// <summary>
 /// Set Variable AI 項目が保持する設定値と表示情報の契約を定義します。
 /// </summary>
 public interface ISetVariableAIItem : ICommandListItem

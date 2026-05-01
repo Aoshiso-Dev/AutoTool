@@ -235,6 +235,8 @@ public partial class LoopEndItem : CommandListItem, ILoopEndItem, ICommandSettin
 - `Options`
 - `FileFilter`
 
+プラグイン由来の `FilePicker` でも、`properties[].fileFilter` に `JSON Files (*.json)|*.json|All Files (*.*)|*.*` のような WPF `OpenFileDialog.Filter` 形式の文字列を指定できます。
+
 ## `EditorType` 一覧
 
 - `TextBox`

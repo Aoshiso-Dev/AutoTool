@@ -10,6 +10,7 @@ public sealed record PluginCommandPropertyDefinition
     public string? Description { get; init; }
     public bool IsRequired { get; init; }
     public IReadOnlyList<string> Options { get; init; } = [];
+    public string? FileFilter { get; init; }
 }
 
 

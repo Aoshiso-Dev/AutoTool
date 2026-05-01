@@ -264,6 +264,36 @@ public class SetVariableCommandSettings : ICommandSettings, ISetVariableCommandS
 }
 
 /// <summary>
+/// JSON 文字列から値を抽出して変数へ格納する設定値を保持します。
+/// </summary>
+public class ExtractJsonValueCommandSettings : ICommandSettings, IExtractJsonValueCommandSettings
+{
+    public string JsonVariableName { get; set; } = string.Empty;
+    public string ExtractionPath { get; set; } = string.Empty;
+    public string OutputVariableName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 数値変数を参照した計算結果を変数へ格納する設定値を保持します。
+/// </summary>
+public class CalculateVariableCommandSettings : ICommandSettings, ICalculateVariableCommandSettings
+{
+    public string Expression { get; set; } = string.Empty;
+    public string OutputVariableName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 変数値を CSV へ追記する設定値を保持します。
+/// </summary>
+public class AppendCsvCommandSettings : ICommandSettings, IAppendCsvCommandSettings
+{
+    public string OutputFilePath { get; set; } = string.Empty;
+    public string HeaderLine { get; set; } = string.Empty;
+    public string Values { get; set; } = string.Empty;
+    public bool WriteHeaderOnce { get; set; } = true;
+}
+
+/// <summary>
 /// コマンド実行や画面表示で参照する設定値を保持し、入力値を型安全に扱えるようにします。
 /// </summary>
 public class SetVariableAISettings : ICommandSettings, ISetVariableAICommandSettings

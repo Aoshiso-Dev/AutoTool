@@ -21,6 +21,11 @@ public static class CommandValidationErrorCodes
     public const string ConfidenceOutOfRange = "E_CONFIDENCE_RANGE";
     public const string MatchModeInvalid = "E_MATCH_MODE_INVALID";
     public const string VariableNameRequired = "E_VARIABLE_NAME_EMPTY";
+    public const string JsonVariableNameRequired = "E_JSON_VARIABLE_NAME_EMPTY";
+    public const string JsonExtractionPathRequired = "E_JSON_EXTRACTION_PATH_EMPTY";
+    public const string ExpressionRequired = "E_EXPRESSION_EMPTY";
+    public const string CsvOutputPathRequired = "E_CSV_OUTPUT_PATH_EMPTY";
+    public const string CsvValuesRequired = "E_CSV_VALUES_EMPTY";
     public const string VariableOperatorInvalid = "E_VARIABLE_OPERATOR_INVALID";
     public const string ProgramPathRequired = "E_PROGRAM_PATH_EMPTY";
     public const string ProgramPathNotFound = "E_PROGRAM_PATH_NOT_FOUND";
@@ -152,6 +157,50 @@ public static class CommandSettingsValidator
         if (settings is ISetVariableCommandSettings setVariable && string.IsNullOrWhiteSpace(setVariable.Name))
         {
             Add(issues, CommandValidationErrorCodes.VariableNameRequired, nameof(setVariable.Name), "変数名は必須です。");
+        }
+
+        if (settings is IExtractJsonValueCommandSettings extractJsonValue)
+        {
+            if (string.IsNullOrWhiteSpace(extractJsonValue.JsonVariableName))
+            {
+                Add(issues, CommandValidationErrorCodes.JsonVariableNameRequired, nameof(extractJsonValue.JsonVariableName), "JSON変数名は必須です。");
+            }
+
+            if (string.IsNullOrWhiteSpace(extractJsonValue.ExtractionPath))
+            {
+                Add(issues, CommandValidationErrorCodes.JsonExtractionPathRequired, nameof(extractJsonValue.ExtractionPath), "抽出パスは必須です。");
+            }
+
+            if (string.IsNullOrWhiteSpace(extractJsonValue.OutputVariableName))
+            {
+                Add(issues, CommandValidationErrorCodes.VariableNameRequired, nameof(extractJsonValue.OutputVariableName), "出力先変数名は必須です。");
+            }
+        }
+
+        if (settings is ICalculateVariableCommandSettings calculateVariable)
+        {
+            if (string.IsNullOrWhiteSpace(calculateVariable.Expression))
+            {
+                Add(issues, CommandValidationErrorCodes.ExpressionRequired, nameof(calculateVariable.Expression), "計算式は必須です。");
+            }
+
+            if (string.IsNullOrWhiteSpace(calculateVariable.OutputVariableName))
+            {
+                Add(issues, CommandValidationErrorCodes.VariableNameRequired, nameof(calculateVariable.OutputVariableName), "出力先変数名は必須です。");
+            }
+        }
+
+        if (settings is IAppendCsvCommandSettings appendCsv)
+        {
+            if (string.IsNullOrWhiteSpace(appendCsv.OutputFilePath))
+            {
+                Add(issues, CommandValidationErrorCodes.CsvOutputPathRequired, nameof(appendCsv.OutputFilePath), "出力ファイルパスは必須です。");
+            }
+
+            if (string.IsNullOrWhiteSpace(appendCsv.Values))
+            {
+                Add(issues, CommandValidationErrorCodes.CsvValuesRequired, nameof(appendCsv.Values), "追記する値の一覧は必須です。");
+            }
         }
 
         if (settings is ISetVariableOCRCommandSettings setVariableOcr)
