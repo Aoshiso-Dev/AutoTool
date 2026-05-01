@@ -91,6 +91,17 @@ public sealed class SamplePlugin : IAutoToolPlugin, IPluginCommandDefinitionProv
             }
         }
 
+        if (document.RootElement.TryGetProperty("pathVariable", out var pathVariableElement)
+            && document.RootElement.TryGetProperty("path", out var pathElement))
+        {
+            var variableName = pathVariableElement.GetString();
+            var path = pathElement.GetString();
+            if (!string.IsNullOrWhiteSpace(variableName) && path is not null)
+            {
+                context.SetVariable(variableName, context.ResolvePath(path));
+            }
+        }
+
         context.Log("provider command executed");
         return ValueTask.FromResult(true);
     }

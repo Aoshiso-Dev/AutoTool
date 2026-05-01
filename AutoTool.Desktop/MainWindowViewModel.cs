@@ -33,6 +33,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IFilePicker _filePicker;
     private readonly IRecentFileStore _recentFileStore;
     private readonly IFileSystemPathService _fileSystemPathService;
+    private readonly ICurrentMacroFileContext _currentMacroFileContext;
     private readonly PluginStartupDiagnosticsPresenter _pluginStartupDiagnosticsPresenter;
     private readonly ILogWriter _logWriter;
     private EventHandler? _commandHistoryChangedHandler;
@@ -95,6 +96,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IFilePicker filePicker,
         IRecentFileStore recentFileStore,
         IFileSystemPathService fileSystemPathService,
+        ICurrentMacroFileContext currentMacroFileContext,
         PluginStartupDiagnosticsPresenter pluginStartupDiagnosticsPresenter,
         IPluginQuickActionCatalog pluginQuickActionCatalog,
         PluginQuickActionExecutor pluginQuickActionExecutor,
@@ -106,6 +108,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(filePicker);
         ArgumentNullException.ThrowIfNull(recentFileStore);
         ArgumentNullException.ThrowIfNull(fileSystemPathService);
+        ArgumentNullException.ThrowIfNull(currentMacroFileContext);
         ArgumentNullException.ThrowIfNull(pluginStartupDiagnosticsPresenter);
         ArgumentNullException.ThrowIfNull(pluginQuickActionCatalog);
         ArgumentNullException.ThrowIfNull(pluginQuickActionExecutor);
@@ -117,6 +120,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _filePicker = filePicker;
         _recentFileStore = recentFileStore;
         _fileSystemPathService = fileSystemPathService;
+        _currentMacroFileContext = currentMacroFileContext;
         _pluginStartupDiagnosticsPresenter = pluginStartupDiagnosticsPresenter;
         _logWriter = logWriter;
         MacroPanelViewModel = macroPanelViewModel;
@@ -212,7 +216,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             filePath => MacroPanelViewModel.LoadMacroFile(filePath),
             _filePicker,
             _recentFileStore,
-            _fileSystemPathService);
+            _fileSystemPathService,
+            _currentMacroFileContext);
 
         macroFileManager.PropertyChanged += OnFileManagerPropertyChanged;
         _fileManagers.Add(TabIndexes.Macro, macroFileManager);

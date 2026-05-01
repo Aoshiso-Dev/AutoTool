@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Reflection;
+using AutoTool.Application.Files;
 using AutoTool.Commands.Services;
 
 namespace AutoTool.Commands.Infrastructure;
@@ -9,15 +10,31 @@ namespace AutoTool.Commands.Infrastructure;
 /// </summary>
 public class PathResolver : IPathResolver
 {
-    private readonly Lazy<string> _baseDirectory;
+    private readonly Lazy<string> _applicationBaseDirectory;
+    private readonly ICurrentMacroFileContext _currentMacroFileContext;
 
     public PathResolver()
+        : this(new CurrentMacroFileContext())
     {
-        _baseDirectory = new Lazy<string>(() => 
-            Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? Environment.CurrentDirectory);
     }
 
-    public string BaseDirectory => _baseDirectory.Value;
+    public PathResolver(ICurrentMacroFileContext currentMacroFileContext)
+        : this(currentMacroFileContext, null)
+    {
+    }
+
+    protected PathResolver(ICurrentMacroFileContext currentMacroFileContext, string? applicationBaseDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(currentMacroFileContext);
+
+        _currentMacroFileContext = currentMacroFileContext;
+        _applicationBaseDirectory = new Lazy<string>(() =>
+            applicationBaseDirectory
+            ?? Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location)
+            ?? Environment.CurrentDirectory);
+    }
+
+    public string BaseDirectory => ResolveBaseDirectory();
 
     public string ToAbsolutePath(string relativePath)
     {
@@ -62,6 +79,14 @@ public class PathResolver : IPathResolver
         {
             return absolutePath;
         }
+    }
+
+    private string ResolveBaseDirectory()
+    {
+        var macroBaseDirectory = _currentMacroFileContext.BaseDirectory;
+        return string.IsNullOrWhiteSpace(macroBaseDirectory)
+            ? _applicationBaseDirectory.Value
+            : macroBaseDirectory;
     }
 }
 

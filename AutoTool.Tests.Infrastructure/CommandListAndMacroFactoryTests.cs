@@ -6,6 +6,7 @@ using AutoTool.Commands.Services;
 using AutoTool.Application.Ports;
 using AutoTool.Application.Files;
 using AutoTool.Application.History;
+using AutoTool.Commands.Infrastructure;
 using AutoTool.Automation.Runtime.Lists;
 using AutoTool.Automation.Runtime.Definitions;
 using AutoTool.Automation.Contracts.Lists;
@@ -834,6 +835,68 @@ public class FileManagerTests
         public bool FileExists(string filePath) => File.Exists(filePath);
 
         public string GetFileName(string filePath) => Path.GetFileName(filePath);
+    }
+}
+
+/// <summary>
+/// `PathResolver` の基準ディレクトリ選択を検証するテストです。
+/// </summary>
+public class PathResolverTests
+{
+    [Fact]
+    public void ToAbsolutePath_WhenMacroFilePathExists_UsesMacroDirectory()
+    {
+        var applicationBaseDirectory = Path.Combine(Path.GetTempPath(), $"autotool-app-{Guid.NewGuid()}");
+        var macroDirectory = Path.Combine(Path.GetTempPath(), $"autotool-macro-{Guid.NewGuid()}");
+        var context = new CurrentMacroFileContext
+        {
+            CurrentMacroFilePath = Path.Combine(macroDirectory, "test.macro")
+        };
+        var resolver = new TestablePathResolver(context, applicationBaseDirectory);
+
+        var absolutePath = resolver.ToAbsolutePath(Path.Combine("ImageProcessSettings", "edge.json"));
+
+        Assert.Equal(
+            Path.GetFullPath(Path.Combine(macroDirectory, "ImageProcessSettings", "edge.json")),
+            absolutePath);
+        Assert.Equal(Path.GetFullPath(macroDirectory), resolver.BaseDirectory);
+    }
+
+    [Fact]
+    public void ToAbsolutePath_WhenMacroFilePathIsEmpty_FallsBackToApplicationDirectory()
+    {
+        var applicationBaseDirectory = Path.Combine(Path.GetTempPath(), $"autotool-app-{Guid.NewGuid()}");
+        var context = new CurrentMacroFileContext();
+        var resolver = new TestablePathResolver(context, applicationBaseDirectory);
+
+        var absolutePath = resolver.ToAbsolutePath(Path.Combine("ImageProcessSettings", "edge.json"));
+
+        Assert.Equal(
+            Path.GetFullPath(Path.Combine(applicationBaseDirectory, "ImageProcessSettings", "edge.json")),
+            absolutePath);
+        Assert.Equal(applicationBaseDirectory, resolver.BaseDirectory);
+    }
+
+    [Fact]
+    public void ToRelativePath_WhenMacroFilePathExists_UsesMacroDirectory()
+    {
+        var applicationBaseDirectory = Path.Combine(Path.GetTempPath(), $"autotool-app-{Guid.NewGuid()}");
+        var macroDirectory = Path.Combine(Path.GetTempPath(), $"autotool-macro-{Guid.NewGuid()}");
+        var context = new CurrentMacroFileContext
+        {
+            CurrentMacroFilePath = Path.Combine(macroDirectory, "test.macro")
+        };
+        var resolver = new TestablePathResolver(context, applicationBaseDirectory);
+        var absolutePath = Path.Combine(macroDirectory, "ImageProcessSettings", "edge.json");
+
+        var relativePath = resolver.ToRelativePath(absolutePath);
+
+        Assert.Equal(Path.Combine("ImageProcessSettings", "edge.json"), relativePath);
+    }
+
+    private sealed class TestablePathResolver(ICurrentMacroFileContext currentMacroFileContext, string applicationBaseDirectory)
+        : PathResolver(currentMacroFileContext, applicationBaseDirectory)
+    {
     }
 }
 

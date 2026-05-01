@@ -6,6 +6,43 @@ using AutoTool.Application.Ports;
 namespace AutoTool.Application.Files;
 
 /// <summary>
+/// 現在開いているマクロファイルの場所を共有します。
+/// </summary>
+public interface ICurrentMacroFileContext
+{
+    string? CurrentMacroFilePath { get; set; }
+    string? BaseDirectory { get; }
+}
+
+/// <summary>
+/// 現在開いているマクロファイルの場所を保持する標準実装です。
+/// </summary>
+public sealed class CurrentMacroFileContext : ICurrentMacroFileContext
+{
+    public string? CurrentMacroFilePath { get; set; }
+
+    public string? BaseDirectory
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(CurrentMacroFilePath))
+            {
+                return null;
+            }
+
+            try
+            {
+                return Path.GetDirectoryName(Path.GetFullPath(CurrentMacroFilePath));
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+}
+
+/// <summary>
 /// マクロファイルの読み込み・保存と最近使ったファイル一覧の更新を一元管理します。
 /// </summary>
 public partial class FileManager : ObservableObject
@@ -36,6 +73,7 @@ public partial class FileManager : ObservableObject
     private readonly IFilePicker _filePicker;
     private readonly IRecentFileStore _recentFileStore;
     private readonly IFileSystemPathService _fileSystemPathService;
+    private readonly ICurrentMacroFileContext? _currentMacroFileContext;
 
     [ObservableProperty]
     private bool _isFileOpened;
@@ -55,7 +93,8 @@ public partial class FileManager : ObservableObject
         Action<string> loadFunc,
         IFilePicker filePicker,
         IRecentFileStore recentFileStore,
-        IFileSystemPathService fileSystemPathService)
+        IFileSystemPathService fileSystemPathService,
+        ICurrentMacroFileContext? currentMacroFileContext = null)
     {
         ArgumentNullException.ThrowIfNull(fileTypeInfo);
         ArgumentNullException.ThrowIfNull(saveFunc);
@@ -69,6 +108,7 @@ public partial class FileManager : ObservableObject
         _filePicker = filePicker;
         _recentFileStore = recentFileStore;
         _fileSystemPathService = fileSystemPathService;
+        _currentMacroFileContext = currentMacroFileContext;
 
         LoadRecentFiles();
     }
@@ -99,6 +139,7 @@ public partial class FileManager : ObservableObject
         CurrentFilePath = filePath;
         CurrentFileName = _fileSystemPathService.GetFileName(filePath);
         IsFileOpened = true;
+        _currentMacroFileContext?.CurrentMacroFilePath = CurrentFilePath;
         return true;
     }
 
@@ -130,6 +171,7 @@ public partial class FileManager : ObservableObject
         CurrentFilePath = filePath;
         CurrentFileName = _fileSystemPathService.GetFileName(filePath);
         IsFileOpened = true;
+        _currentMacroFileContext?.CurrentMacroFilePath = CurrentFilePath;
         return true;
     }
 
@@ -141,6 +183,7 @@ public partial class FileManager : ObservableObject
         CurrentFilePath = string.Empty;
         CurrentFileName = string.Empty;
         IsFileOpened = false;
+        _currentMacroFileContext?.CurrentMacroFilePath = null;
     }
 
     /// <summary>

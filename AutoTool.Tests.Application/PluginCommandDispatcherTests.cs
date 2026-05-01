@@ -57,6 +57,48 @@ public sealed class PluginCommandDispatcherTests : IDisposable
         Assert.Contains("provider command executed", context.Logs);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_WhenPluginResolvesPath_UsesInnerExecutionContext()
+    {
+        var pluginDirectoryPath = Path.Combine(_rootDirectoryPath, "Sample.Plugin");
+        Directory.CreateDirectory(pluginDirectoryPath);
+        CopySamplePluginAssembly(pluginDirectoryPath);
+        File.WriteAllText(
+            Path.Combine(pluginDirectoryPath, "plugin.json"),
+            """
+            {
+              "pluginId": "Sample.Plugin",
+              "displayName": "Sample Plugin",
+              "version": "1.0.0",
+              "entryAssembly": "AutoTool.Tests.Plugin.Sample.dll",
+              "entryType": "AutoTool.Tests.Plugin.Sample.SamplePlugin"
+            }
+            """);
+
+        IPluginCatalogLoader catalogLoader = new PluginCatalogLoader(
+            new PluginHostOptions { RootDirectoryPath = _rootDirectoryPath },
+            new PluginManifestLoader(new PluginManifestValidator()));
+        IPluginLoader loader = new PluginLoader(catalogLoader);
+        ILoadedPluginCatalog loadedPluginCatalog = new LoadedPluginCatalog(loader);
+        IPluginCommandDispatcher dispatcher = new PluginCommandDispatcher(loadedPluginCatalog);
+
+        var macroDirectoryPath = Path.Combine(_rootDirectoryPath, "MacroBase");
+        var context = new FakeCommandExecutionContext(macroDirectoryPath);
+        var item = new PluginCommandListItem
+        {
+            ItemType = "Sample.Plugin.ProviderCommand",
+            PluginId = "Sample.Plugin",
+            ParameterJson = """{"pathVariable":"resolvedPath","path":"ImageProcessSettings\\edge.json"}""",
+        };
+
+        var success = await dispatcher.ExecuteAsync(item, context, CancellationToken.None);
+
+        Assert.True(success);
+        Assert.Equal(
+            Path.GetFullPath(Path.Combine(macroDirectoryPath, "ImageProcessSettings", "edge.json")),
+            context.GetVariable("resolvedPath"));
+    }
+
     public void Dispose()
     {
     }
@@ -70,9 +112,10 @@ public sealed class PluginCommandDispatcherTests : IDisposable
             overwrite: true);
     }
 
-    private sealed class FakeCommandExecutionContext : ICommandExecutionContext
+    private sealed class FakeCommandExecutionContext(string? baseDirectory = null) : ICommandExecutionContext
     {
         private readonly Dictionary<string, string> _variables = new(StringComparer.Ordinal);
+        private readonly string _baseDirectory = baseDirectory ?? AppContext.BaseDirectory;
 
         public List<string> Logs { get; } = [];
 
@@ -94,7 +137,10 @@ public sealed class PluginCommandDispatcherTests : IDisposable
             _variables[name] = value;
         }
 
-        public string ToAbsolutePath(string relativePath) => Path.GetFullPath(relativePath);
+        public string ToAbsolutePath(string relativePath) =>
+            Path.IsPathRooted(relativePath)
+                ? relativePath
+                : Path.GetFullPath(Path.Combine(_baseDirectory, relativePath));
 
         public Task ClickAsync(int x, int y, CommandMouseButton button, string? windowTitle = null, string? windowClassName = null, int holdDurationMs = 20, string clickInjectionMode = "MouseEvent", bool simulateMouseMove = false, bool restoreCursorPositionAfterClick = false, bool restoreWindowZOrderAfterClick = false) => Task.CompletedTask;
 

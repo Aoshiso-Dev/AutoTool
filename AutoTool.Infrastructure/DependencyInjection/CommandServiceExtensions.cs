@@ -1,4 +1,5 @@
 ﻿using AutoTool.Commands.Infrastructure;
+using AutoTool.Application.Files;
 using AutoTool.Commands.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,6 +24,7 @@ public static class CommandServiceExtensions
         services.AddSingleton<ICommandEventBus, CommandEventBus>();
         services.AddSingleton<IVariableStore, InMemoryVariableStore>();
         services.AddSingleton<IObjectDetector, YoloObjectDetector>();
+        services.AddSingleton<ICurrentMacroFileContext, CurrentMacroFileContext>();
         services.AddSingleton<IPathResolver, PathResolver>();
 
         services.AddTransient<IImageMatcher, OpenCvImageMatcher>();
