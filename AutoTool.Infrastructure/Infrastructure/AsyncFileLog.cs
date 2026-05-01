@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using AutoTool.Commands.Threading;
 using AutoTool.Automation.Runtime.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace AutoTool.Infrastructure;
 
@@ -20,7 +21,9 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
     private readonly Task _processingTask;
     private readonly TimeProvider _timeProvider;
     private volatile bool _disposed;
-    private const int FlushBatchSize = 32;
+    private const int FlushBatchSize = 1;
+
+    public string LogPath => _logPath;
 
     public AsyncFileLog(TimeProvider? timeProvider = null)
     {
@@ -106,7 +109,7 @@ public sealed class AsyncFileLog : IDisposable, IAsyncDisposable
         try
         {
             await using var fileStream = new FileStream(_logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, 4096);
-            await using var streamWriter = new StreamWriter(fileStream);
+            await using var streamWriter = new StreamWriter(fileStream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
 
             List<string> bufferedMessages = new(FlushBatchSize);
 

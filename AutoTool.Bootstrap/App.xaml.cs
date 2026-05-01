@@ -8,12 +8,14 @@ using AutoTool.Automation.Runtime.Diagnostics;
 using AutoTool.Commands.Infrastructure;
 using AutoTool.Commands.Services;
 using AutoTool.Desktop.Hosting;
+using AutoTool.Desktop.Logging;
 using AutoTool.Desktop.Services;
 using AutoTool.Desktop.Ui;
 using AutoTool.Infrastructure;
 using AutoTool.Infrastructure.Implementations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace AutoTool.Bootstrap;
 
@@ -89,9 +91,20 @@ public partial class App : System.Windows.Application
         _logWriter = logWriter;
         _notifier = notifier;
 
+        _logWriter.Write(
+            "INFO",
+            "Application",
+            "起動処理を開始しました。",
+            $"BaseDirectory={AppContext.BaseDirectory}",
+            $"LogPath={asyncFileLog.LogPath}");
+
         // ホストを構築して初期化
         _host = AppHostBuilder
             .CreateHostBuilder(invocation, e.Args)
+            .ConfigureLogging(logging =>
+            {
+                logging.AddProvider(new AsyncFileLoggerProvider(asyncFileLog));
+            })
             .ConfigureServices((_, services) =>
             {
                 services.AddSingleton(asyncFileLog);
@@ -109,10 +122,13 @@ public partial class App : System.Windows.Application
 
         // ホストを開始
         _host.Start();
+        _logWriter.Write("INFO", "Application", "起動処理が完了しました。");
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _logWriter?.Write("INFO", "Application", $"終了処理を開始しました。ExitCode={e.ApplicationExitCode}");
+
         DispatcherUnhandledException -= App_DispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException -= CurrentDomain_UnhandledException;
         TaskScheduler.UnobservedTaskException -= TaskScheduler_UnobservedTaskException;
@@ -127,6 +143,7 @@ public partial class App : System.Windows.Application
             try
             {
                 _host.StopAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                _logWriter?.Write("INFO", "Application", "終了処理が完了しました。");
             }
             catch (Exception ex)
             {

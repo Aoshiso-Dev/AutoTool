@@ -98,6 +98,11 @@
 - 右下の `変数` ボタンで、実行中に設定された変数名・値・更新時刻を確認できます。
 - `ログ` と同じ下部領域に表示され、検索・コピー・更新ができます。
 
+ログ確認:
+- 右下の `ログ` ボタンで、マクロ実行開始/完了、各コマンドの開始/完了、警告、エラーを確認できます。
+- 調査用のファイルログは `AutoTool.exe` と同じフォルダの `Logs\yyyy-MM-dd_HH-mm-ss.log` に保存されます。
+- 標準ログの記録レベルは `Settings\appsettings.json` の `Logging:LogLevel` で変更できます。
+
 AI相談:
 - 右下の `AI相談` ボタンで別ウィンドウを開き、ローカルAI（llama.cpp）へ質問できます。
 - `マクロ説明` では現在のコマンド一覧をAIに渡して、日本語の説明や注意点を確認できます。
@@ -117,6 +122,7 @@ AI相談:
 - 設定: `Settings\appsettings.json`
 - AI相談設定: `Settings\assistant_settings.json`
 - 画面状態: `Settings\window_settings.json`
+- ログ: `Logs\yyyy-MM-dd_HH-mm-ss.log`
 
 --------------------------------------------------
 6. 更新版を上書き配布するときの注意

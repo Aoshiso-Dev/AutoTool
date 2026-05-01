@@ -34,6 +34,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IRecentFileStore _recentFileStore;
     private readonly IFileSystemPathService _fileSystemPathService;
     private readonly PluginStartupDiagnosticsPresenter _pluginStartupDiagnosticsPresenter;
+    private readonly ILogWriter _logWriter;
     private EventHandler? _commandHistoryChangedHandler;
     private bool _lastKnownIsRunning;
     private bool _isDirtyTrackingSuspended;
@@ -117,6 +118,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _recentFileStore = recentFileStore;
         _fileSystemPathService = fileSystemPathService;
         _pluginStartupDiagnosticsPresenter = pluginStartupDiagnosticsPresenter;
+        _logWriter = logWriter;
         MacroPanelViewModel = macroPanelViewModel;
         foreach (var quickAction in pluginQuickActionCatalog.GetQuickActions())
         {
@@ -308,10 +310,19 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             ClearDirtyState();
             RefreshFileUiState();
             StatusMessage = $"ファイルを開きました: {CurrentFileName}";
+            _logWriter.WriteStructured(
+                "File",
+                "Open",
+                new Dictionary<string, object?>
+                {
+                    ["Message"] = StatusMessage,
+                    ["Path"] = CurrentFilePath
+                });
         }
         catch (Exception ex)
         {
             StatusMessage = "ファイルを開けませんでした。";
+            _logWriter.Write(ex);
             _notifier.ShowError($"ファイルを開く際にエラーが発生しました。\n{ex.Message}", "エラー");
         }
     }
@@ -338,11 +349,20 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             RefreshFileUiState();
 
             StatusMessage = $"保存しました: {CurrentFileName}";
+            _logWriter.WriteStructured(
+                "File",
+                "Save",
+                new Dictionary<string, object?>
+                {
+                    ["Message"] = StatusMessage,
+                    ["Path"] = CurrentFilePath
+                });
             _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
         }
         catch (Exception ex)
         {
             StatusMessage = "保存に失敗しました。";
+            _logWriter.Write(ex);
             _notifier.ShowError($"保存時にエラーが発生しました。\n{ex.Message}", "保存エラー");
         }
     }
@@ -369,11 +389,20 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             RefreshFileUiState();
 
             StatusMessage = $"保存しました: {CurrentFileName}";
+            _logWriter.WriteStructured(
+                "File",
+                "SaveAs",
+                new Dictionary<string, object?>
+                {
+                    ["Message"] = StatusMessage,
+                    ["Path"] = CurrentFilePath
+                });
             _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
         }
         catch (Exception ex)
         {
             StatusMessage = "保存に失敗しました。";
+            _logWriter.Write(ex);
             _notifier.ShowError($"保存時にエラーが発生しました。\n{ex.Message}", "保存エラー");
         }
     }
@@ -465,10 +494,19 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             ClearDirtyState();
             RefreshFileUiState();
             StatusMessage = $"前回の状態を復元しました: {macroFileManager.CurrentFileName}";
+            _logWriter.WriteStructured(
+                "File",
+                "RestorePreviousSession",
+                new Dictionary<string, object?>
+                {
+                    ["Message"] = StatusMessage,
+                    ["Path"] = macroFileManager.CurrentFilePath
+                });
             _statusMessageScheduler.Schedule(TimeSpan.FromSeconds(3), () => StatusMessage = "準備完了");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logWriter.Write(ex);
             if (TryGetMacroFileManager(out var macroFileManager))
             {
                 macroFileManager.ResetToNewFile();

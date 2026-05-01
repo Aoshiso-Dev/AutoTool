@@ -263,12 +263,22 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         if (!ValidateBeforeRun())
         {
             message = "実行前チェックで要修正項目が見つかりました。";
+            _logWriter.Write("WARN", "Macro", message);
             PublishStatusMessage(message);
             return false;
         }
 
         System.Windows.Application.Current.Dispatcher.Invoke(() => SetRunningState(true));
         message = "マクロを実行開始しました。";
+        _logWriter.WriteStructured(
+            "Macro",
+            "ExecutionStart",
+            new Dictionary<string, object?>
+            {
+                ["Message"] = message,
+                ["CommandCount"] = _listPanel.CommandList.Items.Count
+            });
+        _logPanel.WriteLog(string.Empty, "システム", message);
         PublishStatusMessage(message);
         _ = Run();
         return true;
@@ -285,6 +295,8 @@ public partial class MacroPanelViewModel : ObservableObject, IDisposable
         _cts?.Cancel();
         System.Windows.Application.Current.Dispatcher.Invoke(() => SetRunningState(false));
         message = "実行を停止しました。";
+        _logWriter.Write("INFO", "Macro", message);
+        _logPanel.WriteLog(string.Empty, "システム", message);
         PublishStatusMessage(message);
         return true;
     }

@@ -246,7 +246,7 @@
                                         <Style TargetType="panels:LogPanel">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsLogPanelOpen}" Value="True">
+                                                <DataTrigger Binding="{Binding DataContext.IsLogPanelOpen, RelativeSource={RelativeSource AncestorType=Grid}}" Value="True">
                                                     <Setter Property="Visibility" Value="Visible"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -259,7 +259,7 @@
                                         <Style TargetType="panels:VariablePanel">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsVariablePanelOpen}" Value="True">
+                                                <DataTrigger Binding="{Binding DataContext.IsVariablePanelOpen, RelativeSource={RelativeSource AncestorType=Grid}}" Value="True">
                                                     <Setter Property="Visibility" Value="Visible"/>
                                                 </DataTrigger>
                                             </Style.Triggers>

@@ -38,6 +38,7 @@ public partial class MacroPanelViewModel
 
         OnUiThread(() =>
         {
+            _logPanel.WriteLog(FormatUiLineLabel(command.LineNumber), GetUiCommandLabel(command), "開始");
             var commandItem = _listPanel.GetItem(command.LineNumber);
             if (commandItem is not null)
             {
@@ -65,6 +66,7 @@ public partial class MacroPanelViewModel
 
         OnUiThread(() =>
         {
+            _logPanel.WriteLog(FormatUiLineLabel(command.LineNumber), GetUiCommandLabel(command), "完了");
             var commandItem = _listPanel.GetItem(command.LineNumber);
             if (commandItem is not null)
             {
@@ -115,6 +117,8 @@ public partial class MacroPanelViewModel
     public async Task Run()
     {
         var listItems = _listPanel.CommandList.Items;
+        var isCancellation = false;
+        var failed = false;
 
         try
         {
@@ -130,7 +134,8 @@ public partial class MacroPanelViewModel
         catch (Exception ex)
         {
             _logWriter.Write(ex);
-            var isCancellation = _cts is { Token.IsCancellationRequested: true };
+            isCancellation = _cts is { Token.IsCancellationRequested: true };
+            failed = !isCancellation;
             if (!isCancellation)
             {
                 AppendRuntimeErrorLog(ex);
@@ -158,6 +163,21 @@ public partial class MacroPanelViewModel
                 _cts?.Dispose();
                 _cts = null;
                 SetRunningState(false);
+                var completionMessage = isCancellation
+                    ? "マクロ実行を停止しました。"
+                    : failed
+                        ? "マクロ実行はエラーで終了しました。"
+                        : "マクロ実行が完了しました。";
+                _logPanel.WriteLog(string.Empty, "システム", completionMessage);
+                _logWriter.WriteStructured(
+                    "Macro",
+                    "ExecutionFinished",
+                    new Dictionary<string, object?>
+                    {
+                        ["Message"] = completionMessage,
+                        ["IsCancellation"] = isCancellation,
+                        ["Failed"] = failed
+                    });
                 ExecutionCompleted?.Invoke();
                 if (_clearSuppressionOnExecutionCompleted)
                 {
